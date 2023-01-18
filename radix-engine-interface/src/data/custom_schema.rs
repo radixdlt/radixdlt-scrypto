@@ -15,7 +15,7 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
 
     // Other Engine types
     Own,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
     KeyValueStore { key_type: L, value_type: L },
 
     // Manifest types
@@ -72,7 +72,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::Expression => ScryptoCustomTypeKind::Expression,
             ScryptoCustomTypeKind::Blob => ScryptoCustomTypeKind::Blob,
-            ScryptoCustomTypeKind::NonFungibleAddress => ScryptoCustomTypeKind::NonFungibleAddress,
+            ScryptoCustomTypeKind::NonFungibleGlobalId => ScryptoCustomTypeKind::NonFungibleGlobalId,
             ScryptoCustomTypeKind::Hash => ScryptoCustomTypeKind::Hash,
             ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
                 ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey

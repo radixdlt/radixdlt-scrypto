@@ -24,7 +24,7 @@ fn test_basic_transfer() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key1)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
     receipt.expect_commit_success();
 
@@ -110,7 +110,7 @@ fn should_be_able_run_large_manifest() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -132,7 +132,7 @@ fn should_be_able_invoke_account_balance_50_times() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -155,7 +155,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

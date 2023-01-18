@@ -98,8 +98,8 @@ pub enum ProofValidationMode {
     /// the `Proof`'s resource address belongs to the set, then its valid.
     ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
 
-    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
-    ValidateContainsNonFungible(NonFungibleAddress),
+    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleGlobalId`.
+    ValidateContainsNonFungible(NonFungibleGlobalId),
 
     /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleLocalId`s
     /// to ensure that the `Proof` contains all of the NonFungibles in the set.
@@ -115,9 +115,9 @@ impl From<ResourceAddress> for ProofValidationMode {
     }
 }
 
-impl From<NonFungibleAddress> for ProofValidationMode {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        Self::ValidateContainsNonFungible(non_fungible_address)
+impl From<NonFungibleGlobalId> for ProofValidationMode {
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
+        Self::ValidateContainsNonFungible(non_fungible_global_id)
     }
 }
 

@@ -25,7 +25,7 @@ pub enum HardCount {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardResourceOrNonFungible {
-    NonFungible(NonFungibleAddress),
+    NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
     InvalidSchemaPath,
     DisallowdValueType,

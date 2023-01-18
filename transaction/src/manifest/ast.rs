@@ -221,7 +221,7 @@ pub enum Type {
     // Alias
     // ==============
     Bytes,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // ==============
     // Custom Types
@@ -271,7 +271,7 @@ impl Type {
 
             // Aliases
             Type::Bytes => ScryptoValueKind::Array,
-            Type::NonFungibleAddress => ScryptoValueKind::Tuple,
+            Type::NonFungibleGlobalId => ScryptoValueKind::Tuple,
 
             // RE interpreted types
             Type::PackageAddress => {
@@ -345,7 +345,7 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
     Bytes(Box<Value>),
-    NonFungibleAddress(Box<Value>, Box<Value>),
+    NonFungibleGlobalId(Box<Value>, Box<Value>),
 
     // ==============
     // Custom Types
@@ -405,7 +405,7 @@ impl Value {
             Value::Ok(_) => ScryptoValueKind::Enum,
             Value::Err(_) => ScryptoValueKind::Enum,
             Value::Bytes(_) => ScryptoValueKind::Array,
-            Value::NonFungibleAddress(_, _) => ScryptoValueKind::Tuple,
+            Value::NonFungibleGlobalId(_, _) => ScryptoValueKind::Tuple,
 
             // ==============
             // Custom Types

@@ -9,7 +9,7 @@ use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneParams {
-    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub initial_proofs: Vec<NonFungibleGlobalId>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 

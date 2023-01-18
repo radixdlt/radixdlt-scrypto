@@ -235,7 +235,7 @@ impl ScryptoVault for Vault {
         let resource_address = self.resource_address();
         self.non_fungible_local_ids()
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
             .collect()
     }
 

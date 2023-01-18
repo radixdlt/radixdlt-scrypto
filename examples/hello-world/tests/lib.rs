@@ -20,7 +20,7 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
@@ -40,7 +40,7 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();

@@ -1,6 +1,6 @@
 use radix_engine::types::{
     hash, require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey,
-    NonFungibleAddress, NonFungibleLocalId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
     FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::node::NetworkDefinition;
@@ -299,7 +299,7 @@ where
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -311,7 +311,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 
@@ -331,7 +331,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -378,7 +378,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 
@@ -391,7 +391,7 @@ where
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Creating the required accounts
     let accounts = (0..accounts_required)
@@ -409,7 +409,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 

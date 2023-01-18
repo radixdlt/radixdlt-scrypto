@@ -57,7 +57,7 @@ pub enum Type {
         name: String,
         fields: Fields,
     },
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // Enum
     Enum {

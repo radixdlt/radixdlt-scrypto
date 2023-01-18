@@ -11,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 
 use crate::ledger::{lookup_non_fungible_local_id_type, LedgerLookupError};
-use crate::resim::SimulatorNonFungibleAddress;
+use crate::resim::SimulatorNonFungibleGlobalId;
 
 // =======
 // Macros
@@ -219,12 +219,12 @@ fn parse_args<'a>(
                             })?;
                         Ok(scrypto_encode(&value).unwrap())
                     }
-                    Type::NonFungibleAddress => {
+                    Type::NonFungibleGlobalId => {
                         // Using the same parsing logic implemented for the
-                        // `SimulatorNonFungibleAddress` type since it is identical.
+                        // `SimulatorNonFungibleGlobalId` type since it is identical.
                         let value = arg
-                            .parse::<SimulatorNonFungibleAddress>()
-                            .map(|simulator_non_fungible_address| simulator_non_fungible_address.0)
+                            .parse::<SimulatorNonFungibleGlobalId>()
+                            .map(|simulator_non_fungible_global_id| simulator_non_fungible_global_id.0)
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
@@ -822,18 +822,18 @@ mod test {
 
     #[test]
     #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
-    pub fn parsing_of_bytes_non_fungible_address_succeeds() {
+    pub fn parsing_of_bytes_non_fungible_global_id_succeeds() {
         // Arrange
         let arg = "resource_sim1qzms24rcrka4kdr2pn9zsw8jcghdvw6q2tux0rzq6gfsnhhmh4:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
-        let arg_type = Type::NonFungibleAddress;
+        let arg_type = Type::NonFungibleGlobalId;
 
         // Act
-        let parsed_arg: NonFungibleAddress = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleGlobalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleAddress::new(
+            NonFungibleGlobalId::new(
                 ECDSA_SECP256K1_TOKEN,
                 NonFungibleLocalId::Bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,

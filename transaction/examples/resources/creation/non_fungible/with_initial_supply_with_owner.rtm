@@ -20,7 +20,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
         "name", "MyResource",                                        # Resource Name
         "description", "A very innovative and important resource"    # Resource Description
     )
-    NonFungibleAddress("${owner_badge_resource_address}", ${owner_badge_non_fungible_local_id})
+    NonFungibleGlobalId("${owner_badge_resource_address}", ${owner_badge_non_fungible_local_id})
     Some(
         Map<NonFungibleLocalId, Tuple>(
             NonFungibleLocalId(${non_fungible_local_id}), 

@@ -108,7 +108,7 @@ blueprint! {
                 ])
         }
 
-        pub fn verify_does_not_exist(address: NonFungibleAddress) {
+        pub fn verify_does_not_exist(address: NonFungibleGlobalId) {
             assert_eq!(
                 borrow_resource_manager!(address.resource_address())
                     .non_fungible_exists(&address.non_fungible_local_id()),

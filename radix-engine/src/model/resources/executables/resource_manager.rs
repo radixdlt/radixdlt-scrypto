@@ -28,8 +28,8 @@ use radix_engine_interface::*;
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
-    NonFungibleAlreadyExists(NonFungibleAddress),
-    NonFungibleNotFound(NonFungibleAddress),
+    NonFungibleAlreadyExists(NonFungibleGlobalId),
+    NonFungibleNotFound(NonFungibleGlobalId),
     NotNonFungible,
     MismatchingBucketResource,
     NonFungibleLocalIdTypeDoesNotMatch(NonFungibleLocalIdTypeId, NonFungibleLocalIdTypeId),
@@ -1221,7 +1221,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
                             ResourceManagerError::NonFungibleAlreadyExists(
-                                NonFungibleAddress::new(resource_address, id),
+                                NonFungibleGlobalId::new(resource_address, id),
                             ),
                         ),
                     ));
@@ -1561,10 +1561,10 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
             non_fungible.set_mutable_data(self.2);
         } else {
-            let non_fungible_address = NonFungibleAddress::new(resource_address, self.1);
+            let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, self.1);
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
-                    non_fungible_address,
+                    non_fungible_global_id,
                 )),
             ));
         }
@@ -1685,8 +1685,8 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
-        let non_fungible_address =
-            NonFungibleAddress::new(resource_manager.resource_address, self.1.clone());
+        let non_fungible_global_id =
+            NonFungibleGlobalId::new(resource_manager.resource_address, self.1.clone());
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
@@ -1702,7 +1702,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         } else {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
-                    non_fungible_address,
+                    non_fungible_global_id,
                 )),
             ));
         }

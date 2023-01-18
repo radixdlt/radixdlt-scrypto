@@ -517,7 +517,7 @@ fn generate_stubs(
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
             }
-            fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+            fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                 self.component.globalize_with_owner(owner_badge)
             }
         }
@@ -761,7 +761,7 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }
@@ -902,7 +902,7 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }

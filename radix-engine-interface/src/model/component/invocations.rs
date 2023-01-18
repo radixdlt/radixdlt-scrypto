@@ -28,7 +28,7 @@ impl Into<CallTableInvocation> for ComponentGlobalizeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
-    pub owner_badge: NonFungibleAddress,
+    pub owner_badge: NonFungibleGlobalId,
 }
 
 impl Invocation for ComponentGlobalizeWithOwnerInvocation {

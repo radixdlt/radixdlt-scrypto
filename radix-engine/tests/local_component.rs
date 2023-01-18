@@ -69,7 +69,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleLocalId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
+    let auth_address = NonFungibleGlobalId::new(auth_resource_address, auth_id);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -83,7 +83,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -100,7 +100,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleLocalId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
+    let auth_address = NonFungibleGlobalId::new(auth_resource_address, auth_id.clone());
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -119,7 +119,7 @@ fn local_component_with_access_rules_should_be_callable() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -154,7 +154,7 @@ fn recursion_bomb() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -188,7 +188,7 @@ fn recursion_bomb_to_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -230,7 +230,7 @@ fn recursion_bomb_2() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -264,7 +264,7 @@ fn recursion_bomb_2_to_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

@@ -33,7 +33,7 @@ fn bench_transfer(c: &mut Criterion) {
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
-                &rule!(require(NonFungibleAddress::from_public_key(&public_key))),
+                &rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
                 bucket_id,
             )
         })
@@ -45,7 +45,7 @@ fn bench_transfer(c: &mut Criterion) {
         &FeeReserveConfig::default(),
         &ExecutionConfig::default(),
         &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-            .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
+            .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
     )
     .expect_commit()
     .entity_changes
@@ -57,7 +57,7 @@ fn bench_transfer(c: &mut Criterion) {
         &FeeReserveConfig::default(),
         &ExecutionConfig::default(),
         &TestTransaction::new(manifest, 2, DEFAULT_COST_UNIT_LIMIT)
-            .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
+            .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
     )
     .expect_commit()
     .entity_changes
@@ -80,7 +80,7 @@ fn bench_transfer(c: &mut Criterion) {
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
             &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
+                .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
         .expect_commit();
     }
@@ -106,7 +106,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
+                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
             receipt.expect_commit_success();
             nonce += 1;

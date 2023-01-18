@@ -95,10 +95,10 @@ impl Executor for EpochManagerCreateInvocation {
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_local_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
@@ -439,11 +439,11 @@ impl EpochManager {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
 
         let node = RENode::Validator(

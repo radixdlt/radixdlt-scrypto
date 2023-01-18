@@ -11,7 +11,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let (_, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleLocalId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    let auth_address = NonFungibleGlobalId::new(auth, auth_id);
     let authorization = AccessRules::new().method(
         "get_component_state",
         rule!(require(auth_address)),
@@ -73,7 +73,7 @@ fn can_make_cross_component_call_with_authorization() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleLocalId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
+    let auth_address = NonFungibleGlobalId::new(auth, auth_id.clone());
     let authorization = AccessRules::new().method(
         "get_component_state",
         rule!(require(auth_address)),
@@ -124,7 +124,7 @@ fn can_make_cross_component_call_with_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -150,7 +150,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleLocalId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    let auth_address = NonFungibleGlobalId::new(auth, auth_id);
     let authorization = AccessRules::new().method(
         "get_component_state",
         rule!(require(auth_address)),
@@ -202,7 +202,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

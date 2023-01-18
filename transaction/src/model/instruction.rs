@@ -107,7 +107,7 @@ pub enum BasicInstruction {
     PublishPackageWithOwner {
         code: ManifestBlobRef,
         abi: ManifestBlobRef,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     },
 
     BurnResource {
@@ -175,7 +175,7 @@ pub enum BasicInstruction {
     CreateFungibleResourceWithOwner {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     },
 
@@ -189,7 +189,7 @@ pub enum BasicInstruction {
     CreateNonFungibleResourceWithOwner {
         id_type: NonFungibleLocalIdTypeId,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 

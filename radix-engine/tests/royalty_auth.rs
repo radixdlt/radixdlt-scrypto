@@ -15,7 +15,7 @@ fn set_up_package_and_component() -> (
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleLocalId::Number(1));
+    let owner_badge_addr = NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
 
     // Publish package
     let (code, abi) = Compile::compile("./tests/blueprints/royalty-auth");
@@ -24,7 +24,7 @@ fn set_up_package_and_component() -> (
             .lock_fee(account, 10u32.into())
             .publish_package_with_owner(code, abi, owner_badge_addr.clone())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
 
@@ -44,7 +44,7 @@ fn set_up_package_and_component() -> (
                 )]),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -65,7 +65,7 @@ fn set_up_package_and_component() -> (
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
     let component_address = receipt
@@ -106,7 +106,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                 )]),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -122,7 +122,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                 )]),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_failure();
 }
@@ -149,7 +149,7 @@ fn test_only_package_owner_can_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -164,7 +164,7 @@ fn test_only_package_owner_can_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_failure();
 }
@@ -186,7 +186,7 @@ fn test_only_component_owner_can_set_royalty_config() {
             .create_proof_from_account(account, owner_badge_resource)
             .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -196,7 +196,7 @@ fn test_only_component_owner_can_set_royalty_config() {
             .lock_fee(account, 100.into())
             .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_failure();
 }
@@ -223,7 +223,7 @@ fn test_only_component_owner_can_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -238,7 +238,7 @@ fn test_only_component_owner_can_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_failure();
 }

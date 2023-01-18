@@ -23,7 +23,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -67,7 +67,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -102,7 +102,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -139,7 +139,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -170,7 +170,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let outputs = receipt.expect_commit_success();
 

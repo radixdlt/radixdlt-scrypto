@@ -12,11 +12,11 @@ struct AuthVerification;
 impl AuthVerification {
     pub fn proof_matches(resource_rule: &HardResourceOrNonFungible, proof: &ProofSubstate) -> bool {
         match resource_rule {
-            HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
+            HardResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
                 let proof_resource_address = proof.resource_address();
-                proof_resource_address == non_fungible_address.resource_address()
+                proof_resource_address == non_fungible_global_id.resource_address()
                     && match proof.total_ids() {
-                        Ok(ids) => ids.contains(non_fungible_address.non_fungible_local_id()),
+                        Ok(ids) => ids.contains(non_fungible_global_id.non_fungible_local_id()),
                         Err(_) => false,
                     }
             }
@@ -77,12 +77,12 @@ impl AuthVerification {
             barrier_crossings_allowed,
             auth_zone,
             |auth_zone, rev_index| {
-                if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule
+                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule
                 {
                     if rev_index == 0 {
                         if auth_zone
                             .virtual_non_fungibles_non_extending
-                            .contains(&non_fungible_address)
+                            .contains(&non_fungible_global_id)
                         {
                             return true;
                         }
@@ -90,13 +90,13 @@ impl AuthVerification {
 
                     if auth_zone
                         .virtual_non_fungibles
-                        .contains(&non_fungible_address)
+                        .contains(&non_fungible_global_id)
                     {
                         return true;
                     }
                     if auth_zone
                         .virtual_resources
-                        .contains(&non_fungible_address.resource_address())
+                        .contains(&non_fungible_global_id.resource_address())
                     {
                         return true;
                     }
@@ -226,7 +226,7 @@ impl AuthZoneStackSubstate {
     pub fn new(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     ) -> Self {
         Self {
             auth_zones: vec![AuthZone::new_with_virtual_proofs(
@@ -258,7 +258,7 @@ impl AuthZoneStackSubstate {
 
     pub fn new_frame(
         &mut self,
-        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) {
         let auth_zone =
@@ -292,14 +292,14 @@ pub struct AuthZone {
     proofs: Vec<ProofSubstate>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
     virtual_resources: BTreeSet<ResourceAddress>,
-    virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
-    virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+    virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+    virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
     barrier: bool,
 }
 
 impl AuthZone {
     fn new_with_virtual_non_fungibles(
-        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) -> Self {
         Self {
@@ -314,7 +314,7 @@ impl AuthZone {
     fn new_with_virtual_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) -> Self {
         Self {

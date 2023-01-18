@@ -283,7 +283,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleGlobalId => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -365,9 +365,9 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
-            TokenKind::NonFungibleAddress => {
+            TokenKind::NonFungibleGlobalId => {
                 let tuple = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(
+                Ok(Value::NonFungibleGlobalId(
                     Box::new(tuple.0),
                     Box::new(tuple.1),
                 ))
@@ -503,7 +503,7 @@ impl Parser {
 
             // Alias
             TokenKind::Bytes => Ok(Type::Bytes),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+            TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
 
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),

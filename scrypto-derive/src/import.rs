@@ -201,8 +201,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { ( #(#types),* ) }
         }
-        SchemaType::NonFungibleAddress => {
-            parse_quote! { ::scrypto::model::NonFungibleAddress}
+        SchemaType::NonFungibleGlobalId => {
+            parse_quote! { ::scrypto::model::NonFungibleGlobalId}
         }
         SchemaType::Struct { name, fields } => {
             let ident = format_ident!("{}", name);

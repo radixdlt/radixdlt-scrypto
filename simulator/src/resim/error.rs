@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::engine::*;
 use radix_engine::model::{ExportError, ExtractAbiError};
-use radix_engine::types::{AddressError, ParseNonFungibleAddressError};
+use radix_engine::types::{AddressError, ParseNonFungibleGlobalIdError};
 use radix_engine::wasm::PrepareError;
 use radix_engine_interface::node::ParseNetworkError;
 use sbor::*;
@@ -59,7 +59,7 @@ pub enum Error {
 
     AddressError(AddressError),
 
-    NonFungibleAddressError(ParseNonFungibleAddressError),
+    NonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
 
     FailedToBuildArgs(BuildArgsError),
 

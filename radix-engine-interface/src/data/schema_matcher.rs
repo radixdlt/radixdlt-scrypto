@@ -28,7 +28,7 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
 
         Type::Tuple { .. } => Some(ValueKind::Tuple),
         Type::Struct { .. } => Some(ValueKind::Tuple),
-        Type::NonFungibleAddress { .. } => Some(ValueKind::Tuple),
+        Type::NonFungibleGlobalId { .. } => Some(ValueKind::Tuple),
 
         Type::Enum { .. } => Some(ValueKind::Enum),
         Type::Option { .. } => Some(ValueKind::Enum),
@@ -194,7 +194,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-        Type::NonFungibleAddress => {
+        Type::NonFungibleGlobalId => {
             if let Value::Tuple { fields } = value {
                 fields.len() == 2
                     && match_schema_with_value(&Type::ResourceAddress, fields.get(0).unwrap())

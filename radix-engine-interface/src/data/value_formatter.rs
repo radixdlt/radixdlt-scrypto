@@ -109,7 +109,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
                     },
                 ) = (&fields[0], &fields[1])
                 {
-                    f.write_str("NonFungibleAddress(\"")?;
+                    f.write_str("NonFungibleGlobalId(\"")?;
                     write!(f, "{}", address.display(context.bech32_encoder))?;
                     f.write_str("\", ")?;
                     match id {

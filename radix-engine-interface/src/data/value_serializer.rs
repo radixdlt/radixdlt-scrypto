@@ -532,7 +532,7 @@ pub fn serialize_custom_value<S: Serializer>(
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleAddress {
+impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleGlobalId {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,

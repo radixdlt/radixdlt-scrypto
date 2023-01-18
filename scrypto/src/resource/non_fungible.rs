@@ -19,12 +19,12 @@ impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {
-    address: NonFungibleAddress,
+    address: NonFungibleGlobalId,
     data: PhantomData<T>,
 }
 
-impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
-    fn from(address: NonFungibleAddress) -> Self {
+impl<T: NonFungibleData> From<NonFungibleGlobalId> for NonFungible<T> {
+    fn from(address: NonFungibleGlobalId) -> Self {
         Self {
             address,
             data: PhantomData,
@@ -39,7 +39,7 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Returns a reference to the non-fungible address.
-    pub fn address(&self) -> &NonFungibleAddress {
+    pub fn address(&self) -> &NonFungibleGlobalId {
         &self.address
     }
 

@@ -48,7 +48,7 @@ pub enum GeneratorError {
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleLocalId(String),
-    InvalidNonFungibleAddress,
+    InvalidNonFungibleGlobalId,
     InvalidExpression(String),
     InvalidComponent(String),
     InvalidKeyValueStore(String),
@@ -394,7 +394,7 @@ pub fn generate_instruction(
         } => BasicInstruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
         },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
@@ -498,7 +498,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CreateFungibleResourceWithOwner {
             divisibility: generate_u8(divisibility)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
             initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
         },
 
@@ -527,7 +527,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CreateNonFungibleResourceWithOwner {
             id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
             initial_supply: generate_from_enum_if_some(
                 initial_supply,
                 resolver,
@@ -862,25 +862,25 @@ fn generate_non_fungible_local_id(value: &ast::Value) -> Result<NonFungibleLocal
     }
 }
 
-fn generate_non_fungible_address(
+fn generate_non_fungible_global_id(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<NonFungibleAddress, GeneratorError> {
+) -> Result<NonFungibleGlobalId, GeneratorError> {
     match value {
         ast::Value::Tuple(elements) => {
             if elements.len() != 2 {
-                return Err(GeneratorError::InvalidNonFungibleAddress);
+                return Err(GeneratorError::InvalidNonFungibleGlobalId);
             }
             let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
             let non_fungible_local_id = generate_non_fungible_local_id(&elements[1])?;
-            Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
+            Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
         }
-        ast::Value::NonFungibleAddress(value1, value2) => {
+        ast::Value::NonFungibleGlobalId(value1, value2) => {
             let resource_address = generate_resource_address_internal(&value1, bech32_decoder)?;
             let non_fungible_local_id = generate_non_fungible_local_id_internal(&value2)?;
-            Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
+            Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
         }
-        v => invalid_type!(v, ast::Type::NonFungibleAddress, ast::Type::Tuple),
+        v => invalid_type!(v, ast::Type::NonFungibleGlobalId, ast::Type::Tuple),
     }
 }
 
@@ -1235,7 +1235,7 @@ pub fn generate_value(
                 elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
             })
         }
-        ast::Value::NonFungibleAddress(resource_address, non_fungible_local_id) => Ok(Value::Tuple {
+        ast::Value::NonFungibleGlobalId(resource_address, non_fungible_local_id) => Ok(Value::Tuple {
             fields: vec![
                 Value::Custom {
                     value: ScryptoCustomValue::ResourceAddress(generate_resource_address_internal(
@@ -1557,7 +1557,7 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleAddress::new(resource, NonFungibleLocalId::Number(1));
+        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::Number(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1621,7 +1621,7 @@ mod tests {
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64);"#,
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64);"#,
             BasicInstruction::PublishPackageWithOwner {
                 code: ManifestBlobRef(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
@@ -1676,7 +1676,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Decimal("500"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Decimal("500"));"#,
             BasicInstruction::CreateFungibleResourceWithOwner {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1685,7 +1685,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
             BasicInstruction::CreateFungibleResourceWithOwner {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1738,7 +1738,7 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
                 id_type: NonFungibleLocalIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1753,7 +1753,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
                 id_type: NonFungibleLocalIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),

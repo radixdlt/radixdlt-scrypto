@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::model::NonFungibleAddress;
+use radix_engine_interface::model::NonFungibleGlobalId;
 use radix_engine_interface::node::*;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
@@ -122,8 +122,8 @@ impl NewSimpleBadge {
             let bech32_encoder = Bech32Encoder::new(&network_definition);
             writeln!(
                 out,
-                "NFAddress: {}",
-                NonFungibleAddress::new(resource_address, NonFungibleLocalId::Number(1))
+                "NonFungibleGlobalId: {}",
+                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::Number(1))
                     // This should be the opposite of parse_args in the manifest builder
                     .to_canonical_string(&bech32_encoder)
                     .green()

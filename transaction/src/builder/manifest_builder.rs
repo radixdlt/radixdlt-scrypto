@@ -280,7 +280,7 @@ impl ManifestBuilder {
         &mut self,
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
@@ -329,7 +329,7 @@ impl ManifestBuilder {
         &mut self,
         id_type: NonFungibleLocalIdTypeId,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
@@ -505,7 +505,7 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -662,12 +662,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
+    pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_address.non_fungible_local_id().clone());
+        ids.insert(non_fungible_global_id.non_fungible_local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
-            non_fungible_address.resource_address().clone(),
+            non_fungible_global_id.resource_address().clone(),
             |builder, bucket_id| {
                 builder
                     .add_instruction(BasicInstruction::BurnResource { bucket_id })

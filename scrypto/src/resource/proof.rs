@@ -124,9 +124,9 @@ impl ScryptoProof for Proof {
                 self.validate_resource_address_belongs_to(&resource_addresses)?;
                 Ok(())
             }
-            ProofValidationMode::ValidateContainsNonFungible(non_fungible_address) => {
-                self.validate_resource_address(non_fungible_address.resource_address())?;
-                self.validate_contains_non_fungible_local_id(non_fungible_address.non_fungible_local_id())?;
+            ProofValidationMode::ValidateContainsNonFungible(non_fungible_global_id) => {
+                self.validate_resource_address(non_fungible_global_id.resource_address())?;
+                self.validate_contains_non_fungible_local_id(non_fungible_global_id.non_fungible_local_id())?;
                 Ok(())
             }
             ProofValidationMode::ValidateContainsNonFungibles(
@@ -273,14 +273,14 @@ impl ValidatedProof {
     }
 
     /// Whether this proof includes an ownership proof of the given non-fungible.
-    pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_address() != non_fungible_address.resource_address() {
+    pub fn contains_non_fungible(&self, non_fungible_global_id: &NonFungibleGlobalId) -> bool {
+        if self.resource_address() != non_fungible_global_id.resource_address() {
             return false;
         }
 
         self.non_fungible_local_ids()
             .iter()
-            .any(|k| k.eq(&non_fungible_address.non_fungible_local_id()))
+            .any(|k| k.eq(&non_fungible_global_id.non_fungible_local_id()))
     }
 
     /// Returns all the non-fungible units contained.
@@ -291,7 +291,7 @@ impl ValidatedProof {
         let resource_address = self.resource_address();
         self.non_fungible_local_ids()
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
             .collect()
     }
 
