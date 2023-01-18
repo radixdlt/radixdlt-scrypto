@@ -545,7 +545,7 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleG
                 .display(context.display_context.bech32_encoder)
                 .to_string(),
         )?;
-        tuple.serialize_element(&self.non_fungible_local_id().serializable(*context))?;
+        tuple.serialize_element(&self.local_id().serializable(*context))?;
         tuple.end()
     }
 }

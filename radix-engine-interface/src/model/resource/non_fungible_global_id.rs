@@ -5,12 +5,14 @@ use crate::model::*;
 use radix_engine_derive::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::LegacyDescribe;
 use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
+/// Represents the global id of a non-fungible.
 #[derive(
     Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
 )]
@@ -23,11 +25,8 @@ impl LegacyDescribe for NonFungibleGlobalId {
 }
 
 impl NonFungibleGlobalId {
-    pub const fn new(
-        resource_address: ResourceAddress,
-        non_fungible_local_id: NonFungibleLocalId,
-    ) -> Self {
-        Self(resource_address, non_fungible_local_id)
+    pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {
+        Self(resource_address, local_id)
     }
 
     /// Returns the resource address.
@@ -36,17 +35,13 @@ impl NonFungibleGlobalId {
     }
 
     /// Returns the non-fungible id.
-    pub fn non_fungible_local_id(&self) -> &NonFungibleLocalId {
+    pub fn local_id(&self) -> &NonFungibleLocalId {
         &self.1
     }
 
     /// Returns canonical representation of this NonFungibleGlobalId.
     pub fn to_canonical_string(&self, bech32_encoder: &Bech32Encoder) -> String {
-        format!(
-            "{}:{}",
-            bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
-            self.non_fungible_local_id().to_simple_string()
-        )
+        format!("{}", self.display(bech32_encoder))
     }
 
     /// Converts canonical representation to NonFungibleGlobalId.
@@ -54,55 +49,15 @@ impl NonFungibleGlobalId {
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
-        id_type: NonFungibleIdType,
         s: &str,
     ) -> Result<Self, ParseNonFungibleGlobalIdError> {
-        let v = s
-            .splitn(2, ':')
-            .filter(|&s| !s.is_empty())
-            .collect::<Vec<&str>>();
-        if v.len() != 2 {
+        let parts = s.split(':').collect::<Vec<&str>>();
+        if parts.len() != 2 {
             return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
         }
-        let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_local_id = NonFungibleLocalId::try_from_simple_string(id_type, v[1])?;
-        Ok(NonFungibleGlobalId::new(
-            resource_address,
-            non_fungible_local_id,
-        ))
-    }
-
-    /// Returns canonical representation of this NonFungibleGlobalId.
-    pub fn to_canonical_combined_string(&self, bech32_encoder: &Bech32Encoder) -> String {
-        format!(
-            "{}:{}",
-            bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
-            self.non_fungible_local_id().to_combined_simple_string()
-        )
-    }
-
-    /// Converts combined canonical representation to NonFungibleGlobalId.
-    ///
-    /// This is composed of `resource_address:IdType#id_simple_representation`
-    ///
-    /// Prefer the canonical string where the id type can be looked up.
-    pub fn try_from_canonical_combined_string(
-        bech32_decoder: &Bech32Decoder,
-        s: &str,
-    ) -> Result<Self, ParseNonFungibleGlobalIdError> {
-        let v = s
-            .splitn(2, ':')
-            .filter(|&s| !s.is_empty())
-            .collect::<Vec<&str>>();
-        if v.len() != 2 {
-            return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
-        }
-        let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_local_id = NonFungibleLocalId::try_from_combined_simple_string(v[1])?;
-        Ok(NonFungibleGlobalId::new(
-            resource_address,
-            non_fungible_local_id,
-        ))
+        let resource_address = bech32_decoder.validate_and_decode_resource_address(parts[0])?;
+        let local_id = NonFungibleLocalId::from_str(parts[1])?;
+        Ok(NonFungibleGlobalId::new(resource_address, local_id))
     }
 }
 
@@ -144,6 +99,23 @@ impl fmt::Display for ParseNonFungibleGlobalIdError {
 // text
 //======
 
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleGlobalId {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        write!(
+            f,
+            "{}:{}",
+            self.resource_address().display(*context),
+            self.local_id()
+        )
+    }
+}
+
 impl fmt::Debug for NonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
@@ -170,23 +142,6 @@ impl FromPublicKey for NonFungibleGlobalId {
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleGlobalId {
-    type Error = fmt::Error;
-
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &AddressDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        write!(
-            f,
-            "{}:{}",
-            self.resource_address().display(*context),
-            self.non_fungible_local_id()
-        )
-    }
-}
-
 //======
 // test
 //======
@@ -204,56 +159,51 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::Number,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:<id>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:<id>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::Number,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#123#",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#123#"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::UUID,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{1234567890}",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{00000000-0000-0000-0000-001234567890}"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::String,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:<test>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:<test>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::Bytes,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:[010a]",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:[010a]"
         );
     }
 
@@ -263,7 +213,6 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -272,38 +221,30 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::String,
-                // : is not currently allowed in non-fungible ids
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
             ),
+            Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
+        );
+
+        assert_eq!(
+            NonFungibleGlobalId::try_from_canonical_string(
+                &bech32_decoder,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
+            ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
-                ParseNonFungibleLocalIdError::InvalidCharacter(':')
+                ParseNonFungibleLocalIdError::UnknownType
             ))
         );
 
-        assert_eq!(
-            NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
-                NonFungibleIdType::Number,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
-            ),
-            Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
-        );
-
-        assert_eq!(
-            NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
-                NonFungibleIdType::Number,
-                ":",
-            ),
-            Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
-        );
+        assert!(matches!(
+            NonFungibleGlobalId::try_from_canonical_string(&bech32_decoder, ":",),
+            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
+        ));
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::Number,
-                "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
+                "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
         ));
@@ -311,11 +252,10 @@ mod tests {
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::Number,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#notnumber#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
-                ParseNonFungibleLocalIdError::InvalidInt(_)
+                ParseNonFungibleLocalIdError::InvalidNumber
             ))
         ));
     }
