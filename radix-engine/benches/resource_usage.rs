@@ -46,19 +46,22 @@ struct MemInfoFramework {
     counter: Bytes,
     sum_allocations: Vec<Bytes>,
     peak_allocations: Vec<Bytes>,
+    cpu_cycles: Vec<u64>,
 }
 impl MemInfoFramework {
     pub fn new() -> Self {
         Self {
             counter: Bytes(0),
             sum_allocations: Vec::new(),
-            peak_allocations: Vec::new()
+            peak_allocations: Vec::new(),
+            cpu_cycles: Vec::new()
         }
     }
     pub fn add_measurement(&mut self, value: &ResourcesUsage) {
         self.counter += Bytes(value.heap_allocations_sum);
         self.sum_allocations.push(Bytes(value.heap_allocations_sum));
         self.peak_allocations.push(Bytes(value.heap_peak_memory));
+        self.cpu_cycles.push(value.cpu_cycles);
     }
 
     pub fn print_report(&self) {
@@ -74,11 +77,17 @@ impl MemInfoFramework {
             sum_peak += *i;
         }
 
+        let avg_cpu_cycles: u64 = self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
+        let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
+        let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
+
         println!("Iterations: {}", self.sum_allocations.len());
+        #[cfg(any(feature = "resource-usage-with-cpu"))]
+        println!("Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})", avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles);
         println!("Sum of allocated heap memory in all iterations: {}", self.counter);
-        let x = Bytes(self.counter.0.div_euclid(self.sum_allocations.len()));
+        let x = Bytes(self.counter.0 / self.sum_allocations.len());
         println!("Average allocation per iteration: {}", x);
-        let x = Bytes(sum_peak.0.div_euclid(self.peak_allocations.len()));
+        let x = Bytes(sum_peak.0 / self.peak_allocations.len());
         println!("Average peak allocation per iteration: {}", x);
         println!("Alocated memory chunks (size: count): {:#?}", map);
         println!("Peak allocations (size: count): {:#?}", map_peak);

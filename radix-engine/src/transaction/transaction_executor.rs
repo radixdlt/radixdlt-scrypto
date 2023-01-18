@@ -14,12 +14,6 @@ use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 
-#[cfg(feature = "resource-usage")]
-use std::alloc::System;
-#[cfg(feature = "resource-usage")]
-#[global_allocator]
-static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
-
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
@@ -128,9 +122,6 @@ where
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
-        #[cfg(feature = "resource-usage")]
-        INFO_ALLOC.reset_counter();
-
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
@@ -140,6 +131,9 @@ where
 
             println!("{:-^80}", "Engine Execution Log");
         }
+
+        #[cfg(feature = "resource-usage")]
+        let mut resources_tracker = ResourcesTracker::start_measurement();
 
         // Prepare state track and execution trace
         let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
@@ -153,7 +147,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         events: vec![],
-                        resources_usage: ResourcesUsage::new()
+                        resources_usage: ResourcesUsage::default()
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -194,19 +188,18 @@ where
             track.finalize(invoke_result, events)
         };
 
-        #[cfg(not(feature = "resource-usage"))]
-        let (heap_allocations_sum, heap_peak_memory) = (0,0);
-        #[cfg(feature = "resource-usage")]
-        let (heap_allocations_sum, _heap_current_level, heap_peak_memory) = INFO_ALLOC.get_counters_value();
+		let resources_usage = match () {
+	        #[cfg(not(feature = "resource-usage"))]
+	        () => ResourcesUsage::default(),
+	        #[cfg(feature = "resource-usage")]
+	        () => resources_tracker.end_measurement()
+		};
 
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
-                resources_usage: ResourcesUsage { 
-                    heap_allocations_sum,
-                    heap_peak_memory
-                }
+                resources_usage
             },
             result: track_receipt.result,
         };

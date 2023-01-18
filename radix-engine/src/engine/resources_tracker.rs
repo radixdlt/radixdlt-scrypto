@@ -1,5 +1,14 @@
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::alloc::{GlobalAlloc, Layout};
+use crate::transaction::ResourcesUsage;
+
+#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+use perfcnt::{AbstractPerfCounter, PerfCounter, linux::{PerfCounterBuilderLinux, HardwareEventType}};
+
+#[cfg(feature = "resource-usage")]
+#[global_allocator]
+static INFO_ALLOC: InfoAlloc<std::alloc::System> = InfoAlloc::new(std::alloc::System);
+
 
 
 /// Heap allocations tracker
@@ -81,4 +90,71 @@ unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
         self.allocator.realloc(ptr, layout, new_size)
     }
 }
+
+
+
+
+#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+pub struct InfoCpu {
+    perf: PerfCounter
+}
+
+#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+impl InfoCpu {
+
+    pub fn new() -> Self {
+		Self {
+		    perf: PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::RefCPUCycles)
+		    	.finish().expect("Failed to initialize CPU performance counter")
+		}
+    }
+
+    pub fn start_measurement(&self) {
+		self.perf.start().expect("Failed to start CPU performance counter");
+    }
+
+    pub fn end_measurement(&mut self) -> u64 {
+		self.perf.stop().expect("Failed to stop CPU performance counter");
+		self.perf.read().expect("Failed to read value of CPU performance counter")
+    }
+}
+
+
+
+pub struct ResourcesTracker {
+	#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+    cpu: InfoCpu
+}
+
+impl ResourcesTracker {
+    pub fn start_measurement() -> Self {
+        let ret = Self {
+			#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+            cpu: InfoCpu::new()
+        };
+
+		#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+		ret.cpu.start_measurement();
+
+        INFO_ALLOC.reset_counter();
+		ret
+    }
+
+    pub fn end_measurement(&mut self) -> ResourcesUsage {
+		let cpu_cycles = match () {
+			#[cfg(not(all(target_os = "linux", feature = "resource-usage-with-cpu")))]
+			() => 0,
+			#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+			() => self.cpu.end_measurement(),
+		};
+        let (heap_allocations_sum, _heap_current_level, heap_peak_memory) = INFO_ALLOC.get_counters_value();
+		ResourcesUsage {
+			heap_allocations_sum, 
+			heap_peak_memory,
+			cpu_cycles
+		}
+	}
+}
+
+
 

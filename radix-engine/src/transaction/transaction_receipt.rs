@@ -13,20 +13,12 @@ use crate::state_manager::StateDiff;
 use crate::types::*;
 
 
-#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
-    pub heap_peak_memory: usize
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64
 }
-impl ResourcesUsage {
-    pub fn new() -> Self {
-        Self {
-            heap_allocations_sum: 0,
-            heap_peak_memory: 0
-        }
-    }
-}
-
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
