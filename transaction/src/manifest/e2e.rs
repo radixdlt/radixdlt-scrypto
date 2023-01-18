@@ -104,7 +104,7 @@ DROP_PROOF
 RETURN_TO_WORKTOP
     Bucket("bucket2");
 TAKE_FROM_WORKTOP_BY_IDS
-    Array<NonFungibleId>(NonFungibleId(1u64))
+    Array<NonFungibleLocalId>(NonFungibleLocalId(1u64))
     ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
     Bucket("bucket3");
 DROP_ALL_PROOFS;
@@ -216,11 +216,11 @@ CALL_METHOD
     EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09")
     Decimal("1.2")
     PreciseDecimal("1.2")
-    NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))
-    NonFungibleId(12u64)
-    NonFungibleId(12345u64)
-    NonFungibleId(1234567890u64)
-    NonFungibleId("SomeId");
+    NonFungibleLocalId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))
+    NonFungibleLocalId(12u64)
+    NonFungibleLocalId(12345u64)
+    NonFungibleLocalId(1234567890u64)
+    NonFungibleLocalId("SomeId");
 "#,
         );
     }
@@ -405,7 +405,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(1u8, Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -433,7 +433,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u64)
-    Enum(1u8, Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -540,7 +540,7 @@ CALL_METHOD
     ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
 MINT_NON_FUNGIBLE
     ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx")
-    Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));
+    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"

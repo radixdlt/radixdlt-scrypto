@@ -163,7 +163,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            BucketInvocation::GetNonFungibleIds(invocation) => {
+            BucketInvocation::GetNonFungibleLocalIds(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -219,7 +219,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            ProofInvocation::GetNonFungibleIds(invocation) => {
+            ProofInvocation::GetNonFungibleLocalIds(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -257,7 +257,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            VaultInvocation::GetNonFungibleIds(invocation) => {
+            VaultInvocation::GetNonFungibleLocalIds(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

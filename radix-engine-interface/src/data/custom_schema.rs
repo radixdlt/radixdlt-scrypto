@@ -32,7 +32,7 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
@@ -88,7 +88,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             }
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
-            ScryptoCustomTypeKind::NonFungibleId => ScryptoCustomTypeKind::NonFungibleId,
+            ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
         }
     }
 
@@ -126,7 +126,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ),
             DECIMAL_ID => ("Decimal", ScryptoCustomTypeKind::Decimal),
             PRECISE_DECIMAL_ID => ("PreciseDecimal", ScryptoCustomTypeKind::PreciseDecimal),
-            NON_FUNGIBLE_ID_ID => ("NonFungibleId", ScryptoCustomTypeKind::NonFungibleId),
+            NON_FUNGIBLE_ID_ID => ("NonFungibleLocalId", ScryptoCustomTypeKind::NonFungibleLocalId),
             _ => return None,
         };
 

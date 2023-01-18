@@ -378,7 +378,7 @@ impl Executor for VaultGetResourceAddressInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -388,20 +388,20 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetNonFungibleIds),
+            NativeFn::Vault(VaultFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for VaultGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for VaultGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

@@ -79,16 +79,16 @@ impl NewSimpleBadge {
             (rule!(allow_all), rule!(deny_all)),
         );
         let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleId::Number(1), EmptyStruct {});
+        initial_supply.insert(NonFungibleLocalId::Number(1), EmptyStruct {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdTypeId::Number,
+                id_type: NonFungibleLocalIdTypeId::Number,
                 metadata: metadata,
                 access_rules: resource_auth,
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleId::Number(1),
+                    NonFungibleLocalId::Number(1),
                     (
                         scrypto_encode(&EmptyStruct).unwrap(),
                         scrypto_encode(&EmptyStruct).unwrap(),
@@ -123,7 +123,7 @@ impl NewSimpleBadge {
             writeln!(
                 out,
                 "NFAddress: {}",
-                NonFungibleAddress::new(resource_address, NonFungibleId::Number(1))
+                NonFungibleAddress::new(resource_address, NonFungibleLocalId::Number(1))
                     // This should be the opposite of parse_args in the manifest builder
                     .to_canonical_string(&bech32_encoder)
                     .green()
@@ -135,7 +135,7 @@ impl NewSimpleBadge {
                 resource_address.to_string(&bech32_encoder).green()
             )
             .map_err(Error::IOError)?;
-            writeln!(out, "NFID: {}", NonFungibleId::Number(1).to_simple_string())
+            writeln!(out, "NFID: {}", NonFungibleLocalId::Number(1).to_simple_string())
                 .map_err(Error::IOError)?;
         };
 

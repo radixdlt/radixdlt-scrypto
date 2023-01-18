@@ -131,7 +131,7 @@ impl FeeTable {
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,
                 BucketFn::TakeNonFungibles => self.fixed_medium,
-                BucketFn::GetNonFungibleIds => self.fixed_medium,
+                BucketFn::GetNonFungibleLocalIds => self.fixed_medium,
                 BucketFn::Put => self.fixed_medium,
                 BucketFn::GetAmount => self.fixed_low,
                 BucketFn::GetResourceAddress => self.fixed_low,
@@ -139,7 +139,7 @@ impl FeeTable {
             },
             NativeFn::Proof(proof_ident) => match proof_ident {
                 ProofFn::GetAmount => self.fixed_low,
-                ProofFn::GetNonFungibleIds => self.fixed_low,
+                ProofFn::GetNonFungibleLocalIds => self.fixed_low,
                 ProofFn::GetResourceAddress => self.fixed_low,
                 ProofFn::Clone => self.fixed_low,
             },
@@ -207,7 +207,7 @@ impl FeeTable {
                     VaultFn::TakeNonFungibles => self.fixed_medium,
                     VaultFn::GetAmount => self.fixed_low,
                     VaultFn::GetResourceAddress => self.fixed_low,
-                    VaultFn::GetNonFungibleIds => self.fixed_medium,
+                    VaultFn::GetNonFungibleLocalIds => self.fixed_medium,
                     VaultFn::CreateProof => self.fixed_high,
                     VaultFn::CreateProofByAmount => self.fixed_high,
                     VaultFn::CreateProofByIds => self.fixed_high,

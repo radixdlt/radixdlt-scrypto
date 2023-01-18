@@ -24,7 +24,7 @@ blueprint! {
 
         pub fn assert_ids(
             proof: Proof,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) {
             let proof = proof.unsafe_skip_proof_validation();

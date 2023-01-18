@@ -133,11 +133,11 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 
     // Act
     let total_ids = BTreeSet::from([
-        NonFungibleId::Number(1),
-        NonFungibleId::Number(2),
-        NonFungibleId::Number(3),
+        NonFungibleLocalId::Number(1),
+        NonFungibleLocalId::Number(2),
+        NonFungibleLocalId::Number(3),
     ]);
-    let proof_ids = BTreeSet::from([NonFungibleId::Number(2)]);
+    let proof_ids = BTreeSet::from([NonFungibleLocalId::Number(2)]);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
@@ -441,11 +441,11 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .withdraw_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
+            &BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)]),
             resource_address,
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
+            &BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)]),
             resource_address,
             |builder, bucket_id| {
                 builder.call_method(
@@ -453,7 +453,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                     "compose_vault_and_bucket_proof_by_ids",
                     args!(
                         bucket_id,
-                        BTreeSet::from([NonFungibleId::Number(1), NonFungibleId::Number(2),])
+                        BTreeSet::from([NonFungibleLocalId::Number(1), NonFungibleLocalId::Number(2),])
                     ),
                 )
             },
@@ -514,16 +514,16 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .create_proof_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::Number(1), NonFungibleId::Number(2)]),
+            &BTreeSet::from([NonFungibleLocalId::Number(1), NonFungibleLocalId::Number(2)]),
             resource_address,
         )
         .create_proof_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::Number(3)]),
+            &BTreeSet::from([NonFungibleLocalId::Number(3)]),
             resource_address,
         )
         .create_proof_from_auth_zone_by_ids(
-            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
+            &BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)]),
             resource_address,
             |builder, proof_id| {
                 builder.call_function(
@@ -532,7 +532,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     "assert_ids",
                     args!(
                         proof_id,
-                        BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
+                        BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)]),
                         resource_address
                     ),
                 )

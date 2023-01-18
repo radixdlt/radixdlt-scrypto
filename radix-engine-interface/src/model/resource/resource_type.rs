@@ -1,4 +1,4 @@
-use super::NonFungibleIdTypeId;
+use super::NonFungibleLocalIdTypeId;
 use crate::*;
 use sbor::*;
 
@@ -9,7 +9,7 @@ pub enum ResourceType {
     Fungible { divisibility: u8 },
 
     /// Represents a non-fungible resource
-    NonFungible { id_type: NonFungibleIdTypeId },
+    NonFungible { id_type: NonFungibleLocalIdTypeId },
 }
 
 impl ResourceType {

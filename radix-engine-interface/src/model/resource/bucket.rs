@@ -63,7 +63,7 @@ impl Into<CallTableInvocation> for BucketPutInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for BucketTakeNonFungiblesInvocation {
@@ -81,21 +81,21 @@ impl Into<CallTableInvocation> for BucketTakeNonFungiblesInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct BucketGetNonFungibleIdsInvocation {
+pub struct BucketGetNonFungibleLocalIdsInvocation {
     pub receiver: BucketId,
 }
 
-impl Invocation for BucketGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Invocation for BucketGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 }
 
-impl SerializableInvocation for BucketGetNonFungibleIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleId>;
+impl SerializableInvocation for BucketGetNonFungibleLocalIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
 }
 
-impl Into<CallTableInvocation> for BucketGetNonFungibleIdsInvocation {
+impl Into<CallTableInvocation> for BucketGetNonFungibleLocalIdsInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::Bucket(BucketInvocation::GetNonFungibleIds(self)).into()
+        NativeInvocation::Bucket(BucketInvocation::GetNonFungibleLocalIds(self)).into()
     }
 }
 

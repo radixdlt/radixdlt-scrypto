@@ -148,13 +148,13 @@ where
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
                         NonFungibleAddress::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
                         NonFungibleAddress::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     _ => return Ok(false),

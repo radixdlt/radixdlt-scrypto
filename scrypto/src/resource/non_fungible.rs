@@ -4,12 +4,12 @@ use sbor::rust::marker::PhantomData;
 use crate::borrow_resource_manager;
 use crate::resource::*;
 
-pub trait ScryptoNonFungibleId {
+pub trait ScryptoNonFungibleLocalId {
     /// Creates a non-fungible ID from some uuid.
     fn random() -> Self;
 }
 
-impl ScryptoNonFungibleId for NonFungibleId {
+impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
     fn random() -> Self {
         let uuid = crate::runtime::Runtime::generate_uuid();
         Self::UUID(uuid)
@@ -44,7 +44,7 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Returns a reference to the the non-fungible ID.
-    pub fn id(&self) -> &NonFungibleId {
+    pub fn id(&self) -> &NonFungibleLocalId {
         self.address.non_fungible_id()
     }
 

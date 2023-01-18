@@ -94,7 +94,7 @@ pub enum Type {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     Any,
 }

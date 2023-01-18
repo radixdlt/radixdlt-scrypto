@@ -1,6 +1,6 @@
 use radix_engine::types::{
     hash, require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey,
-    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    NonFungibleAddress, NonFungibleLocalId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
     FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::node::NetworkDefinition;
@@ -271,7 +271,7 @@ fn minting_of_fungible_resource_succeeds() {
 fn minting_of_non_fungible_resource_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdTypeId::Number,
+            id_type: radix_engine::types::NonFungibleLocalIdTypeId::Number,
         },
         |account_component_address,
          minter_badge_resource_address,
@@ -358,7 +358,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 id_type,
                 BTreeMap::new(),
                 access_rules,
-                None::<BTreeMap<NonFungibleId, SampleNonFungibleData>>,
+                None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )
             .build(),
     };

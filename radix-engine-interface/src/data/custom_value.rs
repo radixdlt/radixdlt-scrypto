@@ -29,7 +29,7 @@ pub enum ScryptoCustomValue {
     EddsaEd25519Signature(EddsaEd25519Signature),
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
-    NonFungibleId(NonFungibleId),
+    NonFungibleLocalId(NonFungibleLocalId),
 }
 
 impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ScryptoCustomValue {
@@ -79,8 +79,8 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::PreciseDecimal(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal))
             }
-            ScryptoCustomValue::NonFungibleId(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleId))
+            ScryptoCustomValue::NonFungibleLocalId(_) => {
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId))
             }
         }
     }
@@ -103,7 +103,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::EddsaEd25519Signature(v) => v.encode_body(encoder),
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
-            ScryptoCustomValue::NonFungibleId(v) => v.encode_body(encoder),
+            ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
         }
     }
 }
@@ -171,9 +171,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                     PreciseDecimal::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::PreciseDecimal)
                 }
-                ScryptoCustomValueKind::NonFungibleId => {
-                    NonFungibleId::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::NonFungibleId)
+                ScryptoCustomValueKind::NonFungibleLocalId => {
+                    NonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::NonFungibleLocalId)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
@@ -326,8 +326,8 @@ mod tests {
             EddsaEd25519Signature([4u8; 64]),
             Decimal::ONE,
             PreciseDecimal::ONE,
-            NonFungibleId::Number(1),
-            NonFungibleId::Bytes(vec![2, 3]),
+            NonFungibleLocalId::Number(1),
+            NonFungibleLocalId::Bytes(vec![2, 3]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -383,10 +383,10 @@ mod tests {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Number(1)),
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Number(1)),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![2, 3])),
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(vec![2, 3])),
                     },
                 ]
             }

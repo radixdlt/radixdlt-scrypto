@@ -2,7 +2,7 @@ use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::model::GlobalAddressSubstate;
 use radix_engine::types::{
-    GlobalAddress, GlobalOffset, NonFungibleIdTypeId, RENodeId, ResourceAddress,
+    GlobalAddress, GlobalOffset, NonFungibleLocalIdTypeId, RENodeId, ResourceAddress,
     ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
 };
 use radix_engine::wasm::DefaultWasmEngine;
@@ -12,7 +12,7 @@ use crate::resim::get_data_dir;
 
 pub fn lookup_non_fungible_id_type(
     resource_address: &ResourceAddress,
-) -> Result<NonFungibleIdTypeId, LedgerLookupError> {
+) -> Result<NonFungibleLocalIdTypeId, LedgerLookupError> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let substate_store = RadixEngineDB::with_bootstrap(
         get_data_dir().map_err(|_| LedgerLookupError::FailedToGetLocalSubstateStorePath)?,
@@ -75,7 +75,7 @@ pub enum LedgerLookupError {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine::types::{NonFungibleIdTypeId, ECDSA_SECP256K1_TOKEN};
+    use radix_engine::types::{NonFungibleLocalIdTypeId, ECDSA_SECP256K1_TOKEN};
     use serial_test::serial;
 
     use super::lookup_non_fungible_id_type;
@@ -90,6 +90,6 @@ mod tests {
         let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address).unwrap();
 
         // Assert
-        assert_eq!(non_fungible_id_type, NonFungibleIdTypeId::Bytes)
+        assert_eq!(non_fungible_id_type, NonFungibleLocalIdTypeId::Bytes)
     }
 }

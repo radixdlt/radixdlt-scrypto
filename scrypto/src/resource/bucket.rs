@@ -13,16 +13,16 @@ pub trait ScryptoBucket {
     fn create_proof(&self) -> Proof;
     fn resource_address(&self) -> ResourceAddress;
     fn take_internal(&mut self, amount: Decimal) -> Bucket;
-    fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket;
+    fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket;
     fn put(&mut self, other: Self) -> ();
-    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
+    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn amount(&self) -> Decimal;
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self;
-    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Self;
+    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleLocalId) -> Self;
     fn is_empty(&self) -> bool;
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
-    fn non_fungible_id(&self) -> NonFungibleId;
+    fn non_fungible_id(&self) -> NonFungibleLocalId;
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 }
 
@@ -65,7 +65,7 @@ impl ScryptoBucket for Bucket {
             }
         }
 
-        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
             BucketTakeNonFungiblesInvocation {
                 receiver: self.0,
                 ids: non_fungible_ids.clone()
@@ -79,8 +79,8 @@ impl ScryptoBucket for Bucket {
             }
         }
 
-        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-            BucketGetNonFungibleIdsInvocation {
+        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+            BucketGetNonFungibleLocalIdsInvocation {
                 receiver: self.0,
             }
         }
@@ -101,7 +101,7 @@ impl ScryptoBucket for Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Self {
+    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleLocalId) -> Self {
         self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
     }
 
@@ -134,7 +134,7 @@ impl ScryptoBucket for Bucket {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    fn non_fungible_id(&self) -> NonFungibleId {
+    fn non_fungible_id(&self) -> NonFungibleLocalId {
         let non_fungible_ids = self.non_fungible_ids();
         if non_fungible_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");

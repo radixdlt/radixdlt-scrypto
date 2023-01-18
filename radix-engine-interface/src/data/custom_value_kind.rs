@@ -46,7 +46,7 @@ pub enum ScryptoCustomValueKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl From<ScryptoCustomValueKind> for ValueKind<ScryptoCustomValueKind> {
@@ -73,7 +73,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::EddsaEd25519Signature => VALUE_KIND_EDDSA_ED25519_SIGNATURE,
             Self::Decimal => VALUE_KIND_DECIMAL,
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
-            Self::NonFungibleId => VALUE_KIND_NON_FUNGIBLE_ID,
+            Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_ID,
         }
     }
 
@@ -102,7 +102,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             }
             VALUE_KIND_DECIMAL => Some(ScryptoCustomValueKind::Decimal),
             VALUE_KIND_PRECISE_DECIMAL => Some(ScryptoCustomValueKind::PreciseDecimal),
-            VALUE_KIND_NON_FUNGIBLE_ID => Some(ScryptoCustomValueKind::NonFungibleId),
+            VALUE_KIND_NON_FUNGIBLE_ID => Some(ScryptoCustomValueKind::NonFungibleLocalId),
             _ => None,
         }
     }

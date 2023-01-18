@@ -36,7 +36,7 @@ macro_rules! args_from_bytes_vec {
 #[derive(Debug, PartialEq, Eq)]
 enum ResourceSpecifier {
     Amount(Decimal, ResourceAddress),
-    Ids(BTreeSet<NonFungibleId>, ResourceAddress),
+    Ids(BTreeSet<NonFungibleLocalId>, ResourceAddress),
 }
 
 // ==========
@@ -212,9 +212,9 @@ fn parse_args<'a>(
                         })?;
                         Ok(scrypto_encode(&value).unwrap())
                     }
-                    Type::NonFungibleId => {
+                    Type::NonFungibleLocalId => {
                         let value =
-                            NonFungibleId::try_from_combined_simple_string(arg).map_err(|_| {
+                            NonFungibleLocalId::try_from_combined_simple_string(arg).map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
                         Ok(scrypto_encode(&value).unwrap())
@@ -379,7 +379,7 @@ where
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
-/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::U32`], say that
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleLocalIdType::U32`], say that
 /// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
 /// representation of the non-fungible resource specifier would be:
 ///
@@ -450,9 +450,9 @@ fn parse_resource_specifier(
         let non_fungible_ids = tokens[1]
             .split(',')
             .map(|s| s.trim())
-            .map(|s| NonFungibleId::try_from_simple_string(non_fungible_id_type, s))
+            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_id_type, s))
             .collect::<Result<BTreeSet<_>, _>>()
-            .map_err(ParseResourceSpecifierError::InvalidNonFungibleId)?;
+            .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 
         Ok(ResourceSpecifier::Ids(non_fungible_ids, resource_address))
     }
@@ -466,7 +466,7 @@ fn parse_resource_specifier(
 enum ParseResourceSpecifierError {
     InvalidAmount(ParseDecimalError),
     InvalidResourceAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     LedgerLookupError(LedgerLookupError),
     MoreThanOneAmountSpecified,
 }
@@ -753,28 +753,28 @@ mod test {
     pub fn parsing_of_string_non_fungible_id_succeeds() {
         // Arrange
         let arg = "String#HelloWorld";
-        let arg_type = Type::NonFungibleId;
+        let arg_type = Type::NonFungibleLocalId;
 
         // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::String("HelloWorld".into()))
+        assert_eq!(parsed_arg, NonFungibleLocalId::String("HelloWorld".into()))
     }
 
     #[test]
     pub fn parsing_of_bytes_non_fungible_id_succeeds() {
         // Arrange
         let arg = "Bytes#c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
-        let arg_type = Type::NonFungibleId;
+        let arg_type = Type::NonFungibleLocalId;
 
         // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleId::Bytes(vec![
+            NonFungibleLocalId::Bytes(vec![
                 196, 31, 169, 239, 42, 179, 31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73,
                 178, 64, 175, 124, 185, 57, 234, 210, 144, 88, 253, 255, 44
             ])
@@ -785,39 +785,39 @@ mod test {
     pub fn parsing_of_u64_non_fungible_id_succeeds() {
         // Arrange
         let arg = "U64#12";
-        let arg_type = Type::NonFungibleId;
+        let arg_type = Type::NonFungibleLocalId;
 
         // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::Number(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::Number(12))
     }
 
     #[test]
     pub fn parsing_of_u128_non_fungible_id_succeeds() {
         // Arrange
         let arg = "U128#12";
-        let arg_type = Type::NonFungibleId;
+        let arg_type = Type::NonFungibleLocalId;
 
         // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::UUID(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::UUID(12))
     }
 
     #[test]
     pub fn parsing_of_uuid_non_fungible_id_succeeds() {
         // Arrange
         let arg = "UUID#12";
-        let arg_type = Type::NonFungibleId;
+        let arg_type = Type::NonFungibleLocalId;
 
         // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::UUID(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::UUID(12))
     }
 
     #[test]
@@ -835,7 +835,7 @@ mod test {
             parsed_arg,
             NonFungibleAddress::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleId::Bytes(vec![
+                NonFungibleLocalId::Bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])
@@ -886,7 +886,7 @@ mod test {
         assert_eq!(
             resource_specifier,
             ResourceSpecifier::Ids(
-                BTreeSet::from([NonFungibleId::Bytes(vec![
+                BTreeSet::from([NonFungibleLocalId::Bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])]),
@@ -913,15 +913,15 @@ mod test {
             resource_specifier,
             ResourceSpecifier::Ids(
                 BTreeSet::from([
-                    NonFungibleId::Bytes(vec![
+                    NonFungibleLocalId::Bytes(vec![
                         31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124,
                         185, 57, 234, 210, 144, 88, 253, 255, 44
                     ]),
-                    NonFungibleId::Bytes(vec![
+                    NonFungibleLocalId::Bytes(vec![
                         216, 93, 196, 70, 216, 229, 239, 244, 141, 178, 91, 86, 246, 181, 0, 29,
                         20, 98, 123, 90, 25, 149, 152, 72, 90, 141
                     ]),
-                    NonFungibleId::Bytes(vec![
+                    NonFungibleLocalId::Bytes(vec![
                         0, 93, 26, 232, 123, 14, 124, 84, 1, 211, 142, 88, 212, 50, 145, 255, 189,
                         155, 166, 225, 218, 84, 248, 117, 4, 167
                     ])

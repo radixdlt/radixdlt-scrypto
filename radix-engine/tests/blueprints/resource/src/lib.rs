@@ -111,7 +111,7 @@ blueprint! {
                 },
             )]);
             let manager_address =
-                NonFungibleAddress::new(badge.resource_address(), NonFungibleId::Number(0));
+                NonFungibleAddress::new(badge.resource_address(), NonFungibleLocalId::Number(0));
 
             let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)

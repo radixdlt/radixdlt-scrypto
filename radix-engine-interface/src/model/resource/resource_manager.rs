@@ -63,7 +63,7 @@ pub enum ResourceMethodAuthKey {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub id_type: NonFungibleIdTypeId,
+    pub id_type: NonFungibleLocalIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -105,10 +105,10 @@ impl Into<CallTableInvocation> for ResourceManagerCreateFungibleInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdTypeId,
+    pub id_type: NonFungibleLocalIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
 impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
@@ -314,7 +314,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateBucketInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerMintNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
 impl Invocation for ResourceManagerMintNonFungibleInvocation {
@@ -412,7 +412,7 @@ impl Into<CallTableInvocation> for ResourceManagerGetTotalSupplyInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
     pub data: Vec<u8>,
 }
 
@@ -433,7 +433,7 @@ impl Into<CallTableInvocation> for ResourceManagerUpdateNonFungibleDataInvocatio
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
 }
 
 impl Invocation for ResourceManagerNonFungibleExistsInvocation {
@@ -453,7 +453,7 @@ impl Into<CallTableInvocation> for ResourceManagerNonFungibleExistsInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
 }
 
 impl Invocation for ResourceManagerGetNonFungibleInvocation {

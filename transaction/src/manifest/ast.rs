@@ -247,7 +247,7 @@ pub enum Type {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl Type {
@@ -309,7 +309,7 @@ impl Type {
             Type::PreciseDecimal => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
-            Type::NonFungibleId => ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId),
+            Type::NonFungibleLocalId => ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
         }
     }
 }
@@ -371,7 +371,7 @@ pub enum Value {
     EddsaEd25519Signature(Box<Value>),
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
-    NonFungibleId(Box<Value>),
+    NonFungibleLocalId(Box<Value>),
 }
 
 impl Value {
@@ -447,8 +447,8 @@ impl Value {
             Value::PreciseDecimal(_) => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
-            Value::NonFungibleId(_) => {
-                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId)
+            Value::NonFungibleLocalId(_) => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
             }
         }
     }

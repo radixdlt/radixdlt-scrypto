@@ -46,8 +46,8 @@ blueprint! {
 
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
-            total_ids: BTreeSet<NonFungibleId>,
-            proof_ids: BTreeSet<NonFungibleId>,
+            total_ids: BTreeSet<NonFungibleLocalId>,
+            proof_ids: BTreeSet<NonFungibleLocalId>,
         ) {
             let proof = self.vault.create_proof_by_ids(&proof_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
@@ -109,7 +109,7 @@ blueprint! {
         pub fn compose_vault_and_bucket_proof_by_ids(
             &mut self,
             bucket: Bucket,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {

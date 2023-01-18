@@ -14,7 +14,7 @@ use utils::ContextualDisplay;
 #[derive(
     Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
 )]
-pub struct NonFungibleAddress(ResourceAddress, NonFungibleId);
+pub struct NonFungibleAddress(ResourceAddress, NonFungibleLocalId);
 
 impl LegacyDescribe for NonFungibleAddress {
     fn describe() -> scrypto_abi::Type {
@@ -23,7 +23,7 @@ impl LegacyDescribe for NonFungibleAddress {
 }
 
 impl NonFungibleAddress {
-    pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
+    pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleLocalId) -> Self {
         Self(resource_address, non_fungible_id)
     }
 
@@ -33,7 +33,7 @@ impl NonFungibleAddress {
     }
 
     /// Returns the non-fungible id.
-    pub fn non_fungible_id(&self) -> &NonFungibleId {
+    pub fn non_fungible_id(&self) -> &NonFungibleLocalId {
         &self.1
     }
 
@@ -51,7 +51,7 @@ impl NonFungibleAddress {
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleLocalIdTypeId,
         s: &str,
     ) -> Result<Self, ParseNonFungibleAddressError> {
         let v = s
@@ -62,7 +62,7 @@ impl NonFungibleAddress {
             return Err(ParseNonFungibleAddressError::RequiresTwoParts);
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_id = NonFungibleId::try_from_simple_string(id_type, v[1])?;
+        let non_fungible_id = NonFungibleLocalId::try_from_simple_string(id_type, v[1])?;
         Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 
@@ -92,7 +92,7 @@ impl NonFungibleAddress {
             return Err(ParseNonFungibleAddressError::RequiresTwoParts);
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_id = NonFungibleId::try_from_combined_simple_string(v[1])?;
+        let non_fungible_id = NonFungibleLocalId::try_from_combined_simple_string(v[1])?;
         Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 }
@@ -105,7 +105,7 @@ impl NonFungibleAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
     InvalidResourceAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     RequiresTwoParts,
 }
 
@@ -115,9 +115,9 @@ impl From<AddressError> for ParseNonFungibleAddressError {
     }
 }
 
-impl From<ParseNonFungibleIdError> for ParseNonFungibleAddressError {
-    fn from(err: ParseNonFungibleIdError) -> Self {
-        Self::InvalidNonFungibleId(err)
+impl From<ParseNonFungibleLocalIdError> for ParseNonFungibleAddressError {
+    fn from(err: ParseNonFungibleLocalIdError) -> Self {
+        Self::InvalidNonFungibleLocalId(err)
     }
 }
 
@@ -151,11 +151,11 @@ impl FromPublicKey for NonFungibleAddress {
         match public_key {
             PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleId::Bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+                NonFungibleLocalId::Bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
             ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
                 EDDSA_ED25519_TOKEN,
-                NonFungibleId::Bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+                NonFungibleLocalId::Bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
             ),
         }
     }
@@ -195,7 +195,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             )
             .unwrap()
@@ -206,7 +206,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
             )
             .unwrap()
@@ -217,7 +217,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdTypeId::UUID,
+                NonFungibleLocalIdTypeId::UUID,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
             )
             .unwrap()
@@ -228,7 +228,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdTypeId::String,
+                NonFungibleLocalIdTypeId::String,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
             )
             .unwrap()
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdTypeId::Bytes,
+                NonFungibleLocalIdTypeId::Bytes,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
             )
             .unwrap()
@@ -254,7 +254,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -263,19 +263,19 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::String,
+                NonFungibleLocalIdTypeId::String,
                 // : is not currently allowed in non-fungible ids
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNonFungibleId(
-                ParseNonFungibleIdError::InvalidCharacter(':')
+            Err(ParseNonFungibleAddressError::InvalidNonFungibleLocalId(
+                ParseNonFungibleLocalIdError::InvalidCharacter(':')
             ))
         );
 
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -284,7 +284,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 ":",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -293,7 +293,7 @@ mod tests {
         assert!(matches!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             ),
             Err(ParseNonFungibleAddressError::InvalidResourceAddress(_))
@@ -302,11 +302,11 @@ mod tests {
         assert!(matches!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdTypeId::Number,
+                NonFungibleLocalIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNonFungibleId(
-                ParseNonFungibleIdError::InvalidInt(_)
+            Err(ParseNonFungibleAddressError::InvalidNonFungibleLocalId(
+                ParseNonFungibleLocalIdError::InvalidInt(_)
             ))
         ));
     }

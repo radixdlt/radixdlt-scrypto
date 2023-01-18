@@ -373,7 +373,7 @@ impl AuthZone {
 
     pub fn create_proof_by_ids(
         &self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {

@@ -255,7 +255,7 @@ impl AuthModule {
 
             // Add Package Actor Auth
             let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
-            let address = NonFungibleAddress::new(PACKAGE_TOKEN, NonFungibleId::Bytes(id));
+            let address = NonFungibleAddress::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(id));
             let mut virtual_non_fungibles = BTreeSet::new();
             virtual_non_fungibles.insert(address);
 

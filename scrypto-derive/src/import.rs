@@ -365,7 +365,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
         SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
         SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
-        SchemaType::NonFungibleId => parse_quote! {::scrypto::model::NonFungibleId },
+        SchemaType::NonFungibleLocalId => parse_quote! {::scrypto::model::NonFungibleLocalId },
 
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");

@@ -79,7 +79,7 @@ impl ProofSubstate {
                 (LockedAmountOrIds::Amount(total), per_container)
             }
             ResourceType::NonFungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleId>>::new();
+                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_ids = locked_amount_or_ids
@@ -92,7 +92,7 @@ impl ProofSubstate {
                         }
                     }
                 }
-                let mut total = BTreeSet::<NonFungibleId>::new();
+                let mut total = BTreeSet::<NonFungibleLocalId>::new();
                 for value in max.values() {
                     total.extend(value.clone());
                 }
@@ -177,7 +177,7 @@ impl ProofSubstate {
                         .to_string()
                         .parse()
                         .expect("Failed to convert non-fungible amount to usize");
-                    let ids: BTreeSet<NonFungibleId> = locked_ids.iter().take(n).cloned().collect();
+                    let ids: BTreeSet<NonFungibleLocalId> = locked_ids.iter().take(n).cloned().collect();
                     Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
                 }
             }
@@ -186,7 +186,7 @@ impl ProofSubstate {
 
     pub fn compose_by_ids(
         proofs: &[ProofSubstate],
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, ProofError> {
@@ -294,7 +294,7 @@ impl ProofSubstate {
         self.total_locked.amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, InvokeError<ProofError>> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, InvokeError<ProofError>> {
         self.total_locked
             .ids()
             .map_err(|_| InvokeError::Error(ProofError::NonFungibleOperationNotAllowed))

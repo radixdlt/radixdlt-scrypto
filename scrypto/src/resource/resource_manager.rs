@@ -191,7 +191,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
             id,
@@ -201,7 +201,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> [Vec<u8>; 2] {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -221,7 +221,7 @@ impl ResourceManager {
                 receiver: self.0,
             }
         }
-        pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+        pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
             ResourceManagerNonFungibleExistsInvocation {
                 receiver: self.0,
                 id: id.clone()
@@ -246,7 +246,7 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleLocalId, data: T) -> Bucket {
         let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),
@@ -276,7 +276,7 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         let non_fungible = self.get_non_fungible_data_internal(id.clone());
         T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
@@ -287,7 +287,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &mut self,
-        id: &NonFungibleId,
+        id: &NonFungibleLocalId,
         new_data: T,
     ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())

@@ -30,8 +30,8 @@ CALL_METHOD
 # is user specified.
 MINT_NON_FUNGIBLE
     ResourceAddress("${mintable_resource_address}") 
-    Map<NonFungibleId, Tuple>(
-        NonFungibleId(${non_fungible_id}), 
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId(${non_fungible_id}), 
         Tuple(
             Tuple("Hello World", Decimal("12")),        # The immutable part of the data    
             Tuple(12u8, 19u128)                         # The mutable part of the data

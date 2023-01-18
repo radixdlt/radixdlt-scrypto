@@ -82,7 +82,7 @@ pub enum TokenKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -428,7 +428,7 @@ impl Lexer {
             "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

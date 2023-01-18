@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use radix_engine::types::{
     require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleAddress, NonFungibleId, PackageAddress, ParseNonFungibleIdError, ResourceAddress,
+    NonFungibleAddress, NonFungibleLocalId, PackageAddress, ParseNonFungibleLocalIdError, ResourceAddress,
 };
 use utils::ContextualDisplay;
 
@@ -181,8 +181,8 @@ impl FromStr for SimulatorNonFungibleAddress {
 
         // Parsing the non-fungible id given the non-fungible id type above
         let non_fungible_id =
-            NonFungibleId::try_from_simple_string(non_fungible_id_type, tokens[1])
-                .map_err(ParseNonFungibleAddressError::InvalidNonFungibleId)?;
+            NonFungibleLocalId::try_from_simple_string(non_fungible_id_type, tokens[1])
+                .map_err(ParseNonFungibleAddressError::InvalidNonFungibleLocalId)?;
         Ok(Self(NonFungibleAddress::new(
             resource_address,
             non_fungible_id,
@@ -301,7 +301,7 @@ impl std::error::Error for ParseSimulatorResourceOrNonFungibleAddressError {}
 pub enum ParseNonFungibleAddressError {
     InvalidLengthError(usize),
     InvalidResourceAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     LedgerLookupError(LedgerLookupError),
 }
 

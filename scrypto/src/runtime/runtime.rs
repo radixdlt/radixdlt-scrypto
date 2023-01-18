@@ -26,7 +26,7 @@ impl Runtime {
     }
 
     pub fn package_token() -> NonFungibleAddress {
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
         );
         NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id)

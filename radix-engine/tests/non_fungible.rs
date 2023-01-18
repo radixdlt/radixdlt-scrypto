@@ -543,7 +543,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::UUID(0));
+    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleLocalId::UUID(0));
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -60,7 +60,7 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         )),
         Type::Decimal => Some(ValueKind::Custom(ScryptoCustomValueKind::Decimal)),
         Type::PreciseDecimal => Some(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)),
-        Type::NonFungibleId => Some(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleId)),
+        Type::NonFungibleLocalId => Some(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)),
 
         Type::Any => None,
     }
@@ -198,7 +198,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             if let Value::Tuple { fields } = value {
                 fields.len() == 2
                     && match_schema_with_value(&Type::ResourceAddress, fields.get(0).unwrap())
-                    && match_schema_with_value(&Type::NonFungibleId, fields.get(1).unwrap())
+                    && match_schema_with_value(&Type::NonFungibleLocalId, fields.get(1).unwrap())
             } else {
                 false
             }
@@ -390,9 +390,9 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-        Type::NonFungibleId => {
+        Type::NonFungibleLocalId => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::NonFungibleId(_))
+                matches!(value, ScryptoCustomValue::NonFungibleLocalId(_))
             } else {
                 false
             }
