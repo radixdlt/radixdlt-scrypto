@@ -109,25 +109,12 @@ pub fn format_scrypto_value<F: fmt::Write>(
                     },
                 ) = (&fields[0], &fields[1])
                 {
-                    f.write_str("NonFungibleGlobalId(\"")?;
-                    write!(f, "{}", address.display(context.bech32_encoder))?;
-                    f.write_str("\", ")?;
-                    match id {
-                        NonFungibleLocalId::Number(v) => {
-                            write!(f, "{}u64", v)?;
-                        }
-                        NonFungibleLocalId::UUID(v) => {
-                            write!(f, "{}u128", v)?;
-                        }
-                        NonFungibleLocalId::Bytes(v) => {
-                            write!(f, "Bytes(\"{}\")", hex::encode(v))?;
-                        }
-                        NonFungibleLocalId::String(v) => {
-                            write!(f, "\"{}\"", v)?;
-                        }
-                    }
-                    f.write_str(")")?;
-                    return Ok(());
+                    let global_id = NonFungibleGlobalId::new(address.clone(), id.clone());
+                    return write!(
+                        f,
+                        "NonFungibleGlobalId(\"{}\")",
+                        global_id.display(context.bech32_encoder)
+                    );
                 }
             }
 
@@ -385,9 +372,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "PreciseDecimal(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleLocalId(value) => {
-            f.write_str("NonFungibleLocalId(")?;
-            format_non_fungible_local_id_contents(f, value)?;
-            write!(f, ")")?;
+            write!(f, "NonFungibleLocalId(\"{}\")", value)?;
         }
     }
     Ok(())
