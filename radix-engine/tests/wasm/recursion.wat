@@ -47,7 +47,7 @@
     (i32.const 0)  ;; tuple length
     (i32.store8)
 
-    ;; Return the slice
+    ;; Return slice (ptr = 0, len = 3)
     (i64.const 3)
   )
 

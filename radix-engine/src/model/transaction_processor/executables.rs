@@ -46,8 +46,8 @@ pub enum TransactionProcessorError {
     ResolveError(ResolveError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug {}
-impl<T: ScryptoEncode + Debug> NativeOutput for T {}
+pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
+impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
 #[derive(Debug)]
 pub enum InstructionOutput {
