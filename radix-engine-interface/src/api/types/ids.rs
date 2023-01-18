@@ -14,3 +14,4 @@ pub type PackageId = [u8; 36];
 pub type EpochManagerId = [u8; 36];
 pub type ValidatorId = [u8; 36];
 pub type ClockId = [u8; 36];
+pub type AccessControllerId = [u8; 36];
