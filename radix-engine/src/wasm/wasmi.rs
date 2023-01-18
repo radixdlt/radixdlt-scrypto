@@ -346,7 +346,7 @@ impl WasmiEngine {
     pub fn new(options: EngineOptions) -> Self {
         #[cfg(not(feature = "moka"))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            sbor::rust::num::NonZeroU32::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
         ));
         #[cfg(feature = "moka")]
         let modules_cache = moka::sync::Cache::builder()
