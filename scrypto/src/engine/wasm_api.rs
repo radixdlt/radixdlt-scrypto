@@ -93,5 +93,4 @@ extern "C" {
 
     // Returns the current actor.
     pub fn get_actor() -> Buffer;
-
 }
