@@ -111,7 +111,7 @@ blueprint! {
         pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {
             assert_eq!(
                 borrow_resource_manager!(non_fungible_global_id.resource_address())
-                    .non_fungible_exists(&non_fungible_global_id.non_fungible_local_id()),
+                    .non_fungible_exists(&non_fungible_global_id.local_id()),
                 false
             );
         }

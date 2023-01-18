@@ -94,7 +94,7 @@ $resim set-current-epoch 100
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
 
-token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print $NF}'`
+token_address=`$resim new-token-mutable $non_fungible_global_id | awk '/Resource:/ {print $NF}'`
 
 # Test - mint and transfer (Mintable that requires a `NonFungibleGlobalId`)
 $resim mint 777 $token_address --proofs "$non_fungible_global_id"
