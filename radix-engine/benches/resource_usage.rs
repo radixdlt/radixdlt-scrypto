@@ -77,13 +77,16 @@ impl MemInfoFramework {
             sum_peak += *i;
         }
 
-        let avg_cpu_cycles: u64 = self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
-        let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
-        let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
-
         println!("Iterations: {}", self.sum_allocations.len());
+
         #[cfg(any(feature = "resource-usage-with-cpu"))]
-        println!("Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})", avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles);
+        {
+            let avg_cpu_cycles: u64 = self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
+            let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
+            let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
+            println!("Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})", avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles);
+        }
+
         println!("Sum of allocated heap memory in all iterations: {}", self.counter);
         let x = Bytes(self.counter.0 / self.sum_allocations.len());
         println!("Average allocation per iteration: {}", x);
