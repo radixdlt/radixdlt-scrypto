@@ -17,7 +17,7 @@ pub enum ResourceOperationError {
     /// Resource is locked because of proofs
     ResourceLocked,
     /// Non-fungible resource id type is not matching this resource id type.
-    NonFungibleLocalIdTypeNotMatching,
+    NonFungibleIdTypeNotMatching,
 }
 
 /// A raw record of resource persisted in the substate store
@@ -37,7 +37,7 @@ pub enum Resource {
         /// The total non-fungible ids.
         ids: BTreeSet<NonFungibleLocalId>,
         /// NonFungible Id type
-        id_type: NonFungibleLocalIdTypeId,
+        id_type: NonFungibleIdType,
     },
 }
 
@@ -57,7 +57,7 @@ impl Resource {
     pub fn new_non_fungible(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
-        id_type: NonFungibleLocalIdTypeId,
+        id_type: NonFungibleIdType,
     ) -> Self {
         Self::NonFungible {
             resource_address,
@@ -96,7 +96,7 @@ impl Resource {
         self.amount().is_zero()
     }
 
-    pub fn id_type(&self) -> NonFungibleLocalIdTypeId {
+    pub fn id_type(&self) -> NonFungibleIdType {
         match self {
             Resource::Fungible { .. } => panic!("id_type() called on fungible resource"),
             Resource::NonFungible { id_type, .. } => id_type.clone(),
@@ -136,7 +136,7 @@ impl Resource {
             }
             Self::NonFungible { ids, id_type, .. } => {
                 if *id_type != other.id_type() {
-                    return Err(ResourceOperationError::NonFungibleLocalIdTypeNotMatching);
+                    return Err(ResourceOperationError::NonFungibleIdTypeNotMatching);
                 }
                 ids.extend(other.ids().clone());
             }
@@ -266,7 +266,7 @@ pub enum LockableResource {
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleLocalId>,
         /// The non-fungible ID type.
-        id_type: NonFungibleLocalIdTypeId,
+        id_type: NonFungibleIdType,
     },
 }
 
@@ -456,7 +456,7 @@ impl LockableResource {
             } => {
                 for id in ids {
                     if id.id_type() != *id_type {
-                        return Err(ResourceOperationError::NonFungibleLocalIdTypeNotMatching);
+                        return Err(ResourceOperationError::NonFungibleIdTypeNotMatching);
                     } else if liquid_ids.remove(id) {
                         // if the non-fungible is liquid, move it to locked.
                         locked_ids.insert(id.clone(), 1);

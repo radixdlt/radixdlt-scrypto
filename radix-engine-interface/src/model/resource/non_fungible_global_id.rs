@@ -54,7 +54,7 @@ impl NonFungibleGlobalId {
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
-        id_type: NonFungibleLocalIdTypeId,
+        id_type: NonFungibleIdType,
         s: &str,
     ) -> Result<Self, ParseNonFungibleGlobalIdError> {
         let v = s
@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             )
             .unwrap()
@@ -215,7 +215,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
             )
             .unwrap()
@@ -226,7 +226,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleLocalIdTypeId::UUID,
+                NonFungibleIdType::UUID,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
             )
             .unwrap()
@@ -237,7 +237,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleLocalIdTypeId::String,
+                NonFungibleIdType::String,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
             )
             .unwrap()
@@ -248,7 +248,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                NonFungibleLocalIdTypeId::Bytes,
+                NonFungibleIdType::Bytes,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
             )
             .unwrap()
@@ -263,7 +263,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -272,7 +272,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::String,
+                NonFungibleIdType::String,
                 // : is not currently allowed in non-fungible ids
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
             ),
@@ -284,7 +284,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -293,7 +293,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 ":",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -302,7 +302,7 @@ mod tests {
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
@@ -311,7 +311,7 @@ mod tests {
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(

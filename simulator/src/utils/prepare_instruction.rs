@@ -381,7 +381,7 @@ where
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
-/// non-fungible resource which has a non-fungible id type of [`NonFungibleLocalIdType::U32`], say that
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::U32`], say that
 /// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
 /// representation of the non-fungible resource specifier would be:
 ///

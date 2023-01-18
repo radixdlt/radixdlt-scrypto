@@ -24,7 +24,7 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleGlobalId, NonFungibleLocalIdTypeId,
+    NativeInvocation, NonFungibleGlobalId, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
@@ -827,7 +827,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleLocalIdTypeId::Number,
+                NonFungibleIdType::Number,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),

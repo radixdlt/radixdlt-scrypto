@@ -32,9 +32,9 @@ pub enum ResourceManagerError {
     NonFungibleNotFound(NonFungibleGlobalId),
     NotNonFungible,
     MismatchingBucketResource,
-    NonFungibleLocalIdTypeDoesNotMatch(NonFungibleLocalIdTypeId, NonFungibleLocalIdTypeId),
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
-    InvalidNonFungibleLocalIdTypeId,
+    InvalidNonFungibleIdType,
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -67,7 +67,7 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
-    id_type: NonFungibleLocalIdTypeId,
+    id_type: NonFungibleIdType,
     entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
@@ -92,7 +92,7 @@ where
             if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::NonFungibleLocalIdTypeDoesNotMatch(
+                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
                             non_fungible_local_id.id_type(),
                             id_type,
                         ),
@@ -519,10 +519,10 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
-        if self.id_type == NonFungibleLocalIdTypeId::UUID {
+        if self.id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
-                    ResourceManagerError::InvalidNonFungibleLocalIdTypeId,
+                    ResourceManagerError::InvalidNonFungibleIdType,
                 ),
             ));
         }
@@ -608,7 +608,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         let (resource_manager_substate, bucket) =
             build_non_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                NonFungibleLocalIdTypeId::UUID,
+                NonFungibleIdType::UUID,
                 entries,
                 api,
             )?;
@@ -1158,10 +1158,10 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                 }
             };
 
-            if id_type == NonFungibleLocalIdTypeId::UUID {
+            if id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleLocalIdTypeId,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -1175,7 +1175,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                 if id.id_type() != id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleLocalIdTypeDoesNotMatch(
+                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
                                 id.id_type(),
                                 id_type,
                             ),
@@ -1294,10 +1294,10 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             };
             let nf_store_id = resource_manager.nf_store_id.unwrap();
 
-            if id_type != NonFungibleLocalIdTypeId::UUID {
+            if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleLocalIdTypeId,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }

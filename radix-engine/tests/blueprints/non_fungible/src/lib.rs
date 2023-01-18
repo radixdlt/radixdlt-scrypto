@@ -294,7 +294,7 @@ blueprint! {
             let (_, bucket) = ScryptoEnv
                 .invoke(
                     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                        id_type: NonFungibleLocalIdTypeId::UUID,
+                        id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
                         entries: encoded,

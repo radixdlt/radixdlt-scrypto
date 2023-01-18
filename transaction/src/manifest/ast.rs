@@ -251,7 +251,7 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn type_id(&self) -> ScryptoValueKind {
+    pub fn value_kind(&self) -> ScryptoValueKind {
         match self {
             Type::Bool => ScryptoValueKind::Bool,
             Type::I8 => ScryptoValueKind::I8,
@@ -377,7 +377,7 @@ pub enum Value {
 }
 
 impl Value {
-    pub const fn type_id(&self) -> ScryptoValueKind {
+    pub const fn value_kind(&self) -> ScryptoValueKind {
         match self {
             // ==============
             // Basic Types
