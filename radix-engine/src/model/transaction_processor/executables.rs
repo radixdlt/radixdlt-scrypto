@@ -9,6 +9,7 @@ use radix_engine_interface::api::api::{ComponentApi, EngineApi, Invocation, Invo
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
 };
@@ -60,6 +61,25 @@ impl InstructionOutput {
         match self {
             InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
             InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
+        }
+    }
+}
+
+impl Clone for InstructionOutput {
+    fn clone(&self) -> Self {
+        match self {
+            InstructionOutput::Scrypto(output) => InstructionOutput::Scrypto(output.clone()),
+            InstructionOutput::Native(output) => {
+                // SBOR Encode the output
+                let encoded_output = scrypto_encode(&**output)
+                    .expect("Impossible Case! Instruction output is not SBOR encodable!");
+
+                // Decode to a ScryptoValue
+                let decoded = scrypto_decode::<ScryptoValue>(&encoded_output)
+                    .expect("Impossible Case! We literally just encoded this above");
+
+                InstructionOutput::Native(Box::new(decoded))
+            }
         }
     }
 }

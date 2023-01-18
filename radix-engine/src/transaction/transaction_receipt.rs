@@ -19,7 +19,7 @@ pub struct TransactionExecution {
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -34,7 +34,7 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -45,7 +45,7 @@ pub struct CommitResult {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TransactionOutcome {
     Success(Vec<InstructionOutput>),
     Failure(RuntimeError),
@@ -109,6 +109,7 @@ pub struct RejectResult {
 }
 
 /// Represents a transaction receipt.
+#[derive(Clone)]
 pub struct TransactionReceipt {
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
