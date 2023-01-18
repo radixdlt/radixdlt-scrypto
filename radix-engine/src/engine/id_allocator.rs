@@ -1,4 +1,5 @@
 use crate::engine::{KernelError, RuntimeError};
+use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
     NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
@@ -9,6 +10,7 @@ use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use std::collections::BTreeMap;
 
 use crate::engine::IdAllocationError;
 
@@ -17,6 +19,7 @@ use crate::engine::IdAllocationError;
 pub struct IdAllocator {
     pre_allocated_ids: BTreeSet<RENodeId>,
     frame_allocated_ids: Vec<BTreeSet<RENodeId>>,
+    next_entity_ids: BTreeMap<EntityType, u32>,
     next_id: u32,
     transaction_hash: Hash,
 }
@@ -27,6 +30,7 @@ impl IdAllocator {
         Self {
             pre_allocated_ids,
             frame_allocated_ids: vec![BTreeSet::new()],
+            next_entity_ids: BTreeMap::new(),
             next_id: 0u32,
             transaction_hash,
         }
@@ -140,69 +144,71 @@ impl IdAllocator {
         Ok(buf)
     }
 
+    fn next_entity_id(&mut self, entity_type: EntityType) -> Result<u32, IdAllocationError> {
+        let rtn = if let Some(next) = self.next_entity_ids.get_mut(&entity_type) {
+            let cur = *next;
+            if cur == u32::MAX {
+                return Err(IdAllocationError::OutOfID);
+            }
+            *next += 1;
+            cur
+        } else {
+            self.next_entity_ids.insert(entity_type, 1u32);
+            0u32
+        };
+
+        Ok(rtn)
+    }
+
     /// Creates a new package ID.
     pub fn new_package_address(&mut self) -> Result<PackageAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::Package)?;
+        data.extend(next_id.to_le_bytes());
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
     pub fn new_account_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::AccountComponent)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::NormalComponent)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
     pub fn new_validator_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::Validator)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ComponentAddress::Validator(hash(data).lower_26_bytes()))
     }
 
     pub fn new_epoch_manager_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::EpochManager)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ComponentAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
     pub fn new_clock_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::Clock)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.
     pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
-
+        let next_id = self.next_entity_id(EntityType::Resource)?;
+        data.extend(next_id.to_le_bytes());
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 

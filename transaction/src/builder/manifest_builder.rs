@@ -386,7 +386,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: "stake".to_string(),
-            args: args!(bucket)
+            args: args!(bucket),
         });
         self
     }
@@ -399,7 +399,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: "unstake".to_string(),
-            args: args!(amount)
+            args: args!(amount),
         });
         self
     }

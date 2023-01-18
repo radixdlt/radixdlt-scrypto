@@ -419,10 +419,14 @@ impl NativeInvocation {
                     )));
                 }
                 ValidatorInvocation::Stake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Unstake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {

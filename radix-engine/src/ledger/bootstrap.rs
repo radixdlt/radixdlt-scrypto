@@ -171,6 +171,40 @@ pub fn create_genesis(
         )));
     }
 
+    {
+        let component_address = CLOCK.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        instructions.push(Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::Create(ClockCreateInvocation { component_address }),
+        )));
+    }
+
+    {
+        let mut validators = BTreeMap::new();
+        for (key, amount) in validator_set {
+            let bucket = id_allocator.new_bucket_id().unwrap();
+            instructions.push(
+                BasicInstruction::TakeFromWorktopByAmount {
+                    resource_address: RADIX_TOKEN,
+                    amount,
+                }
+                .into(),
+            );
+            validators.insert(key, Bucket(bucket.0));
+        }
+
+        let component_address = EPOCH_MANAGER.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        instructions.push(Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+                component_address,
+                validator_set: validators,
+                initial_epoch,
+                rounds_per_epoch,
+            }),
+        )));
+    }
+
     // Faucet
     {
         instructions.push(
@@ -189,40 +223,6 @@ pub fn create_genesis(
         }));
     };
 
-    {
-        let component_address = CLOCK.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        instructions.push(Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::Create(ClockCreateInvocation { component_address }),
-        )));
-    }
-
-    {
-        let mut validators = BTreeMap::new();
-        for (key, amount) in validator_set {
-            let bucket = id_allocator.new_bucket_id().unwrap();
-            instructions.push(
-                BasicInstruction::TakeFromWorktopByAmount {
-                    resource_address: RADIX_TOKEN,
-                    amount,
-                }
-                    .into(),
-            );
-            validators.insert(key, Bucket(bucket.0));
-        }
-
-        let component_address = EPOCH_MANAGER.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        instructions.push(Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-                component_address,
-                validator_set: validators,
-                initial_epoch,
-                rounds_per_epoch,
-            }),
-        )));
-    }
-
     SystemTransaction {
         instructions,
         blobs: Vec::new(),
@@ -233,7 +233,7 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-    let faucet_component = receipt.new_component_addresses()[0];
+    let faucet_component = receipt.new_component_addresses().last().unwrap().clone();
     GenesisReceipt { faucet_component }
 }
 

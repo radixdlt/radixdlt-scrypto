@@ -395,7 +395,10 @@ impl EpochManagerPackage {
                         let args: ValidatorStakeMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
                         NativeInvocation::Validator(ValidatorInvocation::Stake(
-                            ValidatorStakeInvocation { receiver, stake: args.stake },
+                            ValidatorStakeInvocation {
+                                receiver,
+                                stake: args.stake,
+                            },
                         ))
                     }
 
@@ -403,7 +406,10 @@ impl EpochManagerPackage {
                         let args: ValidatorUnstakeMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
                         NativeInvocation::Validator(ValidatorInvocation::Unstake(
-                            ValidatorUnstakeInvocation { receiver, amount: args.amount },
+                            ValidatorUnstakeInvocation {
+                                receiver,
+                                amount: args.amount,
+                            },
                         ))
                     }
                 }

@@ -407,7 +407,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-     Instruction::Basic(BasicInstruction::CallFunction {
+                Instruction::Basic(BasicInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function_name,

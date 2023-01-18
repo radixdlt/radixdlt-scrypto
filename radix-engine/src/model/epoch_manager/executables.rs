@@ -726,7 +726,10 @@ impl ExecutableInvocation for ValidatorUnstakeInvocation {
 impl Executor for ValidatorUnstakeExecutable {
     type Output = Bucket;
 
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
