@@ -1,3 +1,4 @@
+use radix_engine_interface::api::wasm::*;
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
@@ -6,22 +7,22 @@ static MAX: u32 = u32::MAX;
 static ZERO: u32 = 0;
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_f(_args: u64) -> u64 {
-    LARGE as u64
+pub extern "C" fn LargeReturnSize_f(_args: u64) -> Slice {
+    Slice(LARGE as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_f(_args: u64) -> u64 {
-    MAX as u64
+pub extern "C" fn MaxReturnSize_f(_args: u64) -> Slice {
+    Slice(MAX as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_f(_args: u64) -> u64 {
-    ZERO as u64
+pub extern "C" fn ZeroReturnSize_f(_args: u64) -> Slice {
+    Slice(ZERO as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_abi() -> u64 {
+pub extern "C" fn LargeReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "LargeReturnSize".to_string(),
         fields: Fields::Unit,
@@ -45,7 +46,7 @@ pub extern "C" fn LargeReturnSize_abi() -> u64 {
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_abi() -> u64 {
+pub extern "C" fn MaxReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "MaxReturnSize".to_string(),
         fields: Fields::Unit,
@@ -70,7 +71,7 @@ pub extern "C" fn MaxReturnSize_abi() -> u64 {
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_abi() -> u64 {
+pub extern "C" fn ZeroReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "ZeroReturnSize".to_string(),
         fields: Fields::Unit,
