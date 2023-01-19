@@ -141,5 +141,22 @@ pub trait InvokableModel<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
+    + Invokable<AccessControllerCreateGlobalInvocation, E>
+    + Invokable<AccessControllerCreateProofInvocation, E>
+    + Invokable<AccessControllerUpdateTimedRecoveryDelayInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsConfirmationInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryAsPrimaryInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryAsConfirmationInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryAsPrimaryInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryAsConfirmationInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryAttemptAsPrimaryInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryAttemptAsRecoveryInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryAttemptAsConfirmationInvocation, E>
+    + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
 {
 }

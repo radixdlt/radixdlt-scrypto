@@ -503,5 +503,75 @@ where
                 Ok(Box::new(rtn))
             }
         },
+        NativeInvocation::AccessController(method) => match method {
+            AccessControllerInvocation::CreateGlobal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CreateProof(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::UpdateTimedRecoveryDelay(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsConfirmation(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecoveryAsConfirmation(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryAttemptAsConfirmation(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::LockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::UnlockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
     }
 }
