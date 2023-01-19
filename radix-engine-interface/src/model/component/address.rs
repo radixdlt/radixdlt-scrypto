@@ -63,6 +63,7 @@ impl ComponentAddress {
             Self::Clock(v) => v.clone(),
             Self::EpochManager(v) => v.clone(),
             Self::Validator(v) => v.clone(),
+            Self::AccessController(v) => v.clone(),
         }
     }
 

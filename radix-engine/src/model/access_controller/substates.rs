@@ -4,7 +4,7 @@ use radix_engine_interface::time::Instant;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerSubstate {
     /// A vault of the badge that the controller protects and controls.
-    controlled_asset: Own,
+    controlled_asset: VaultId,
 
     /// The currently active set of role rules. Used for asserting that the caller indeed fulfills
     /// role X.
