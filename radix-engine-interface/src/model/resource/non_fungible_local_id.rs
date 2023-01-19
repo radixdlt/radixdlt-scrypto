@@ -360,6 +360,26 @@ mod tests {
             validation_result,
             Err(ContentValidationError::Empty)
         ));
+
+        // UUIDv1
+        let validation_result =
+            NonFungibleLocalId::from_str("{baaa4d3e-97f6-11ed-a8fc-0242ac120002}");
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleLocalIdError::ContentValidationError(
+                ContentValidationError::NotUuidV4Variant1
+            ))
+        ));
+
+        // UUIDv4 variant 2
+        let validation_result =
+            NonFungibleLocalId::from_str("{a5942110-956f-4b51-d517-79366f501d25}");
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleLocalIdError::ContentValidationError(
+                ContentValidationError::NotUuidV4Variant1
+            ))
+        ));
     }
 
     fn string_of_length(size: usize) -> String {
