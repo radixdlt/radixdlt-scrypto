@@ -320,14 +320,14 @@ impl FungibleResourceWithAuthBuilder {
 /// resource with an owner badge or without one.
 pub struct NonFungibleResourceBuilder<Y: IntoNonFungibleLocalId> {
     metadata: BTreeMap<String, String>,
-    id_type: PhantomData<Y>,
+    id_kind: PhantomData<Y>,
 }
 
 impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
     pub fn new() -> Self {
         Self {
             metadata: BTreeMap::new(),
-            id_type: PhantomData,
+            id_kind: PhantomData,
         }
     }
 
@@ -348,7 +348,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(Mint, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -362,7 +362,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(Burn, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -376,7 +376,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(Recall, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -390,7 +390,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -404,7 +404,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(Deposit, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -418,7 +418,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(UpdateMetadata, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -432,7 +432,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let mut authorization = BTreeMap::new();
         authorization.insert(UpdateNonFungibleData, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
-            id_type: PhantomData,
+            id_kind: PhantomData,
             metadata: self.metadata,
             authorization,
         }
@@ -442,7 +442,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
     pub fn no_initial_supply(self) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
-                id_type: Y::id_type(),
+                id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
             })
@@ -452,7 +452,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
-                id_type: Y::id_type(),
+                id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
             })
@@ -488,7 +488,7 @@ impl<Y: IntoManualNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         ScryptoEnv
             .invoke(
                 ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                    id_type: Y::id_type(),
+                    id_kind: Y::id_kind(),
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
                     entries: encoded,
@@ -518,7 +518,7 @@ impl<Y: IntoManualNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
         let (_resource_address, bucket) = ScryptoEnv
             .invoke(
                 ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                    id_type: Y::id_type(),
+                    id_kind: Y::id_kind(),
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                     entries: encoded,
@@ -564,7 +564,7 @@ impl NonFungibleResourceBuilder<u128> {
 pub struct NonFungibleResourceWithAuthBuilder<Y: IntoNonFungibleLocalId> {
     metadata: BTreeMap<String, String>,
     authorization: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    id_type: PhantomData<Y>,
+    id_kind: PhantomData<Y>,
 }
 
 impl<Y: IntoNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
@@ -643,7 +643,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
     pub fn no_initial_supply(self) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
-                id_type: Y::id_type(),
+                id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: self.authorization,
             })
@@ -668,7 +668,7 @@ impl<Y: IntoManualNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
         ScryptoEnv
             .invoke(
                 ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                    id_type: Y::id_type(),
+                    id_kind: Y::id_kind(),
                     metadata: self.metadata,
                     access_rules: self.authorization,
                     entries: encoded,

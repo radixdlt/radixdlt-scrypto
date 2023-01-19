@@ -84,7 +84,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_kind: NonFungibleIdKind::Bytes,
                 metadata,
                 access_rules,
                 initial_supply: None,
@@ -106,7 +106,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_kind: NonFungibleIdKind::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,
@@ -127,7 +127,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_kind: NonFungibleIdKind::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,
@@ -147,7 +147,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_kind: NonFungibleIdKind::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,

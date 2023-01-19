@@ -295,7 +295,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_kind: NonFungibleIdKind,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
@@ -316,7 +316,7 @@ impl ManifestBuilder {
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
         self.add_instruction(BasicInstruction::CreateNonFungibleResource {
-            id_type,
+            id_kind,
             metadata,
             access_rules,
             initial_supply,
@@ -327,7 +327,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource with an owner badge
     pub fn create_non_fungible_resource_with_owner<T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_kind: NonFungibleIdKind,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleGlobalId,
         initial_supply: Option<T>,
@@ -343,7 +343,7 @@ impl ManifestBuilder {
                 .collect()
         });
         self.add_instruction(BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type,
+            id_kind,
             metadata,
             owner_badge,
             initial_supply,

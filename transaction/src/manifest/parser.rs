@@ -232,14 +232,14 @@ impl Parser {
                 }
             }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
-                id_type: self.parse_value()?,
+                id_kind: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
                 initial_supply: self.parse_value()?,
             },
             TokenKind::CreateNonFungibleResourceWithOwner => {
                 Instruction::CreateNonFungibleResourceWithOwner {
-                    id_type: self.parse_value()?,
+                    id_kind: self.parse_value()?,
                     metadata: self.parse_value()?,
                     owner_badge: self.parse_value()?,
                     initial_supply: self.parse_value()?,

@@ -283,7 +283,7 @@ blueprint! {
             NonFungibleTest { vault }.instantiate().globalize();
         }
 
-        pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
+        pub fn create_wrong_non_fungible_local_id_kind() -> Bucket {
             let mut encoded = BTreeMap::new();
             encoded.insert(
                 NonFungibleLocalId::Number(0),
@@ -294,7 +294,7 @@ blueprint! {
             let (_, bucket) = ScryptoEnv
                 .invoke(
                     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                        id_type: NonFungibleIdType::UUID,
+                        id_kind: NonFungibleIdKind::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
                         entries: encoded,

@@ -2,7 +2,7 @@ use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::model::GlobalAddressSubstate;
 use radix_engine::types::{
-    GlobalAddress, GlobalOffset, NonFungibleIdType, RENodeId, ResourceAddress,
+    GlobalAddress, GlobalOffset, NonFungibleIdKind, RENodeId, ResourceAddress,
     ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
 };
 use radix_engine::wasm::DefaultWasmEngine;
@@ -10,9 +10,9 @@ use radix_engine_stores::rocks_db::RadixEngineDB;
 
 use crate::resim::get_data_dir;
 
-pub fn lookup_non_fungible_local_id_type(
+pub fn lookup_non_fungible_local_id_kind(
     resource_address: &ResourceAddress,
-) -> Result<NonFungibleIdType, LedgerLookupError> {
+) -> Result<NonFungibleIdKind, LedgerLookupError> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let substate_store = RadixEngineDB::with_bootstrap(
         get_data_dir().map_err(|_| LedgerLookupError::FailedToGetLocalSubstateStorePath)?,
@@ -53,7 +53,7 @@ pub fn lookup_non_fungible_local_id_type(
 
     // Getting the non-fungible id type for this resource if it is a non-fungible resource
     match resource_type {
-        ResourceType::NonFungible { id_type } => Ok(id_type),
+        ResourceType::NonFungible { id_kind } => Ok(id_kind),
         _ => Err(LedgerLookupError::ResourceIsNotNonFungible),
     }
 }
@@ -75,22 +75,22 @@ pub enum LedgerLookupError {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine::types::{NonFungibleIdType, ECDSA_SECP256K1_TOKEN};
+    use radix_engine::types::{NonFungibleIdKind, ECDSA_SECP256K1_TOKEN};
     use serial_test::serial;
 
-    use super::lookup_non_fungible_local_id_type;
+    use super::lookup_non_fungible_local_id_kind;
 
     #[test]
     #[serial]
-    pub fn non_fungible_local_id_type_ledger_lookup_matches_expected() {
+    pub fn non_fungible_local_id_kind_ledger_lookup_matches_expected() {
         // Arrange
         let resource_address = ECDSA_SECP256K1_TOKEN;
 
         // Act
-        let non_fungible_local_id_type =
-            lookup_non_fungible_local_id_type(&resource_address).unwrap();
+        let non_fungible_local_id_kind =
+            lookup_non_fungible_local_id_kind(&resource_address).unwrap();
 
         // Assert
-        assert_eq!(non_fungible_local_id_type, NonFungibleIdType::Bytes)
+        assert_eq!(non_fungible_local_id_kind, NonFungibleIdKind::Bytes)
     }
 }

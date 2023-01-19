@@ -180,14 +180,14 @@ pub enum Instruction {
     },
 
     CreateNonFungibleResource {
-        id_type: Value,
+        id_kind: Value,
         metadata: Value,
         access_rules: Value,
         initial_supply: Value,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: Value,
+        id_kind: Value,
         metadata: Value,
         owner_badge: Value,
         initial_supply: Value,

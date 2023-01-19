@@ -10,7 +10,7 @@ use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 
-use crate::ledger::{lookup_non_fungible_local_id_type, LedgerLookupError};
+use crate::ledger::{lookup_non_fungible_local_id_kind, LedgerLookupError};
 use crate::resim::SimulatorNonFungibleGlobalId;
 
 // =======
@@ -381,7 +381,7 @@ where
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
-/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::U32`], say that
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdKind::U32`], say that
 /// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
 /// representation of the non-fungible resource specifier would be:
 ///
@@ -445,14 +445,14 @@ fn parse_resource_specifier(
         let resource_address = bech32_decoder
             .validate_and_decode_resource_address(resource_address_string)
             .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
-        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address)
+        let non_fungible_local_id_kind = lookup_non_fungible_local_id_kind(&resource_address)
             .map_err(ParseResourceSpecifierError::LedgerLookupError)?;
 
         // Parsing the non-fungible ids with the available id type
         let non_fungible_local_ids = tokens[1]
             .split(',')
             .map(|s| s.trim())
-            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_local_id_type, s))
+            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_local_id_kind, s))
             .collect::<Result<BTreeSet<_>, _>>()
             .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 

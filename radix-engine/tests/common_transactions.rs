@@ -271,7 +271,7 @@ fn minting_of_fungible_resource_succeeds() {
 fn minting_of_non_fungible_resource_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdType::Number,
+            id_kind: radix_engine::types::NonFungibleIdKind::Number,
         },
         |account_component_address,
          minter_badge_resource_address,
@@ -353,9 +353,9 @@ fn test_manifest_with_restricted_minting_resource<F>(
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, None)
             .build(),
-        ResourceType::NonFungible { id_type } => ManifestBuilder::new()
+        ResourceType::NonFungible { id_kind } => ManifestBuilder::new()
             .create_non_fungible_resource(
-                id_type,
+                id_kind,
                 BTreeMap::new(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
