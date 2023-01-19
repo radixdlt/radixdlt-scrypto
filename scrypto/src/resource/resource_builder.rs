@@ -162,6 +162,7 @@ impl FungibleResourceBuilder {
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
             .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
@@ -189,6 +190,7 @@ impl FungibleResourceBuilder {
     ) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
             .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -288,6 +290,7 @@ impl FungibleResourceWithAuthBuilder {
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
             .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: self.authorization,
@@ -442,6 +445,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
     pub fn no_initial_supply(self) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
+                resource_address: None,
                 id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
@@ -452,6 +456,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
+                resource_address: None,
                 id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -643,6 +648,7 @@ impl<Y: IntoNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
     pub fn no_initial_supply(self) -> ResourceAddress {
         ScryptoEnv
             .invoke(ResourceManagerCreateNonFungibleInvocation {
+                resource_address: None,
                 id_kind: Y::id_kind(),
                 metadata: self.metadata,
                 access_rules: self.authorization,

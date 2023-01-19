@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
 use radix_engine_interface::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
 };
@@ -60,6 +61,25 @@ impl InstructionOutput {
         match self {
             InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
             InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
+        }
+    }
+}
+
+impl Clone for InstructionOutput {
+    fn clone(&self) -> Self {
+        match self {
+            InstructionOutput::Scrypto(output) => InstructionOutput::Scrypto(output.clone()),
+            InstructionOutput::Native(output) => {
+                // SBOR Encode the output
+                let encoded_output = scrypto_encode(&**output)
+                    .expect("Impossible Case! Instruction output is not SBOR encodable!");
+
+                // Decode to a ScryptoValue
+                let decoded = scrypto_decode::<ScryptoValue>(&encoded_output)
+                    .expect("Impossible Case! We literally just encoded this above");
+
+                InstructionOutput::Native(Box::new(decoded))
+            }
         }
     }
 }
@@ -459,6 +479,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ))?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
+                        package_address: None,
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
                         royalty_config: royalty_config.clone(),
@@ -489,6 +510,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ))?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
+                        package_address: None,
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
                         royalty_config: BTreeMap::new(),
@@ -508,6 +530,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(amount) = initial_supply {
                         let rtn =
                             api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
@@ -536,6 +559,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(amount) = initial_supply {
                         let rtn =
                             api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
@@ -576,6 +600,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            resource_address: None,
                             id_kind: *id_kind,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
@@ -605,6 +630,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            resource_address: None,
                             id_kind: *id_kind,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
@@ -740,6 +766,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::System(invocation) => {
                     let rtn = invoke_native_fn(invocation.clone(), api)?;
+
+                    // TODO: Move buckets/proofs to worktop/authzone without serialization
+                    let result = IndexedScryptoValue::from_typed(rtn.as_ref());
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
                     InstructionOutput::Native(rtn)
                 }
             };

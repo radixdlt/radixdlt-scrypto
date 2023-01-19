@@ -932,6 +932,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::system_role()]),
         );
@@ -952,6 +953,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
@@ -973,6 +975,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
@@ -994,6 +997,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
