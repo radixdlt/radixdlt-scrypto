@@ -545,48 +545,8 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleG
                 .display(context.display_context.bech32_encoder)
                 .to_string(),
         )?;
-        tuple.serialize_element(&self.local_id().serializable(*context))?;
+        tuple.serialize_element(&self.local_id().to_string())?;
         tuple.end()
-    }
-}
-
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleLocalId {
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            NonFungibleLocalId::String(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::String,
-                value,
-            ),
-            NonFungibleLocalId::Integer(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U64,
-                &value.to_string(),
-            ),
-            NonFungibleLocalId::Bytes(value) => serialize_value_with_element_type(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::Array,
-                ValueKind::U8,
-                &BytesValue { bytes: value }.serializable(*context),
-            ),
-            NonFungibleLocalId::UUID(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U128,
-                &value.to_string(),
-            ),
-        }
     }
 }
 
