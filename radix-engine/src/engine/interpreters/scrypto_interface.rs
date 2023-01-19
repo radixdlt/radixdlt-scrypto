@@ -1,4 +1,6 @@
-use crate::engine::{BaseModule, Kernel, KernelError, LockFlags, RENodeInit, RuntimeError, SystemApi};
+use crate::engine::{
+    BaseModule, Kernel, KernelError, LockFlags, RENodeInit, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::MetadataSubstate;
 use crate::model::{

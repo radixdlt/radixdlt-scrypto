@@ -1,5 +1,6 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, RENodeInit, ResolvedActor, ResolvedReceiver, RuntimeError,
+    ExecutionMode, KernelError, LockFlags, RENodeInit, ResolvedActor, ResolvedReceiver,
+    RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{

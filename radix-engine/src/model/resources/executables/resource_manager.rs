@@ -1048,7 +1048,10 @@ impl Executor for ResourceManagerCreateVaultExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Vault)?;
-        api.create_node(node_id, RENodeInit::Vault(VaultRuntimeSubstate::new(resource)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
+        )?;
         let vault_id = node_id.into();
 
         Ok((

@@ -15,6 +15,7 @@ use crate::scrypto_type;
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
+    Identity([u8; 26]),
     Clock([u8; 26]),
     EpochManager([u8; 26]),
     Validator([u8; 26]),
@@ -38,6 +39,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
+                EntityType::IdentityComponent => Ok(Self::Identity(copy_u8_array(&slice[1..]))),
                 EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
                 EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
                 EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
@@ -62,6 +64,7 @@ impl ComponentAddress {
         match self {
             Self::Normal(v) => v.clone(),
             Self::Account(v) => v.clone(),
+            Self::Identity(v) => v.clone(),
             Self::Clock(v) => v.clone(),
             Self::EpochManager(v) => v.clone(),
             Self::Validator(v) => v.clone(),
@@ -78,6 +81,7 @@ impl ComponentAddress {
         match self {
             Self::Normal(v)
             | Self::Account(v)
+            | Self::Identity(v)
             | Self::Clock(v)
             | Self::EpochManager(v)
             | Self::Validator(v)
@@ -151,6 +155,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::Identity(_) => {
+                write!(f, "IdentityComponent[{}]", self.to_hex())
             }
             ComponentAddress::Clock(_) => {
                 write!(f, "ClockComponent[{}]", self.to_hex())

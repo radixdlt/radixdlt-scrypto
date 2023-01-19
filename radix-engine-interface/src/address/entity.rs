@@ -27,11 +27,14 @@ pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
 pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
-/// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
+/// A unique identifier used in the addressing of Account Component Addresses.
+pub const IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0a;
+pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0a;
+
+/// A unique identifier used in the addressing of a virtual Account Component Addresses.
+pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
 
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
@@ -40,6 +43,7 @@ pub enum EntityType {
     Package,
     NormalComponent,
     AccountComponent,
+    IdentityComponent,
     EpochManager,
     Validator,
     Clock,
@@ -60,6 +64,7 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::Identity(_) => Self::IdentityComponent,
             ComponentAddress::Clock(_) => Self::Clock,
             ComponentAddress::EpochManager(_) => Self::EpochManager,
             ComponentAddress::Validator(_) => Self::Validator,
@@ -84,6 +89,7 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::IdentityComponent => IDENTITY_COMPONENT_ADDRESS_ENTITY_ID,
             Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
             Self::Validator => VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID,
             Self::Clock => CLOCK_SYSTEM_ADDRESS_ENTITY_ID,
@@ -112,6 +118,7 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
+            IDENTITY_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::IdentityComponent),
             EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
             VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Validator),
             CLOCK_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Clock),

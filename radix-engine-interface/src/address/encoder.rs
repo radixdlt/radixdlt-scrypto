@@ -69,6 +69,7 @@ impl Bech32Encoder {
         match component_address {
             ComponentAddress::Normal(data)
             | ComponentAddress::Account(data)
+            | ComponentAddress::Identity(data)
             | ComponentAddress::Clock(data)
             | ComponentAddress::EpochManager(data)
             | ComponentAddress::Validator(data)
