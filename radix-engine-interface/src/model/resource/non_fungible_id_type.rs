@@ -7,7 +7,7 @@ use sbor::*;
 )]
 pub enum NonFungibleIdType {
     String,
-    Number,
+    Integer,
     Bytes,
     UUID,
 }

@@ -38,7 +38,7 @@ blueprint! {
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address).mint_non_fungible(
-                    &NonFungibleLocalId::Number(0),
+                    &NonFungibleLocalId::Integer(0),
                     Sandwich {
                         name: "Test".to_owned(),
                         available: false,
@@ -119,17 +119,17 @@ blueprint! {
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             let mut data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleLocalId::Number(0));
+                .get_non_fungible_data(&NonFungibleLocalId::Integer(0));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleLocalId::Number(0), data);
+                    .update_non_fungible_data(&NonFungibleLocalId::Integer(0), data);
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleLocalId::Number(0));
+                .get_non_fungible_data(&NonFungibleLocalId::Integer(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -138,12 +138,12 @@ blueprint! {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleLocalId::Number(0)),
+                    .non_fungible_exists(&NonFungibleLocalId::Integer(0)),
                 true
             );
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleLocalId::Number(1)),
+                    .non_fungible_exists(&NonFungibleLocalId::Integer(1)),
                 false
             );
             (mint_badge, bucket)
@@ -165,7 +165,7 @@ blueprint! {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
-            let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::Number(1));
+            let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::Integer(1));
             assert_eq!(bucket.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
@@ -178,7 +178,7 @@ blueprint! {
             assert_eq!(bucket.amount(), 3.into());
 
             let mut non_fungibles = BTreeSet::new();
-            non_fungibles.insert(NonFungibleLocalId::Number(1));
+            non_fungibles.insert(NonFungibleLocalId::Integer(1));
 
             let non_fungible = bucket.take_non_fungibles(&non_fungibles);
             assert_eq!(bucket.amount(), 2.into());
@@ -206,11 +206,14 @@ blueprint! {
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Number(1)])
+                BTreeSet::from([NonFungibleLocalId::Integer(1)])
             );
             assert_eq!(
                 bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)])
+                BTreeSet::from([
+                    NonFungibleLocalId::Integer(2),
+                    NonFungibleLocalId::Integer(3)
+                ])
             );
             (bucket, non_fungible_bucket)
         }
@@ -220,11 +223,11 @@ blueprint! {
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Number(1)
+                NonFungibleLocalId::Integer(1)
             );
             assert_eq!(
                 bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Number(2)
+                NonFungibleLocalId::Integer(2)
             );
             (bucket, non_fungible_bucket)
         }
@@ -234,11 +237,14 @@ blueprint! {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Number(1)])
+                BTreeSet::from([NonFungibleLocalId::Integer(1)])
             );
             assert_eq!(
                 vault.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)])
+                BTreeSet::from([
+                    NonFungibleLocalId::Integer(2),
+                    NonFungibleLocalId::Integer(3)
+                ])
             );
 
             NonFungibleTest { vault }.instantiate().globalize();
@@ -251,9 +257,12 @@ blueprint! {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Number(1)
+                NonFungibleLocalId::Integer(1)
             );
-            assert_eq!(vault.non_fungible_local_id(), NonFungibleLocalId::Number(2));
+            assert_eq!(
+                vault.non_fungible_local_id(),
+                NonFungibleLocalId::Integer(2)
+            );
 
             NonFungibleTest { vault }.instantiate().globalize();
 
@@ -286,7 +295,7 @@ blueprint! {
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
             let mut encoded = BTreeMap::new();
             encoded.insert(
-                NonFungibleLocalId::Number(0),
+                NonFungibleLocalId::Integer(0),
                 (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
             );
 

@@ -13,7 +13,7 @@ use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
-/// Trait for converting into a `NonFungibleLocalId` of any kind (i.e. Number, String, Bytes and UUID).
+/// Trait for converting into a `NonFungibleLocalId` of any kind (i.e. Integer, String, Bytes and UUID).
 pub trait IntoNonFungibleLocalId: Into<NonFungibleLocalId> {
     fn id_type() -> NonFungibleIdType;
 }
@@ -25,7 +25,7 @@ impl IntoNonFungibleLocalId for String {
 }
 impl IntoNonFungibleLocalId for u64 {
     fn id_type() -> NonFungibleIdType {
-        NonFungibleIdType::Number
+        NonFungibleIdType::Integer
     }
 }
 impl IntoNonFungibleLocalId for Vec<u8> {
@@ -39,7 +39,7 @@ impl IntoNonFungibleLocalId for u128 {
     }
 }
 
-/// Trait for converting into a `NonFungibleLocalId` of non-auto-generated kind (i.e. Number, String and Bytes).
+/// Trait for converting into a `NonFungibleLocalId` of non-auto-generated kind (i.e. Integer, String and Bytes).
 pub trait IntoManualNonFungibleLocalId: IntoNonFungibleLocalId {}
 
 impl IntoManualNonFungibleLocalId for String {}
@@ -53,7 +53,7 @@ impl From<String> for NonFungibleLocalId {
 }
 impl From<u64> for NonFungibleLocalId {
     fn from(value: u64) -> Self {
-        Self::Number(value)
+        Self::Integer(value)
     }
 }
 impl From<Vec<u8>> for NonFungibleLocalId {
@@ -71,7 +71,7 @@ impl From<u128> for NonFungibleLocalId {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleLocalId {
     String(String),
-    Number(u64),
+    Integer(u64),
     Bytes(Vec<u8>),
     UUID(u128),
 }
@@ -87,7 +87,7 @@ impl NonFungibleLocalId {
     pub fn id_type(&self) -> NonFungibleIdType {
         match self {
             NonFungibleLocalId::String(..) => NonFungibleIdType::String,
-            NonFungibleLocalId::Number(..) => NonFungibleIdType::Number,
+            NonFungibleLocalId::Integer(..) => NonFungibleIdType::Integer,
             NonFungibleLocalId::Bytes(..) => NonFungibleIdType::Bytes,
             NonFungibleLocalId::UUID(..) => NonFungibleIdType::UUID,
         }
@@ -118,7 +118,7 @@ impl NonFungibleLocalId {
                 }
                 Ok(())
             }
-            NonFungibleLocalId::Number(_) | NonFungibleLocalId::UUID(_) => Ok(()),
+            NonFungibleLocalId::Integer(_) | NonFungibleLocalId::UUID(_) => Ok(()),
         }
     }
 }
@@ -131,7 +131,7 @@ impl NonFungibleLocalId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleLocalIdError {
     UnknownType,
-    InvalidNumber,
+    InvalidInteger,
     InvalidBytes,
     InvalidUUID,
     IdValidationError(IdValidationError),
@@ -172,7 +172,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
                 encoder.write_size(v.len())?;
                 encoder.write_slice(v.as_bytes())?;
             }
-            NonFungibleLocalId::Number(v) => {
+            NonFungibleLocalId::Integer(v) => {
                 encoder.write_byte(1)?;
                 encoder.write_slice(&v.to_le_bytes())?;
             }
@@ -204,7 +204,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
                         .map_err(|_| DecodeError::InvalidCustomValue)?,
                 )
             }
-            1 => Self::Number(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
+            1 => Self::Integer(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
             2 => {
                 let size = decoder.read_size()?;
                 Self::Bytes(decoder.read_slice(size)?.to_vec())
@@ -238,9 +238,9 @@ impl FromStr for NonFungibleLocalId {
         let local_id = if s.starts_with("<") && s.ends_with(">") {
             NonFungibleLocalId::String(s[1..s.len() - 1].to_string())
         } else if s.starts_with("#") && s.ends_with("#") {
-            NonFungibleLocalId::Number(
+            NonFungibleLocalId::Integer(
                 u64::from_str_radix(&s[1..s.len() - 1], 10)
-                    .map_err(|_| ParseNonFungibleLocalIdError::InvalidNumber)?,
+                    .map_err(|_| ParseNonFungibleLocalIdError::InvalidInteger)?,
             )
         } else if s.starts_with("[") && s.ends_with("]") {
             NonFungibleLocalId::Bytes(
@@ -273,7 +273,7 @@ impl fmt::Display for NonFungibleLocalId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             NonFungibleLocalId::String(v) => write!(f, "<{}>", v),
-            NonFungibleLocalId::Number(v) => write!(f, "#{}#", v),
+            NonFungibleLocalId::Integer(v) => write!(f, "#{}#", v),
             NonFungibleLocalId::Bytes(v) => write!(f, "[{}]", hex::encode(&v)),
             NonFungibleLocalId::UUID(v) => {
                 let hex = format!("{:032x}", v);
@@ -373,11 +373,11 @@ mod tests {
     fn test_from_str() {
         assert_eq!(
             NonFungibleLocalId::from_str("#1#").unwrap(),
-            NonFungibleLocalId::Number(1)
+            NonFungibleLocalId::Integer(1)
         );
         assert_eq!(
             NonFungibleLocalId::from_str("#10#").unwrap(),
-            NonFungibleLocalId::Number(10)
+            NonFungibleLocalId::Integer(10)
         );
         assert_eq!(
             NonFungibleLocalId::from_str("{1234567890}").unwrap(),
@@ -395,8 +395,8 @@ mod tests {
 
     #[test]
     fn test_to_string() {
-        assert_eq!(NonFungibleLocalId::Number(1).to_string(), "#1#",);
-        assert_eq!(NonFungibleLocalId::Number(10).to_string(), "#10#",);
+        assert_eq!(NonFungibleLocalId::Integer(1).to_string(), "#1#",);
+        assert_eq!(NonFungibleLocalId::Integer(10).to_string(), "#10#",);
         assert_eq!(
             NonFungibleLocalId::UUID(0x1234567890).to_string(),
             "{00000000-0000-0000-0000-001234567890}",

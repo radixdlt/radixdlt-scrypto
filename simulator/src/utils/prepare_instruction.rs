@@ -379,7 +379,7 @@ where
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
-/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::Number`], say that
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::Integer`], say that
 /// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
 /// representation of the non-fungible resource specifier would be:
 ///
@@ -786,7 +786,7 @@ mod test {
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::Number(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::Integer(12))
     }
 
     #[test]

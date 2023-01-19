@@ -255,7 +255,7 @@ mod tests {
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#notnumber#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
-                ParseNonFungibleLocalIdError::InvalidNumber
+                ParseNonFungibleLocalIdError::InvalidInteger
             ))
         ));
     }

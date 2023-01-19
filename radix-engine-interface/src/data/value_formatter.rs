@@ -385,7 +385,7 @@ pub fn format_non_fungible_local_id_contents<F: fmt::Write>(
     match value {
         NonFungibleLocalId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
         NonFungibleLocalId::String(s) => write!(f, "\"{}\"", s),
-        NonFungibleLocalId::Number(n) => write!(f, "{}u64", n),
+        NonFungibleLocalId::Integer(n) => write!(f, "{}u64", n),
         NonFungibleLocalId::UUID(u) => write!(f, "{}u128", u),
     }
 }

@@ -564,7 +564,7 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleL
                 ValueKind::String,
                 value,
             ),
-            NonFungibleLocalId::Number(value) => serialize_value(
+            NonFungibleLocalId::Integer(value) => serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
@@ -882,7 +882,7 @@ mod tests {
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::Number(123),
+                                NonFungibleLocalId::Integer(123),
                             ),
                         },
                         Value::Custom {

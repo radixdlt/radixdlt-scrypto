@@ -271,7 +271,7 @@ fn minting_of_fungible_resource_succeeds() {
 fn minting_of_non_fungible_resource_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdType::Number,
+            id_type: radix_engine::types::NonFungibleIdType::Integer,
         },
         |account_component_address,
          minter_badge_resource_address,
