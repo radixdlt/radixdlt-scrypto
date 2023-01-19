@@ -63,6 +63,7 @@ pub enum ResourceMethodAuthKey {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
+    pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
     pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -154,6 +155,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithIniti
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+    pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -497,6 +499,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
 }
 
 impl ResourceAddress {
+    pub fn raw(&self) -> [u8; 26] {
+        match self {
+            Self::Normal(v) => v.clone(),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::resource(self).id());

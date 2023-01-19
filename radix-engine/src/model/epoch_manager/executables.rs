@@ -53,7 +53,9 @@ impl Executor for EpochManagerCreateInvocation {
         Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
+        let global_node_id = RENodeId::Global(GlobalAddress::Component(
+            ComponentAddress::EpochManager(self.component_address),
+        ));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),

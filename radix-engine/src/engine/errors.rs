@@ -12,6 +12,8 @@ use super::TrackError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum IdAllocationError {
+    RENodeIdWasNotAllocated(RENodeId),
+    AllocatedIDsNotEmpty,
     OutOfID,
 }
 
@@ -53,9 +55,6 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
-
-    /// An unexpected error occurred
-    UnexpectedError(String),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -125,8 +124,6 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
-    RENodeIdWasNotAllocated(RENodeId),
-    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 impl From<CallFrameError> for RuntimeError {
