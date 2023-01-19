@@ -1,5 +1,5 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, RENode, ResolvedActor, ResolvedReceiver, RuntimeError,
+    ExecutionMode, KernelError, LockFlags, RENodeInit, ResolvedActor, ResolvedReceiver, RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
@@ -61,7 +61,7 @@ impl VisibilityProperties {
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
         actor: &ResolvedActor,
-        node: &RENode,
+        node: &RENodeInit,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
@@ -73,12 +73,12 @@ impl VisibilityProperties {
                     ..
                 }),
             ) => match node {
-                RENode::Component(info, ..) => {
+                RENodeInit::Component(info, ..) => {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENode::KeyValueStore(..) => true,
-                RENode::Global(GlobalAddressSubstate::Component(..)) => true,
+                RENodeInit::KeyValueStore(..) => true,
+                RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
                 _ => false,
             },
             _ => true,

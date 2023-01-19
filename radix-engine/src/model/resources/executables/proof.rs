@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
@@ -183,7 +183,7 @@ impl Executor for ProofCloneInvocation {
         let cloned_proof = proof.clone();
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(cloned_proof))?;
+        api.create_node(node_id, RENodeInit::Proof(cloned_proof))?;
         let proof_id = node_id.into();
 
         Ok((

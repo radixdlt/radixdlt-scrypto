@@ -16,7 +16,7 @@ pub enum SysCallInput<'a> {
         node_id: &'a RENodeId,
     },
     CreateNode {
-        node: &'a RENode,
+        node: &'a RENodeInit,
     },
     LockSubstate {
         node_id: &'a RENodeId,

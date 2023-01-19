@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
-    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
@@ -77,7 +77,7 @@ where
     let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
     api.create_node(
         nf_store_node_id,
-        RENode::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
@@ -116,7 +116,7 @@ where
         let ids = entries.into_keys().collect();
         let container = Resource::new_non_fungible(resource_address, ids, id_type);
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
         Bucket(bucket_id)
     };
@@ -157,7 +157,7 @@ where
         resource_manager.total_supply = initial_supply;
         let container = Resource::new_fungible(resource_address, divisibility, initial_supply);
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
         Bucket(bucket_id)
     };
@@ -398,7 +398,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
         api.create_node(
             nf_store_node_id,
-            RENode::NonFungibleStore(NonFungibleStore::new()),
+            RENodeInit::NonFungibleStore(NonFungibleStore::new()),
         )?;
         let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
         let resource_manager_substate = ResourceManagerSubstate::new(
@@ -416,7 +416,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
                 substate,
@@ -425,7 +425,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         )?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
 
         let update =
@@ -477,7 +477,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
                 substate,
@@ -486,7 +486,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
         )?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
 
         let update =
@@ -548,7 +548,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
                 substate,
@@ -558,7 +558,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -626,7 +626,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
                 substate,
@@ -636,7 +636,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -703,7 +703,7 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
                 substate,
@@ -713,7 +713,7 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -1048,7 +1048,7 @@ impl Executor for ResourceManagerCreateVaultExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Vault)?;
-        api.create_node(node_id, RENode::Vault(VaultRuntimeSubstate::new(resource)))?;
+        api.create_node(node_id, RENodeInit::Vault(VaultRuntimeSubstate::new(resource)))?;
         let vault_id = node_id.into();
 
         Ok((
@@ -1103,7 +1103,7 @@ impl Executor for ResourceManagerCreateBucketExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
 
         Ok((
@@ -1206,7 +1206,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(resource)))?;
         let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
@@ -1341,7 +1341,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             let node_id = api.allocate_node_id(RENodeType::Bucket)?;
             api.create_node(
                 node_id,
-                RENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(
+                RENodeInit::Bucket(BucketSubstate::new(Resource::new_non_fungible(
                     resource_address,
                     ids,
                     id_type,
@@ -1411,7 +1411,7 @@ impl Executor for ResourceManagerMintFungibleExecutable {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(resource)))?;
         let bucket_id = node_id.into();
 
         Ok((
