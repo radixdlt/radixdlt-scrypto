@@ -33,6 +33,7 @@ impl HrpSet {
             EntityType::EcdsaSecp256k1VirtualAccountComponent => &self.account_component,
             EntityType::EddsaEd25519VirtualAccountComponent => &self.account_component,
             EntityType::EcdsaSecp256k1VirtualIdentityComponent => &self.identity_component,
+            EntityType::EddsaEd25519VirtualIdentityComponent => &self.identity_component,
         }
     }
 }

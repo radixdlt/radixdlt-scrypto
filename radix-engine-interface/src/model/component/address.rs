@@ -21,6 +21,7 @@ pub enum ComponentAddress {
     EcdsaSecp256k1VirtualAccount([u8; 26]),
     EddsaEd25519VirtualAccount([u8; 26]),
     EcdsaSecp256k1VirtualIdentity([u8; 26]),
+    EddsaEd25519VirtualIdentity([u8; 26]),
 }
 
 //========
@@ -46,8 +47,8 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::EddsaEd25519VirtualAccountComponent => {
                     Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
-                EntityType::EcdsaSecp256k1VirtualIdentityComponent => Ok(
-                    Self::EcdsaSecp256k1VirtualIdentity(copy_u8_array(&slice[1..])),
+                EntityType::EddsaEd25519VirtualIdentityComponent => Ok(
+                    Self::EddsaEd25519VirtualIdentity(copy_u8_array(&slice[1..])),
                 ),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
@@ -67,6 +68,7 @@ impl ComponentAddress {
             Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
             Self::EddsaEd25519VirtualAccount(v) => v.clone(),
             Self::EcdsaSecp256k1VirtualIdentity(v) => v.clone(),
+            Self::EddsaEd25519VirtualIdentity(v) => v.clone(),
         }
     }
 
@@ -82,7 +84,7 @@ impl ComponentAddress {
             | Self::EddsaEd25519VirtualAccount(v)
             | Self::EcdsaSecp256k1VirtualAccount(v)
             | Self::EcdsaSecp256k1VirtualIdentity(v)
-            => buf.extend(v),
+            | Self::EddsaEd25519VirtualIdentity(v) => buf.extend(v),
         }
         buf
     }
@@ -175,6 +177,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
                     "EcdsaSecp256k1VirtualIdentityComponent[{}]",
                     self.to_hex()
                 )
+            }
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => {
+                write!(f, "EddsaEd25519VirtualIdentityComponent[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))
