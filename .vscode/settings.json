@@ -9,6 +9,7 @@
         "decompile",
         "decompiled",
         "eddsa",
+        "hasher",
         "instantiatable",
         "Instrumenter",
         "persistable",

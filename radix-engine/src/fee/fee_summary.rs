@@ -25,9 +25,9 @@ pub struct FeeSummary {
     /// The resultant vault charges in XRD (only present on commit)
     pub vault_payments_xrd: Option<BTreeMap<VaultId, Decimal>>,
     /// The execution cost breakdown
-    pub execution_cost_unit_breakdown: HashMap<String, u32>,
+    pub execution_cost_unit_breakdown: BTreeMap<String, u32>,
     /// The royalty cost breakdown.
-    pub royalty_cost_unit_breakdown: HashMap<RoyaltyReceiver, u32>,
+    pub royalty_cost_unit_breakdown: BTreeMap<RoyaltyReceiver, u32>,
 }
 
 impl FeeSummary {

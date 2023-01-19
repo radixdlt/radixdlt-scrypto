@@ -1,11 +1,41 @@
 use crate::fee::FeeSummary;
 use crate::model::Resource;
 use crate::types::*;
+use ahash::RandomState;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::api::types::{RENodeId, VaultId};
 use sbor::rust::cmp::min;
+use sbor::rust::hash::Hash;
+
+pub struct GlobalUniqueStr(pub &'static str);
+
+impl Hash for GlobalUniqueStr {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        (self.0.as_ptr()).hash(state)
+    }
+}
+
+impl PartialEq for GlobalUniqueStr {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ptr() == other.0.as_ptr()
+    }
+}
+
+impl Eq for GlobalUniqueStr {}
+
+impl ToString for GlobalUniqueStr {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl fmt::Debug for GlobalUniqueStr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
@@ -85,11 +115,11 @@ pub struct SystemLoanFeeReserve {
     check_point: u32,
 
     /// Execution costs that are deferred
-    execution_deferred: HashMap<&'static str, u32>,
+    execution_deferred: HashMap<GlobalUniqueStr, u32, RandomState>,
     /// Execution cost breakdown
-    execution: HashMap<&'static str, u32>,
+    execution: HashMap<GlobalUniqueStr, u32, RandomState>,
     /// Royalty cost breakdown
-    royalty: HashMap<RoyaltyReceiver, u32>,
+    royalty: HashMap<RoyaltyReceiver, u32, RandomState>,
 
     /// Cache: effective execution price
     effective_execution_price: u128,
@@ -136,9 +166,9 @@ impl SystemLoanFeeReserve {
             cost_unit_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
-            execution_deferred: HashMap::new(),
-            execution: HashMap::new(),
-            royalty: HashMap::new(),
+            execution_deferred: HashMap::with_hasher(RandomState::new()),
+            execution: HashMap::with_hasher(RandomState::new()),
+            royalty: HashMap::with_hasher(RandomState::new()),
             effective_execution_price: cost_unit_price
                 + cost_unit_price * tip_percentage as u128 / 100,
             effective_royalty_price: cost_unit_price,
@@ -234,6 +264,7 @@ impl FeeReserve for SystemLoanFeeReserve {
         reason: &'static str,
         deferred: bool,
     ) -> Result<(), FeeReserveError> {
+        let reason = GlobalUniqueStr(reason);
         if amount == 0 {
             return Ok(());
         }
@@ -300,7 +331,7 @@ impl FeeReserve for SystemLoanFeeReserve {
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v))
                 .collect(),
-            royalty_cost_unit_breakdown: self.royalty,
+            royalty_cost_unit_breakdown: self.royalty.into_iter().collect(),
         }
     }
 }
