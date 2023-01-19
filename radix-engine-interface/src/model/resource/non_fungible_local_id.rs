@@ -127,7 +127,7 @@ impl NonFungibleLocalId {
             NonFungibleLocalId::UUID(v) => {
                 // 0100 - v4
                 // 10 - variant 1
-                if (v & 0x00000000_0000_f000_C000_000000000000u128)
+                if (v & 0x00000000_0000_f000_c000_000000000000u128)
                     != 0x00000000_0000_4000_8000_000000000000u128
                 {
                     return Err(ContentValidationError::NotUuidV4Variant1);
@@ -272,10 +272,14 @@ impl FromStr for NonFungibleLocalId {
                 && chars[23] == '-'
             {
                 let hyphen_stripped: String = chars.into_iter().filter(|c| *c != '-').collect();
-                NonFungibleLocalId::UUID(
-                    u128::from_str_radix(&hyphen_stripped, 16)
-                        .map_err(|_| ParseNonFungibleLocalIdError::InvalidUUID)?,
-                )
+                if hyphen_stripped.len() == 32 {
+                    NonFungibleLocalId::UUID(
+                        u128::from_str_radix(&hyphen_stripped, 16)
+                            .map_err(|_| ParseNonFungibleLocalIdError::InvalidUUID)?,
+                    )
+                } else {
+                    return Err(ParseNonFungibleLocalIdError::InvalidUUID);
+                }
             } else {
                 return Err(ParseNonFungibleLocalIdError::InvalidUUID);
             }
@@ -333,15 +337,9 @@ mod tests {
         let validation_result =
             NonFungibleLocalId::Bytes([0; 1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH].to_vec())
                 .validate_contents();
-        assert!(matches!(
-            validation_result,
-            Err(ContentValidationError::TooLong)
-        ));
+        assert_eq!(validation_result, Err(ContentValidationError::TooLong));
         let validation_result = NonFungibleLocalId::Bytes(vec![]).validate_contents();
-        assert!(matches!(
-            validation_result,
-            Err(ContentValidationError::Empty)
-        ));
+        assert_eq!(validation_result, Err(ContentValidationError::Empty));
 
         // String length
         let validation_result =
@@ -351,35 +349,36 @@ mod tests {
         let validation_result =
             NonFungibleLocalId::String(string_of_length(1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH))
                 .validate_contents();
-        assert!(matches!(
-            validation_result,
-            Err(ContentValidationError::TooLong)
-        ));
+        assert_eq!(validation_result, Err(ContentValidationError::TooLong));
         let validation_result = NonFungibleLocalId::String("".to_string()).validate_contents();
-        assert!(matches!(
+        assert_eq!(validation_result, Err(ContentValidationError::Empty));
+
+        let validation_result =
+            NonFungibleLocalId::from_str("{--------------4----8---------------1}");
+        assert_eq!(
             validation_result,
-            Err(ContentValidationError::Empty)
-        ));
+            Err(ParseNonFungibleLocalIdError::InvalidUUID)
+        );
 
         // UUIDv1
         let validation_result =
             NonFungibleLocalId::from_str("{baaa4d3e-97f6-11ed-a8fc-0242ac120002}");
-        assert!(matches!(
+        assert_eq!(
             validation_result,
             Err(ParseNonFungibleLocalIdError::ContentValidationError(
                 ContentValidationError::NotUuidV4Variant1
             ))
-        ));
+        );
 
         // UUIDv4 variant 2
         let validation_result =
             NonFungibleLocalId::from_str("{a5942110-956f-4b51-d517-79366f501d25}");
-        assert!(matches!(
+        assert_eq!(
             validation_result,
             Err(ParseNonFungibleLocalIdError::ContentValidationError(
                 ContentValidationError::NotUuidV4Variant1
             ))
-        ));
+        );
     }
 
     fn string_of_length(size: usize) -> String {

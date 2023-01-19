@@ -121,13 +121,26 @@ mod tests {
 
     #[test]
     fn test_uuid_gen() {
-        let hash =
-            Hash::from_str("71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d")
-                .unwrap();
-        let id = generate_uuid(&hash, 5);
+        let id = generate_uuid(
+            &Hash::from_str("71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d")
+                .unwrap(),
+            5,
+        );
         assert_eq!(
             NonFungibleLocalId::UUID(id).to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
+        );
+
+        let id = generate_uuid(&Hash([0u8; 32]), 5);
+        assert_eq!(
+            NonFungibleLocalId::UUID(id).to_string(),
+            "{00000000-0000-4000-8000-000000000005}"
+        );
+
+        let id = generate_uuid(&Hash([255u8; 32]), 5);
+        assert_eq!(
+            NonFungibleLocalId::UUID(id).to_string(),
+            "{ffffffff-ffff-4fff-bfff-ffff00000005}"
         );
     }
 }

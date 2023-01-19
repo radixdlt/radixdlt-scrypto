@@ -527,7 +527,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomValueKind::NonFungibleLocalId,
-            &value.serializable(*context),
+            &format!("{}", value),
         ),
     }
 }
@@ -937,10 +937,10 @@ mod tests {
                 "1",
                 "0.01",
                 "0",
-                { "type": "NonFungibleLocalId", "value": "hello" },
-                { "type": "NonFungibleLocalId", "value": "123" },
-                { "type": "NonFungibleLocalId", "value": { "hex": "2345" } },
-                { "type": "NonFungibleLocalId", "value": "41635955959434943928015079245517041341" },
+                { "type": "NonFungibleLocalId", "value": "<hello>" },
+                { "type": "NonFungibleLocalId", "value": "#123#" },
+                { "type": "NonFungibleLocalId", "value": "[2345]" },
+                { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
             ]
         ]);
 
@@ -992,10 +992,10 @@ mod tests {
                         { "type": "Decimal", "value": "1" },
                         { "type": "Decimal", "value": "0.01" },
                         { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "NonFungibleLocalId", "value": { "type": "String", "value": "hello" } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "U64", "value": "123" } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "U128", "value": "41635955959434943928015079245517041341" } },
+                        { "type": "NonFungibleLocalId", "value": "<hello>" },
+                        { "type": "NonFungibleLocalId", "value": "#123#" },
+                        { "type": "NonFungibleLocalId", "value": "[2345]" },
+                        { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
                     ]
                 }
             ]
