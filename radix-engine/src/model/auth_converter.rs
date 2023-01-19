@@ -102,14 +102,14 @@ fn soft_to_hard_resource_list(
                         )
                     }
                     Type::Array { element_type, .. } | Type::Vec { element_type }
-                        if matches!(element_type.as_ref(), Type::NonFungibleAddress) =>
+                        if matches!(element_type.as_ref(), Type::NonFungibleGlobalId) =>
                     {
                         let v = sbor_path
                             .get_from_value(value.as_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardProofRuleResourceList::List(
-                            scrypto_decode::<Vec<NonFungibleAddress>>(&scrypto_encode(v).unwrap())
+                            scrypto_decode::<Vec<NonFungibleGlobalId>>(&scrypto_encode(v).unwrap())
                                 .expect(
                                     format!("Unexpected value type at {:?}", schema_path).as_str(),
                                 )
@@ -179,7 +179,7 @@ fn soft_to_hard_resource_or_non_fungible(
                             ),
                         )
                     }
-                    Type::NonFungibleAddress => {
+                    Type::NonFungibleGlobalId => {
                         let v = sbor_path
                             .get_from_value(value.as_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
@@ -196,8 +196,8 @@ fn soft_to_hard_resource_or_non_fungible(
                 HardResourceOrNonFungible::InvalidSchemaPath
             }
         }
-        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) => {
-            HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_global_id) => {
+            HardResourceOrNonFungible::NonFungible(non_fungible_global_id.clone())
         }
         SoftResourceOrNonFungible::StaticResource(resource_def_id) => {
             HardResourceOrNonFungible::Resource(resource_def_id.clone())

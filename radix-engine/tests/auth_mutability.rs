@@ -74,7 +74,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt

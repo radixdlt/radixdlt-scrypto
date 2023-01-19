@@ -255,9 +255,10 @@ impl AuthModule {
 
             // Add Package Actor Auth
             let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
-            let address = NonFungibleAddress::new(PACKAGE_TOKEN, NonFungibleId::Bytes(id));
+            let non_fungible_global_id =
+                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(id));
             let mut virtual_non_fungibles = BTreeSet::new();
-            virtual_non_fungibles.insert(address);
+            virtual_non_fungibles.insert(non_fungible_global_id);
 
             auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
             system_api.drop_lock(handle)?;

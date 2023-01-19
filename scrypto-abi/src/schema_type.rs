@@ -57,7 +57,7 @@ pub enum Type {
         name: String,
         fields: Fields,
     },
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // Enum
     Enum {
@@ -94,7 +94,7 @@ pub enum Type {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     Any,
 }

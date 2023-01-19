@@ -140,8 +140,8 @@ mod tests {
     }
 
     #[test]
-    fn test_args_with_non_fungible_id() {
-        let id = NonFungibleId::Number(1);
+    fn test_args_with_non_fungible_local_id() {
+        let id = NonFungibleLocalId::Number(1);
         let _x = args!(BTreeSet::from([id]));
     }
 

@@ -144,24 +144,24 @@ where
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 // Lazy create component if missing
-                let non_fungible_address = match component_address {
+                let non_fungible_global_id = match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        NonFungibleAddress::new(
+                        NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        NonFungibleAddress::new(
+                        NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     _ => return Ok(false),
                 };
 
                 // TODO: Replace with trusted IndexedScryptoValue
-                let access_rule = rule!(require(non_fungible_address));
+                let access_rule = rule!(require(non_fungible_global_id));
                 let result = self.invoke(ScryptoInvocation {
                     package_address: ACCOUNT_PACKAGE,
                     blueprint_name: "Account".to_string(),

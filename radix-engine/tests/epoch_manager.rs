@@ -139,7 +139,7 @@ fn register_validator_with_auth_succeeds() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
 
     // Assert
@@ -194,7 +194,7 @@ fn unregister_validator_with_auth_succeeds() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
 
     // Assert
@@ -242,7 +242,7 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -293,7 +293,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 

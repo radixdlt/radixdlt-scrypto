@@ -54,7 +54,7 @@ pub enum TokenKind {
     Ok,
     Err,
     Bytes,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // ==============
     // SBOR custom types
@@ -82,7 +82,7 @@ pub enum TokenKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -408,7 +408,7 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
@@ -428,7 +428,7 @@ impl Lexer {
             "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

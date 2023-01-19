@@ -43,7 +43,7 @@ fn test_component() {
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt2.expect_commit_success();
 }

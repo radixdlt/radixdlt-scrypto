@@ -97,7 +97,7 @@ impl ManifestBuilder {
     /// Takes resource from worktop, by non-fungible ids.
     pub fn take_from_worktop_by_ids<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
@@ -140,7 +140,7 @@ impl ManifestBuilder {
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::AssertWorktopContainsByIds {
@@ -205,7 +205,7 @@ impl ManifestBuilder {
     /// Creates proof from the auth zone by non-fungible ids.
     pub fn create_proof_from_auth_zone_by_ids<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
@@ -280,7 +280,7 @@ impl ManifestBuilder {
         &mut self,
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
@@ -295,14 +295,14 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
         R: Into<AccessRule>,
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let initial_supply = initial_supply.map(|entries| {
@@ -327,13 +327,13 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource with an owner badge
     pub fn create_non_fungible_resource_with_owner<T, V>(
         &mut self,
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let initial_supply = initial_supply.map(|entries| {
@@ -505,7 +505,7 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -623,7 +623,7 @@ impl ManifestBuilder {
         entries: T,
     ) -> &mut Self
     where
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let entries = entries
@@ -662,12 +662,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
+    pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_address.non_fungible_id().clone());
+        ids.insert(non_fungible_global_id.non_fungible_local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
-            non_fungible_address.resource_address().clone(),
+            non_fungible_global_id.resource_address().clone(),
             |builder, bucket_id| {
                 builder
                     .add_instruction(BasicInstruction::BurnResource { bucket_id })
@@ -736,7 +736,7 @@ impl ManifestBuilder {
         &mut self,
         account: ComponentAddress,
         amount_to_lock: Decimal,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
@@ -804,7 +804,7 @@ impl ManifestBuilder {
     pub fn withdraw_from_account_by_ids(
         &mut self,
         account: ComponentAddress,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
@@ -851,7 +851,7 @@ impl ManifestBuilder {
     pub fn create_proof_from_account_by_ids(
         &mut self,
         account: ComponentAddress,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {

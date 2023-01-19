@@ -23,7 +23,10 @@ impl TestTransaction {
         }
     }
 
-    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
+    pub fn get_executable<'a>(
+        &'a self,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+    ) -> Executable<'a> {
         let payload = scrypto_encode(self).unwrap();
         let payload_size = payload.len();
         let transaction_hash = hash(payload);

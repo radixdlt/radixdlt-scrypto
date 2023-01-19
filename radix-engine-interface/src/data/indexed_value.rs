@@ -468,7 +468,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             | ScryptoCustomValue::EddsaEd25519Signature(_)
             | ScryptoCustomValue::Decimal(_)
             | ScryptoCustomValue::PreciseDecimal(_)
-            | ScryptoCustomValue::NonFungibleId(_) => {
+            | ScryptoCustomValue::NonFungibleLocalId(_) => {
                 // no-op
             }
         }

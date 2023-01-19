@@ -7,18 +7,18 @@ use sbor::rust::vec::Vec;
 pub struct AuthAddresses;
 
 impl AuthAddresses {
-    pub fn system_role() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::Number(0))
+    pub fn system_role() -> NonFungibleGlobalId {
+        NonFungibleGlobalId::new(SYSTEM_TOKEN, NonFungibleLocalId::Number(0))
     }
 
-    pub fn validator_role() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::Number(1))
+    pub fn validator_role() -> NonFungibleGlobalId {
+        NonFungibleGlobalId::new(SYSTEM_TOKEN, NonFungibleLocalId::Number(1))
     }
 
-    pub fn signer_set(signer_public_keys: &[PublicKey]) -> Vec<NonFungibleAddress> {
+    pub fn signer_set(signer_public_keys: &[PublicKey]) -> Vec<NonFungibleGlobalId> {
         signer_public_keys
             .iter()
-            .map(NonFungibleAddress::from_public_key)
+            .map(NonFungibleGlobalId::from_public_key)
             .collect()
     }
 }

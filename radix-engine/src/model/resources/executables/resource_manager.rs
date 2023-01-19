@@ -28,13 +28,13 @@ use radix_engine_interface::*;
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
-    NonFungibleAlreadyExists(NonFungibleAddress),
-    NonFungibleNotFound(NonFungibleAddress),
+    NonFungibleAlreadyExists(NonFungibleGlobalId),
+    NonFungibleNotFound(NonFungibleGlobalId),
     NotNonFungible,
     MismatchingBucketResource,
-    NonFungibleIdTypeDoesNotMatch(NonFungibleIdTypeId, NonFungibleIdTypeId),
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
-    InvalidNonFungibleIdTypeId,
+    InvalidNonFungibleIdType,
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -67,8 +67,8 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
-    id_type: NonFungibleIdTypeId,
-    entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    id_type: NonFungibleIdType,
+    entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
@@ -88,12 +88,12 @@ where
     );
 
     let bucket = {
-        for (non_fungible_id, data) in &entries {
-            if non_fungible_id.id_type() != id_type {
+        for (non_fungible_local_id, data) in &entries {
+            if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                            non_fungible_id.id_type(),
+                            non_fungible_local_id.id_type(),
                             id_type,
                         ),
                     ),
@@ -101,7 +101,7 @@ where
             }
 
             let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                non_fungible_id.clone(),
+                non_fungible_local_id.clone(),
             ));
             let non_fungible_handle =
                 api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
@@ -334,7 +334,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetNonFungibleIds)),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetNonFungibleLocalIds)),
         AllowAll,
         DenyAll,
     );
@@ -525,10 +525,10 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
-        if self.id_type == NonFungibleIdTypeId::UUID {
+        if self.id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
-                    ResourceManagerError::InvalidNonFungibleIdTypeId,
+                    ResourceManagerError::InvalidNonFungibleIdType,
                 ),
             ));
         }
@@ -608,13 +608,13 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         let mut entries = BTreeMap::new();
         for entry in self.entries {
             let uuid = Runtime::generate_uuid(api)?;
-            entries.insert(NonFungibleId::UUID(uuid), entry);
+            entries.insert(NonFungibleLocalId::UUID(uuid), entry);
         }
 
         let (resource_manager_substate, bucket) =
             build_non_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                NonFungibleIdTypeId::UUID,
+                NonFungibleIdType::UUID,
                 entries,
                 api,
             )?;
@@ -1115,7 +1115,7 @@ impl Executor for ResourceManagerCreateBucketExecutable {
 
 pub struct ResourceManagerMintNonFungibleExecutable(
     RENodeId,
-    BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 );
 
 impl ExecutableInvocation for ResourceManagerMintNonFungibleInvocation {
@@ -1169,10 +1169,10 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                 }
             };
 
-            if id_type == NonFungibleIdTypeId::UUID {
+            if id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdTypeId,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -1232,7 +1232,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
                             ResourceManagerError::NonFungibleAlreadyExists(
-                                NonFungibleAddress::new(resource_address, id),
+                                NonFungibleGlobalId::new(resource_address, id),
                             ),
                         ),
                     ));
@@ -1305,10 +1305,10 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             };
             let nf_store_id = resource_manager.nf_store_id.unwrap();
 
-            if id_type != NonFungibleIdTypeId::UUID {
+            if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdTypeId,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -1321,7 +1321,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
                 // TODO: Is this enough bits to prevent hash collisions?
                 // TODO: Possibly use an always incrementing timestamp
                 let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleId::UUID(uuid);
+                let id = NonFungibleLocalId::UUID(uuid);
                 ids.insert(id.clone());
 
                 {
@@ -1534,7 +1534,7 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     }
 }
 
-pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, Vec<u8>);
+pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleLocalId, Vec<u8>);
 
 impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
     type Output = ();
@@ -1572,10 +1572,10 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
             non_fungible.set_mutable_data(self.2);
         } else {
-            let non_fungible_address = NonFungibleAddress::new(resource_address, self.1);
+            let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, self.1);
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
-                    non_fungible_address,
+                    non_fungible_global_id,
                 )),
             ));
         }
@@ -1609,7 +1609,7 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleId);
+pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleLocalId);
 
 impl Executor for ResourceManagerNonFungibleExistsExecutable {
     type Output = bool;
@@ -1669,7 +1669,7 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     }
 }
 
-pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
+pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleLocalId);
 
 impl Executor for ResourceManagerGetNonFungibleExecutable {
     type Output = [Vec<u8>; 2];
@@ -1696,8 +1696,8 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
-        let non_fungible_address =
-            NonFungibleAddress::new(resource_manager.resource_address, self.1.clone());
+        let non_fungible_global_id =
+            NonFungibleGlobalId::new(resource_manager.resource_address, self.1.clone());
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
@@ -1713,7 +1713,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         } else {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
-                    non_fungible_address,
+                    non_fungible_global_id,
                 )),
             ));
         }

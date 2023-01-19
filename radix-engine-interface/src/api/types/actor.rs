@@ -496,7 +496,7 @@ pub enum BucketFn {
     Take,
     TakeNonFungibles,
     Put,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetAmount,
     GetResourceAddress,
     CreateProof,
@@ -529,7 +529,7 @@ pub enum VaultFn {
     TakeNonFungibles,
     GetAmount,
     GetResourceAddress,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
@@ -560,7 +560,7 @@ pub enum VaultFn {
 pub enum ProofFn {
     Clone,
     GetAmount,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetResourceAddress,
 }
 

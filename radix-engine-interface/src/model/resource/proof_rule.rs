@@ -135,14 +135,14 @@ impl From<&str> for SoftResource {
     LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungible {
-    StaticNonFungible(NonFungibleAddress),
+    StaticNonFungible(NonFungibleGlobalId),
     StaticResource(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
-impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
-    fn from(address: NonFungibleAddress) -> Self {
-        SoftResourceOrNonFungible::StaticNonFungible(address)
+impl From<NonFungibleGlobalId> for SoftResourceOrNonFungible {
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_global_id)
     }
 }
 

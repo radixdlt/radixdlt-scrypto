@@ -32,7 +32,7 @@ blueprint! {
         }
 
         pub fn create_component_with_royalty_enabled(
-            badge: NonFungibleAddress,
+            badge: NonFungibleGlobalId,
         ) -> ComponentAddress {
             let mut local_component = Self {}.instantiate();
 

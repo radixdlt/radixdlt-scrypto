@@ -73,7 +73,7 @@ impl ComponentAuthZone {
     }
 
     pub fn create_proof_by_ids(
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;

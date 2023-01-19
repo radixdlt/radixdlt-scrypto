@@ -25,7 +25,7 @@ fn test_component_royalty() {
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let component_address: ComponentAddress = receipt.output(1);
 
@@ -59,7 +59,8 @@ fn set_up_package_and_component() -> (
 
     // Publish package
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::Number(1));
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
     let package_address =
         test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 
@@ -75,7 +76,7 @@ fn set_up_package_and_component() -> (
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -90,7 +91,7 @@ fn set_up_package_and_component() -> (
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let component_address: ComponentAddress = receipt.output(1);
 
@@ -120,7 +121,7 @@ fn test_package_royalty() {
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_success();
@@ -146,7 +147,7 @@ fn test_royalty_accumulation_when_success() {
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_success();
@@ -176,7 +177,7 @@ fn test_royalty_accumulation_when_failure() {
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method_panic", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_failure();
@@ -206,7 +207,7 @@ fn test_claim_royalty() {
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
     receipt.expect_commit_success();
@@ -236,7 +237,7 @@ fn test_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -256,7 +257,7 @@ fn test_claim_royalty() {
                 args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 

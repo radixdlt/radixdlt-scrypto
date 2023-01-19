@@ -170,7 +170,7 @@ impl Executor for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for BucketGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -180,20 +180,20 @@ impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeFn::Bucket(BucketFn::GetNonFungibleIds),
+            NativeFn::Bucket(BucketFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for BucketGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for BucketGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
     fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

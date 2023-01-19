@@ -68,8 +68,8 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
-    let auth_id = NonFungibleId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
+    let auth_local_id = NonFungibleLocalId::Number(1);
+    let auth_global_id = NonFungibleGlobalId::new(auth_resource_address, auth_local_id);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -78,12 +78,12 @@ fn local_component_with_access_rules_should_not_be_callable() {
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            args!(auth_address),
+            args!(auth_global_id),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -99,8 +99,8 @@ fn local_component_with_access_rules_should_be_callable() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
-    let auth_id = NonFungibleId::Number(1);
-    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
+    let auth_local_id = NonFungibleLocalId::Number(1);
+    let auth_global_id = NonFungibleGlobalId::new(auth_resource_address, auth_local_id.clone());
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -108,18 +108,18 @@ fn local_component_with_access_rules_should_be_callable() {
         .call_method(
             account,
             "create_proof_by_ids",
-            args!(BTreeSet::from([auth_id]), auth_resource_address),
+            args!(BTreeSet::from([auth_local_id]), auth_resource_address),
         )
         .call_function(
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            args!(auth_address),
+            args!(auth_global_id),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -154,7 +154,7 @@ fn recursion_bomb() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -188,7 +188,7 @@ fn recursion_bomb_to_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -230,7 +230,7 @@ fn recursion_bomb_2() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -264,7 +264,7 @@ fn recursion_bomb_2_to_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

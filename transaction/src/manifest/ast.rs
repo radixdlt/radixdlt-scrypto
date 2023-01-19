@@ -221,7 +221,7 @@ pub enum Type {
     // Alias
     // ==============
     Bytes,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // ==============
     // Custom Types
@@ -247,11 +247,11 @@ pub enum Type {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl Type {
-    pub fn type_id(&self) -> ScryptoValueKind {
+    pub fn value_kind(&self) -> ScryptoValueKind {
         match self {
             Type::Bool => ScryptoValueKind::Bool,
             Type::I8 => ScryptoValueKind::I8,
@@ -271,7 +271,7 @@ impl Type {
 
             // Aliases
             Type::Bytes => ScryptoValueKind::Array,
-            Type::NonFungibleAddress => ScryptoValueKind::Tuple,
+            Type::NonFungibleGlobalId => ScryptoValueKind::Tuple,
 
             // RE interpreted types
             Type::PackageAddress => {
@@ -309,7 +309,9 @@ impl Type {
             Type::PreciseDecimal => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
-            Type::NonFungibleId => ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId),
+            Type::NonFungibleLocalId => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
+            }
         }
     }
 }
@@ -345,7 +347,7 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
     Bytes(Box<Value>),
-    NonFungibleAddress(Box<Value>, Box<Value>),
+    NonFungibleGlobalId(Box<Value>, Box<Value>),
 
     // ==============
     // Custom Types
@@ -371,11 +373,11 @@ pub enum Value {
     EddsaEd25519Signature(Box<Value>),
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
-    NonFungibleId(Box<Value>),
+    NonFungibleLocalId(Box<Value>),
 }
 
 impl Value {
-    pub const fn type_id(&self) -> ScryptoValueKind {
+    pub const fn value_kind(&self) -> ScryptoValueKind {
         match self {
             // ==============
             // Basic Types
@@ -405,7 +407,7 @@ impl Value {
             Value::Ok(_) => ScryptoValueKind::Enum,
             Value::Err(_) => ScryptoValueKind::Enum,
             Value::Bytes(_) => ScryptoValueKind::Array,
-            Value::NonFungibleAddress(_, _) => ScryptoValueKind::Tuple,
+            Value::NonFungibleGlobalId(_, _) => ScryptoValueKind::Tuple,
 
             // ==============
             // Custom Types
@@ -447,8 +449,8 @@ impl Value {
             Value::PreciseDecimal(_) => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
-            Value::NonFungibleId(_) => {
-                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId)
+            Value::NonFungibleLocalId(_) => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
             }
         }
     }

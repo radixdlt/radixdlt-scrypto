@@ -283,7 +283,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleGlobalId => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -308,7 +308,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
             TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleId => self.parse_scrypto_types(),
+            TokenKind::NonFungibleLocalId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -365,9 +365,9 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
-            TokenKind::NonFungibleAddress => {
+            TokenKind::NonFungibleGlobalId => {
                 let tuple = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(
+                Ok(Value::NonFungibleGlobalId(
                     Box::new(tuple.0),
                     Box::new(tuple.1),
                 ))
@@ -411,7 +411,9 @@ impl Parser {
             )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleLocalId => {
+                Ok(Value::NonFungibleLocalId(self.parse_values_one()?.into()))
+            }
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -503,7 +505,7 @@ impl Parser {
 
             // Alias
             TokenKind::Bytes => Ok(Type::Bytes),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+            TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
 
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
@@ -525,7 +527,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
-            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::NonFungibleLocalId => Ok(Type::NonFungibleLocalId),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

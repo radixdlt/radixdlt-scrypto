@@ -101,7 +101,7 @@ impl Into<CallTableInvocation> for AuthZoneCreateProofByAmountInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 

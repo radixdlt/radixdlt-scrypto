@@ -93,7 +93,7 @@ impl ComponentAuthZone {
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         env: &mut Y,
     ) -> Result<Proof, E>

@@ -30,17 +30,17 @@ pub trait ScryptoProof: Sized {
         &self,
         resource_addresses: &BTreeSet<ResourceAddress>,
     ) -> Result<(), ProofValidationError>;
-    fn validate_contains_non_fungible_id(
+    fn validate_contains_non_fungible_local_id(
         &self,
-        non_fungible_id: &NonFungibleId,
+        non_fungible_local_id: &NonFungibleLocalId,
     ) -> Result<(), ProofValidationError>;
-    fn validate_contains_non_fungible_ids(
+    fn validate_contains_non_fungible_local_ids(
         &self,
-        expected_non_fungible_ids: &BTreeSet<NonFungibleId>,
+        expected_non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<(), ProofValidationError>;
     fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError>;
     fn amount(&self) -> Decimal;
-    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn resource_address(&self) -> ResourceAddress;
     fn drop(self);
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
@@ -102,7 +102,7 @@ impl ScryptoProof for Proof {
     ///
     /// # WARNING:
     ///
-    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
+    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleLocalId`
     /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
     /// resource address. If you call this method, you should perform your own validation.
     fn unsafe_skip_proof_validation(self) -> ValidatedProof {
@@ -124,17 +124,19 @@ impl ScryptoProof for Proof {
                 self.validate_resource_address_belongs_to(&resource_addresses)?;
                 Ok(())
             }
-            ProofValidationMode::ValidateContainsNonFungible(non_fungible_address) => {
-                self.validate_resource_address(non_fungible_address.resource_address())?;
-                self.validate_contains_non_fungible_id(non_fungible_address.non_fungible_id())?;
+            ProofValidationMode::ValidateContainsNonFungible(non_fungible_global_id) => {
+                self.validate_resource_address(non_fungible_global_id.resource_address())?;
+                self.validate_contains_non_fungible_local_id(
+                    non_fungible_global_id.non_fungible_local_id(),
+                )?;
                 Ok(())
             }
             ProofValidationMode::ValidateContainsNonFungibles(
                 resource_address,
-                non_fungible_ids,
+                non_fungible_local_ids,
             ) => {
                 self.validate_resource_address(resource_address)?;
-                self.validate_contains_non_fungible_ids(&non_fungible_ids)?;
+                self.validate_contains_non_fungible_local_ids(&non_fungible_local_ids)?;
                 Ok(())
             }
             ProofValidationMode::ValidateContainsAmount(resource_address, amount) => {
@@ -169,29 +171,38 @@ impl ScryptoProof for Proof {
         }
     }
 
-    fn validate_contains_non_fungible_id(
+    fn validate_contains_non_fungible_local_id(
         &self,
-        non_fungible_id: &NonFungibleId,
+        non_fungible_local_id: &NonFungibleLocalId,
     ) -> Result<(), ProofValidationError> {
-        if self.non_fungible_ids().get(non_fungible_id).is_some() {
+        if self
+            .non_fungible_local_ids()
+            .get(non_fungible_local_id)
+            .is_some()
+        {
             Ok(())
         } else {
-            Err(ProofValidationError::NonFungibleIdNotFound)
+            Err(ProofValidationError::NonFungibleLocalIdNotFound)
         }
     }
 
-    fn validate_contains_non_fungible_ids(
+    fn validate_contains_non_fungible_local_ids(
         &self,
-        expected_non_fungible_ids: &BTreeSet<NonFungibleId>,
+        expected_non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<(), ProofValidationError> {
-        let actual_non_fungible_ids = self.non_fungible_ids();
-        let contains_all_non_fungible_ids = expected_non_fungible_ids
-            .iter()
-            .all(|non_fungible_id| actual_non_fungible_ids.get(non_fungible_id).is_some());
-        if contains_all_non_fungible_ids {
+        let actual_non_fungible_local_ids = self.non_fungible_local_ids();
+        let contains_all_non_fungible_local_ids =
+            expected_non_fungible_local_ids
+                .iter()
+                .all(|non_fungible_local_id| {
+                    actual_non_fungible_local_ids
+                        .get(non_fungible_local_id)
+                        .is_some()
+                });
+        if contains_all_non_fungible_local_ids {
             Ok(())
         } else {
-            Err(ProofValidationError::NonFungibleIdNotFound)
+            Err(ProofValidationError::NonFungibleLocalIdNotFound)
         }
     }
 
@@ -209,8 +220,8 @@ impl ScryptoProof for Proof {
                 receiver: self.0
             }
         }
-        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-            ProofGetNonFungibleIdsInvocation {
+        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+            ProofGetNonFungibleLocalIdsInvocation {
                 receiver: self.0
             }
         }
@@ -245,8 +256,8 @@ impl ValidatedProof {
                 receiver: self.proof_id(),
             }
         }
-        pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-            ProofGetNonFungibleIdsInvocation {
+        pub fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+            ProofGetNonFungibleLocalIdsInvocation {
                 receiver: self.proof_id(),
             }
         }
@@ -273,14 +284,14 @@ impl ValidatedProof {
     }
 
     /// Whether this proof includes an ownership proof of the given non-fungible.
-    pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_address() != non_fungible_address.resource_address() {
+    pub fn contains_non_fungible(&self, non_fungible_global_id: &NonFungibleGlobalId) -> bool {
+        if self.resource_address() != non_fungible_global_id.resource_address() {
             return false;
         }
 
-        self.non_fungible_ids()
+        self.non_fungible_local_ids()
             .iter()
-            .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
+            .any(|k| k.eq(&non_fungible_global_id.non_fungible_local_id()))
     }
 
     /// Returns all the non-fungible units contained.
@@ -289,9 +300,9 @@ impl ValidatedProof {
     /// Panics if this is not a non-fungible proof.
     pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
-        self.non_fungible_ids()
+        self.non_fungible_local_ids()
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
             .collect()
     }
 
@@ -299,12 +310,12 @@ impl ValidatedProof {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    pub fn non_fungible_id(&self) -> NonFungibleId {
-        let non_fungible_ids = self.non_fungible_ids();
-        if non_fungible_ids.len() != 1 {
+    pub fn non_fungible_local_id(&self) -> NonFungibleLocalId {
+        let non_fungible_local_ids = self.non_fungible_local_ids();
+        if non_fungible_local_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
-        self.non_fungible_ids().into_iter().next().unwrap()
+        self.non_fungible_local_ids().into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.

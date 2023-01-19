@@ -90,14 +90,14 @@ pub trait InvokableModel<E>:
     + Invokable<BucketTakeInvocation, E>
     + Invokable<BucketPutInvocation, E>
     + Invokable<BucketTakeNonFungiblesInvocation, E>
-    + Invokable<BucketGetNonFungibleIdsInvocation, E>
+    + Invokable<BucketGetNonFungibleLocalIdsInvocation, E>
     + Invokable<BucketGetAmountInvocation, E>
     + Invokable<BucketGetResourceAddressInvocation, E>
     + Invokable<BucketCreateProofInvocation, E>
     + Invokable<BucketCreateProofInvocation, E>
     + Invokable<ProofCloneInvocation, E>
     + Invokable<ProofGetAmountInvocation, E>
-    + Invokable<ProofGetNonFungibleIdsInvocation, E>
+    + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBucketBurnInvocation, E>
     + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
@@ -124,7 +124,7 @@ pub trait InvokableModel<E>:
     + Invokable<VaultTakeNonFungiblesInvocation, E>
     + Invokable<VaultGetAmountInvocation, E>
     + Invokable<VaultGetResourceAddressInvocation, E>
-    + Invokable<VaultGetNonFungibleIdsInvocation, E>
+    + Invokable<VaultGetNonFungibleLocalIdsInvocation, E>
     + Invokable<VaultCreateProofInvocation, E>
     + Invokable<VaultCreateProofByAmountInvocation, E>
     + Invokable<VaultCreateProofByIdsInvocation, E>

@@ -48,7 +48,7 @@ pub trait LocalComponent {
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
-    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -142,7 +142,7 @@ impl Component {
 
     /// Globalize with owner badge. This will add additional access rules to protect native
     /// methods, such as metadata and royalty.
-    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
         ScryptoEnv
             .invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,

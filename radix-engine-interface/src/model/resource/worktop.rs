@@ -55,7 +55,7 @@ impl Into<CallTableInvocation> for WorktopTakeAmountInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopTakeNonFungiblesInvocation {
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
@@ -133,7 +133,7 @@ impl Into<CallTableInvocation> for WorktopAssertContainsAmountInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for WorktopAssertContainsNonFungiblesInvocation {

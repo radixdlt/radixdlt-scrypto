@@ -25,11 +25,11 @@ impl Runtime {
             .unwrap()
     }
 
-    pub fn package_token() -> NonFungibleAddress {
-        let non_fungible_id = NonFungibleId::Bytes(
+    pub fn package_token() -> NonFungibleGlobalId {
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
         );
-        NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id)
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.

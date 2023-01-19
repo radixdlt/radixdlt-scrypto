@@ -242,7 +242,7 @@ pub enum KeyValueStoreOffset {
     ScryptoDecode,
 )]
 pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleId),
+    Entry(NonFungibleLocalId),
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
