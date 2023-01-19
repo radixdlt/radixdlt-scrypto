@@ -15,11 +15,12 @@ use crate::scrypto_type;
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
-    EcdsaSecp256k1VirtualAccount([u8; 26]),
-    EddsaEd25519VirtualAccount([u8; 26]),
     Clock([u8; 26]),
     EpochManager([u8; 26]),
     Validator([u8; 26]),
+    EcdsaSecp256k1VirtualAccount([u8; 26]),
+    EddsaEd25519VirtualAccount([u8; 26]),
+    EcdsaSecp256k1VirtualIdentity([u8; 26]),
 }
 
 //========
@@ -36,15 +37,18 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
+                EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
+                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
+                EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
                 EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
                     Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
                 ),
                 EntityType::EddsaEd25519VirtualAccountComponent => {
                     Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
-                EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
-                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
-                EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
+                EntityType::EcdsaSecp256k1VirtualIdentityComponent => Ok(
+                    Self::EcdsaSecp256k1VirtualIdentity(copy_u8_array(&slice[1..])),
+                ),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -57,11 +61,12 @@ impl ComponentAddress {
         match self {
             Self::Normal(v) => v.clone(),
             Self::Account(v) => v.clone(),
-            Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
-            Self::EddsaEd25519VirtualAccount(v) => v.clone(),
             Self::Clock(v) => v.clone(),
             Self::EpochManager(v) => v.clone(),
             Self::Validator(v) => v.clone(),
+            Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
+            Self::EddsaEd25519VirtualAccount(v) => v.clone(),
+            Self::EcdsaSecp256k1VirtualIdentity(v) => v.clone(),
         }
     }
 
@@ -71,11 +76,13 @@ impl ComponentAddress {
         match self {
             Self::Normal(v)
             | Self::Account(v)
-            | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v)
             | Self::Clock(v)
             | Self::EpochManager(v)
-            | Self::Validator(v) => buf.extend(v),
+            | Self::Validator(v)
+            | Self::EddsaEd25519VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualIdentity(v)
+            => buf.extend(v),
         }
         buf
     }
@@ -161,6 +168,13 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => {
+                write!(
+                    f,
+                    "EcdsaSecp256k1VirtualIdentityComponent[{}]",
+                    self.to_hex()
+                )
             }
         }
         .map_err(|err| AddressError::FormatError(err))
