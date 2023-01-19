@@ -1,3 +1,4 @@
+use radix_engine_interface::api::wasm::Buffer;
 use radix_engine_interface::api::wasm::Slice;
 use sbor::rust::sync::Arc;
 use wasmi::*;
@@ -158,8 +159,8 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
     }
 
     pub fn read_slice(&self, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
-        let ptr = slice_ptr!(v);
-        let len = slice_len!(v);
+        let ptr = v.ptr();
+        let len = v.len();
 
         self.read_memory(ptr, len)
     }
@@ -195,7 +196,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     self.read_memory(args_ptr, args_len)?,
                 )?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             INVOKE_FUNCTION_ID => {
                 let invocation_ptr = args.nth_checked::<u32>(0)?;
@@ -205,7 +206,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .runtime
                     .invoke(self.read_memory(invocation_ptr, invocation_len)?)?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             CREATE_NODE_FUNCTION_ID => {
                 let node_ptr = args.nth_checked::<u32>(0)?;
@@ -215,12 +216,12 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .runtime
                     .create_node(self.read_memory(node_ptr, node_len)?)?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             GET_VISIBLE_NODES_FUNCTION_ID => {
                 let buffer = self.runtime.get_visible_nodes()?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             DROP_NODE_FUNCTION_ID => {
                 let node_id_ptr = args.nth_checked::<u32>(0)?;
@@ -251,7 +252,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 let buffer = self.runtime.read_substate(handle)?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             WRITE_SUBSTATE_FUNCTION_ID => {
                 let handle = args.nth_checked::<u32>(0)?;
@@ -273,7 +274,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
             GET_ACTOR_FUNCTION_ID => {
                 let buffer = self.runtime.get_actor()?;
 
-                Ok(Some(RuntimeValue::I64(buffer as i64)))
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
             CONSUME_COST_UNITS_FUNCTION_ID => {
                 let n: u32 = args.nth_checked(0)?;
@@ -291,7 +292,7 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<u64>,
+        args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         let mut externals = WasmiExternals {
@@ -301,7 +302,7 @@ impl WasmInstance for WasmiInstance {
 
         let args: Vec<RuntimeValue> = args
             .into_iter()
-            .map(|a| RuntimeValue::I64(a as i64))
+            .map(|buffer| RuntimeValue::I64(buffer.as_i64()))
             .collect();
 
         let return_data = self
@@ -314,7 +315,7 @@ impl WasmInstance for WasmiInstance {
             })?;
 
         if let Some(RuntimeValue::I64(v)) = return_data {
-            externals.read_slice(v as u64)
+            externals.read_slice(Slice::transmute_i64(v))
         } else {
             Err(WasmRuntimeError::InvalidExportReturn)
         }

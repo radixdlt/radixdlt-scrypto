@@ -1,3 +1,4 @@
+use radix_engine_interface::api::wasm::*;
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
@@ -23,17 +24,17 @@ blueprint! {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> u64 {
+pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_valid_output(_input: u64) -> u64 {
+pub extern "C" fn AbiComponent2_valid_output(_input: u64) -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_abi() -> u64 {
+pub extern "C" fn AbiComponent2_abi() -> Slice {
     let structure = Type::Struct {
         name: "AbiComponent2".to_string(),
         fields: Fields::Unit,

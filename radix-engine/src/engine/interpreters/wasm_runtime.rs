@@ -46,11 +46,15 @@ where
         &mut self,
         buffer: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        assert!(buffer.len() <= 0xffffffff);
+
         let id = self.next_buffer_id;
         let len = buffer.len();
+
         self.buffers.insert(id, buffer);
         self.next_buffer_id += 1;
-        Ok(buffer!(id, len))
+
+        Ok(Buffer::new(id, len as u32))
     }
 
     fn consume_buffer(

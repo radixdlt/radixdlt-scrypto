@@ -7,7 +7,9 @@ use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ClockCreateInvocation {}
+pub struct ClockCreateInvocation {
+    pub component_address: [u8; 26], // TODO: Clean this up
+}
 
 impl Invocation for ClockCreateInvocation {
     type Output = ComponentAddress;

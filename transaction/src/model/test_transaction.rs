@@ -46,6 +46,7 @@ impl TestTransaction {
                     tip_percentage: 0,
                 },
                 runtime_validations: vec![],
+                pre_allocated_ids: BTreeSet::new(),
             },
         )
     }

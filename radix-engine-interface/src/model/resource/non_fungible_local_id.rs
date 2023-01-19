@@ -13,7 +13,7 @@ use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
-/// Trait for converting into a `NonFungibleLocalId` of any type (i.e., Number, String, Bytes and UUID).
+/// Trait for converting into a `NonFungibleLocalId` of any kind (i.e. Number, String, Bytes and UUID).
 pub trait IntoNonFungibleLocalId: Into<NonFungibleLocalId> {
     fn id_type() -> NonFungibleIdType;
 }
@@ -39,7 +39,7 @@ impl IntoNonFungibleLocalId for u128 {
     }
 }
 
-/// Trait for converting into a `NonFungibleLocalId` of non-auto-generated types (i.e., Number, String and Bytes).
+/// Trait for converting into a `NonFungibleLocalId` of non-auto-generated kind (i.e. Number, String and Bytes).
 pub trait IntoManualNonFungibleLocalId: IntoNonFungibleLocalId {}
 
 impl IntoManualNonFungibleLocalId for String {}

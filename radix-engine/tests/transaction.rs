@@ -15,7 +15,7 @@ fn test_manifest_with_non_existent_resource() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let non_existent_resource = ResourceAddress::Normal([0u8; 26]);
+    let non_existent_resource = ResourceAddress::Normal([1u8; 26]);
 
     // Act
     let manifest = ManifestBuilder::new()
