@@ -1,7 +1,7 @@
-use crate::api::api::Invocation;
+use crate::api::wasm::*;
+use crate::api::Invocation;
 use crate::math::Decimal;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;

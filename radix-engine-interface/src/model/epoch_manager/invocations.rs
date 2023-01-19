@@ -2,9 +2,9 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

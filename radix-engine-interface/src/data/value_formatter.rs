@@ -1,4 +1,5 @@
 use super::types::ManifestBucket;
+use super::types::ManifestExpression;
 use super::types::ManifestProof;
 use crate::address::Bech32Encoder;
 use crate::api::types::*;
@@ -353,8 +354,8 @@ pub fn format_custom_value<F: fmt::Write>(
                 f,
                 "Expression(\"{}\")",
                 match value {
-                    types::ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
-                    types::ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
+                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
+                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
                 }
             )?;
         }

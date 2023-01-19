@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::radix_engine_interface::api::api::Invokable;
+use crate::radix_engine_interface::api::Invokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::resource_access_rules_from_owner_badge;
 use radix_engine_interface::model::*;

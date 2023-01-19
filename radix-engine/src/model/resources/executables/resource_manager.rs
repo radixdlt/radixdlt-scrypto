@@ -11,11 +11,11 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
@@ -865,7 +865,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let node_ids = api.get_visible_node_ids()?;
+            let node_ids = api.get_visible_nodes()?;
             let auth_zone_id = node_ids
                 .into_iter()
                 .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
@@ -956,7 +956,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let node_ids = api.get_visible_node_ids()?;
+            let node_ids = api.get_visible_nodes()?;
             let auth_zone_id = node_ids
                 .into_iter()
                 .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))

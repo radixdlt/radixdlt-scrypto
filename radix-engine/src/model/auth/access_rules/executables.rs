@@ -5,10 +5,10 @@ use crate::engine::{
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
     AccessRulesChainFn, GlobalAddress, NativeFn, PackageOffset, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

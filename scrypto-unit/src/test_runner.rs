@@ -1014,15 +1014,17 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
             .replace("${memmove}", include_str!("snippets/memmove.wat"))
-            .replace("${memset}", include_str!("snippets/memset.wat"))
-            .replace("${buffer}", include_str!("snippets/buffer.wat")),
+            .replace("${memset}", include_str!("snippets/memset.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }

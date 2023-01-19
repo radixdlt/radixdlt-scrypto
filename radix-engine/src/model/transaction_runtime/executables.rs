@@ -1,8 +1,8 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -7,13 +7,13 @@ use scrypto_abi::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
-use crate::api::api::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;
-use crate::wasm::*;
 
 use crate::*;
 

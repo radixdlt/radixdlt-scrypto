@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoReceiver,
 };
+use radix_engine_interface::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -74,10 +74,10 @@ impl Runtime {
             .invoke_method(
                 ScryptoReceiver::Global(component_address),
                 method.as_ref(),
-                &scrypto_decode(&args).unwrap(),
+                args,
             )
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the transaction hash.

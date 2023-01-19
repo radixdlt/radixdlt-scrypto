@@ -12,7 +12,7 @@ fn cannot_set_package_metadata_with_no_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            generate_single_function_abi("Test", "f", Type::Any),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -53,7 +53,11 @@ fn can_set_package_metadata_with_owner() {
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::Number(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
+        .publish_package_with_owner(
+            code,
+            generate_single_function_abi("Test", "f", Type::Any),
+            owner_badge_addr,
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -90,7 +94,11 @@ fn can_lock_package_metadata_with_owner() {
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::Number(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
+        .publish_package_with_owner(
+            code,
+            generate_single_function_abi("Test", "f", Type::Any),
+            owner_badge_addr,
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();

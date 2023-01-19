@@ -1,7 +1,7 @@
 use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
-use radix_engine_interface::api::api::InvokableModel;
+use radix_engine_interface::api::InvokableModel;
 
 pub fn resolve_method<Y: SystemApi>(
     receiver: ScryptoReceiver,
@@ -101,8 +101,7 @@ where
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
             let rtn = api.invoke(invocation)?;
-            let rtn = IndexedScryptoValue::from_typed(&rtn);
-            Ok(rtn)
+            Ok(IndexedScryptoValue::from_value(rtn))
         }
         CallTableInvocation::Native(invocation) => {
             let rtn = invoke_native_fn(invocation, api)?;

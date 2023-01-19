@@ -42,7 +42,7 @@ pub trait SystemApi {
     ) -> Result<Resource, RuntimeError>;
 
     /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     fn get_visible_node_data(
         &mut self,

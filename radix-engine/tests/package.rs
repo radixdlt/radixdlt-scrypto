@@ -1,4 +1,4 @@
-use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::engine::{ApplicationError, InterpreterError, KernelError, RuntimeError};
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
@@ -60,8 +60,8 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
-            matches!(*b, WasmError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -83,8 +83,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
-            matches!(*b, WasmError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -107,7 +107,10 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+        matches!(
+            e,
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(..))
+        )
     });
 }
 
@@ -122,7 +125,7 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            generate_single_function_abi("Test", "f", Type::Any),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

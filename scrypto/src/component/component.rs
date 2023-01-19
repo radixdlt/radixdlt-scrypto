@@ -1,10 +1,10 @@
 use radix_engine_derive::LegacyDescribe;
-use radix_engine_interface::api::api::{ComponentApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
@@ -74,13 +74,9 @@ impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(
-                ScryptoReceiver::Component(self.0),
-                method,
-                &scrypto_decode(&args).unwrap(),
-            )
+            .invoke_method(ScryptoReceiver::Component(self.0), method, args)
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -177,13 +173,9 @@ impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(
-                ScryptoReceiver::Global(self.0),
-                method,
-                &scrypto_decode(&args).unwrap(),
-            )
+            .invoke_method(ScryptoReceiver::Global(self.0), method, args)
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
