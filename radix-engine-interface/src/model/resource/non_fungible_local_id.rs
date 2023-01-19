@@ -70,17 +70,22 @@ impl From<u128> for NonFungibleLocalId {
 /// Represents the local id of a non-fungible.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleLocalId {
+    /// String of `[_0-9a-zA-Z]{1,64}`.
     String(String),
+    /// Unsigned integers, up to u64.
     Integer(u64),
+    /// Bytes, of length between 1 and 64.
     Bytes(Vec<u8>),
+    /// UUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
     UUID(u128),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdValidationError {
+pub enum ContentValidationError {
     TooLong,
     Empty,
     ContainsBadCharacter(char),
+    NotUuidV4Variant1,
 }
 
 impl NonFungibleLocalId {
@@ -93,32 +98,43 @@ impl NonFungibleLocalId {
         }
     }
 
-    pub fn validate_contents(&self) -> Result<(), IdValidationError> {
+    pub fn validate_contents(&self) -> Result<(), ContentValidationError> {
         match self {
             NonFungibleLocalId::String(value) => {
                 if value.len() == 0 {
-                    return Err(IdValidationError::Empty);
+                    return Err(ContentValidationError::Empty);
                 }
                 if value.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
-                    return Err(IdValidationError::TooLong);
+                    return Err(ContentValidationError::TooLong);
                 }
                 for char in value.chars() {
                     if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
-                        return Err(IdValidationError::ContainsBadCharacter(char));
+                        return Err(ContentValidationError::ContainsBadCharacter(char));
                     }
                 }
                 Ok(())
             }
             NonFungibleLocalId::Bytes(value) => {
                 if value.len() == 0 {
-                    return Err(IdValidationError::Empty);
+                    return Err(ContentValidationError::Empty);
                 }
                 if value.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
-                    return Err(IdValidationError::TooLong);
+                    return Err(ContentValidationError::TooLong);
                 }
                 Ok(())
             }
-            NonFungibleLocalId::Integer(_) | NonFungibleLocalId::UUID(_) => Ok(()),
+            NonFungibleLocalId::Integer(_) => Ok(()),
+            NonFungibleLocalId::UUID(v) => {
+                // 0100 - v4
+                // 10 - variant 1
+                if (v & 0x00000000_0000_f000_C000_000000000000u128)
+                    != 0x00000000_0000_4000_8000_000000000000u128
+                {
+                    return Err(ContentValidationError::NotUuidV4Variant1);
+                }
+
+                Ok(())
+            }
         }
     }
 }
@@ -134,7 +150,7 @@ pub enum ParseNonFungibleLocalIdError {
     InvalidInteger,
     InvalidBytes,
     InvalidUUID,
-    IdValidationError(IdValidationError),
+    ContentValidationError(ContentValidationError),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -174,7 +190,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
             }
             NonFungibleLocalId::Integer(v) => {
                 encoder.write_byte(1)?;
-                encoder.write_slice(&v.to_le_bytes())?;
+                encoder.write_slice(&v.to_be_bytes())?; // TODO: variable length encoding?
             }
             NonFungibleLocalId::Bytes(v) => {
                 encoder.write_byte(2)?;
@@ -183,7 +199,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
             }
             NonFungibleLocalId::UUID(v) => {
                 encoder.write_byte(3)?;
-                encoder.write_slice(&v.to_le_bytes())?;
+                encoder.write_slice(&v.to_be_bytes())?;
             }
         }
         Ok(())
@@ -204,12 +220,12 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
                         .map_err(|_| DecodeError::InvalidCustomValue)?,
                 )
             }
-            1 => Self::Integer(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
+            1 => Self::Integer(u64::from_be_bytes(copy_u8_array(decoder.read_slice(8)?))),
             2 => {
                 let size = decoder.read_size()?;
                 Self::Bytes(decoder.read_slice(size)?.to_vec())
             }
-            3 => Self::UUID(u128::from_le_bytes(copy_u8_array(decoder.read_slice(16)?))),
+            3 => Self::UUID(u128::from_be_bytes(copy_u8_array(decoder.read_slice(16)?))),
             _ => return Err(DecodeError::InvalidCustomValue),
         };
 
@@ -248,22 +264,28 @@ impl FromStr for NonFungibleLocalId {
                     .map_err(|_| ParseNonFungibleLocalIdError::InvalidBytes)?,
             )
         } else if s.starts_with("{") && s.ends_with("}") {
-            let hex: String = s[1..s.len() - 1]
-                .chars()
-                .into_iter()
-                .filter(|c| *c != '-')
-                .collect();
-            NonFungibleLocalId::UUID(
-                u128::from_str_radix(&hex, 16)
-                    .map_err(|_| ParseNonFungibleLocalIdError::InvalidUUID)?,
-            )
+            let chars: Vec<char> = s[1..s.len() - 1].chars().collect();
+            if chars.len() == 32 + 4
+                && chars[8] == '-'
+                && chars[13] == '-'
+                && chars[18] == '-'
+                && chars[23] == '-'
+            {
+                let hyphen_stripped: String = chars.into_iter().filter(|c| *c != '-').collect();
+                NonFungibleLocalId::UUID(
+                    u128::from_str_radix(&hyphen_stripped, 16)
+                        .map_err(|_| ParseNonFungibleLocalIdError::InvalidUUID)?,
+                )
+            } else {
+                return Err(ParseNonFungibleLocalIdError::InvalidUUID);
+            }
         } else {
             return Err(ParseNonFungibleLocalIdError::UnknownType);
         };
 
         local_id
             .validate_contents()
-            .map_err(ParseNonFungibleLocalIdError::IdValidationError)?;
+            .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?;
 
         Ok(local_id)
     }
@@ -311,9 +333,15 @@ mod tests {
         let validation_result =
             NonFungibleLocalId::Bytes([0; 1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH].to_vec())
                 .validate_contents();
-        assert!(matches!(validation_result, Err(IdValidationError::TooLong)));
+        assert!(matches!(
+            validation_result,
+            Err(ContentValidationError::TooLong)
+        ));
         let validation_result = NonFungibleLocalId::Bytes(vec![]).validate_contents();
-        assert!(matches!(validation_result, Err(IdValidationError::Empty)));
+        assert!(matches!(
+            validation_result,
+            Err(ContentValidationError::Empty)
+        ));
 
         // String length
         let validation_result =
@@ -323,9 +351,15 @@ mod tests {
         let validation_result =
             NonFungibleLocalId::String(string_of_length(1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH))
                 .validate_contents();
-        assert!(matches!(validation_result, Err(IdValidationError::TooLong)));
+        assert!(matches!(
+            validation_result,
+            Err(ContentValidationError::TooLong)
+        ));
         let validation_result = NonFungibleLocalId::String("".to_string()).validate_contents();
-        assert!(matches!(validation_result, Err(IdValidationError::Empty)));
+        assert!(matches!(
+            validation_result,
+            Err(ContentValidationError::Empty)
+        ));
     }
 
     fn string_of_length(size: usize) -> String {
@@ -365,7 +399,7 @@ mod tests {
             NonFungibleLocalId::String(format!("valid_{}", char)).validate_contents();
         assert_eq!(
             validation_result,
-            Err(IdValidationError::ContainsBadCharacter(char))
+            Err(ContentValidationError::ContainsBadCharacter(char))
         );
     }
 
@@ -380,8 +414,8 @@ mod tests {
             NonFungibleLocalId::Integer(10)
         );
         assert_eq!(
-            NonFungibleLocalId::from_str("{1234567890}").unwrap(),
-            NonFungibleLocalId::UUID(0x1234567890)
+            NonFungibleLocalId::from_str("{b36f5b3f-835b-406c-980f-7788d8f13c1b}").unwrap(),
+            NonFungibleLocalId::UUID(0xb36f5b3f_835b_406c_980f_7788d8f13c1b)
         );
         assert_eq!(
             NonFungibleLocalId::from_str("<test>").unwrap(),
@@ -398,8 +432,8 @@ mod tests {
         assert_eq!(NonFungibleLocalId::Integer(1).to_string(), "#1#",);
         assert_eq!(NonFungibleLocalId::Integer(10).to_string(), "#10#",);
         assert_eq!(
-            NonFungibleLocalId::UUID(0x1234567890).to_string(),
-            "{00000000-0000-0000-0000-001234567890}",
+            NonFungibleLocalId::UUID(0x0236805c_56e9_4431_a2a3_7d339db305c4).to_string(),
+            "{0236805c-56e9-4431-a2a3-7d339db305c4}",
         );
         assert_eq!(
             NonFungibleLocalId::String("test".to_owned()).to_string(),

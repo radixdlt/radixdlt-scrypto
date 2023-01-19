@@ -216,11 +216,10 @@ CALL_METHOD
     EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09")
     Decimal("1.2")
     PreciseDecimal("1.2")
-    NonFungibleLocalId("[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
+    NonFungibleLocalId("<SomeId>")
     NonFungibleLocalId("#12#")
-    NonFungibleLocalId("#12345#")
-    NonFungibleLocalId("#1234567890#")
-    NonFungibleLocalId("<SomeId>");
+    NonFungibleLocalId("[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
+    NonFungibleLocalId("{43968a72-5954-45da-9678-8659dd399faa}");
 "##,
         );
     }

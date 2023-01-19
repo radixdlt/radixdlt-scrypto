@@ -179,11 +179,11 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{1234567890}",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{00000000-0000-0000-0000-001234567890}"
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
         );
 
         assert_eq!(

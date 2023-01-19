@@ -3,7 +3,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineApi;
-use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeError {
@@ -89,19 +88,26 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         let node_id = RENodeId::TransactionRuntime(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let transaction_hash_substate = substate_mut.transaction_runtime();
+        let tx_hash_substate = substate_mut.transaction_runtime();
 
-        if transaction_hash_substate.next_id == u32::MAX {
+        if tx_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::TransactionRuntimeError(TransactionRuntimeError::OutOfUUid),
             ));
         }
 
-        let mut data = transaction_hash_substate.hash.to_vec();
-        data.extend(transaction_hash_substate.next_id.to_le_bytes());
-        let uuid = u128::from_le_bytes(hash(data).lower_16_bytes()); // TODO: Remove hash
+        // Take the lower 16 bytes
+        let mut temp = tx_hash_substate.hash.lower_16_bytes();
 
-        transaction_hash_substate.next_id = transaction_hash_substate.next_id + 1;
+        // Put TX runtime counter to the last 4 bytes.
+        temp[12..16].copy_from_slice(&tx_hash_substate.next_id.to_be_bytes());
+
+        // Construct UUID v4 variant 1
+        let uuid = (u128::from_be_bytes(temp) & 0xffffffff_ffff_0fff_3fff_ffffffffffffu128)
+            | 0xffffffff_ffff_4fff_bfff_ffffffffffffu128;
+
+        // Increase TX runtime counter
+        tx_hash_substate.next_id = tx_hash_substate.next_id + 1;
 
         Ok((uuid, CallFrameUpdate::empty()))
     }
