@@ -34,6 +34,9 @@ pub fn resolve_method<Y: SystemApi>(
                     })?;
                 CallTableInvocation::Native(NativeInvocation::Clock(invocation))
             }
+            ComponentAddress::AccessController(..) => {
+                todo!("No access controller package implemented yet")
+            }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Normal(..)

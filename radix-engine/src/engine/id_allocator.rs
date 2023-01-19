@@ -1,8 +1,8 @@
 use crate::engine::{KernelError, RuntimeError};
 use radix_engine_interface::api::types::{
-    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
-    NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
-    TransactionRuntimeId, ValidatorId, VaultId,
+    AccessControllerId, AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress,
+    KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType,
+    ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -196,6 +196,15 @@ impl IdAllocator {
         Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
 
+    pub fn new_access_controller_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        Ok(ComponentAddress::AccessController(
+            hash(data).lower_26_bytes(),
+        ))
+    }
+
     /// Creates a new resource address.
     pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
@@ -256,6 +265,10 @@ impl IdAllocator {
     }
 
     pub fn new_package_id(&mut self) -> Result<PackageId, IdAllocationError> {
+        self.next_id()
+    }
+
+    pub fn new_access_controller_id(&mut self) -> Result<AccessControllerId, IdAllocationError> {
         self.next_id()
     }
 }

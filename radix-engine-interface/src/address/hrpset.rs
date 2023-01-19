@@ -27,6 +27,7 @@ impl HrpSet {
             EntityType::AccountComponent => &self.account_component,
             EntityType::EcdsaSecp256k1VirtualAccountComponent => &self.account_component,
             EntityType::EddsaEd25519VirtualAccountComponent => &self.account_component,
+            EntityType::AccessControllerComponent => &self.system,
             EntityType::EpochManager => &self.system,
             EntityType::Validator => &self.system,
             EntityType::Clock => &self.system,
