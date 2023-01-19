@@ -321,7 +321,7 @@ fn test_mint_update_and_withdraw() {
 }
 
 #[test]
-fn create_non_fungible_with_id_kind_different_than_in_initial_supply() {
+fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -333,7 +333,7 @@ fn create_non_fungible_with_id_kind_different_than_in_initial_supply() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_wrong_non_fungible_local_id_kind",
+            "create_wrong_non_fungible_local_id_type",
             args!(),
         )
         .call_method(
@@ -518,7 +518,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
 }
 
 #[test]
-fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_kind() {
+fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();

@@ -17,27 +17,27 @@ use crate::*;
 
 /// Trait for converting into a `NonFungibleLocalId` of any kind (i.e. Number, String, Bytes and UUID).
 pub trait IntoNonFungibleLocalId: Into<NonFungibleLocalId> {
-    fn id_kind() -> NonFungibleIdKind;
+    fn id_type() -> NonFungibleIdType;
 }
 
 impl IntoNonFungibleLocalId for String {
-    fn id_kind() -> NonFungibleIdKind {
-        NonFungibleIdKind::String
+    fn id_type() -> NonFungibleIdType {
+        NonFungibleIdType::String
     }
 }
 impl IntoNonFungibleLocalId for u64 {
-    fn id_kind() -> NonFungibleIdKind {
-        NonFungibleIdKind::Number
+    fn id_type() -> NonFungibleIdType {
+        NonFungibleIdType::Number
     }
 }
 impl IntoNonFungibleLocalId for Vec<u8> {
-    fn id_kind() -> NonFungibleIdKind {
-        NonFungibleIdKind::Bytes
+    fn id_type() -> NonFungibleIdType {
+        NonFungibleIdType::Bytes
     }
 }
 impl IntoNonFungibleLocalId for u128 {
-    fn id_kind() -> NonFungibleIdKind {
-        NonFungibleIdKind::UUID
+    fn id_type() -> NonFungibleIdType {
+        NonFungibleIdType::UUID
     }
 }
 
@@ -84,7 +84,7 @@ pub enum NonFungibleLocalId {
 
 /// Represents type of non-fungible id
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, LegacyDescribe)]
-pub enum NonFungibleIdKind {
+pub enum NonFungibleIdType {
     String,
     Number,
     Bytes,
@@ -95,12 +95,12 @@ pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
 impl NonFungibleLocalId {
     /// Returns non-fungible ID type.
-    pub fn id_kind(&self) -> NonFungibleIdKind {
+    pub fn id_type(&self) -> NonFungibleIdType {
         match self {
-            NonFungibleLocalId::Bytes(..) => NonFungibleIdKind::Bytes,
-            NonFungibleLocalId::String(..) => NonFungibleIdKind::String,
-            NonFungibleLocalId::Number(..) => NonFungibleIdKind::Number,
-            NonFungibleLocalId::UUID(..) => NonFungibleIdKind::UUID,
+            NonFungibleLocalId::Bytes(..) => NonFungibleIdType::Bytes,
+            NonFungibleLocalId::String(..) => NonFungibleIdType::String,
+            NonFungibleLocalId::Number(..) => NonFungibleIdType::Number,
+            NonFungibleLocalId::UUID(..) => NonFungibleIdType::UUID,
         }
     }
 
@@ -116,14 +116,14 @@ impl NonFungibleLocalId {
 
     /// Converts simple string representation to non-fungible ID.
     pub fn try_from_simple_string(
-        id_kind: NonFungibleIdKind,
+        id_type: NonFungibleIdType,
         s: &str,
     ) -> Result<Self, ParseNonFungibleLocalIdError> {
-        let non_fungible_local_id = match id_kind {
-            NonFungibleIdKind::Bytes => NonFungibleLocalId::Bytes(hex::decode(s)?),
-            NonFungibleIdKind::Number => NonFungibleLocalId::Number(s.parse::<u64>()?),
-            NonFungibleIdKind::String => NonFungibleLocalId::String(s.to_string()),
-            NonFungibleIdKind::UUID => NonFungibleLocalId::UUID(s.parse::<u128>()?),
+        let non_fungible_local_id = match id_type {
+            NonFungibleIdType::Bytes => NonFungibleLocalId::Bytes(hex::decode(s)?),
+            NonFungibleIdType::Number => NonFungibleLocalId::Number(s.parse::<u64>()?),
+            NonFungibleIdType::String => NonFungibleLocalId::String(s.to_string()),
+            NonFungibleIdType::UUID => NonFungibleLocalId::UUID(s.parse::<u128>()?),
         };
 
         non_fungible_local_id.validate_contents()?;
@@ -142,7 +142,7 @@ impl NonFungibleLocalId {
     /// * `Number#23`
     /// * `UUID#345`
     pub fn to_combined_simple_string(&self) -> String {
-        format!("{}#{}", self.id_kind(), self.to_simple_string())
+        format!("{}#{}", self.id_type(), self.to_simple_string())
     }
 
     /// Converts combined simple string representation to non-fungible ID.
@@ -165,8 +165,8 @@ impl NonFungibleLocalId {
             return Err(ParseNonFungibleLocalIdError::RequiresTwoPartsSeparatedByHash);
         }
 
-        let id_kind = parts[0].parse::<NonFungibleIdKind>()?;
-        Self::try_from_simple_string(id_kind, parts[1])
+        let id_type = parts[0].parse::<NonFungibleIdType>()?;
+        Self::try_from_simple_string(id_type, parts[1])
     }
 
     pub fn validate_contents(&self) -> Result<(), ParseNonFungibleLocalIdError> {
@@ -213,7 +213,7 @@ pub enum ParseNonFungibleLocalIdError {
     InvalidSbor(DecodeError),
     InvalidHex,
     InvalidInt(ParseIntError),
-    InvalidIdType(ParseNonFungibleIdKindError),
+    InvalidIdType(ParseNonFungibleIdTypeError),
     CannotParseType,
     UnexpectedValueKind,
     TooLong,
@@ -240,8 +240,8 @@ impl From<ParseIntError> for ParseNonFungibleLocalIdError {
     }
 }
 
-impl From<ParseNonFungibleIdKindError> for ParseNonFungibleLocalIdError {
-    fn from(err: ParseNonFungibleIdKindError) -> Self {
+impl From<ParseNonFungibleIdTypeError> for ParseNonFungibleLocalIdError {
+    fn from(err: ParseNonFungibleIdTypeError) -> Self {
         ParseNonFungibleLocalIdError::InvalidIdType(err)
     }
 }
@@ -340,41 +340,41 @@ impl scrypto_abi::LegacyDescribe for NonFungibleLocalId {
 // text
 //======
 
-impl fmt::Display for NonFungibleIdKind {
+impl fmt::Display for NonFungibleIdType {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            NonFungibleIdKind::Bytes => write!(f, "Bytes"),
-            NonFungibleIdKind::Number => write!(f, "U64"),
-            NonFungibleIdKind::String => write!(f, "String"),
-            NonFungibleIdKind::UUID => write!(f, "UUID"),
+            NonFungibleIdType::Bytes => write!(f, "Bytes"),
+            NonFungibleIdType::Number => write!(f, "U64"),
+            NonFungibleIdType::String => write!(f, "String"),
+            NonFungibleIdType::UUID => write!(f, "UUID"),
         }
     }
 }
 
-impl fmt::Debug for NonFungibleIdKind {
+impl fmt::Debug for NonFungibleIdType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseNonFungibleIdKindError {
+pub enum ParseNonFungibleIdTypeError {
     UnknownType,
 }
 
-impl FromStr for NonFungibleIdKind {
-    type Err = ParseNonFungibleIdKindError;
+impl FromStr for NonFungibleIdType {
+    type Err = ParseNonFungibleIdTypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let id_kind = match s {
+        let id_type = match s {
             "String" => Self::String,
             "U64" => Self::Number,
             "Bytes" => Self::Bytes,
             "UUID" => Self::UUID,
             "U128" => Self::UUID, // Add this in as an alias
-            _ => return Err(ParseNonFungibleIdKindError::UnknownType),
+            _ => return Err(ParseNonFungibleIdTypeError::UnknownType),
         };
-        Ok(id_kind)
+        Ok(id_type)
     }
 }
 
@@ -395,21 +395,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_non_fungible_local_id_kind_and_display() {
+    fn test_non_fungible_local_id_type_and_display() {
         let non_fungible_local_id = NonFungibleLocalId::Number(100);
-        assert_eq!(non_fungible_local_id.id_kind(), NonFungibleIdKind::Number);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleIdType::Number);
         assert_eq!(non_fungible_local_id.to_string(), "100");
 
         let non_fungible_local_id = NonFungibleLocalId::String(String::from("test"));
-        assert_eq!(non_fungible_local_id.id_kind(), NonFungibleIdKind::String);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleIdType::String);
         assert_eq!(non_fungible_local_id.to_string(), "test");
 
         let non_fungible_local_id = NonFungibleLocalId::UUID(1_u128);
-        assert_eq!(non_fungible_local_id.id_kind(), NonFungibleIdKind::UUID);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleIdType::UUID);
         assert_eq!(non_fungible_local_id.to_string(), "1");
 
         let non_fungible_local_id = NonFungibleLocalId::Bytes(vec![1, 2, 3, 255]);
-        assert_eq!(non_fungible_local_id.id_kind(), NonFungibleIdKind::Bytes);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleIdType::Bytes);
         assert_eq!(non_fungible_local_id.to_string(), "010203ff");
     }
 
@@ -496,24 +496,24 @@ mod tests {
     #[test]
     fn test_non_fungible_local_id_simple_conversion() {
         assert_eq!(
-            NonFungibleLocalId::try_from_simple_string(NonFungibleIdKind::Number, "1").unwrap(),
+            NonFungibleLocalId::try_from_simple_string(NonFungibleIdType::Number, "1").unwrap(),
             NonFungibleLocalId::Number(1)
         );
         assert_eq!(
-            NonFungibleLocalId::try_from_simple_string(NonFungibleIdKind::Number, "10").unwrap(),
+            NonFungibleLocalId::try_from_simple_string(NonFungibleIdType::Number, "10").unwrap(),
             NonFungibleLocalId::Number(10)
         );
         assert_eq!(
-            NonFungibleLocalId::try_from_simple_string(NonFungibleIdKind::UUID, "1234567890")
+            NonFungibleLocalId::try_from_simple_string(NonFungibleIdType::UUID, "1234567890")
                 .unwrap(),
             NonFungibleLocalId::UUID(1234567890)
         );
         assert_eq!(
-            NonFungibleLocalId::try_from_simple_string(NonFungibleIdKind::String, "test").unwrap(),
+            NonFungibleLocalId::try_from_simple_string(NonFungibleIdType::String, "test").unwrap(),
             NonFungibleLocalId::String(String::from("test"))
         );
         assert_eq!(
-            NonFungibleLocalId::try_from_simple_string(NonFungibleIdKind::Bytes, "010a").unwrap(),
+            NonFungibleLocalId::try_from_simple_string(NonFungibleIdType::Bytes, "010a").unwrap(),
             NonFungibleLocalId::Bytes(vec![1, 10])
         );
     }

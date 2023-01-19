@@ -84,7 +84,7 @@ impl NewSimpleBadge {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(BasicInstruction::CreateNonFungibleResource {
-                id_kind: NonFungibleIdKind::Number,
+                id_type: NonFungibleIdType::Number,
                 metadata: metadata,
                 access_rules: resource_auth,
                 initial_supply: Some(BTreeMap::from([(

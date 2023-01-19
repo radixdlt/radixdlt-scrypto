@@ -580,7 +580,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
-                    id_kind,
+                    id_type,
                     metadata,
                     access_rules,
                     initial_supply,
@@ -588,7 +588,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(ids) = initial_supply {
                         let rtn = api.invoke(
                             ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_kind: *id_kind,
+                                id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
                                 entries: ids.clone(),
@@ -601,7 +601,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
                             resource_address: None,
-                            id_kind: *id_kind,
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
                         })?;
@@ -610,7 +610,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
-                    id_kind,
+                    id_type,
                     metadata,
                     owner_badge,
                     initial_supply,
@@ -618,7 +618,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(ids) = initial_supply {
                         let rtn = api.invoke(
                             ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_kind: *id_kind,
+                                id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
                                 entries: ids.clone(),
@@ -631,7 +631,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
                             resource_address: None,
-                            id_kind: *id_kind,
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
                         })?;

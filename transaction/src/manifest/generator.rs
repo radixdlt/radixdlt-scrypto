@@ -503,12 +503,12 @@ pub fn generate_instruction(
         },
 
         ast::Instruction::CreateNonFungibleResource {
-            id_kind,
+            id_type,
             metadata,
             access_rules,
             initial_supply,
         } => BasicInstruction::CreateNonFungibleResource {
-            id_kind: generate_typed_value(id_kind, resolver, bech32_decoder, blobs)?,
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
             initial_supply: generate_from_enum_if_some(
@@ -520,12 +520,12 @@ pub fn generate_instruction(
             )?,
         },
         ast::Instruction::CreateNonFungibleResourceWithOwner {
-            id_kind,
+            id_type,
             metadata,
             owner_badge,
             initial_supply,
         } => BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_kind: generate_typed_value(id_kind, resolver, bech32_decoder, blobs)?,
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
             initial_supply: generate_from_enum_if_some(
@@ -1713,7 +1713,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
             BasicInstruction::CreateNonFungibleResource {
-                id_kind: NonFungibleIdKind::Number,
+                id_type: NonFungibleIdType::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 access_rules: BTreeMap::from([
                     (
@@ -1737,7 +1737,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
             BasicInstruction::CreateNonFungibleResource {
-                id_kind: NonFungibleIdKind::Number,
+                id_type: NonFungibleIdType::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 access_rules: BTreeMap::from([
                     (
@@ -1756,7 +1756,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_kind: NonFungibleIdKind::Number,
+                id_type: NonFungibleIdType::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 owner_badge: owner_badge.clone(),
                 initial_supply: Some(BTreeMap::from([(
@@ -1771,7 +1771,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleLocalIdKind::Number") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_kind: NonFungibleIdKind::Number,
+                id_type: NonFungibleIdType::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 owner_badge: owner_badge.clone(),
                 initial_supply: None

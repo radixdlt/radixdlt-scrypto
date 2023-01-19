@@ -32,9 +32,9 @@ pub enum ResourceManagerError {
     NonFungibleNotFound(NonFungibleGlobalId),
     NotNonFungible,
     MismatchingBucketResource,
-    NonFungibleIdKindDoesNotMatch(NonFungibleIdKind, NonFungibleIdKind),
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
-    InvalidNonFungibleIdKind,
+    InvalidNonFungibleIdType,
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -67,7 +67,7 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
-    id_kind: NonFungibleIdKind,
+    id_type: NonFungibleIdType,
     entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
@@ -82,19 +82,19 @@ where
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
     let mut resource_manager = ResourceManagerSubstate::new(
-        ResourceType::NonFungible { id_kind },
+        ResourceType::NonFungible { id_type },
         Some(nf_store_id),
         resource_address,
     );
 
     let bucket = {
         for (non_fungible_local_id, data) in &entries {
-            if non_fungible_local_id.id_kind() != id_kind {
+            if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::NonFungibleIdKindDoesNotMatch(
-                            non_fungible_local_id.id_kind(),
-                            id_kind,
+                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                            non_fungible_local_id.id_type(),
+                            id_type,
                         ),
                     ),
                 ));
@@ -114,7 +114,7 @@ where
         }
         resource_manager.total_supply = entries.len().into();
         let ids = entries.into_keys().collect();
-        let container = Resource::new_non_fungible(resource_address, ids, id_kind);
+        let container = Resource::new_non_fungible(resource_address, ids, id_type);
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
         api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
@@ -403,7 +403,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
         let resource_manager_substate = ResourceManagerSubstate::new(
             ResourceType::NonFungible {
-                id_kind: self.id_kind,
+                id_type: self.id_type,
             },
             Some(nf_store_id),
             resource_address,
@@ -525,10 +525,10 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
-        if self.id_kind == NonFungibleIdKind::UUID {
+        if self.id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
-                    ResourceManagerError::InvalidNonFungibleIdKind,
+                    ResourceManagerError::InvalidNonFungibleIdType,
                 ),
             ));
         }
@@ -536,7 +536,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let (resource_manager_substate, bucket) =
             build_non_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                self.id_kind,
+                self.id_type,
                 self.entries,
                 api,
             )?;
@@ -614,7 +614,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         let (resource_manager_substate, bucket) =
             build_non_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                NonFungibleIdKind::UUID,
+                NonFungibleIdType::UUID,
                 entries,
                 api,
             )?;
@@ -1158,8 +1158,8 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
 
-            let id_kind = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_kind } => id_kind,
+            let id_type = match resource_manager.resource_type {
+                ResourceType::NonFungible { id_type } => id_type,
                 _ => {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
@@ -1169,10 +1169,10 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                 }
             };
 
-            if id_kind == NonFungibleIdKind::UUID {
+            if id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdKind,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -1183,12 +1183,12 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for (id, data) in self.1 {
-                if id.id_kind() != id_kind {
+                if id.id_type() != id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleIdKindDoesNotMatch(
-                                id.id_kind(),
-                                id_kind,
+                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                id.id_type(),
+                                id_type,
                             ),
                         ),
                     ));
@@ -1200,7 +1200,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
             }
 
             (
-                Resource::new_non_fungible(resource_manager.resource_address, ids, id_kind),
+                Resource::new_non_fungible(resource_manager.resource_address, ids, id_type),
                 non_fungibles,
             )
         };
@@ -1293,8 +1293,8 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let resource_address = resource_manager.resource_address;
-            let id_kind = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_kind } => id_kind,
+            let id_type = match resource_manager.resource_type {
+                ResourceType::NonFungible { id_type } => id_type,
                 _ => {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
@@ -1305,10 +1305,10 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             };
             let nf_store_id = resource_manager.nf_store_id.unwrap();
 
-            if id_kind != NonFungibleIdKind::UUID {
+            if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdKind,
+                        ResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -1344,7 +1344,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
                 RENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(
                     resource_address,
                     ids,
-                    id_kind,
+                    id_type,
                 ))),
             )?;
             let bucket_id: BucketId = node_id.into();
