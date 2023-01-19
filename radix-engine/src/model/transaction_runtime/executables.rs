@@ -96,19 +96,38 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
             ));
         }
 
-        // Take the lower 16 bytes
-        let mut temp = tx_hash_substate.hash.lower_16_bytes();
-
-        // Put TX runtime counter to the last 4 bytes.
-        temp[12..16].copy_from_slice(&tx_hash_substate.next_id.to_be_bytes());
-
-        // Construct UUID v4 variant 1
-        let uuid = (u128::from_be_bytes(temp) & 0xffffffff_ffff_0fff_3fff_ffffffffffffu128)
-            | 0xffffffff_ffff_4fff_bfff_ffffffffffffu128;
-
-        // Increase TX runtime counter
+        let uuid = generate_uuid(&tx_hash_substate.hash, tx_hash_substate.next_id);
         tx_hash_substate.next_id = tx_hash_substate.next_id + 1;
 
         Ok((uuid, CallFrameUpdate::empty()))
+    }
+}
+
+fn generate_uuid(hash: &Hash, id: u32) -> u128 {
+    // Take the lower 16 bytes
+    let mut temp = hash.lower_16_bytes();
+
+    // Put TX runtime counter to the last 4 bytes.
+    temp[12..16].copy_from_slice(&id.to_be_bytes());
+
+    // Construct UUID v4 variant 1
+    (u128::from_be_bytes(temp) & 0xffffffff_ffff_0fff_3fff_ffffffffffffu128)
+        | 0x00000000_0000_4000_8000_000000000000u128
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_uuid_gen() {
+        let hash =
+            Hash::from_str("71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d")
+                .unwrap();
+        let id = generate_uuid(&hash, 5);
+        assert_eq!(
+            NonFungibleLocalId::UUID(id).to_string(),
+            "{86cc8d24-194d-4393-85ee-91ee00000005}"
+        );
     }
 }

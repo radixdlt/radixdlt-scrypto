@@ -892,7 +892,7 @@ mod tests {
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::UUID(371),
+                                NonFungibleLocalId::UUID(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd),
                             ),
                         },
                     ],
@@ -940,7 +940,7 @@ mod tests {
                 { "type": "NonFungibleLocalId", "value": "hello" },
                 { "type": "NonFungibleLocalId", "value": "123" },
                 { "type": "NonFungibleLocalId", "value": { "hex": "2345" } },
-                { "type": "NonFungibleLocalId", "value": "371" },
+                { "type": "NonFungibleLocalId", "value": "41635955959434943928015079245517041341" },
             ]
         ]);
 
@@ -995,7 +995,7 @@ mod tests {
                         { "type": "NonFungibleLocalId", "value": { "type": "String", "value": "hello" } },
                         { "type": "NonFungibleLocalId", "value": { "type": "U64", "value": "123" } },
                         { "type": "NonFungibleLocalId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "U128", "value": "371" } },
+                        { "type": "NonFungibleLocalId", "value": { "type": "U128", "value": "41635955959434943928015079245517041341" } },
                     ]
                 }
             ]
