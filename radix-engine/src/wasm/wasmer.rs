@@ -119,8 +119,8 @@ pub fn write_memory(instance: &Instance, ptr: u32, data: &[u8]) -> Result<(), Wa
 }
 
 pub fn read_slice(instance: &Instance, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
-    let ptr = slice_ptr!(v);
-    let len = slice_len!(v);
+    let ptr = v.ptr();
+    let len = v.len();
 
     read_memory(instance, ptr, len)
 }
@@ -174,7 +174,7 @@ impl WasmerModule {
             ident_len: u32,
             args_ptr: u32,
             args_len: u32,
-        ) -> Result<Buffer, RuntimeError> {
+        ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
@@ -185,14 +185,14 @@ impl WasmerModule {
                 .invoke_method(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
         pub fn invoke(
             env: &WasmerInstanceEnv,
             invocation_ptr: u32,
             invocation_len: u32,
-        ) -> Result<Buffer, RuntimeError> {
+        ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let invocation = read_memory(&instance, invocation_ptr, invocation_len)?;
@@ -201,14 +201,14 @@ impl WasmerModule {
                 .invoke(invocation)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
         pub fn create_node(
             env: &WasmerInstanceEnv,
             node_ptr: u32,
             node_len: u32,
-        ) -> Result<Buffer, RuntimeError> {
+        ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let node = read_memory(&instance, node_ptr, node_len)?;
@@ -217,17 +217,17 @@ impl WasmerModule {
                 .create_node(node)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
-        pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Result<Buffer, RuntimeError> {
+        pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .get_visible_nodes()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
         pub fn drop_node(
@@ -266,14 +266,14 @@ impl WasmerModule {
             Ok(handle)
         }
 
-        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<Buffer, RuntimeError> {
+        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .read_substate(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
         pub fn write_substate(
@@ -303,14 +303,14 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn get_actor(env: &WasmerInstanceEnv) -> Result<Buffer, RuntimeError> {
+        pub fn get_actor(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .get_actor()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer)
+            Ok(buffer.0)
         }
 
         fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {
@@ -370,7 +370,7 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<u64>,
+        args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
@@ -379,7 +379,10 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let input: Vec<Val> = args.into_iter().map(|a| Val::I64(a as i64)).collect();
+        let input: Vec<Val> = args
+            .into_iter()
+            .map(|buffer| Val::I64(buffer.as_i64()))
+            .collect();
         let return_data = self
             .instance
             .exports
@@ -394,7 +397,7 @@ impl WasmInstance for WasmerInstance {
             })?;
 
         if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
-            read_slice(&self.instance, v as u64).map_err(InvokeError::Error)
+            read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::Error)
         } else {
             Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn))
         }
