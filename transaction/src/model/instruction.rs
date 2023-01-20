@@ -193,6 +193,14 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    CreateAccessController {
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

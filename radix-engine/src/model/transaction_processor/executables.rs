@@ -198,7 +198,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResource { .. }
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateAccessController { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -760,6 +761,25 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         index: index.clone(),
                         key: key.clone(),
                         rule: rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateAccessController {
+                    controlled_asset,
+                    primary_role,
+                    recovery_role,
+                    confirmation_role,
+                    timed_recovery_delay_in_hours,
+                }) => {
+                    let rtn = api.invoke(AccessControllerCreateGlobalInvocation {
+                        controlled_asset: processor.get_bucket(controlled_asset)?.0,
+                        rule_set: RuleSet {
+                            primary: primary_role.clone(),
+                            recovery: recovery_role.clone(),
+                            confirmation: confirmation_role.clone(),
+                        },
+                        timed_recovery_delay_in_hours: *timed_recovery_delay_in_hours,
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

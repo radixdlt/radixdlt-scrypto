@@ -285,20 +285,27 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::RecallResource { .. } => {}
-                BasicInstruction::SetMetadata { .. } => {}
-                BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
-                BasicInstruction::SetComponentRoyaltyConfig { .. } => {}
-                BasicInstruction::ClaimPackageRoyalty { .. } => {}
-                BasicInstruction::ClaimComponentRoyalty { .. } => {}
-                BasicInstruction::SetMethodAccessRule { .. } => {}
-                BasicInstruction::MintFungible { .. } => {}
-                BasicInstruction::MintNonFungible { .. } => {}
-                BasicInstruction::MintUuidNonFungible { .. } => {}
-                BasicInstruction::CreateFungibleResource { .. } => {}
-                BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
-                BasicInstruction::CreateNonFungibleResource { .. } => {}
-                BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+                BasicInstruction::CreateAccessController {
+                    controlled_asset, ..
+                } => {
+                    id_validator
+                        .drop_bucket(controlled_asset)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::RecallResource { .. }
+                | BasicInstruction::SetMetadata { .. }
+                | BasicInstruction::SetPackageRoyaltyConfig { .. }
+                | BasicInstruction::SetComponentRoyaltyConfig { .. }
+                | BasicInstruction::ClaimPackageRoyalty { .. }
+                | BasicInstruction::ClaimComponentRoyalty { .. }
+                | BasicInstruction::SetMethodAccessRule { .. }
+                | BasicInstruction::MintFungible { .. }
+                | BasicInstruction::MintNonFungible { .. }
+                | BasicInstruction::MintUuidNonFungible { .. }
+                | BasicInstruction::CreateFungibleResource { .. }
+                | BasicInstruction::CreateFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateNonFungibleResource { .. }
+                | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
             }
         }
 
