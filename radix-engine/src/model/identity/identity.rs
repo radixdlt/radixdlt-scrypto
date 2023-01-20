@@ -36,9 +36,13 @@ impl Executor for IdentityCreateInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-
+        let node_id = Identity::create(self.access_rule, api)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
-        Identity::create(global_node_id, self.access_rule, api)?;
+        api.create_node(
+            global_node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Identity(node_id.into())),
+        )?;
+
         let identity_address: ComponentAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(global_node_id);
@@ -55,7 +59,10 @@ impl Executor for IdentityCreateInvocation {
 pub struct Identity;
 
 impl Identity {
-    pub fn create<Y>(global_node_id: RENodeId, access_rule: AccessRule, api: &mut Y) -> Result<(), RuntimeError> where Y: SystemApi + EngineApi<RuntimeError> {
+    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<RENodeId, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError>,
+    {
         let underlying_node_id = api.allocate_node_id(RENodeType::Identity)?;
 
         let mut access_rules = AccessRules::new();
@@ -82,11 +89,6 @@ impl Identity {
             ),
         )?;
 
-        api.create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Identity(underlying_node_id.into())),
-        )?;
-
-        Ok(())
+        Ok(underlying_node_id)
     }
 }

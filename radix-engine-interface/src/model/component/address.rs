@@ -117,6 +117,21 @@ impl ComponentAddress {
             ),
         }
     }
+
+    pub fn virtual_identity_from_public_key<P: Into<PublicKey> + Clone>(
+        public_key: &P,
+    ) -> ComponentAddress {
+        match public_key.clone().into() {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                ComponentAddress::EcdsaSecp256k1VirtualIdentity(
+                    hash(public_key.to_vec()).lower_26_bytes(),
+                )
+            }
+            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualIdentity(
+                hash(public_key.to_vec()).lower_26_bytes(),
+            ),
+        }
+    }
 }
 
 scrypto_type!(

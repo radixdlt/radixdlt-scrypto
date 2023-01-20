@@ -2,40 +2,49 @@ use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
-#[test]
-fn can_set_package_metadata_with_owner() {
+fn create_identity(
+    test_runner: &mut TestRunner,
+    pk: EcdsaSecp256k1PublicKey,
+    is_virtual: bool,
+) -> ComponentAddress {
+    if is_virtual {
+        ComponentAddress::virtual_identity_from_public_key(&pk)
+    } else {
+        let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_identity(rule!(require(owner_id)))
+            .build();
+        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let component_address = receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+
+        component_address
+    }
+}
+
+fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (public_key, _, account) = test_runner.new_account(false);
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_id =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_identity(rule!(require(owner_badge_id)))
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let component_address = receipt
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+    let component_address = create_identity(&mut test_runner, pk.clone(), is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
             GlobalAddress::Component(component_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![owner_id]);
 
     // Assert
     receipt.expect_commit_success();
@@ -44,23 +53,20 @@ fn can_set_package_metadata_with_owner() {
 }
 
 #[test]
-fn cannot_set_package_metadata_without_owner() {
+fn can_set_virtual_identity_metadata_with_owner() {
+    can_set_identity_metadata_with_owner(true);
+}
+
+#[test]
+fn can_set_allocated_identity_metadata_with_owner() {
+    can_set_identity_metadata_with_owner(false);
+}
+
+fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (public_key, _, account) = test_runner.new_account(false);
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_id =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_identity(rule!(require(owner_badge_id)))
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let component_address = receipt
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let component_address = create_identity(&mut test_runner, pk.clone(), is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -71,10 +77,7 @@ fn cannot_set_package_metadata_without_owner() {
             "best package ever!".to_string(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -83,4 +86,14 @@ fn cannot_set_package_metadata_without_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
+}
+
+#[test]
+fn cannot_set_virtual_identity_metadata_without_owner() {
+    cannot_set_identity_metadata_without_owner(true);
+}
+
+#[test]
+fn cannot_set_allocated_identity_metadata_without_owner() {
+    cannot_set_identity_metadata_without_owner(false);
 }

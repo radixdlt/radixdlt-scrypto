@@ -133,7 +133,11 @@ where
         kernel
     }
 
-    fn create_virtual_account(&mut self, node_id: RENodeId, non_fungible_global_id: NonFungibleGlobalId) -> Result<(), RuntimeError> {
+    fn create_virtual_account(
+        &mut self,
+        node_id: RENodeId,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
         let result = self.invoke(ScryptoInvocation {
@@ -166,9 +170,25 @@ where
         Ok(())
     }
 
-    fn create_virtual_identity(&mut self, node_id: RENodeId, non_fungible_global_id: NonFungibleGlobalId) -> Result<(), RuntimeError> {
+    fn create_virtual_identity(
+        &mut self,
+        node_id: RENodeId,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
-        Identity::create(node_id, access_rule, self)?;
+        let underlying_node_id = Identity::create(access_rule, self)?;
+
+        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: to allow for address selection
+        let global_substate = GlobalAddressSubstate::Identity(underlying_node_id.into());
+        self.current_frame.create_node(
+            node_id,
+            RENodeInit::Global(global_substate),
+            &mut self.heap,
+            &mut self.track,
+            true,
+        )?;
+
         Ok(())
     }
 
@@ -522,6 +542,16 @@ where
                                 global_address,
                                 GlobalAddress::Component(
                                     ComponentAddress::EddsaEd25519VirtualAccount(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EddsaEd25519VirtualIdentity(..)
                                 )
                             ) {
                                 self.current_frame
