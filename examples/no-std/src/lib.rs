@@ -1,5 +1,5 @@
 // Disable std and enable language features.
-#![cfg_attr(target_arch = "wasm32", no_std, feature(default_alloc_error_handler))]
+#![cfg_attr(target_arch = "wasm32", no_std)]
 
 // Abort when panicking.
 #[cfg(target_arch = "wasm32")]
