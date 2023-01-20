@@ -860,6 +860,10 @@ where
                 RENode::Global(GlobalAddressSubstate::Validator(..)),
             ) => {}
             (
+                RENodeId::Global(GlobalAddress::Component(..)),
+                RENode::Global(GlobalAddressSubstate::AccessController(..)),
+            ) => {}
+            (
                 RENodeId::Global(address),
                 RENode::Global(GlobalAddressSubstate::Component(component)),
             ) => {
@@ -917,6 +921,7 @@ where
             (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENode::Validator(..)) => {}
             (RENodeId::Clock(..), RENode::Clock(..)) => {}
+            (RENodeId::AccessController(..), RENode::AccessController(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

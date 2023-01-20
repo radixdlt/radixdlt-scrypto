@@ -35,6 +35,7 @@ pub enum RENodeType {
     GlobalEpochManager,
     GlobalValidator,
     GlobalClock,
+    GlobalAccessController,
     KeyValueStore,
     NonFungibleStore,
     Component,
@@ -46,6 +47,7 @@ pub enum RENodeType {
     Clock,
     TransactionRuntime,
     Logger,
+    AccessController,
 }
 
 #[derive(
@@ -79,6 +81,7 @@ pub enum RENodeId {
     Clock(ClockId),
     Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
+    AccessController(AccessControllerId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -297,6 +300,11 @@ pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccessControllerOffset {
+    AccessController,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(
     Debug,
@@ -331,6 +339,7 @@ pub enum SubstateOffset {
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+    AccessController(AccessControllerOffset),
 }
 
 /// TODO: separate space addresses?

@@ -27,6 +27,7 @@ pub enum PersistedSubstate {
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl PersistedSubstate {
@@ -124,6 +125,7 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
+            PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
         }
     }
 }
@@ -159,6 +161,7 @@ pub enum RuntimeSubstate {
     Logger(LoggerSubstate),
     FeeReserve(FeeReserveSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl RuntimeSubstate {
@@ -204,6 +207,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
+            }
+            RuntimeSubstate::AccessController(value) => {
+                PersistedSubstate::AccessController(value.clone())
             }
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
@@ -254,6 +260,7 @@ impl RuntimeSubstate {
                     .expect("Vault should be liquid at end of successful transaction");
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
@@ -333,6 +340,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
+            RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
         }
     }
 
@@ -373,6 +381,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
+            RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
         }
     }
 
@@ -576,6 +585,12 @@ impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
 impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::TransactionRuntime(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for AccessControllerSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::AccessController(self)
     }
 }
 
@@ -795,6 +810,7 @@ pub enum SubstateRef<'a> {
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
+    AccessController(&'a AccessControllerSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
@@ -1001,6 +1017,9 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Validator(validator_id) => {
                         owned_nodes.insert(RENodeId::Validator(*validator_id))
                     }
+                    GlobalAddressSubstate::AccessController(access_controller_id) => {
+                        owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
+                    }
                 };
 
                 (HashSet::new(), owned_nodes)
@@ -1128,6 +1147,7 @@ pub enum SubstateRefMut<'a> {
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
+    AccessController(&'a mut AccessControllerSubstate),
 }
 
 impl<'a> SubstateRefMut<'a> {

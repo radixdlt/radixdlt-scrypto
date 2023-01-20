@@ -90,6 +90,9 @@ impl IdAllocator {
             }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
+            RENodeType::AccessController => self
+                .new_access_controller_id()
+                .map(|id| RENodeId::AccessController(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
@@ -110,6 +113,9 @@ impl IdAllocator {
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalComponent => self
                 .new_component_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalAccessController => self
+                .new_access_controller_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;

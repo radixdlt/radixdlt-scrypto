@@ -2,6 +2,18 @@ use crate::api::types::AccessRule;
 use crate::*;
 
 /// An enum of the roles in the Access Controller component
+#[derive(
+    Debug,
+    Clone,
+    PartialOrd,
+    PartialEq,
+    Ord,
+    Eq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    Hash,
+)]
 pub enum Role {
     Primary,
     Recovery,
