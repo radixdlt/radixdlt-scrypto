@@ -198,7 +198,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResource { .. }
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateIdentity { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -760,6 +761,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         index: index.clone(),
                         key: key.clone(),
                         rule: rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateIdentity { access_rule }) => {
+                    let rtn = api.invoke(IdentityCreateInvocation {
+                        access_rule: access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

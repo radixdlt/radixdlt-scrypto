@@ -109,6 +109,9 @@ impl IdAllocator {
             RENodeType::GlobalAccount => self
                 .new_account_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalIdentity => self
+                .new_identity_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalComponent => self
                 .new_component_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
@@ -149,6 +152,12 @@ impl IdAllocator {
         // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
 
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_identity_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::Identity(hash(data).lower_26_bytes()))
     }
 
     pub fn new_account_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {

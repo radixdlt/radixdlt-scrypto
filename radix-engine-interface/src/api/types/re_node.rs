@@ -35,6 +35,7 @@ pub enum RENodeType {
     GlobalEpochManager,
     GlobalValidator,
     GlobalClock,
+    GlobalIdentity,
     KeyValueStore,
     NonFungibleStore,
     Component,

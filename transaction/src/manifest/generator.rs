@@ -536,6 +536,9 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CreateIdentity {
+            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        },
     })
 }
 

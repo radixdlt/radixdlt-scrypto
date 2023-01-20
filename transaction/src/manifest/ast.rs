@@ -192,6 +192,10 @@ pub enum Instruction {
         owner_badge: Value,
         initial_supply: Value,
     },
+
+    CreateIdentity {
+        access_rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

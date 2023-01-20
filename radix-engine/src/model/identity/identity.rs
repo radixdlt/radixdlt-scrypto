@@ -8,7 +8,6 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::NativeFn;
 use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::model::*;
-use radix_engine_interface::rule;
 
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;
@@ -42,8 +41,8 @@ impl Executor for IdentityCreateInvocation {
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            self.access_rule.clone(),
             self.access_rule,
-            AccessRule::DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
@@ -63,7 +62,7 @@ impl Executor for IdentityCreateInvocation {
             ),
         )?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::Identity)?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Identity(underlying_node_id.into())),
