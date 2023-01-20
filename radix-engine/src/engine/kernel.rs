@@ -133,6 +133,45 @@ where
         kernel
     }
 
+    fn create_virtual_account(&mut self, node_id: RENodeId, non_fungible_global_id: NonFungibleGlobalId) -> Result<(), RuntimeError> {
+        // TODO: Replace with trusted IndexedScryptoValue
+        let access_rule = rule!(require(non_fungible_global_id));
+        let result = self.invoke(ScryptoInvocation {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: "Account".to_string(),
+            fn_name: "create".to_string(),
+            receiver: None,
+            args: args!(access_rule),
+        })?;
+        let component_id = IndexedScryptoValue::from_value(result)
+            .owned_node_ids()
+            .expect("No duplicates expected")
+            .into_iter()
+            .next()
+            .unwrap()
+            .into();
+
+        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: to allow for address selection
+        let global_substate = GlobalAddressSubstate::Component(component_id);
+
+        self.current_frame.create_node(
+            node_id,
+            RENodeInit::Global(global_substate),
+            &mut self.heap,
+            &mut self.track,
+            true,
+        )?;
+
+        Ok(())
+    }
+
+    fn create_virtual_identity(&mut self, node_id: RENodeId, non_fungible_global_id: NonFungibleGlobalId) -> Result<(), RuntimeError> {
+        let access_rule = rule!(require(non_fungible_global_id));
+        Identity::create(node_id, access_rule, self)?;
+        Ok(())
+    }
+
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -144,50 +183,37 @@ where
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 // Lazy create component if missing
-                let non_fungible_global_id = match component_address {
+                match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        NonFungibleGlobalId::new(
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::Bytes(address.into()),
-                        )
+                        );
+                        self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        NonFungibleGlobalId::new(
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::Bytes(address.into()),
-                        )
+                        );
+                        self.create_virtual_account(node_id, non_fungible_global_id)?;
+                    }
+                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
+                            ECDSA_SECP256K1_TOKEN,
+                            NonFungibleLocalId::Bytes(address.into()),
+                        );
+                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
+                    }
+                    ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
+                            EDDSA_ED25519_TOKEN,
+                            NonFungibleLocalId::Bytes(address.into()),
+                        );
+                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     _ => return Ok(false),
                 };
-
-                // TODO: Replace with trusted IndexedScryptoValue
-                let access_rule = rule!(require(non_fungible_global_id));
-                let result = self.invoke(ScryptoInvocation {
-                    package_address: ACCOUNT_PACKAGE,
-                    blueprint_name: "Account".to_string(),
-                    fn_name: "create".to_string(),
-                    receiver: None,
-                    args: args!(access_rule),
-                })?;
-                let component_id = IndexedScryptoValue::from_value(result)
-                    .owned_node_ids()
-                    .expect("No duplicates expected")
-                    .into_iter()
-                    .next()
-                    .unwrap()
-                    .into();
-
-                // TODO: Use system_api to globalize component when create_node is refactored
-                // TODO: to allow for address selection
-                let global_substate = GlobalAddressSubstate::Component(component_id);
-
-                self.current_frame.create_node(
-                    node_id,
-                    RENodeInit::Global(global_substate),
-                    &mut self.heap,
-                    &mut self.track,
-                    true,
-                )?;
 
                 Ok(true)
             }

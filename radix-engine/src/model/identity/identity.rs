@@ -36,13 +36,33 @@ impl Executor for IdentityCreateInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
+
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
+        Identity::create(global_node_id, self.access_rule, api)?;
+        let identity_address: ComponentAddress = global_node_id.into();
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(global_node_id);
+
+        let update = CallFrameUpdate {
+            node_refs_to_copy,
+            nodes_to_move: vec![],
+        };
+
+        Ok((identity_address, update))
+    }
+}
+
+pub struct Identity;
+
+impl Identity {
+    pub fn create<Y>(global_node_id: RENodeId, access_rule: AccessRule, api: &mut Y) -> Result<(), RuntimeError> where Y: SystemApi + EngineApi<RuntimeError> {
         let underlying_node_id = api.allocate_node_id(RENodeType::Identity)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
-            self.access_rule.clone(),
-            self.access_rule,
+            access_rule.clone(),
+            access_rule,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
@@ -62,21 +82,11 @@ impl Executor for IdentityCreateInvocation {
             ),
         )?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Identity(underlying_node_id.into())),
         )?;
 
-        let identity_address: ComponentAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((identity_address, update))
+        Ok(())
     }
 }
