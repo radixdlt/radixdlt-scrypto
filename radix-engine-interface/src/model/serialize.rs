@@ -19,6 +19,7 @@ pub enum NativeInvocation {
     EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
     Clock(ClockInvocation),
+    Identity(IdentityInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -63,6 +64,11 @@ pub enum ClockInvocation {
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum IdentityInvocation {
+    Create(IdentityCreateInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -409,6 +415,9 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
+            },
+            NativeInvocation::Identity(invocation) => match invocation {
+                IdentityInvocation::Create(..) => {}
             },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {

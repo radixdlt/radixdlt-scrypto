@@ -44,6 +44,7 @@ pub enum RENodeType {
     EpochManager,
     Validator,
     Clock,
+    Identity,
     TransactionRuntime,
     Logger,
 }

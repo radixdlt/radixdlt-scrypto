@@ -17,7 +17,7 @@ pub enum RENodeInit {
     Worktop(WorktopSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    Identity(MetadataSubstate),
+    Identity(MetadataSubstate, AccessRulesChainSubstate),
     Component(
         ComponentInfoSubstate,
         ComponentStateSubstate,
@@ -93,10 +93,14 @@ impl RENodeInit {
                     );
                 }
             }
-            RENodeInit::Identity(metadata) => {
+            RENodeInit::Identity(metadata, access_rules) => {
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                     metadata.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules.into(),
                 );
             }
             RENodeInit::Component(
