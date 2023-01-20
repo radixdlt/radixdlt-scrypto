@@ -126,9 +126,7 @@ impl ScryptoProof for Proof {
             }
             ProofValidationMode::ValidateContainsNonFungible(non_fungible_global_id) => {
                 self.validate_resource_address(non_fungible_global_id.resource_address())?;
-                self.validate_contains_non_fungible_local_id(
-                    non_fungible_global_id.non_fungible_local_id(),
-                )?;
+                self.validate_contains_non_fungible_local_id(non_fungible_global_id.local_id())?;
                 Ok(())
             }
             ProofValidationMode::ValidateContainsNonFungibles(
@@ -291,7 +289,7 @@ impl ValidatedProof {
 
         self.non_fungible_local_ids()
             .iter()
-            .any(|k| k.eq(&non_fungible_global_id.non_fungible_local_id()))
+            .any(|k| k.eq(&non_fungible_global_id.local_id()))
     }
 
     /// Returns all the non-fungible units contained.

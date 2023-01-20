@@ -527,7 +527,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomValueKind::NonFungibleLocalId,
-            &value.serializable(*context),
+            &format!("{}", value),
         ),
     }
 }
@@ -545,48 +545,8 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleG
                 .display(context.display_context.bech32_encoder)
                 .to_string(),
         )?;
-        tuple.serialize_element(&self.non_fungible_local_id().serializable(*context))?;
+        tuple.serialize_element(&self.local_id().to_string())?;
         tuple.end()
-    }
-}
-
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleLocalId {
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            NonFungibleLocalId::String(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::String,
-                value,
-            ),
-            NonFungibleLocalId::Number(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U64,
-                &value.to_string(),
-            ),
-            NonFungibleLocalId::Bytes(value) => serialize_value_with_element_type(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::Array,
-                ValueKind::U8,
-                &BytesValue { bytes: value }.serializable(*context),
-            ),
-            NonFungibleLocalId::UUID(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U128,
-                &value.to_string(),
-            ),
-        }
     }
 }
 
@@ -882,7 +842,7 @@ mod tests {
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::Number(123),
+                                NonFungibleLocalId::Integer(123),
                             ),
                         },
                         Value::Custom {
@@ -892,7 +852,7 @@ mod tests {
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::UUID(371),
+                                NonFungibleLocalId::UUID(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd),
                             ),
                         },
                     ],
@@ -937,10 +897,10 @@ mod tests {
                 "1",
                 "0.01",
                 "0",
-                { "type": "NonFungibleLocalId", "value": "hello" },
-                { "type": "NonFungibleLocalId", "value": "123" },
-                { "type": "NonFungibleLocalId", "value": { "hex": "2345" } },
-                { "type": "NonFungibleLocalId", "value": "371" },
+                { "type": "NonFungibleLocalId", "value": "<hello>" },
+                { "type": "NonFungibleLocalId", "value": "#123#" },
+                { "type": "NonFungibleLocalId", "value": "[2345]" },
+                { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
             ]
         ]);
 
@@ -992,10 +952,10 @@ mod tests {
                         { "type": "Decimal", "value": "1" },
                         { "type": "Decimal", "value": "0.01" },
                         { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "NonFungibleLocalId", "value": { "type": "String", "value": "hello" } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "U64", "value": "123" } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
-                        { "type": "NonFungibleLocalId", "value": { "type": "U128", "value": "371" } },
+                        { "type": "NonFungibleLocalId", "value": "<hello>" },
+                        { "type": "NonFungibleLocalId", "value": "#123#" },
+                        { "type": "NonFungibleLocalId", "value": "[2345]" },
+                        { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
                     ]
                 }
             ]

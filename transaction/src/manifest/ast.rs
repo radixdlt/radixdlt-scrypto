@@ -347,7 +347,7 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
     Bytes(Box<Value>),
-    NonFungibleGlobalId(Box<Value>, Box<Value>),
+    NonFungibleGlobalId(Box<Value>),
 
     // ==============
     // Custom Types
@@ -407,7 +407,7 @@ impl Value {
             Value::Ok(_) => ScryptoValueKind::Enum,
             Value::Err(_) => ScryptoValueKind::Enum,
             Value::Bytes(_) => ScryptoValueKind::Array,
-            Value::NonFungibleGlobalId(_, _) => ScryptoValueKind::Tuple,
+            Value::NonFungibleGlobalId(_) => ScryptoValueKind::Tuple,
 
             // ==============
             // Custom Types
