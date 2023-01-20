@@ -24,6 +24,7 @@ pub enum NativePackage {
     Logger,
     TransactionRuntime,
     TransactionProcessor,
+    AccessController,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -113,6 +114,7 @@ pub enum NativeFn {
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
+    AccessController(AccessControllerFn),
 }
 
 impl NativeFn {
@@ -132,6 +134,7 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+            NativeFn::AccessController(..) => NativePackage::AccessController,
         }
     }
 }
@@ -738,4 +741,50 @@ pub enum TransactionRuntimeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum AccessControllerFn {
+    CreateGlobal,
+
+    CreateProof,
+    UpdateTimedRecoveryDelay,
+
+    InitiateRecoveryAsPrimary,
+    InitiateRecoveryAsRecovery,
+    InitiateRecoveryAsConfirmation,
+
+    QuickConfirmRecoveryAsPrimary,
+    QuickConfirmRecoveryAsRecovery,
+    QuickConfirmRecoveryAsConfirmation,
+
+    TimedConfirmRecoveryAsPrimary,
+    TimedConfirmRecoveryAsRecovery,
+    TimedConfirmRecoveryAsConfirmation,
+
+    CancelRecoveryAttemptAsPrimary,
+    CancelRecoveryAttemptAsRecovery,
+    CancelRecoveryAttemptAsConfirmation,
+
+    LockPrimaryRole,
+    UnlockPrimaryRole,
 }

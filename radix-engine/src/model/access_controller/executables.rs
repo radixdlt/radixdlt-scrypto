@@ -1,4 +1,4 @@
-use crate::engine::Executor;
+use crate::engine::{deref_and_update, Executor};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
@@ -20,7 +20,12 @@ impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     where
         Self: Sized,
     {
-        todo!()
+        let actor =
+            ResolvedActor::function(NativeFn::AccessController(AccessControllerFn::CreateGlobal));
+
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.controlled_asset));
+
+        Ok((actor, call_frame_update, self))
     }
 }
 
@@ -47,12 +52,25 @@ impl ExecutableInvocation for AccessControllerCreateProofInvocation {
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CreateProof),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -79,12 +97,26 @@ impl ExecutableInvocation for AccessControllerUpdateTimedRecoveryDelayInvocation
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CreateProof),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -111,12 +143,26 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -143,12 +189,26 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -175,12 +235,26 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsConfirmationInvo
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsConfirmation),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -207,12 +281,27 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsPrimary),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -239,12 +328,27 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -271,12 +375,27 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmation
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsConfirmation),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -303,12 +422,27 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsPrimary),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -335,12 +469,27 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvo
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -367,12 +516,27 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsConfirmation
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsConfirmation),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -399,12 +563,27 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsPrimary),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -431,12 +610,27 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -463,12 +657,27 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsConfirmatio
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsConfirmation),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -495,12 +704,25 @@ impl ExecutableInvocation for AccessControllerLockPrimaryRoleInvocation {
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::LockPrimaryRole),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
@@ -527,12 +749,25 @@ impl ExecutableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
 
     fn resolve<D: ResolverApi>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        todo!()
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::UnlockPrimaryRole),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+        };
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
