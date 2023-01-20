@@ -22,7 +22,6 @@ impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     {
         let actor =
             ResolvedActor::function(NativeFn::AccessController(AccessControllerFn::CreateGlobal));
-
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.controlled_asset));
 
         Ok((actor, call_frame_update, self))
@@ -134,12 +133,12 @@ impl Executor for AccessControllerUpdateTimedRecoveryDelayExecutable {
     }
 }
 
-//================================================
-// Access Controller Initiate Recovery As Primary
-//================================================
+//=====================================
+// Access Controller Initiate Recovery
+//=====================================
 
-impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerInitiateRecoveryAsPrimaryExecutable;
+impl ExecutableInvocation for AccessControllerInitiateRecoveryInvocation {
+    type Exec = AccessControllerInitiateRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -153,20 +152,21 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::InitiateRecovery),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
+            role: self.role,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
+impl Executor for AccessControllerInitiateRecoveryExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -180,58 +180,12 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
     }
 }
 
-//=================================================
-// Access Controller Initiate Recovery As Recovery
-//=================================================
+//==========================================
+// Access Controller Quick Confirm Recovery
+//==========================================
 
-impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerInitiateRecoveryAsRecoveryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//=====================================================
-// Access Controller Initiate Recovery As Confirmation
-//=====================================================
-
-impl ExecutableInvocation for AccessControllerInitiateRecoveryAsConfirmationInvocation {
-    type Exec = AccessControllerInitiateRecoveryAsConfirmationExecutable;
+impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryInvocation {
+    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -245,53 +199,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsConfirmationInvo
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsConfirmation),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerInitiateRecoveryAsConfirmationExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//=====================================================
-// Access Controller Quick Confirm Recovery As Primary
-//=====================================================
-
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsPrimaryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecovery),
             resolved_receiver,
         );
 
@@ -299,13 +207,14 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: self.proposer,
+            role: self.role,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
+impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -319,12 +228,12 @@ impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
     }
 }
 
-//======================================================
-// Access Controller Quick Confirm Recovery As Recovery
-//======================================================
+//==========================================
+// Access Controller Timed Confirm Recovery
+//==========================================
 
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsRecoveryExecutable;
+impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
+    type Exec = AccessControllerTimedConfirmRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -338,7 +247,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsRecovery),
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery),
             resolved_receiver,
         );
 
@@ -346,13 +255,14 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: self.proposer,
+            role: self.role,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
+impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -366,59 +276,12 @@ impl Executor for AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
     }
 }
 
-//==========================================================
-// Access Controller Quick Confirm Recovery As Confirmation
-//==========================================================
+//===========================================
+// Access Controller Cancel Recovery Attempt
+//===========================================
 
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsConfirmationExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsConfirmation),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//=====================================================
-// Access Controller Timed Confirm Recovery As Primary
-//=====================================================
-
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerTimedConfirmRecoveryAsPrimaryExecutable;
+impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
+    type Exec = AccessControllerCancelRecoveryAttemptExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -432,7 +295,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttempt),
             resolved_receiver,
         );
 
@@ -440,248 +303,14 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: self.proposer,
+            role: self.role,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for AccessControllerTimedConfirmRecoveryAsPrimaryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//======================================================
-// Access Controller Timed Confirm Recovery As Recovery
-//======================================================
-
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerTimedConfirmRecoveryAsRecoveryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerTimedConfirmRecoveryAsRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//==========================================================
-// Access Controller Timed Confirm Recovery As Confirmation
-//==========================================================
-
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsConfirmationInvocation {
-    type Exec = AccessControllerTimedConfirmRecoveryAsConfirmationExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsConfirmation),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerTimedConfirmRecoveryAsConfirmationExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//======================================================
-// Access Controller Cancel Recovery Attempt As Primary
-//======================================================
-
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptAsPrimaryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsPrimary),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//=======================================================
-// Access Controller Cancel Recovery Attempt As Recovery
-//=======================================================
-
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptAsRecoveryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        todo!()
-    }
-}
-
-//===========================================================
-// Access Controller Cancel Recovery Attempt As Confirmation
-//===========================================================
-
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsConfirmationInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptAsConfirmationExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsConfirmation),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: self.proposer,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCancelRecoveryAttemptAsConfirmationExecutable {
+impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -783,4 +412,16 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
     {
         todo!()
     }
+}
+
+pub fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
+    let mut rule_nodes = Vec::new();
+    for access_rule in access_rules.into_iter() {
+        match access_rule {
+            AccessRule::AllowAll => return AccessRule::AllowAll,
+            AccessRule::DenyAll => {}
+            AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
+        }
+    }
+    AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
 }

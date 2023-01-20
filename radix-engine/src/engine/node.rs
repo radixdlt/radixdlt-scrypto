@@ -51,7 +51,7 @@ pub enum RENode {
     ),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
-    AccessController(AccessControllerSubstate, AccessRulesChainSubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl RENode {
@@ -255,14 +255,10 @@ impl RENode {
                     transaction_hash.into(),
                 );
             }
-            RENode::AccessController(access_controller, access_rules) => {
+            RENode::AccessController(access_controller) => {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
-                    access_rules.into(),
                 );
             }
         }

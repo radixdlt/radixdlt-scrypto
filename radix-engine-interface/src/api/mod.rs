@@ -144,18 +144,10 @@ pub trait InvokableModel<E>:
     + Invokable<AccessControllerCreateGlobalInvocation, E>
     + Invokable<AccessControllerCreateProofInvocation, E>
     + Invokable<AccessControllerUpdateTimedRecoveryDelayInvocation, E>
-    + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
-    + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
-    + Invokable<AccessControllerInitiateRecoveryAsConfirmationInvocation, E>
-    + Invokable<AccessControllerQuickConfirmRecoveryAsPrimaryInvocation, E>
-    + Invokable<AccessControllerQuickConfirmRecoveryAsRecoveryInvocation, E>
-    + Invokable<AccessControllerQuickConfirmRecoveryAsConfirmationInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryAsPrimaryInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryAsRecoveryInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryAsConfirmationInvocation, E>
-    + Invokable<AccessControllerCancelRecoveryAttemptAsPrimaryInvocation, E>
-    + Invokable<AccessControllerCancelRecoveryAttemptAsRecoveryInvocation, E>
-    + Invokable<AccessControllerCancelRecoveryAttemptAsConfirmationInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryAttemptInvocation, E>
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
 {

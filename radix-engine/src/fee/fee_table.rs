@@ -231,21 +231,10 @@ impl FeeTable {
                 AccessControllerFn::CreateProof => self.fixed_low,
                 AccessControllerFn::UpdateTimedRecoveryDelay => self.fixed_low,
 
-                AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
-                AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,
-                AccessControllerFn::InitiateRecoveryAsConfirmation => self.fixed_low,
-
-                AccessControllerFn::QuickConfirmRecoveryAsPrimary => self.fixed_low,
-                AccessControllerFn::QuickConfirmRecoveryAsRecovery => self.fixed_low,
-                AccessControllerFn::QuickConfirmRecoveryAsConfirmation => self.fixed_low,
-
-                AccessControllerFn::TimedConfirmRecoveryAsPrimary => self.fixed_low,
-                AccessControllerFn::TimedConfirmRecoveryAsRecovery => self.fixed_low,
-                AccessControllerFn::TimedConfirmRecoveryAsConfirmation => self.fixed_low,
-
-                AccessControllerFn::CancelRecoveryAttemptAsPrimary => self.fixed_low,
-                AccessControllerFn::CancelRecoveryAttemptAsRecovery => self.fixed_low,
-                AccessControllerFn::CancelRecoveryAttemptAsConfirmation => self.fixed_low,
+                AccessControllerFn::InitiateRecovery => self.fixed_low,
+                AccessControllerFn::QuickConfirmRecovery => self.fixed_low,
+                AccessControllerFn::TimedConfirmRecovery => self.fixed_low,
+                AccessControllerFn::CancelRecoveryAttempt => self.fixed_low,
 
                 AccessControllerFn::LockPrimaryRole => self.fixed_low,
                 AccessControllerFn::UnlockPrimaryRole => self.fixed_low,

@@ -6,6 +6,9 @@ pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
     pub controlled_asset: VaultId,
 
+    /// The current active set of primary, recovery, and confirmation roles.
+    pub active_rule_set: RuleSet,
+
     /// Maps the role proposing the rule set changes to their proposed rule set and a timestamp of
     /// when the recovery was initiated. Since [`Role`] is used as the key here, we can have a
     /// maximum of three entries in this [`HashMap`] at any given time.

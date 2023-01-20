@@ -516,51 +516,19 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
+            AccessControllerInvocation::InitiateRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::InitiateRecoveryAsRecovery(invocation) => {
+            AccessControllerInvocation::QuickConfirmRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::InitiateRecoveryAsConfirmation(invocation) => {
+            AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::TimedConfirmRecoveryAsConfirmation(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::CancelRecoveryAttemptAsConfirmation(invocation) => {
+            AccessControllerInvocation::CancelRecoveryAttempt(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

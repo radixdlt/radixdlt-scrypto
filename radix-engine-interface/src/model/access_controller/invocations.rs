@@ -101,486 +101,168 @@ impl Into<CallTableInvocation> for AccessControllerUpdateTimedRecoveryDelayInvoc
     }
 }
 
-//================================================
-// Access Controller Initiate Recovery As Primary
-//================================================
+//=====================================
+// Access Controller Initiate Recovery
+//=====================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
+pub struct AccessControllerInitiateRecoveryMethodArgs {
     pub rule_set: RuleSet,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsPrimaryExecutable {
+pub struct AccessControllerInitiateRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
+pub struct AccessControllerInitiateRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
+    pub role: Role,
 }
 
-impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
+impl Invocation for AccessControllerInitiateRecoveryInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
+impl SerializableInvocation for AccessControllerInitiateRecoveryInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvocation {
+impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::InitiateRecoveryAsPrimary(
-            self,
-        ))
-        .into()
+        NativeInvocation::AccessController(AccessControllerInvocation::InitiateRecovery(self))
+            .into()
     }
 }
 
-//=================================================
-// Access Controller Initiate Recovery As Recovery
-//=================================================
+//=================================
+// Access Controller Quick Confirm
+//=================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsRecoveryMethodArgs {
+pub struct AccessControllerQuickConfirmRecoveryMethodArgs {
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsRecoveryExecutable {
+pub struct AccessControllerQuickConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
+pub struct AccessControllerQuickConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
-impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
+impl Invocation for AccessControllerQuickConfirmRecoveryInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
+impl SerializableInvocation for AccessControllerQuickConfirmRecoveryInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInvocation {
+impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::InitiateRecoveryAsRecovery(
-            self,
-        ))
-        .into()
+        NativeInvocation::AccessController(AccessControllerInvocation::QuickConfirmRecovery(self))
+            .into()
     }
 }
 
-//=====================================================
-// Access Controller Initiate Recovery As Confirmation
-//=====================================================
+//=================================
+// Access Controller Timed Confirm
+//=================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsConfirmationMethodArgs {
+pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsConfirmationExecutable {
+pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsConfirmationInvocation {
+pub struct AccessControllerTimedConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
+    pub proposer: Role,
+    pub role: Role,
 }
 
-impl Invocation for AccessControllerInitiateRecoveryAsConfirmationInvocation {
+impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerInitiateRecoveryAsConfirmationInvocation {
+impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsConfirmationInvocation {
+impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::InitiateRecoveryAsConfirmation(self),
-        )
-        .into()
+        NativeInvocation::AccessController(AccessControllerInvocation::TimedConfirmRecovery(self))
+            .into()
     }
 }
 
-//============================================
-// Access Controller Quick Confirm As Primary
-//============================================
+//===========================================
+// Access Controller Cancel Recovery Attempt
+//===========================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsPrimaryMethodArgs {
+pub struct AccessControllerCancelRecoveryAttemptMethodArgs {
     pub rule_set: RuleSet,
     pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
+pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Role,
+    pub role: Role,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
+pub struct AccessControllerCancelRecoveryAttemptInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
     pub proposer: Role,
+    pub role: Role,
 }
 
-impl Invocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
+impl Invocation for AccessControllerCancelRecoveryAttemptInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
+impl SerializableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
+impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(self),
-        )
-        .into()
-    }
-}
-
-//=============================================
-// Access Controller Quick Confirm As Recovery
-//=============================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsRecoveryMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(self),
-        )
-        .into()
-    }
-}
-
-//=================================================
-// Access Controller Quick Confirm As Confirmation
-//=================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsConfirmationMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(self),
-        )
-        .into()
-    }
-}
-
-//============================================
-// Access Controller Timed Confirm As Primary
-//============================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsPrimaryExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(self),
-        )
-        .into()
-    }
-}
-
-//=============================================
-// Access Controller Timed Confirm As Recovery
-//=============================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsRecoveryMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(self),
-        )
-        .into()
-    }
-}
-
-//=================================================
-// Access Controller Timed Confirm As Confirmation
-//=================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsConfirmationMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsConfirmationExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsConfirmationInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerTimedConfirmRecoveryAsConfirmationInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryAsConfirmationInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsConfirmationInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::TimedConfirmRecoveryAsConfirmation(self),
-        )
-        .into()
-    }
-}
-
-//======================================================
-// Access Controller Cancel Recovery Attempt As Primary
-//======================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(self),
-        )
-        .into()
-    }
-}
-
-//=======================================================
-// Access Controller Cancel Recovery Attempt As Recovery
-//=======================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(self),
-        )
-        .into()
-    }
-}
-
-//===========================================================
-// Access Controller Cancel Recovery Attempt As Confirmation
-//===========================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsConfirmationMethodArgs {
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsConfirmationExecutable {
-    pub receiver: RENodeId,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsConfirmationInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub proposer: Role,
-}
-
-impl Invocation for AccessControllerCancelRecoveryAttemptAsConfirmationInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerCancelRecoveryAttemptAsConfirmationInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsConfirmationInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::CancelRecoveryAttemptAsConfirmation(self),
-        )
-        .into()
+        NativeInvocation::AccessController(AccessControllerInvocation::CancelRecoveryAttempt(self))
+            .into()
     }
 }
 

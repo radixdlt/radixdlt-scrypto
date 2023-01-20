@@ -132,4 +132,21 @@ impl ComponentAuthZone {
             proof,
         })
     }
+
+    pub fn assert_access_rule<Y, E>(access_rule: AccessRule, env: &mut Y) -> Result<(), E>
+    where
+        Y: EngineApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        let owned_node_ids = env.sys_get_visible_nodes()?;
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+
+        env.invoke(AuthZoneAssertAccessRuleInvocation {
+            receiver: node_id.into(),
+            access_rule,
+        })
+    }
 }
