@@ -90,6 +90,54 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     })
 }
 
+#[test]
+pub fn timed_confirm_recovery_before_delay_passes_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Primary,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
+    test_runner.push_time_forward(9);
+
+    // Act
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Primary,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(is_timed_recovery_delay_has_not_elapsed_error);
+}
+
+#[test]
+pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Primary,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
+    test_runner.push_time_forward(10);
+
+    // Act
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Primary,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
 //=============
 // State Tests
 //=============
@@ -1428,5 +1476,12 @@ impl AccessControllerTestRunner {
         };
         manifest_builder.create_proof_from_account(self.account.0, resource_address);
         manifest_builder
+    }
+
+    fn push_time_forward(&mut self, hours: i64) {
+        let current_time = self.test_runner.get_current_time(TimePrecision::Minute);
+        let new_time = current_time.add_hours(hours).unwrap();
+        self.test_runner
+            .set_current_time(new_time.seconds_since_unix_epoch * 1000);
     }
 }
