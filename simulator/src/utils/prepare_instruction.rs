@@ -792,14 +792,17 @@ mod test {
     #[test]
     pub fn parsing_of_uuid_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "{12}";
+        let arg = "{f7223dbc-bbd6-4769-8d6f-effce550080d}";
         let arg_type = Type::NonFungibleLocalId;
 
         // Act
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::UUID(0x12))
+        assert_eq!(
+            parsed_arg,
+            NonFungibleLocalId::UUID(0xf7223dbc_bbd6_4769_8d6f_effce550080d)
+        )
     }
 
     #[test]
@@ -857,7 +860,7 @@ mod test {
     pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c[";
+            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
