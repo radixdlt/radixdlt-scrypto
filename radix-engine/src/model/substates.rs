@@ -994,6 +994,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn access_controller(&self) -> &AccessControllerSubstate {
+        match self {
+            SubstateRef::AccessController(substate) => *substate,
+            _ => panic!("Not an access controller substate"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
@@ -1063,6 +1070,11 @@ impl<'a> SubstateRef<'a> {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Component(substate.manager));
                 (references, HashSet::new())
+            }
+            SubstateRef::AccessController(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.controlled_asset));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = HashSet::new();
@@ -1302,6 +1314,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::Metadata(value) => *value,
             _ => panic!("Not metadata"),
+        }
+    }
+
+    pub fn access_controller(&mut self) -> &mut AccessControllerSubstate {
+        match self {
+            SubstateRefMut::AccessController(value) => *value,
+            _ => panic!("Not access controller"),
         }
     }
 }

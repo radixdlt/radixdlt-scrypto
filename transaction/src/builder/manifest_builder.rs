@@ -863,6 +863,24 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn create_access_controller(
+        &mut self,
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_hours,
+        })
+        .0
+    }
+
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>
     where
         F: FnOnce(&mut Self) -> Result<&mut Self, E>,

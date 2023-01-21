@@ -5,6 +5,7 @@ use crate::*;
 #[derive(
     Debug,
     Clone,
+    Copy,
     PartialOrd,
     PartialEq,
     Ord,
@@ -24,7 +25,7 @@ pub enum Role {
 /// controller for the initial rules and also used during recovery for proposing a rule set.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RuleSet {
-    pub primary: AccessRule,
-    pub recovery: AccessRule,
-    pub confirmation: AccessRule,
+    pub primary_role: AccessRule,
+    pub recovery_role: AccessRule,
+    pub confirmation_role: AccessRule,
 }

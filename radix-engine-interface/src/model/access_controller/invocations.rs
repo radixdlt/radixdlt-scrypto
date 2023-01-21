@@ -231,7 +231,6 @@ impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocatio
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptMethodArgs {
     pub rule_set: RuleSet,
-    pub proposer: Role,
     pub role: Role,
 }
 
@@ -239,7 +238,6 @@ pub struct AccessControllerCancelRecoveryAttemptMethodArgs {
 pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
-    pub proposer: Role,
     pub role: Role,
 }
 
@@ -247,7 +245,6 @@ pub struct AccessControllerCancelRecoveryAttemptExecutable {
 pub struct AccessControllerCancelRecoveryAttemptInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub proposer: Role,
     pub role: Role,
 }
 

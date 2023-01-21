@@ -775,9 +775,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.invoke(AccessControllerCreateGlobalInvocation {
                         controlled_asset: processor.get_bucket(controlled_asset)?.0,
                         rule_set: RuleSet {
-                            primary: primary_role.clone(),
-                            recovery: recovery_role.clone(),
-                            confirmation: confirmation_role.clone(),
+                            primary_role: primary_role.clone(),
+                            recovery_role: recovery_role.clone(),
+                            confirmation_role: confirmation_role.clone(),
                         },
                         timed_recovery_delay_in_hours: *timed_recovery_delay_in_hours,
                     })?;

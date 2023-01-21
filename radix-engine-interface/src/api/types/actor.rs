@@ -794,7 +794,7 @@ impl AccessControllerPackage {
                 return Err(ResolveError::NotAMethod);
             }
             AccessControllerFn::CreateProof => {
-                scrypto_decode::<AccessControllerCreateProofInvocation>(args)
+                scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::CreateProof(AccessControllerCreateProofInvocation {
                     receiver,
@@ -802,7 +802,7 @@ impl AccessControllerPackage {
             }
             AccessControllerFn::UpdateTimedRecoveryDelay => {
                 let args =
-                    scrypto_decode::<AccessControllerUpdateTimedRecoveryDelayInvocation>(args)
+                    scrypto_decode::<AccessControllerUpdateTimedRecoveryDelayMethodArgs>(args)
                         .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::UpdateTimedRecoveryDelay(
                     AccessControllerUpdateTimedRecoveryDelayInvocation {
@@ -812,7 +812,7 @@ impl AccessControllerPackage {
                 )
             }
             AccessControllerFn::InitiateRecovery => {
-                let args = scrypto_decode::<AccessControllerInitiateRecoveryInvocation>(args)
+                let args = scrypto_decode::<AccessControllerInitiateRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::InitiateRecovery(
                     AccessControllerInitiateRecoveryInvocation {
@@ -823,7 +823,7 @@ impl AccessControllerPackage {
                 )
             }
             AccessControllerFn::QuickConfirmRecovery => {
-                let args = scrypto_decode::<AccessControllerQuickConfirmRecoveryInvocation>(args)
+                let args = scrypto_decode::<AccessControllerQuickConfirmRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::QuickConfirmRecovery(
                     AccessControllerQuickConfirmRecoveryInvocation {
@@ -835,7 +835,7 @@ impl AccessControllerPackage {
                 )
             }
             AccessControllerFn::TimedConfirmRecovery => {
-                let args = scrypto_decode::<AccessControllerTimedConfirmRecoveryInvocation>(args)
+                let args = scrypto_decode::<AccessControllerTimedConfirmRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::TimedConfirmRecovery(
                     AccessControllerTimedConfirmRecoveryInvocation {
@@ -847,26 +847,25 @@ impl AccessControllerPackage {
                 )
             }
             AccessControllerFn::CancelRecoveryAttempt => {
-                let args = scrypto_decode::<AccessControllerCancelRecoveryAttemptInvocation>(args)
+                let args = scrypto_decode::<AccessControllerCancelRecoveryAttemptMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::CancelRecoveryAttempt(
                     AccessControllerCancelRecoveryAttemptInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        proposer: args.proposer,
                         role: args.role,
                     },
                 )
             }
             AccessControllerFn::LockPrimaryRole => {
-                scrypto_decode::<AccessControllerLockPrimaryRoleInvocation>(args)
+                scrypto_decode::<AccessControllerLockPrimaryRoleMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::LockPrimaryRole(
                     AccessControllerLockPrimaryRoleInvocation { receiver },
                 )
             }
             AccessControllerFn::UnlockPrimaryRole => {
-                scrypto_decode::<AccessControllerUnlockPrimaryRoleInvocation>(args)
+                scrypto_decode::<AccessControllerUnlockPrimaryRoleMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::UnlockPrimaryRole(
                     AccessControllerUnlockPrimaryRoleInvocation { receiver },
