@@ -30,8 +30,8 @@ impl NewAccount {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
-        let auth_address = NonFungibleAddress::from_public_key(&public_key);
-        let withdraw_auth = rule!(require(auth_address));
+        let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+        let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method(FAUCET_COMPONENT, "free", args!())

@@ -5,10 +5,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
+use radix_engine_interface::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
@@ -448,9 +448,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result = api.invoke_method(
                         ScryptoReceiver::Global(*component_address),
                         method_name,
-                        args.as_value(),
+                        args.into_vec(),
                     )?;
-                    let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;

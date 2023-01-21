@@ -1,10 +1,10 @@
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
 use crate::api::types::TransactionRuntimeId;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

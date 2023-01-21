@@ -7,13 +7,13 @@ use scrypto_abi::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
-use crate::api::api::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;
-use crate::wasm::*;
 
 use crate::*;
 
@@ -64,7 +64,7 @@ pub enum ResourceMethodAuthKey {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
     pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
-    pub id_type: NonFungibleIdTypeId,
+    pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -106,10 +106,10 @@ impl Into<CallTableInvocation> for ResourceManagerCreateFungibleInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdTypeId,
+    pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
 impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
@@ -316,7 +316,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateBucketInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerMintNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
 impl Invocation for ResourceManagerMintNonFungibleInvocation {
@@ -414,7 +414,7 @@ impl Into<CallTableInvocation> for ResourceManagerGetTotalSupplyInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
     pub data: Vec<u8>,
 }
 
@@ -435,7 +435,7 @@ impl Into<CallTableInvocation> for ResourceManagerUpdateNonFungibleDataInvocatio
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
 }
 
 impl Invocation for ResourceManagerNonFungibleExistsInvocation {
@@ -455,7 +455,7 @@ impl Into<CallTableInvocation> for ResourceManagerNonFungibleExistsInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub id: NonFungibleId,
+    pub id: NonFungibleLocalId,
 }
 
 impl Invocation for ResourceManagerGetNonFungibleInvocation {

@@ -34,7 +34,7 @@ impl Worktop {
     }
 
     sys_env_native_fn! {
-        pub fn sys_take_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleId>) -> Bucket {
+        pub fn sys_take_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleLocalId>) -> Bucket {
             WorktopTakeNonFungiblesInvocation {
                 resource_address, ids,
             }
@@ -58,7 +58,7 @@ impl Worktop {
     }
 
     sys_env_native_fn! {
-        pub fn sys_assert_contains_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleId>) -> () {
+        pub fn sys_assert_contains_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleLocalId>) -> () {
             WorktopAssertContainsNonFungiblesInvocation {
                 resource_address, ids,
             }

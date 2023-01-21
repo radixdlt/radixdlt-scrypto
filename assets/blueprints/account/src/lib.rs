@@ -126,7 +126,7 @@ blueprint! {
         /// Withdraws resource from this account, by non-fungible ids.
         pub fn withdraw_by_ids(
             &mut self,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) -> Bucket {
             let vault = self.vaults.get_mut(&resource_address);
@@ -160,7 +160,7 @@ blueprint! {
         pub fn lock_fee_and_withdraw_by_ids(
             &mut self,
             amount_to_lock: Decimal,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) -> Bucket {
             self.lock_fee(amount_to_lock);
@@ -202,7 +202,7 @@ blueprint! {
         /// available in this account.
         pub fn create_proof_by_ids(
             &self,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) -> Proof {
             let vault = self.vaults.get(&resource_address);

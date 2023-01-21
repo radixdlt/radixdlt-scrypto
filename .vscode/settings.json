@@ -12,6 +12,7 @@
         "instantiatable",
         "Instrumenter",
         "persistable",
+        "repr",
         "Sbor",
         "Scrypto",
         "Secp",

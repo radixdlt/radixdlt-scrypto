@@ -2,11 +2,11 @@
 
   ;; Simple function that always returns `()`
   ;; Need to replace ${depth} with the depth
-  (func $Test_f (param $0 i32) (result i32)
+  (func $Test_f (param $0 i64) (result i64)
     ;; Loop starts!
     (local $i i32)
-    (local $curr_pointer i32)
     (local $return_length i32)
+    (local $curr_pointer i32)
 
     ;; Return length needs 2 * depth
     ;; It needs (depth-1) * 2 bytes in the middle, plus 2 bytes for the end
@@ -24,12 +24,8 @@
       )
     )
 
-    ;; Get the pointer to write the response at, and store to $0 - this is the pointer we'll return at the end of the method
-    (local.set $0 (call $scrypto_alloc (local.get $return_length)))
-
-    ;; Set the $curr_pointer to where we will write out response.
-    ;; We will skip the first 4 bytes from the offset, and commence writing our response there
-    (local.set $curr_pointer (i32.add (local.get $0) (i32.const 4)))
+    ;; Get the pointer to write the response at (0x0).
+    (local.set $curr_pointer (i32.const 0))
 
     ;; PART 1: Encode our Scrypto payload prefix (0x5c) as a byte (8 bits), and advance the $curr_pointer by 1 byte
     (i32.store8 (local.get $curr_pointer) (i32.const 0x5c))
@@ -61,16 +57,11 @@
     ;; Write two little endian bytes of 0x2100 to encode () and finish off
     (i32.store16 (local.get $curr_pointer) (i32.const 0x0021))
   
-    ;; Return the buffer start in variable $0
-    (local.get $0)
+    ;; Return slice (ptr = 0, len = $return_length)
+    (i64.extend_i32_s (local.get $return_length))
   )
 
   (memory $0 1)
   (export "memory" (memory $0))
-  (export "scrypto_alloc" (func $scrypto_alloc))
-  (export "scrypto_free" (func $scrypto_free))
   (export "Test_f" (func $Test_f))
-
-  ${memcpy}
-  ${buffer}
 )

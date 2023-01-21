@@ -201,8 +201,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { ( #(#types),* ) }
         }
-        SchemaType::NonFungibleAddress => {
-            parse_quote! { ::scrypto::model::NonFungibleAddress}
+        SchemaType::NonFungibleGlobalId => {
+            parse_quote! { ::scrypto::model::NonFungibleGlobalId}
         }
         SchemaType::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
@@ -365,7 +365,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
         SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
         SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
-        SchemaType::NonFungibleId => parse_quote! {::scrypto::model::NonFungibleId },
+        SchemaType::NonFungibleLocalId => parse_quote! {::scrypto::model::NonFungibleLocalId },
 
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");

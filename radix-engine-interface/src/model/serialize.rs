@@ -170,7 +170,7 @@ pub enum BucketInvocation {
     Take(BucketTakeInvocation),
     TakeNonFungibles(BucketTakeNonFungiblesInvocation),
     Put(BucketPutInvocation),
-    GetNonFungibleIds(BucketGetNonFungibleIdsInvocation),
+    GetNonFungibleLocalIds(BucketGetNonFungibleLocalIdsInvocation),
     GetAmount(BucketGetAmountInvocation),
     GetResourceAddress(BucketGetResourceAddressInvocation),
     CreateProof(BucketCreateProofInvocation),
@@ -184,7 +184,7 @@ pub enum VaultInvocation {
     TakeNonFungibles(VaultTakeNonFungiblesInvocation),
     GetAmount(VaultGetAmountInvocation),
     GetResourceAddress(VaultGetResourceAddressInvocation),
-    GetNonFungibleIds(VaultGetNonFungibleIdsInvocation),
+    GetNonFungibleLocalIds(VaultGetNonFungibleLocalIdsInvocation),
     CreateProof(VaultCreateProofInvocation),
     CreateProofByAmount(VaultCreateProofByAmountInvocation),
     CreateProofByIds(VaultCreateProofByIdsInvocation),
@@ -196,7 +196,7 @@ pub enum VaultInvocation {
 pub enum ProofInvocation {
     Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
-    GetNonFungibleIds(ProofGetNonFungibleIdsInvocation),
+    GetNonFungibleLocalIds(ProofGetNonFungibleLocalIdsInvocation),
     GetResourceAddress(ProofGetResourceAddressInvocation),
 }
 
@@ -243,7 +243,7 @@ impl NativeInvocation {
                 BucketInvocation::Take(..) => {}
                 BucketInvocation::CreateProof(..) => {}
                 BucketInvocation::TakeNonFungibles(..) => {}
-                BucketInvocation::GetNonFungibleIds(..) => {}
+                BucketInvocation::GetNonFungibleLocalIds(..) => {}
                 BucketInvocation::GetAmount(..) => {}
                 BucketInvocation::Put(..) => {}
                 BucketInvocation::GetResourceAddress(..) => {}
@@ -260,7 +260,7 @@ impl NativeInvocation {
             },
             NativeInvocation::Proof(proof_method) => match proof_method {
                 ProofInvocation::GetAmount(..) => {}
-                ProofInvocation::GetNonFungibleIds(..) => {}
+                ProofInvocation::GetNonFungibleLocalIds(..) => {}
                 ProofInvocation::GetResourceAddress(..) => {}
                 ProofInvocation::Clone(..) => {}
             },
@@ -271,7 +271,7 @@ impl NativeInvocation {
                 VaultInvocation::TakeNonFungibles(..) => {}
                 VaultInvocation::GetAmount(..) => {}
                 VaultInvocation::GetResourceAddress(..) => {}
-                VaultInvocation::GetNonFungibleIds(..) => {}
+                VaultInvocation::GetNonFungibleLocalIds(..) => {}
                 VaultInvocation::CreateProof(..) => {}
                 VaultInvocation::CreateProofByAmount(..) => {}
                 VaultInvocation::CreateProofByIds(..) => {}

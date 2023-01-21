@@ -5,11 +5,12 @@ use sbor::rust::fmt::Debug;
 use sbor::*;
 
 use crate::abi::*;
-use crate::api::{api::*, types::*};
+use crate::api::types::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
-use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
@@ -31,21 +32,21 @@ impl Into<CallTableInvocation> for ProofGetAmountInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetNonFungibleIdsInvocation {
+pub struct ProofGetNonFungibleLocalIdsInvocation {
     pub receiver: ProofId,
 }
 
-impl Invocation for ProofGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Invocation for ProofGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 }
 
-impl SerializableInvocation for ProofGetNonFungibleIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleId>;
+impl SerializableInvocation for ProofGetNonFungibleLocalIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
 }
 
-impl Into<CallTableInvocation> for ProofGetNonFungibleIdsInvocation {
+impl Into<CallTableInvocation> for ProofGetNonFungibleLocalIdsInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetNonFungibleIds(self)).into()
+        NativeInvocation::Proof(ProofInvocation::GetNonFungibleLocalIds(self)).into()
     }
 }
 
@@ -97,12 +98,12 @@ pub enum ProofValidationMode {
     /// the `Proof`'s resource address belongs to the set, then its valid.
     ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
 
-    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
-    ValidateContainsNonFungible(NonFungibleAddress),
+    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleGlobalId`.
+    ValidateContainsNonFungible(NonFungibleGlobalId),
 
-    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s
+    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleLocalId`s
     /// to ensure that the `Proof` contains all of the NonFungibles in the set.
-    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleId>),
+    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleLocalId>),
 
     /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
     ValidateContainsAmount(ResourceAddress, Decimal),
@@ -114,9 +115,9 @@ impl From<ResourceAddress> for ProofValidationMode {
     }
 }
 
-impl From<NonFungibleAddress> for ProofValidationMode {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        Self::ValidateContainsNonFungible(non_fungible_address)
+impl From<NonFungibleGlobalId> for ProofValidationMode {
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
+        Self::ValidateContainsNonFungible(non_fungible_global_id)
     }
 }
 
@@ -126,7 +127,7 @@ pub enum ProofValidationError {
     InvalidResourceAddress(ResourceAddress),
     ResourceAddressDoesNotBelongToList,
     DoesNotContainOneNonFungible,
-    NonFungibleIdNotFound,
+    NonFungibleLocalIdNotFound,
     InvalidAmount(Decimal),
 }
 

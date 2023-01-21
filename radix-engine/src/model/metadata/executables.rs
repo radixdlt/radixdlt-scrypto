@@ -4,8 +4,8 @@ use crate::engine::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{NativeFn, RENodeId, SubstateOffset};
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::model::*;
 
 impl ExecutableInvocation for MetadataSetInvocation {

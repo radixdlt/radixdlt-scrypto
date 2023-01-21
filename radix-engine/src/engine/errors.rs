@@ -6,7 +6,7 @@ use sbor::*;
 
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmError;
+use crate::wasm::WasmRuntimeError;
 
 use super::TrackError;
 
@@ -68,7 +68,7 @@ pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation
-    WasmError(WasmError),
+    WasmRuntimeError(WasmRuntimeError),
 
     InvalidReferenceWrite(GlobalAddress),
 
@@ -142,7 +142,9 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
     InvalidInvocation,
+
     InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoReturn(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

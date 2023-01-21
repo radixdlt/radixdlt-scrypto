@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::wasm::*;
+use radix_engine_interface::api::EngineApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -35,10 +35,10 @@ blueprint! {
                 .unwrap(),
             ));
 
-            let input = RadixEngineInput::LockSubstate(node_id, offset, true);
-            let lock_handle: LockHandle = call_engine(input);
-            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate).unwrap());
-            let _: () = call_engine(input);
+            let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
+            ScryptoEnv
+                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .unwrap();
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
         }
@@ -60,10 +60,10 @@ blueprint! {
                 .unwrap(),
             ));
 
-            let input = RadixEngineInput::LockSubstate(node_id, offset, true);
-            let lock_handle: LockHandle = call_engine(input);
-            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate).unwrap());
-            let _: () = call_engine(input);
+            let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
+            ScryptoEnv
+                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .unwrap();
 
             CyclicMap { store: kv_store }.instantiate().globalize()
         }

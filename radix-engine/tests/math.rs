@@ -23,7 +23,7 @@ fn test_integer_basic_ops() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 

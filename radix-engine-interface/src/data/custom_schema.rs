@@ -15,7 +15,7 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
 
     // Other Engine types
     Own,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
     KeyValueStore { key_type: L, value_type: L },
 
     // Manifest types
@@ -32,7 +32,7 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
@@ -72,7 +72,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::Expression => ScryptoCustomTypeKind::Expression,
             ScryptoCustomTypeKind::Blob => ScryptoCustomTypeKind::Blob,
-            ScryptoCustomTypeKind::NonFungibleAddress => ScryptoCustomTypeKind::NonFungibleAddress,
+            ScryptoCustomTypeKind::NonFungibleGlobalId => {
+                ScryptoCustomTypeKind::NonFungibleGlobalId
+            }
             ScryptoCustomTypeKind::Hash => ScryptoCustomTypeKind::Hash,
             ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
                 ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
@@ -88,7 +90,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             }
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
-            ScryptoCustomTypeKind::NonFungibleId => ScryptoCustomTypeKind::NonFungibleId,
+            ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
         }
     }
 
@@ -126,7 +128,10 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ),
             DECIMAL_ID => ("Decimal", ScryptoCustomTypeKind::Decimal),
             PRECISE_DECIMAL_ID => ("PreciseDecimal", ScryptoCustomTypeKind::PreciseDecimal),
-            NON_FUNGIBLE_ID_ID => ("NonFungibleId", ScryptoCustomTypeKind::NonFungibleId),
+            NON_FUNGIBLE_LOCAL_ID_ID => (
+                "NonFungibleLocalId",
+                ScryptoCustomTypeKind::NonFungibleLocalId,
+            ),
             _ => return None,
         };
 
@@ -161,5 +166,5 @@ mod well_known_scrypto_types {
     pub const EDDSA_ED25519_SIGNATURE_ID: u8 = VALUE_KIND_EDDSA_ED25519_SIGNATURE;
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
-    pub const NON_FUNGIBLE_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_ID;
+    pub const NON_FUNGIBLE_LOCAL_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_LOCAL_ID;
 }

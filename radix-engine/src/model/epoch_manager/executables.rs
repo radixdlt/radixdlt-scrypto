@@ -10,10 +10,10 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::Vault;
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
@@ -109,13 +109,13 @@ impl Executor for EpochManagerCreateInvocation {
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator)),
             rule!(allow_all),
         );
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
@@ -454,19 +454,19 @@ impl EpochManager {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
 
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;

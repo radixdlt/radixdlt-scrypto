@@ -21,7 +21,7 @@ DROP_PROOF Proof("proof3");
 
 # Return a bucket to worktop
 RETURN_TO_WORKTOP Bucket("some_xrd");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(1u64)) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("nfts");
+TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#1#")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("nfts");
 
 # Drop all proofs, cancel all buckets and move resources to account
 DROP_ALL_PROOFS;

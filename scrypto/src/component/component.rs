@@ -1,10 +1,10 @@
 use radix_engine_derive::LegacyDescribe;
-use radix_engine_interface::api::api::{ComponentApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
@@ -48,7 +48,7 @@ pub trait LocalComponent {
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
-    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -74,13 +74,9 @@ impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(
-                ScryptoReceiver::Component(self.0),
-                method,
-                &scrypto_decode(&args).unwrap(),
-            )
+            .invoke_method(ScryptoReceiver::Component(self.0), method, args)
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -146,7 +142,7 @@ impl Component {
 
     /// Globalize with owner badge. This will add additional access rules to protect native
     /// methods, such as metadata and royalty.
-    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
         ScryptoEnv
             .invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
@@ -177,13 +173,9 @@ impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(
-                ScryptoReceiver::Global(self.0),
-                method,
-                &scrypto_decode(&args).unwrap(),
-            )
+            .invoke_method(ScryptoReceiver::Global(self.0), method, args)
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {

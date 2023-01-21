@@ -34,7 +34,7 @@ fn test_call() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 }

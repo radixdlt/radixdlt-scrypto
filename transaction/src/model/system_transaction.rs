@@ -2,7 +2,7 @@ use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::model::NonFungibleAddress;
+use radix_engine_interface::model::NonFungibleGlobalId;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
@@ -15,7 +15,10 @@ pub struct SystemTransaction {
 }
 
 impl SystemTransaction {
-    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
+    pub fn get_executable<'a>(
+        &'a self,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+    ) -> Executable<'a> {
         // Fake transaction hash
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
