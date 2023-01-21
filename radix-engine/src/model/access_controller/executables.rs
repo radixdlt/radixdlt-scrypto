@@ -694,10 +694,13 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
             let access_controller = substate.access_controller();
 
             // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = access_rule_or(vec![
-                access_controller.active_rule_set.primary_role.clone(),
-                access_controller.active_rule_set.recovery_role.clone(),
-            ]);
+            let rule = access_rule_or(
+                [
+                    access_controller.active_rule_set.primary_role.clone(),
+                    access_controller.active_rule_set.recovery_role.clone(),
+                ]
+                .into(),
+            );
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }
 
@@ -767,10 +770,13 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
             let access_controller = substate.access_controller();
 
             // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = access_rule_or(vec![
-                access_controller.active_rule_set.recovery_role.clone(),
-                access_controller.active_rule_set.confirmation_role.clone(),
-            ]);
+            let rule = access_rule_or(
+                [
+                    access_controller.active_rule_set.recovery_role.clone(),
+                    access_controller.active_rule_set.confirmation_role.clone(),
+                ]
+                .into(),
+            );
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }
 
