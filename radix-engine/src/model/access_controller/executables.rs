@@ -149,11 +149,9 @@ impl Executor for AccessControllerCreateProofExecutable {
 
             // Proofs may only be created by the primary role when the primary role is NOT locked.
             // It doesn't matter whether the controller is in recovery mode or not.
-            let rule = if !access_controller.is_primary_role_locked {
-                access_controller.active_rule_set.primary_role.clone()
-            } else {
-                // TODO: Let's error out early instead of doing a check that we know will fail.
-                rule!(deny_all)
+            let rule = match access_controller.is_primary_role_locked {
+                false => access_controller.active_rule_set.primary_role.clone(),
+                true => rule!(deny_all),
             };
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }
@@ -419,7 +417,6 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
             let new_rule_set = access_controller
                 .ongoing_recoveries
                 .as_ref()
-                .map(|ongoing_recoveries| ongoing_recoveries)
                 .unwrap_or(&HashMap::new())
                 .iter()
                 .find(|(proposer, (proposed_rule_set, _))| {
@@ -514,7 +511,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             let (new_rule_set, proposed_at) = access_controller
                 .ongoing_recoveries
                 .as_ref()
-                .map(|ongoing_recoveries| ongoing_recoveries)
                 .unwrap_or(&HashMap::new())
                 .iter()
                 .find(|(proposer, (proposed_rule_set, _))| {
@@ -620,7 +616,7 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }
 
-        // Removing the proposes rule set
+        // Removing the proposed rule set
         {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
