@@ -1278,8 +1278,7 @@ impl AccessControllerTestRunner {
             .build();
         let receipt = test_runner.execute_manifest(
             manifest,
-            [radix_engine_interface::model::NonFungibleAddress::from_public_key(&public_key)]
-                .into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
         );
         receipt.expect_commit_success();
 
@@ -1464,8 +1463,7 @@ impl AccessControllerTestRunner {
     fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
         self.test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [radix_engine_interface::model::NonFungibleAddress::from_public_key(&self.account.1)]
-                .into(),
+            [NonFungibleGlobalId::from_public_key(&self.account.1)].into(),
         )
     }
 
