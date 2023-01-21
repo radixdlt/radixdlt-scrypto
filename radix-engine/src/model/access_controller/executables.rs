@@ -20,6 +20,7 @@ pub enum AccessControllerError {
     RecoveryForThisRoleAlreadyExists { role: Role },
     NoValidProposedRuleSetExists,
     TimeOverflow,
+    TimedRecoveryDelayHasNotElapsed,
 }
 
 impl From<AccessControllerError> for RuntimeError {
@@ -466,7 +467,6 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
-            proposer: self.proposer,
             role: self.role,
         };
 
@@ -498,7 +498,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             let rule = match self.role {
                 Role::Primary => access_controller.active_rule_set.primary_role.clone(),
                 Role::Recovery => access_controller.active_rule_set.recovery_role.clone(),
-                Role::Confirmation => access_controller.active_rule_set.confirmation_role.clone(),
+                Role::Confirmation => rule!(deny_all), // Confirmation can't initiate recoveries to perform a timed confirmation
             };
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }
@@ -514,15 +514,13 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 .unwrap_or(&HashMap::new())
                 .iter()
                 .find(|(proposer, (proposed_rule_set, _))| {
-                    **proposer == self.proposer
-                        && *proposed_rule_set == self.rule_set
-                        && self.proposer == self.role
+                    **proposer == self.role && *proposed_rule_set == self.rule_set
                 })
                 .map_or(
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
                     |(_, (rule_set, proposed_at))| Ok((rule_set.clone(), proposed_at.clone())),
                 )?;
-            proposed_at
+            let recovery_time_has_elapsed = proposed_at
                 .add_hours(access_controller.timed_recovery_delay_in_hours as i64)
                 .map_or(
                     Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
@@ -531,10 +529,14 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                             api,
                             instant,
                             TimePrecision::Minute,
-                            time::TimeComparisonOperator::Lte,
+                            time::TimeComparisonOperator::Gte,
                         )
                     },
                 )?;
+
+            if !recovery_time_has_elapsed {
+                Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
+            }
 
             new_rule_set
         };
@@ -611,7 +613,7 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
             let rule = match self.role {
                 Role::Primary => access_controller.active_rule_set.primary_role.clone(),
                 Role::Recovery => access_controller.active_rule_set.recovery_role.clone(),
-                Role::Confirmation => access_controller.active_rule_set.confirmation_role.clone(),
+                Role::Confirmation => rule!(deny_all), // Confirmation can't initiate recovery and therefore can't cancel it.
             };
             ComponentAuthZone::assert_access_rule(rule, api)?;
         }

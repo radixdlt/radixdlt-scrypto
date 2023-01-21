@@ -1,5 +1,5 @@
 use radix_engine::engine::{ApplicationError, RuntimeError};
-use radix_engine::model::AuthZoneError;
+use radix_engine::model::{AccessControllerError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::TestRunner;
@@ -11,357 +11,1174 @@ pub fn creating_an_access_controller_succeeds() {
 }
 
 #[test]
-pub fn creating_proof_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
+pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
 
     // Act
-    let receipt = test_runner.create_proof([Role::Primary].into());
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-pub fn creating_proof_as_recovery_during_normal_operations_with_unlocked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    // Act
-    let receipt = test_runner.create_proof([Role::Recovery].into());
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
-}
-
-#[test]
-pub fn creating_proof_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    // Act
-    let receipt = test_runner.create_proof([Role::Confirmation].into());
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
-}
-
-#[test]
-pub fn update_timed_recovery_delay_as_primary_during_normal_operations_with_unlocked_primary_succeeds(
-) {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    // Act
-    let receipt = test_runner.update_timed_recovery_delay([Role::Primary].into(), 5);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-pub fn update_timed_recovery_delay_as_recovery_during_normal_operations_with_unlocked_primary_fails(
-) {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    // Act
-    let receipt = test_runner.update_timed_recovery_delay([Role::Recovery].into(), 5);
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
-}
-
-#[test]
-pub fn update_timed_recovery_delay_as_confirmation_during_normal_operations_with_unlocked_primary_fails(
-) {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    // Act
-    let receipt = test_runner.update_timed_recovery_delay([Role::Confirmation].into(), 5);
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
-}
-
-#[test]
-pub fn initiate_recovery_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
-
-    // Act
-    let receipt = test_runner.initiate_recovery(
-        Role::Primary,
-        primary_role,
-        recovery_role,
-        confirmation_role,
+    let receipt = test_runner.quick_confirm_recovery(
+        Role::Recovery,
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(is_no_valid_proposed_rule_set_exists_error)
 }
 
 #[test]
-pub fn initiate_recovery_as_recovery_during_normal_operations_with_unlocked_primary_succeeds() {
+pub fn quick_confirm_non_existent_recovery_fails() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
 
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
+    // Act
+    let receipt = test_runner.quick_confirm_recovery(
+        Role::Recovery,
+        Role::Recovery,
+        rule!(require(PACKAGE_TOKEN)),
+        rule!(require(PACKAGE_TOKEN)),
+        rule!(require(PACKAGE_TOKEN)),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(is_no_valid_proposed_rule_set_exists_error)
+}
+
+#[test]
+pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
 
     // Act
     let receipt = test_runner.initiate_recovery(
         Role::Recovery,
-        primary_role,
-        recovery_role,
-        confirmation_role,
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-pub fn initiate_recovery_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
-
-    // Act
-    let receipt = test_runner.initiate_recovery(
-        Role::Confirmation,
-        primary_role,
-        recovery_role,
-        confirmation_role,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
     );
 
     // Assert
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RecoveryForThisRoleAlreadyExists {
+                    role: Role::Recovery
+                }
             ))
         )
-    });
+    })
 }
 
-#[test]
-pub fn lock_primary_role_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
+//=============
+// State Tests
+//=============
 
-    // Act
-    let receipt = test_runner.lock_primary_role(Role::Primary);
+mod normal_operations_with_primary_unlocked {
+    use super::*;
 
-    // Assert
-    receipt.expect_commit_success();
+    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
+
+    fn setup_environment() -> AccessControllerTestRunner {
+        AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS)
+    }
+
+    #[test]
+    pub fn create_proof() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.create_proof(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn update_timed_recovery_delay() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.update_timed_recovery_delay(role, 100);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn initiate_recovery() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.initiate_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn lock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.lock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn unlock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.unlock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn quick_confirm_recovery() {
+        // Arrange
+        let test_vectors = [
+            (
+                Role::Primary,  // As role
+                Role::Recovery, // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery, // As role
+                Role::Primary,  // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Confirmation, // As role
+                Role::Primary,      // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+        ];
+
+        for (role, proposer, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn timed_confirm_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn cancel_recovery_attempt() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
 }
 
-#[test]
-pub fn lock_primary_role_as_recovery_during_normal_operations_with_unlocked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
+mod normal_operations_with_primary_locked {
+    use super::*;
 
-    // Act
-    let receipt = test_runner.lock_primary_role(Role::Recovery);
+    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
 
-    // Assert
-    receipt.expect_commit_success();
+    fn setup_environment() -> AccessControllerTestRunner {
+        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        test_runner
+            .lock_primary_role(Role::Primary)
+            .expect_commit_success();
+        test_runner
+    }
+
+    #[test]
+    pub fn create_proof() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.create_proof(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn update_timed_recovery_delay() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.update_timed_recovery_delay(role, 100);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn initiate_recovery() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.initiate_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn lock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.lock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn unlock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.unlock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn quick_confirm_recovery() {
+        // Arrange
+        let test_vectors = [
+            (
+                Role::Primary,  // As role
+                Role::Recovery, // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery, // As role
+                Role::Primary,  // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Confirmation, // As role
+                Role::Primary,      // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+        ];
+
+        for (role, proposer, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn timed_confirm_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn cancel_recovery_attempt() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
 }
 
-#[test]
-pub fn lock_primary_role_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
+mod recovery_mode_with_primary_unlocked {
+    use super::*;
 
-    // Act
-    let receipt = test_runner.lock_primary_role(Role::Confirmation);
+    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
 
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
+    fn setup_environment() -> AccessControllerTestRunner {
+        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        test_runner
+            .initiate_recovery(
+                Role::Recovery,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            )
+            .expect_commit_success();
+        test_runner
+    }
+
+    #[test]
+    pub fn create_proof() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.create_proof(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn update_timed_recovery_delay() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.update_timed_recovery_delay(role, 100);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn initiate_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, None),
+            (
+                Role::Recovery,
+                Some(is_recovery_for_this_role_already_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.initiate_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn lock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.lock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn unlock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.unlock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn quick_confirm_recovery() {
+        // Arrange
+        let test_vectors = [
+            (
+                Role::Primary,  // As role
+                Role::Recovery, // Proposer
+                None,
+            ),
+            (
+                Role::Recovery, // As role
+                Role::Primary,  // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Confirmation, // As role
+                Role::Primary,      // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+        ];
+
+        for (role, proposer, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn timed_confirm_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn cancel_recovery_attempt() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
 }
 
-#[test]
-pub fn unlock_primary_role_as_primary_during_normal_operations_with_locked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
+mod recovery_mode_with_primary_locked {
+    use super::*;
 
-    // Act
-    let receipt = test_runner.unlock_primary_role(Role::Primary);
+    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
 
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
+    fn setup_environment() -> AccessControllerTestRunner {
+        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        test_runner
+            .lock_primary_role(Role::Primary)
+            .expect_commit_success();
+        test_runner
+            .initiate_recovery(
+                Role::Recovery,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            )
+            .expect_commit_success();
+        test_runner
+    }
+
+    #[test]
+    pub fn create_proof() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.create_proof(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn update_timed_recovery_delay() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.update_timed_recovery_delay(role, 100);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn initiate_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (
+                Role::Recovery,
+                Some(is_recovery_for_this_role_already_exists_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.initiate_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn lock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.lock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn unlock_primary_role() {
+        // Arrange
+        let test_vectors = [
+            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.unlock_primary_role(role);
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn quick_confirm_recovery() {
+        // Arrange
+        let test_vectors = [
+            (
+                Role::Primary,  // As role
+                Role::Recovery, // Proposer
+                None,
+            ),
+            (
+                Role::Recovery, // As role
+                Role::Primary,  // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Confirmation, // As role
+                Role::Primary,      // Proposer
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+        ];
+
+        for (role, proposer, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn timed_confirm_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn cancel_recovery_attempt() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
+            (Role::Recovery, None),
+            (Role::Confirmation, Some(is_auth_assertion_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
 }
 
-#[test]
-pub fn unlock_primary_role_as_recovery_during_normal_operations_with_locked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
+//==================
+// Helper Functions
+//==================
 
-    // Act
-    let receipt = test_runner.unlock_primary_role(Role::Recovery);
+type ErrorCheckFunction = fn(&RuntimeError) -> bool;
 
-    // Assert
-    receipt.expect_commit_success();
+fn is_auth_assertion_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+            AuthZoneError::AssertAccessRuleError(..)
+        ))
+    )
 }
 
-#[test]
-pub fn unlock_primary_role_as_confirmation_during_normal_operations_with_locked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
-
-    // Act
-    let receipt = test_runner.unlock_primary_role(Role::Confirmation);
-
-    // Assert
-    receipt.expect_commit_success();
+fn is_no_valid_proposed_rule_set_exists_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::NoValidProposedRuleSetExists
+        ))
+    )
 }
 
-#[test]
-pub fn initiate_recovery_as_primary_during_normal_operations_with_locked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
-
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
-
-    // Act
-    let receipt = test_runner.initiate_recovery(
-        Role::Primary,
-        primary_role,
-        recovery_role,
-        confirmation_role,
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
+fn is_recovery_for_this_role_already_exists_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::RecoveryForThisRoleAlreadyExists { .. }
+        ))
+    )
 }
 
-#[test]
-pub fn initiate_recovery_as_recovery_during_normal_operations_with_locked_primary_succeeds() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
-
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
-
-    // Act
-    let receipt = test_runner.initiate_recovery(
-        Role::Recovery,
-        primary_role,
-        recovery_role,
-        confirmation_role,
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-pub fn initiate_recovery_as_confirmation_during_normal_operations_with_locked_primary_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(10);
-    test_runner
-        .lock_primary_role(Role::Primary)
-        .expect_commit_success();
-
-    let primary_role = rule!(require(RADIX_TOKEN));
-    let recovery_role = rule!(require(RADIX_TOKEN));
-    let confirmation_role = rule!(require(RADIX_TOKEN));
-
-    // Act
-    let receipt = test_runner.initiate_recovery(
-        Role::Confirmation,
-        primary_role,
-        recovery_role,
-        confirmation_role,
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
-        )
-    });
+fn is_timed_recovery_delay_has_not_elapsed_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::TimedRecoveryDelayHasNotElapsed { .. }
+        ))
+    )
 }
 
 #[allow(dead_code)]
@@ -433,9 +1250,9 @@ impl AccessControllerTestRunner {
         }
     }
 
-    pub fn create_proof(&mut self, as_roles: HashSet<Role>) -> TransactionReceipt {
+    pub fn create_proof(&mut self, as_role: Role) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(as_roles)
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
@@ -448,11 +1265,11 @@ impl AccessControllerTestRunner {
 
     pub fn update_timed_recovery_delay(
         &mut self,
-        as_roles: HashSet<Role>,
+        as_role: Role,
         timed_recovery_delay_in_hours: u16,
     ) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(as_roles)
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "update_timed_recovery_delay",
@@ -473,7 +1290,7 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "initiate_recovery",
@@ -500,7 +1317,7 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "quick_confirm_recovery",
@@ -522,19 +1339,17 @@ impl AccessControllerTestRunner {
     pub fn timed_confirm_recovery(
         &mut self,
         as_role: Role,
-        proposer: Role,
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "timed_confirm_recovery",
                 scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
                     role: as_role,
-                    proposer,
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -555,7 +1370,7 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "cancel_recovery_attempt",
@@ -575,7 +1390,7 @@ impl AccessControllerTestRunner {
 
     pub fn lock_primary_role(&mut self, as_role: Role) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
@@ -587,7 +1402,7 @@ impl AccessControllerTestRunner {
 
     pub fn unlock_primary_role(&mut self, as_role: Role) -> TransactionReceipt {
         let manifest = self
-            .manifest_builder(HashSet::from([as_role.clone()]))
+            .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
@@ -604,16 +1419,14 @@ impl AccessControllerTestRunner {
         )
     }
 
-    fn manifest_builder(&self, roles: HashSet<Role>) -> ManifestBuilder {
+    fn manifest_builder(&self, role: Role) -> ManifestBuilder {
         let mut manifest_builder = ManifestBuilder::new();
-        for role in roles {
-            let resource_address = match role {
-                Role::Primary => self.primary_role_badge,
-                Role::Recovery => self.recovery_role_badge,
-                Role::Confirmation => self.confirmation_role_badge,
-            };
-            manifest_builder.create_proof_from_account(self.account.0, resource_address);
-        }
+        let resource_address = match role {
+            Role::Primary => self.primary_role_badge,
+            Role::Recovery => self.recovery_role_badge,
+            Role::Confirmation => self.confirmation_role_badge,
+        };
+        manifest_builder.create_proof_from_account(self.account.0, resource_address);
         manifest_builder
     }
 }

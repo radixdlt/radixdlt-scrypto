@@ -841,7 +841,6 @@ impl AccessControllerPackage {
                     AccessControllerTimedConfirmRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        proposer: args.proposer,
                         role: args.role,
                     },
                 )
