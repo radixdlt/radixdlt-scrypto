@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use crate::engine::{deref_and_update, ApplicationError, Executor, LockFlags, RENode};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::GlobalAddressSubstate;
+use crate::types::{HashMap, Vec};
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
