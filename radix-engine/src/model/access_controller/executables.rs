@@ -2,13 +2,14 @@ use crate::engine::{deref_and_update, ApplicationError, Executor, LockFlags, REN
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
-use crate::model::GlobalAddressSubstate;
+use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
 use crate::types::{HashMap, Vec};
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{ComponentAuthZone, SysBucket, Vault};
+use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::constants::CLOCK;
+use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
+use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 
@@ -16,7 +17,9 @@ use super::AccessControllerSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerError {
-    RecoveryForThisRoleAlreadyExists { role: Role },
+    OperationNotAllowedWhenPrimaryIsLocked,
+    OperationNotAllowedDuringRecovery,
+    RecoveryForThisProposerAlreadyExists { proposer: Proposer },
     NoValidProposedRuleSetExists,
     TimeOverflow,
     TimedRecoveryDelayHasNotElapsed,
@@ -73,17 +76,22 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         };
 
         // Creating the Access Controller substate
-        let substate = AccessControllerSubstate {
+        let access_controller_substate = AccessControllerSubstate {
             controlled_asset: vault.0,
-            active_rule_set: self.rule_set,
             ongoing_recoveries: None,
             timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
             is_primary_role_locked: false,
         };
+        let access_rules_chain_substate = AccessRulesChainSubstate {
+            access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
+        };
 
         // Allocating an RENodeId and creating the access controller RENode
         let node_id = api.allocate_node_id(RENodeType::AccessController)?;
-        api.create_node(node_id, RENode::AccessController(substate))?;
+        api.create_node(
+            node_id,
+            RENode::AccessController(access_controller_substate, access_rules_chain_substate),
+        )?;
 
         // Creating a global component address for the access controller RENode
         let global_node_id = api.allocate_node_id(RENodeType::GlobalAccessController)?;
@@ -99,6 +107,11 @@ impl Executor for AccessControllerCreateGlobalInvocation {
 //================================
 // Access Controller Create Proof
 //================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerCreateProofExecutable {
+    pub receiver: RENodeId,
+}
 
 impl ExecutableInvocation for AccessControllerCreateProofInvocation {
     type Exec = AccessControllerCreateProofExecutable;
@@ -142,18 +155,11 @@ impl Executor for AccessControllerCreateProofExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
+        let substate = api.get_ref(handle)?;
+        let access_controller = substate.access_controller();
 
-            // Proofs may only be created by the primary role when the primary role is NOT locked.
-            // It doesn't matter whether the controller is in recovery mode or not.
-            let rule = match access_controller.is_primary_role_locked {
-                false => access_controller.active_rule_set.primary_role.clone(),
-                true => rule!(deny_all),
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
+        if access_controller.is_primary_role_locked {
+            Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
         }
 
         // Creating a proof of the controlled asset
@@ -174,6 +180,12 @@ impl Executor for AccessControllerCreateProofExecutable {
 //===============================================
 // Access Controller Update Timed Recovery Delay
 //===============================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerUpdateTimedRecoveryDelayExecutable {
+    pub receiver: RENodeId,
+    pub timed_recovery_delay_in_hours: u16,
+}
 
 impl ExecutableInvocation for AccessControllerUpdateTimedRecoveryDelayInvocation {
     type Exec = AccessControllerUpdateTimedRecoveryDelayExecutable;
@@ -218,22 +230,17 @@ impl Executor for AccessControllerUpdateTimedRecoveryDelayExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
+        // Lock and recovery checks
         {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            // The timed recovery delay may only be updated by the primary role when:
-            //    a) it's not locked
-            //    b) we're not in recovery mode
-            let rule = match (
-                access_controller.is_primary_role_locked,
-                access_controller.ongoing_recoveries.as_ref(),
-            ) {
-                (false, None) => access_controller.active_rule_set.primary_role.clone(),
-                _ => rule!(deny_all), // TODO: Let's error out early instead of doing a check that we know will fail.
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
+            if access_controller.is_primary_role_locked {
+                Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
+            }
+            if access_controller.ongoing_recoveries.is_some() {
+                Err(AccessControllerError::OperationNotAllowedDuringRecovery)?
+            }
         }
 
         // Update the timed recovery delay
@@ -253,7 +260,14 @@ impl Executor for AccessControllerUpdateTimedRecoveryDelayExecutable {
 // Access Controller Initiate Recovery
 //=====================================
 
-impl ExecutableInvocation for AccessControllerInitiateRecoveryInvocation {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerInitiateRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub rule_set: RuleSet,
+    pub proposer: Proposer,
+}
+
+impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type Exec = AccessControllerInitiateRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
@@ -269,14 +283,44 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecovery),
+            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
-            role: self.role,
+            proposer: Proposer::Primary,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
+    type Exec = AccessControllerInitiateRecoveryExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: Proposer::Recovery,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -298,21 +342,14 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
+        // Lock checks
         {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            // There are two cases here:
-            //      - When primary is unlocked, then primary or recovery may initiate the recovery
-            //        process.
-            //      - When primary is locked, only recovery can initiate the recovery process.
-            let rule = match (access_controller.is_primary_role_locked, self.role) {
-                (false, Role::Primary) => access_controller.active_rule_set.primary_role.clone(),
-                (_, Role::Recovery) => access_controller.active_rule_set.recovery_role.clone(),
-                _ => rule!(deny_all), // TODO: Let's error out early instead of doing a check that we know will fail.
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
+            if self.proposer == Proposer::Primary && access_controller.is_primary_role_locked {
+                Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
+            }
         }
 
         // Getting the current time
@@ -325,17 +362,19 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
 
             match access_controller.ongoing_recoveries.as_mut() {
                 Some(ongoing_recoveries) => {
-                    if !ongoing_recoveries.contains_key(&self.role) {
-                        ongoing_recoveries.insert(self.role, (self.rule_set, current_time));
+                    if !ongoing_recoveries.contains_key(&self.proposer) {
+                        ongoing_recoveries.insert(self.proposer, (self.rule_set, current_time));
                     } else {
-                        Err(AccessControllerError::RecoveryForThisRoleAlreadyExists {
-                            role: self.role,
-                        })?;
+                        Err(
+                            AccessControllerError::RecoveryForThisProposerAlreadyExists {
+                                proposer: self.proposer,
+                            },
+                        )?;
                     }
                 }
                 None => {
                     access_controller.ongoing_recoveries =
-                        Some([(self.role.clone(), (self.rule_set, current_time))].into())
+                        Some([(self.proposer.clone(), (self.rule_set, current_time))].into())
                 }
             }
         }
@@ -350,7 +389,15 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
 // Access Controller Quick Confirm Recovery
 //==========================================
 
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryInvocation {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerQuickConfirmRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub rule_set: RuleSet,
+    pub proposer: Proposer,
+    pub confirmor: Role,
+}
+
+impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
     type Exec = AccessControllerQuickConfirmRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
@@ -365,7 +412,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecovery),
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsPrimary),
             resolved_receiver,
         );
 
@@ -373,7 +420,67 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryInvocation {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: self.proposer,
-            role: self.role,
+            confirmor: Role::Primary,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
+    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+            confirmor: Role::Recovery,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
+    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsConfirmation),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: self.proposer,
+            confirmor: Role::Confirmation,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -395,26 +502,12 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = match self.role {
-                Role::Primary => access_controller.active_rule_set.primary_role.clone(),
-                Role::Recovery => access_controller.active_rule_set.recovery_role.clone(),
-                Role::Confirmation => access_controller.active_rule_set.confirmation_role.clone(),
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
-        }
-
-        // Quick confirm and update active rule set
-        {
+        // Quick confirm and get new rule set
+        let new_rule_set = {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
 
-            let new_rule_set = access_controller
+            access_controller
                 .ongoing_recoveries
                 .as_ref()
                 .unwrap_or(&HashMap::new())
@@ -422,15 +515,29 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 .find(|(proposer, (proposed_rule_set, _))| {
                     **proposer == self.proposer
                         && *proposed_rule_set == self.rule_set
-                        && self.proposer != self.role
+                        && Role::from(self.proposer) != self.confirmor
                 })
                 .map_or(
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
                     |(_, (rule_set, _))| Ok(rule_set.clone()),
-                )?;
+                )?
+        };
 
-            access_controller.ongoing_recoveries = None;
-            access_controller.active_rule_set = new_rule_set;
+        // Update the access rules substate
+        // TODO: We need something better here. Update once we have an AccessRulesChain invocation
+        //       for bulk updates.
+        {
+            let node_id = self.receiver;
+            let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+            let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+            let mut substate = api.get_ref_mut(handle)?;
+            let access_rule_chain = substate.access_rules_chain();
+
+            access_rule_chain.access_rules_chain =
+                [access_rules_from_rule_set(new_rule_set)].into();
+
+            api.drop_lock(handle)?;
         }
 
         api.drop_lock(handle)?;
@@ -443,7 +550,14 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
 // Access Controller Timed Confirm Recovery
 //==========================================
 
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerTimedConfirmRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub rule_set: RuleSet,
+    pub proposer: Proposer,
+}
+
+impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
     type Exec = AccessControllerTimedConfirmRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
@@ -459,14 +573,44 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery),
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsPrimary),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
-            role: self.role,
+            proposer: Proposer::Primary,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
+    type Exec = AccessControllerTimedConfirmRecoveryExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: Proposer::Recovery,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -488,20 +632,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = match self.role {
-                Role::Primary => access_controller.active_rule_set.primary_role.clone(),
-                Role::Recovery => access_controller.active_rule_set.recovery_role.clone(),
-                Role::Confirmation => rule!(deny_all), // Confirmation can't initiate recoveries to perform a timed confirmation
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
-        }
-
         // Getting the RuleSet (if exists) of the new active role
         let new_rule_set = {
             let substate = api.get_ref(handle)?;
@@ -513,7 +643,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 .unwrap_or(&HashMap::new())
                 .iter()
                 .find(|(proposer, (proposed_rule_set, _))| {
-                    **proposer == self.role && *proposed_rule_set == self.rule_set
+                    **proposer == self.proposer && *proposed_rule_set == self.rule_set
                 })
                 .map_or(
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
@@ -540,13 +670,21 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             new_rule_set
         };
 
-        // Setting the new rules to the access controller
+        // Update the access rules substate
+        // TODO: We need something better here. Update once we have an AccessRulesChain invocation
+        //       for bulk updates.
         {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
+            let node_id = self.receiver;
+            let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+            let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-            access_controller.ongoing_recoveries = None;
-            access_controller.active_rule_set = new_rule_set;
+            let mut substate = api.get_ref_mut(handle)?;
+            let access_rule_chain = substate.access_rules_chain();
+
+            access_rule_chain.access_rules_chain =
+                [access_rules_from_rule_set(new_rule_set)].into();
+
+            api.drop_lock(handle)?;
         }
 
         api.drop_lock(handle)?;
@@ -559,7 +697,14 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
 // Access Controller Cancel Recovery Attempt
 //===========================================
 
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerCancelRecoveryAttemptExecutable {
+    pub receiver: RENodeId,
+    pub rule_set: RuleSet,
+    pub proposer: Proposer,
+}
+
+impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
     type Exec = AccessControllerCancelRecoveryAttemptExecutable;
 
     fn resolve<D: ResolverApi>(
@@ -574,14 +719,43 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttempt),
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsPrimary),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
-            role: self.role,
+            proposer: Proposer::Primary,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
+    type Exec = AccessControllerCancelRecoveryAttemptExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            proposer: Proposer::Recovery,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -603,20 +777,6 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = match self.role {
-                Role::Primary => access_controller.active_rule_set.primary_role.clone(),
-                Role::Recovery => access_controller.active_rule_set.recovery_role.clone(),
-                Role::Confirmation => rule!(deny_all), // Confirmation can't initiate recovery and therefore can't cancel it.
-            };
-            ComponentAuthZone::assert_access_rule(rule, api)?;
-        }
-
         // Removing the proposed rule set
         {
             let mut substate = api.get_ref_mut(handle)?;
@@ -626,7 +786,7 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
                 .ongoing_recoveries
                 .as_mut()
                 .unwrap_or(&mut HashMap::new())
-                .remove_entry(&self.role)
+                .remove_entry(&self.proposer)
                 .map_or(
                     Err(RuntimeError::from(
                         AccessControllerError::NoValidProposedRuleSetExists,
@@ -644,6 +804,11 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
 //=====================================
 // Access Controller Lock Primary Role
 //=====================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerLockPrimaryRoleExecutable {
+    pub receiver: RENodeId,
+}
 
 impl ExecutableInvocation for AccessControllerLockPrimaryRoleInvocation {
     type Exec = AccessControllerLockPrimaryRoleExecutable;
@@ -687,22 +852,6 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = access_rule_or(
-                [
-                    access_controller.active_rule_set.primary_role.clone(),
-                    access_controller.active_rule_set.recovery_role.clone(),
-                ]
-                .into(),
-            );
-            ComponentAuthZone::assert_access_rule(rule, api)?;
-        }
-
         // Lock the primary role
         {
             let mut substate = api.get_ref_mut(handle)?;
@@ -720,6 +869,11 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
 //=======================================
 // Access Controller Unlock Primary Role
 //=======================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerUnlockPrimaryRoleExecutable {
+    pub receiver: RENodeId,
+}
 
 impl ExecutableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
     type Exec = AccessControllerUnlockPrimaryRoleExecutable;
@@ -763,22 +917,6 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Auth Check
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            // All roles are allowed to confirm the recovery (even primary when they're locked)
-            let rule = access_rule_or(
-                [
-                    access_controller.active_rule_set.recovery_role.clone(),
-                    access_controller.active_rule_set.confirmation_role.clone(),
-                ]
-                .into(),
-            );
-            ComponentAuthZone::assert_access_rule(rule, api)?;
-        }
-
         // Unlock the primary role
         {
             let mut substate = api.get_ref_mut(handle)?;
@@ -793,7 +931,11 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
     }
 }
 
-pub fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
+//=========
+// Helpers
+//=========
+
+fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
     let mut rule_nodes = Vec::new();
     for access_rule in access_rules.into_iter() {
         match access_rule {
@@ -803,4 +945,108 @@ pub fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
         }
     }
     AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
+}
+
+fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
+    let mut access_rules = AccessRules::new();
+
+    // Primary Role Rules
+    let primary_group = "primary";
+    access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(AccessControllerFn::CreateProof)),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::UpdateTimedRecoveryDelay,
+        )),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsPrimary,
+        )),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmRecoveryAsPrimary,
+        )),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::TimedConfirmRecoveryAsPrimary,
+        )),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelRecoveryAttemptAsPrimary,
+        )),
+        primary_group.into(),
+    );
+
+    // Recovery Role Rules
+    let recovery_group = "recovery";
+    access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsRecovery,
+        )),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmRecoveryAsRecovery,
+        )),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::TimedConfirmRecoveryAsRecovery,
+        )),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelRecoveryAttemptAsRecovery,
+        )),
+        recovery_group.into(),
+    );
+
+    // Confirmation Role Rules
+    let confirmation_group = "confirmation";
+    access_rules.set_group_access_rule(
+        confirmation_group.into(),
+        rule_set.confirmation_role.clone(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
+        )),
+        confirmation_group.into(),
+    );
+
+    // Other methods
+    access_rules.set_method_access_rule(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::LockPrimaryRole,
+        )),
+        access_rule_or([rule_set.primary_role, rule_set.recovery_role.clone()].into()),
+    );
+    access_rules.set_method_access_rule(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::UnlockPrimaryRole,
+        )),
+        access_rule_or([rule_set.recovery_role, rule_set.confirmation_role].into()),
+    );
+
+    let non_fungible_global_id =
+        scrypto_encode(&PackageIdentifier::Native(NativePackage::AccessController))
+            .map(|bytes| NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(bytes)))
+            .unwrap();
+
+    access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
 }

@@ -526,19 +526,39 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::InitiateRecovery(invocation) => {
+            AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::QuickConfirmRecovery(invocation) => {
+            AccessControllerInvocation::InitiateRecoveryAsRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
+            AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::CancelRecoveryAttempt(invocation) => {
+            AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

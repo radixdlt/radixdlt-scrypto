@@ -1,5 +1,5 @@
-use radix_engine::engine::{ApplicationError, RuntimeError};
-use radix_engine::model::{AccessControllerError, AuthZoneError};
+use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
+use radix_engine::model::AccessControllerError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::TestRunner;
@@ -78,16 +78,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-                AccessControllerError::RecoveryForThisRoleAlreadyExists {
-                    role: Role::Recovery
-                }
-            ))
-        )
-    })
+    receipt.expect_specific_failure(is_recovery_for_this_role_already_exists_error)
 }
 
 #[test]
@@ -156,8 +147,8 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors = [
             (Role::Primary, None),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -181,8 +172,8 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors = [
             (Role::Primary, None),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -204,11 +195,8 @@ mod normal_operations_with_primary_unlocked {
     #[test]
     pub fn initiate_recovery() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, None),
-            (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
-        ];
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] =
+            [(Role::Primary, None), (Role::Recovery, None)];
 
         for (role, error_assertion_function) in test_vectors {
             let mut test_runner = setup_environment();
@@ -237,7 +225,7 @@ mod normal_operations_with_primary_unlocked {
         let test_vectors = [
             (Role::Primary, None),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -260,7 +248,7 @@ mod normal_operations_with_primary_unlocked {
     pub fn unlock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, None),
         ];
@@ -327,7 +315,7 @@ mod normal_operations_with_primary_unlocked {
     #[test]
     pub fn timed_confirm_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -336,7 +324,6 @@ mod normal_operations_with_primary_unlocked {
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -363,7 +350,7 @@ mod normal_operations_with_primary_unlocked {
     #[test]
     pub fn cancel_recovery_attempt() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -372,7 +359,6 @@ mod normal_operations_with_primary_unlocked {
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -413,10 +399,13 @@ mod normal_operations_with_primary_locked {
     #[test]
     pub fn create_proof() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -438,10 +427,13 @@ mod normal_operations_with_primary_locked {
     #[test]
     pub fn update_timed_recovery_delay() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -464,9 +456,11 @@ mod normal_operations_with_primary_locked {
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -496,7 +490,7 @@ mod normal_operations_with_primary_locked {
         let test_vectors = [
             (Role::Primary, None),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -519,7 +513,7 @@ mod normal_operations_with_primary_locked {
     pub fn unlock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, None),
         ];
@@ -586,7 +580,7 @@ mod normal_operations_with_primary_locked {
     #[test]
     pub fn timed_confirm_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -595,7 +589,6 @@ mod normal_operations_with_primary_locked {
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -622,7 +615,7 @@ mod normal_operations_with_primary_locked {
     #[test]
     pub fn cancel_recovery_attempt() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -631,7 +624,6 @@ mod normal_operations_with_primary_locked {
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -677,10 +669,10 @@ mod recovery_mode_with_primary_unlocked {
     #[test]
     pub fn create_proof() {
         // Arrange
-        let test_vectors = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, None),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -702,10 +694,13 @@ mod recovery_mode_with_primary_unlocked {
     #[test]
     pub fn update_timed_recovery_delay() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_in_recovery_mode_error),
+            ),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -727,13 +722,12 @@ mod recovery_mode_with_primary_unlocked {
     #[test]
     pub fn initiate_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (Role::Primary, None),
             (
                 Role::Recovery,
                 Some(is_recovery_for_this_role_already_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -763,7 +757,7 @@ mod recovery_mode_with_primary_unlocked {
         let test_vectors = [
             (Role::Primary, None),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -786,7 +780,7 @@ mod recovery_mode_with_primary_unlocked {
     pub fn unlock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, None),
         ];
@@ -853,7 +847,7 @@ mod recovery_mode_with_primary_unlocked {
     #[test]
     pub fn timed_confirm_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -862,7 +856,6 @@ mod recovery_mode_with_primary_unlocked {
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -889,13 +882,12 @@ mod recovery_mode_with_primary_unlocked {
     #[test]
     pub fn cancel_recovery_attempt() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -944,10 +936,13 @@ mod recovery_mode_with_primary_locked {
     #[test]
     pub fn create_proof() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -969,10 +964,13 @@ mod recovery_mode_with_primary_locked {
     #[test]
     pub fn update_timed_recovery_delay() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
-            (Role::Recovery, Some(is_auth_assertion_error)),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
+            (Role::Recovery, Some(is_auth_unauthorized_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -994,13 +992,15 @@ mod recovery_mode_with_primary_locked {
     #[test]
     pub fn initiate_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
+            (
+                Role::Primary,
+                Some(is_operation_not_permitted_when_primary_is_locked_error),
+            ),
             (
                 Role::Recovery,
                 Some(is_recovery_for_this_role_already_exists_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -1030,7 +1030,7 @@ mod recovery_mode_with_primary_locked {
         let test_vectors = [
             (Role::Primary, None),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -1053,7 +1053,7 @@ mod recovery_mode_with_primary_locked {
     pub fn unlock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, Some(is_auth_assertion_error)),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, None),
         ];
@@ -1120,7 +1120,7 @@ mod recovery_mode_with_primary_locked {
     #[test]
     pub fn timed_confirm_recovery() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -1129,7 +1129,6 @@ mod recovery_mode_with_primary_locked {
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
             ),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -1156,13 +1155,12 @@ mod recovery_mode_with_primary_locked {
     #[test]
     pub fn cancel_recovery_attempt() {
         // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
                 Some(is_no_valid_proposed_rule_set_exists_error),
             ),
             (Role::Recovery, None),
-            (Role::Confirmation, Some(is_auth_assertion_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -1193,12 +1191,10 @@ mod recovery_mode_with_primary_locked {
 
 type ErrorCheckFunction = fn(&RuntimeError) -> bool;
 
-fn is_auth_assertion_error(error: &RuntimeError) -> bool {
+fn is_auth_unauthorized_error(error: &RuntimeError) -> bool {
     matches!(
         error,
-        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-            AuthZoneError::AssertAccessRuleError(..)
-        ))
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
     )
 }
 
@@ -1215,7 +1211,7 @@ fn is_recovery_for_this_role_already_exists_error(error: &RuntimeError) -> bool 
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::RecoveryForThisRoleAlreadyExists { .. }
+            AccessControllerError::RecoveryForThisProposerAlreadyExists { .. }
         ))
     )
 }
@@ -1225,6 +1221,24 @@ fn is_timed_recovery_delay_has_not_elapsed_error(error: &RuntimeError) -> bool {
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::TimedRecoveryDelayHasNotElapsed { .. }
+        ))
+    )
+}
+
+fn is_operation_not_permitted_when_primary_is_locked_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked
+        ))
+    )
+}
+
+fn is_operation_not_permitted_when_in_recovery_mode_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::OperationNotAllowedDuringRecovery
         ))
     )
 }
@@ -1337,13 +1351,18 @@ impl AccessControllerTestRunner {
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
+        let method_name = match as_role {
+            Role::Primary => AccessControllerFn::InitiateRecoveryAsPrimary,
+            Role::Recovery => AccessControllerFn::InitiateRecoveryAsRecovery,
+            Role::Confirmation => panic!("Confirmation Role can't initiate recovery!"),
+        };
+
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                "initiate_recovery",
-                scrypto_encode(&AccessControllerInitiateRecoveryMethodArgs {
-                    role: as_role,
+                &method_name.to_string(),
+                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1364,13 +1383,24 @@ impl AccessControllerTestRunner {
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
+        let proposer = match proposer {
+            Role::Primary => Proposer::Primary,
+            Role::Recovery => Proposer::Recovery,
+            Role::Confirmation => panic!("Confirmation is not a valid proposer"),
+        };
+
+        let method_name = match as_role {
+            Role::Primary => AccessControllerFn::QuickConfirmRecoveryAsPrimary,
+            Role::Recovery => AccessControllerFn::QuickConfirmRecoveryAsRecovery,
+            Role::Confirmation => AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
+        };
+
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                "quick_confirm_recovery",
-                scrypto_encode(&AccessControllerQuickConfirmRecoveryMethodArgs {
-                    role: as_role,
+                &method_name.to_string(),
+                scrypto_encode(&AccessControllerQuickConfirmRecoveryAsPrimaryMethodArgs {
                     proposer,
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
@@ -1391,13 +1421,18 @@ impl AccessControllerTestRunner {
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
+        let method_name = match as_role {
+            Role::Primary => AccessControllerFn::TimedConfirmRecoveryAsPrimary,
+            Role::Recovery => AccessControllerFn::TimedConfirmRecoveryAsRecovery,
+            Role::Confirmation => panic!("No method for the given role"),
+        };
+
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                "timed_confirm_recovery",
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
-                    role: as_role,
+                &method_name.to_string(),
+                scrypto_encode(&AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1417,13 +1452,18 @@ impl AccessControllerTestRunner {
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
     ) -> TransactionReceipt {
+        let method_name = match as_role {
+            Role::Primary => AccessControllerFn::CancelRecoveryAttemptAsPrimary,
+            Role::Recovery => AccessControllerFn::CancelRecoveryAttemptAsRecovery,
+            Role::Confirmation => panic!("No method for the given role"),
+        };
+
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                "cancel_recovery_attempt",
-                scrypto_encode(&AccessControllerCancelRecoveryAttemptMethodArgs {
-                    role: as_role,
+                &method_name.to_string(),
+                scrypto_encode(&AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
