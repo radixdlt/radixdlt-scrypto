@@ -377,14 +377,8 @@ impl WasmModule {
             .map_err(|_| PrepareError::SerializationError)?;
 
         //println!("ensure_instantiatable WasmiModule::new");
+        // FIXME
         let wasmi_module = WasmiModule::new(&code[..]);
-        let env = WasmiInstanceEnv::new();
-
-        let mut store = wasmi::Store::new(wasmi_module.engine(), env);
-
-        wasmi_module
-            .host_funcs_set(&mut store)
-            .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(self)
     }

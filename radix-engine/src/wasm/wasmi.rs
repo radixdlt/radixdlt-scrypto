@@ -1,6 +1,5 @@
 use radix_engine_interface::data::IndexedScryptoValue;
-use sbor::rust::sync::{Arc, Mutex};
-//use wasmi::core::Value as WasmiValue;
+use sbor::rust::sync::Arc;
 use wasmi::core::Trap;
 use wasmi::core::Value;
 use wasmi::*;
@@ -16,29 +15,29 @@ use crate::wasm::traits::*;
 type HostState = WasmiInstanceEnv;
 
 pub struct WasmiModule {
+    // (Module, Store, Instance) tuple are cached together, and never to be invoked
+    // Every `WasmiModule` is going to clone the store and instance, so the state is not shared
     module: Module,
+    store: Store<HostState>,
+    instance: Instance,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
-#[derive(Clone)]
 pub struct WasmiInstance {
+    store: Store<HostState>,
     instance: Instance,
-    store: Arc<Mutex<Store<HostState>>>,
     memory: Memory,
-    runtime_ptr: Arc<Mutex<usize>>,
 }
 
+#[derive(Clone)]
 pub struct WasmiInstanceEnv {
-    //instance: std::mem::MaybeUninit<WasmiInstance>,
-    runtime_ptr: Arc<Mutex<usize>>,
+    runtime_ptr: usize,
 }
 
 impl WasmiInstanceEnv {
     pub fn new() -> Self {
-        Self {
-            runtime_ptr: Arc::new(Mutex::new(0)),
-        }
+        Self { runtime_ptr: 0 }
     }
 }
 
@@ -58,11 +57,7 @@ fn wasmi_radix_engine(
 
     let output = {
         let env = caller.data();
-        let ptr = env
-            .runtime_ptr
-            .lock()
-            .expect("Failed to lock WASM runtime pointer");
-        let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+        let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(env.runtime_ptr as *mut _) };
 
         runtime.main(input).unwrap()
     };
@@ -80,12 +75,7 @@ fn consume_cost_units(
     cost_unit: i32,
 ) -> Result<(), InvokeError<WasmError>> {
     let env = caller.data();
-
-    let ptr = env
-        .runtime_ptr
-        .lock()
-        .expect("Failed to lock WASM runtime pointer");
-    let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+    let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(env.runtime_ptr as *mut _) };
     runtime.consume_cost_units(cost_unit as u32)
 }
 
@@ -93,19 +83,25 @@ impl WasmiModule {
     pub fn new(code: &[u8]) -> Self {
         let engine = Engine::default();
         let module = Module::new(&engine, code).expect("Failed to parse WASM module");
+        let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
-        let code_size_bytes = code.len();
+        let instance = Self::host_funcs_set(&module, &mut store)
+            .expect("Failed to instantiate WASM module - did you run WasmValidator?")
+            .ensure_no_start(store.as_context_mut())
+            .expect("Module has start function - did you run WasmValidator?");
+
         Self {
             module,
-            code_size_bytes,
+            store,
+            instance,
+            code_size_bytes: code.len(),
         }
     }
 
-    pub fn engine(&self) -> &Engine {
-        self.module.engine()
-    }
-
-    pub fn host_funcs_set(&self, store: &mut Store<HostState>) -> Result<InstancePre, Error> {
+    pub fn host_funcs_set(
+        module: &Module,
+        store: &mut Store<HostState>,
+    ) -> Result<InstancePre, Error> {
         let host_radix_engine = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, input_ptr: i32| -> Result<i32, Trap> {
@@ -144,7 +140,7 @@ impl WasmiModule {
                 CONSUME_COST_UNITS_FUNCTION_NAME
             ));
 
-        let pre_instance = match linker.instantiate(store.as_context_mut(), &self.module) {
+        let pre_instance = match linker.instantiate(store.as_context_mut(), &module) {
             Ok(result) => result,
             Err(e) => {
                 panic!("Failed to instantiate WASM module - {}", e.to_string());
@@ -155,28 +151,16 @@ impl WasmiModule {
     }
 
     fn instantiate(&self) -> WasmiInstance {
-        let env = WasmiInstanceEnv::new();
-        let runtime_ptr = env.runtime_ptr.clone();
-        let engine = self.module.engine();
-        let mut store = Store::new(engine, env);
-
-        let pre_instance = self.host_funcs_set(&mut store).unwrap();
-        //            expect("Failed to instantiate WASM module");
-
-        let instance = pre_instance
-            .start(store.as_context_mut())
-            .expect("Failed to instantiate WASM module - start function exists");
-
+        let instance = self.instance.clone();
+        let mut store = self.store.clone();
         let memory = match instance.get_export(store.as_context_mut(), EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
         };
-
         WasmiInstance {
             instance,
-            store: Arc::new(Mutex::new(store)),
+            store,
             memory,
-            runtime_ptr,
         }
     }
 }
@@ -237,9 +221,8 @@ fn read_value(
 
 impl WasmiInstance {
     fn get_export_func(&mut self, name: &str) -> Result<Func, InvokeError<WasmError>> {
-        let mut store = self.store.lock().unwrap();
         self.instance
-            .get_export(store.as_context_mut(), name)
+            .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
             .ok_or_else(|| InvokeError::Error(WasmError::FunctionNotFound))
     }
@@ -253,35 +236,27 @@ impl WasmInstance for WasmiInstance {
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         {
-            // set up runtime pointer
-            let mut guard = self
-                .runtime_ptr
-                .lock()
-                .expect("Failed to lock WASM runtime pointer");
-            *guard = runtime as *mut _ as usize;
+            self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
         }
 
         // get_func() lock store as well, thus we call it before locking here
         let alloc_func = self.get_export_func(EXPORT_SCRYPTO_ALLOC).unwrap();
         let func = self.get_export_func(func_name).unwrap();
 
-        let store = self.store.clone();
-        let mut store = store.lock().unwrap();
-
         let mut pointers = Vec::new();
         for arg in args {
-            let pointer = send_value(store.as_context_mut(), self.memory, alloc_func, &arg)?;
+            let pointer = send_value(self.store.as_context_mut(), self.memory, alloc_func, &arg)?;
             pointers.push(Value::I32(pointer));
         }
 
         let mut ret = [Value::I32(0)];
-        let result = func.call(store.as_context_mut(), &pointers[..], &mut ret);
+        let result = func.call(self.store.as_context_mut(), &pointers[..], &mut ret);
 
         match result {
             Ok(()) => {
                 let ret: i32 = i32::try_from(ret[0]).unwrap();
 
-                return read_value(store.as_context_mut(), self.memory, ret as usize)
+                return read_value(self.store.as_context_mut(), self.memory, ret as usize)
                     .map_err(InvokeError::Error);
             }
             Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
@@ -341,24 +316,21 @@ impl WasmEngine for WasmiEngine {
         }
         #[cfg(feature = "moka")]
         if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-            return cached_module.instantiate();
+            return cached_module.as_ref().instantiate();
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-
-        let new_module = Arc::new(WasmiModule::new(code));
+        let module = WasmiModule::new(code);
+        let instance = module.instantiate();
 
         #[cfg(not(feature = "moka"))]
         self.modules_cache
             .borrow_mut()
-            .put(*metered_code_key, new_module.clone());
+            .put(*metered_code_key, Arc::new(module));
         #[cfg(feature = "moka")]
-        // FIXME: Temporary disabling cache
-        // Wasmi::Engine is locked when it executes a function, which makes it impossible to reuse
-        // cached module with locked Engine (case when invoked function tries to instantiate
-        // already cached module).
-        //        self.modules_cache
-        //            .insert(*metered_code_key, new_module.clone());
-        new_module.instantiate()
+        self.modules_cache
+            .insert(*metered_code_key, Arc::new(module));
+
+        instance
     }
 }
