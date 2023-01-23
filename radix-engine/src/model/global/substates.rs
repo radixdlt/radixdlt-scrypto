@@ -10,6 +10,7 @@ pub enum GlobalAddressSubstate {
     EpochManager(EpochManagerId),
     Validator(ValidatorId),
     Clock(ClockId),
+    Identity(IdentityId),
 }
 
 impl GlobalAddressSubstate {
@@ -19,6 +20,7 @@ impl GlobalAddressSubstate {
             GlobalAddressSubstate::Resource(id) => RENodeId::ResourceManager(*id),
             GlobalAddressSubstate::Package(id) => RENodeId::Package(*id),
             GlobalAddressSubstate::EpochManager(id) => RENodeId::EpochManager(*id),
+            GlobalAddressSubstate::Identity(id) => RENodeId::Identity(*id),
             GlobalAddressSubstate::Validator(id) => RENodeId::Validator(*id),
             GlobalAddressSubstate::Clock(id) => RENodeId::Clock(*id),
         }

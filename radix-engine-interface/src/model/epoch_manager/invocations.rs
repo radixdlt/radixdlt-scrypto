@@ -1,5 +1,6 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use sbor::rust::collections::BTreeSet;
+use radix_engine_interface::math::Decimal;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 
 use crate::api::wasm::*;
@@ -7,12 +8,28 @@ use crate::api::*;
 use crate::model::*;
 use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
     pub component_address: [u8; 26], // TODO: Clean this up
-    pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
+    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
+}
+
+impl Clone for EpochManagerCreateInvocation {
+    fn clone(&self) -> Self {
+        let mut validator_set = BTreeMap::new();
+        for (key, bucket) in &self.validator_set {
+            validator_set.insert(key.clone(), Bucket(bucket.0));
+        }
+
+        Self {
+            component_address: self.component_address,
+            validator_set,
+            initial_epoch: self.initial_epoch,
+            rounds_per_epoch: self.rounds_per_epoch,
+        }
+    }
 }
 
 impl Invocation for EpochManagerCreateInvocation {
@@ -127,18 +144,22 @@ impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum UpdateValidator {
+    Register(EcdsaSecp256k1PublicKey, Decimal),
+    Unregister,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerUpdateValidatorMethodArgs {
     pub validator_address: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-    pub register: bool,
+    pub update: UpdateValidator,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerUpdateValidatorInvocation {
     pub receiver: ComponentAddress,
     pub validator_address: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-    pub register: bool,
+    pub update: UpdateValidator,
 }
 
 impl Invocation for EpochManagerUpdateValidatorInvocation {
@@ -197,5 +218,64 @@ impl SerializableInvocation for ValidatorUnregisterInvocation {
 impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorStakeMethodArgs {
+    pub stake: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorStakeInvocation {
+    pub receiver: ComponentAddress,
+    pub stake: Bucket,
+}
+
+impl Clone for ValidatorStakeInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            stake: Bucket(self.stake.0),
+        }
+    }
+}
+
+impl Invocation for ValidatorStakeInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorStakeInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for ValidatorStakeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::Stake(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnstakeMethodArgs {
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnstakeInvocation {
+    pub receiver: ComponentAddress,
+    pub amount: Decimal,
+}
+
+impl Invocation for ValidatorUnstakeInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ValidatorUnstakeInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
     }
 }

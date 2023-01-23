@@ -383,7 +383,7 @@ impl CallFrame {
     pub fn create_node<'f, 's, R: FeeReserve>(
         &mut self,
         node_id: RENodeId,
-        re_node: RENode,
+        re_node: RENodeInit,
         heap: &mut Heap,
         track: &'f mut Track<'s, R>,
         push_to_store: bool,

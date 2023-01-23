@@ -86,7 +86,7 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
                 let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
+                api.create_node(node_id, RENodeInit::AuthZoneStack(auth_zone))?;
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
@@ -133,6 +133,65 @@ where
         kernel
     }
 
+    fn create_virtual_account(
+        &mut self,
+        node_id: RENodeId,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Result<(), RuntimeError> {
+        // TODO: Replace with trusted IndexedScryptoValue
+        let access_rule = rule!(require(non_fungible_global_id));
+        let result = self.invoke(ScryptoInvocation {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: "Account".to_string(),
+            fn_name: "create".to_string(),
+            receiver: None,
+            args: args!(access_rule),
+        })?;
+        let component_id = IndexedScryptoValue::from_value(result)
+            .owned_node_ids()
+            .expect("No duplicates expected")
+            .into_iter()
+            .next()
+            .unwrap()
+            .into();
+
+        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: to allow for address selection
+        let global_substate = GlobalAddressSubstate::Component(component_id);
+
+        self.current_frame.create_node(
+            node_id,
+            RENodeInit::Global(global_substate),
+            &mut self.heap,
+            &mut self.track,
+            true,
+        )?;
+
+        Ok(())
+    }
+
+    fn create_virtual_identity(
+        &mut self,
+        node_id: RENodeId,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Result<(), RuntimeError> {
+        let access_rule = rule!(require(non_fungible_global_id));
+        let underlying_node_id = Identity::create(access_rule, self)?;
+
+        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: to allow for address selection
+        let global_substate = GlobalAddressSubstate::Identity(underlying_node_id.into());
+        self.current_frame.create_node(
+            node_id,
+            RENodeInit::Global(global_substate),
+            &mut self.heap,
+            &mut self.track,
+            true,
+        )?;
+
+        Ok(())
+    }
+
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -144,50 +203,37 @@ where
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 // Lazy create component if missing
-                let non_fungible_global_id = match component_address {
+                match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        NonFungibleGlobalId::new(
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::Bytes(address.into()),
-                        )
+                        );
+                        self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        NonFungibleGlobalId::new(
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::Bytes(address.into()),
-                        )
+                        );
+                        self.create_virtual_account(node_id, non_fungible_global_id)?;
+                    }
+                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
+                            ECDSA_SECP256K1_TOKEN,
+                            NonFungibleLocalId::Bytes(address.into()),
+                        );
+                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
+                    }
+                    ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
+                        let non_fungible_global_id = NonFungibleGlobalId::new(
+                            EDDSA_ED25519_TOKEN,
+                            NonFungibleLocalId::Bytes(address.into()),
+                        );
+                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     _ => return Ok(false),
                 };
-
-                // TODO: Replace with trusted IndexedScryptoValue
-                let access_rule = rule!(require(non_fungible_global_id));
-                let result = self.invoke(ScryptoInvocation {
-                    package_address: ACCOUNT_PACKAGE,
-                    blueprint_name: "Account".to_string(),
-                    fn_name: "create".to_string(),
-                    receiver: None,
-                    args: args!(access_rule),
-                })?;
-                let component_id = IndexedScryptoValue::from_value(result)
-                    .owned_node_ids()
-                    .expect("No duplicates expected")
-                    .into_iter()
-                    .next()
-                    .unwrap()
-                    .into();
-
-                // TODO: Use system_api to globalize component when create_node is refactored
-                // TODO: to allow for address selection
-                let global_substate = GlobalAddressSubstate::Component(component_id);
-
-                self.current_frame.create_node(
-                    node_id,
-                    RENode::Global(global_substate),
-                    &mut self.heap,
-                    &mut self.track,
-                    true,
-                )?;
 
                 Ok(true)
             }
@@ -496,6 +542,16 @@ where
                                 global_address,
                                 GlobalAddress::Component(
                                     ComponentAddress::EddsaEd25519VirtualAccount(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EddsaEd25519VirtualIdentity(..)
                                 )
                             ) {
                                 self.current_frame
@@ -811,7 +867,7 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,
@@ -841,27 +897,31 @@ where
         match (node_id, &re_node) {
             (
                 RENodeId::Global(GlobalAddress::Package(..)),
-                RENode::Global(GlobalAddressSubstate::Package(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Package(..)),
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::Resource(..)),
-                RENode::Global(GlobalAddressSubstate::Resource(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Resource(..)),
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::Component(..)),
-                RENode::Global(GlobalAddressSubstate::EpochManager(..)),
+                RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)),
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::Component(..)),
-                RENode::Global(GlobalAddressSubstate::Clock(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::Component(..)),
-                RENode::Global(GlobalAddressSubstate::Validator(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Validator(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::Component(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
             ) => {}
             (
                 RENodeId::Global(address),
-                RENode::Global(GlobalAddressSubstate::Component(component)),
+                RENodeInit::Global(GlobalAddressSubstate::Component(component)),
             ) => {
                 // TODO: Get rid of this logic
                 let (package_address, blueprint_name) = self
@@ -902,28 +962,29 @@ where
                     }
                 }
             }
-            (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
-            (RENodeId::TransactionRuntime(..), RENode::TransactionRuntime(..)) => {}
-            (RENodeId::Proof(..), RENode::Proof(..)) => {}
-            (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
-            (RENodeId::Vault(..), RENode::Vault(..)) => {}
-            (RENodeId::Component(..), RENode::Component(..)) => {}
-            (RENodeId::Worktop, RENode::Worktop(..)) => {}
-            (RENodeId::Logger, RENode::Logger(..)) => {}
-            (RENodeId::Package(..), RENode::Package(..)) => {}
-            (RENodeId::KeyValueStore(..), RENode::KeyValueStore(..)) => {}
-            (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
-            (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
-            (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
-            (RENodeId::Validator(..), RENode::Validator(..)) => {}
-            (RENodeId::Clock(..), RENode::Clock(..)) => {}
+            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
+            (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
+            (RENodeId::AuthZoneStack(..), RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
+            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+            (RENodeId::Package(..), RENodeInit::Package(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore(..)) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
+            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
+            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
+            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
+            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
         // TODO: For Scrypto components, check state against blueprint schema
 
         let push_to_store = match re_node {
-            RENode::Global(..) | RENode::Logger(..) => true,
+            RENodeInit::Global(..) | RENodeInit::Logger(..) => true,
             _ => false,
         };
 

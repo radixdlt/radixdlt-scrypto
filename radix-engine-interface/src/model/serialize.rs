@@ -1,6 +1,8 @@
 use crate::api::types::*;
+use crate::data::types::{ManifestBucket, ManifestProof};
 use crate::*;
-use sbor::rust::collections::HashSet;
+use radix_engine_interface::data::ReplaceManifestValuesError;
+use sbor::rust::collections::{HashMap, HashSet};
 use sbor::rust::fmt::Debug;
 
 // TODO: Remove enum
@@ -19,6 +21,7 @@ pub enum NativeInvocation {
     EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
     Clock(ClockInvocation),
+    Identity(IdentityInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -27,6 +30,29 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+}
+
+impl NativeInvocation {
+    pub fn replace_ids(
+        &mut self,
+        _proof_replacements: &mut HashMap<ManifestProof, ProofId>,
+        bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
+    ) -> Result<(), ReplaceManifestValuesError> {
+        match self {
+            NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
+                for (_, bucket) in &mut invocation.validator_set {
+                    let next_id = bucket_replacements
+                        .remove(&ManifestBucket(bucket.0))
+                        .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
+                            bucket.0,
+                        )))?;
+                    bucket.0 = next_id;
+                }
+            }
+            _ => {} // TODO: Expand this
+        }
+        Ok(())
+    }
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -66,6 +92,11 @@ pub enum ClockInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum IdentityInvocation {
+    Create(IdentityCreateInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
 }
@@ -99,6 +130,8 @@ pub enum EpochManagerInvocation {
 pub enum ValidatorInvocation {
     Register(ValidatorRegisterInvocation),
     Unregister(ValidatorUnregisterInvocation),
+    Stake(ValidatorStakeInvocation),
+    Unstake(ValidatorUnstakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -391,6 +424,16 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
+                ValidatorInvocation::Stake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::Unstake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
@@ -409,6 +452,9 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
+            },
+            NativeInvocation::Identity(invocation) => match invocation {
+                IdentityInvocation::Create(..) => {}
             },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {

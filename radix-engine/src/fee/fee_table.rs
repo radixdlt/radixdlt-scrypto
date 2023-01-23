@@ -121,12 +121,17 @@ impl FeeTable {
             NativeFn::Validator(validator_fn) => match validator_fn {
                 ValidatorFn::Register => self.fixed_low,
                 ValidatorFn::Unregister => self.fixed_low,
+                ValidatorFn::Stake => self.fixed_low,
+                ValidatorFn::Unstake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
                 ClockFn::SetCurrentTime => self.fixed_low,
                 ClockFn::GetCurrentTime => self.fixed_high,
                 ClockFn::CompareCurrentTime => self.fixed_high,
+            },
+            NativeFn::Identity(identity_fn) => match identity_fn {
+                IdentityFn::Create => self.fixed_low,
             },
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,
