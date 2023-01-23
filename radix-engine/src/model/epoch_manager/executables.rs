@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::Vault;
+use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
@@ -74,7 +74,7 @@ impl Executor for EpochManagerCreateInvocation {
         let mut validator_set = BTreeMap::new();
 
         for (key, bucket) in self.validator_set {
-            let stake = Decimal::one();
+            let stake = bucket.sys_amount(api)?;
             let address = EpochManager::create_validator(
                 global_node_id.into(),
                 key,
