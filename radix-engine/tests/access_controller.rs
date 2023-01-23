@@ -203,7 +203,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         Some(10),
     );
     test_runner
-        .lock_primary_role(Role::Primary)
+        .lock_primary_role(Role::Recovery)
         .expect_commit_success();
 
     test_runner.push_time_forward(10);
@@ -295,7 +295,7 @@ mod normal_operations_with_primary_unlocked {
     pub fn lock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, None),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -322,7 +322,7 @@ mod normal_operations_with_primary_unlocked {
         let test_vectors = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
-            (Role::Confirmation, None),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -463,7 +463,7 @@ mod normal_operations_with_primary_locked {
     fn setup_environment() -> AccessControllerTestRunner {
         let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
         test_runner
-            .lock_primary_role(Role::Primary)
+            .lock_primary_role(Role::Recovery)
             .expect_commit_success();
         test_runner
     }
@@ -533,7 +533,7 @@ mod normal_operations_with_primary_locked {
     pub fn lock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, None),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -560,7 +560,7 @@ mod normal_operations_with_primary_locked {
         let test_vectors = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
-            (Role::Confirmation, None),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -774,7 +774,7 @@ mod recovery_mode_with_primary_unlocked {
     pub fn lock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, None),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -801,7 +801,7 @@ mod recovery_mode_with_primary_unlocked {
         let test_vectors = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
-            (Role::Confirmation, None),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -939,7 +939,7 @@ mod recovery_mode_with_primary_locked {
     fn setup_environment() -> AccessControllerTestRunner {
         let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
         test_runner
-            .lock_primary_role(Role::Primary)
+            .lock_primary_role(Role::Recovery)
             .expect_commit_success();
         test_runner
             .initiate_recovery(
@@ -1021,7 +1021,7 @@ mod recovery_mode_with_primary_locked {
     pub fn lock_primary_role() {
         // Arrange
         let test_vectors = [
-            (Role::Primary, None),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -1048,7 +1048,7 @@ mod recovery_mode_with_primary_locked {
         let test_vectors = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
             (Role::Recovery, None),
-            (Role::Confirmation, None),
+            (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {

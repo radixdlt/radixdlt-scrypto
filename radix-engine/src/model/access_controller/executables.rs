@@ -3,7 +3,7 @@ use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
-use crate::types::{HashMap, Vec};
+use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
@@ -929,18 +929,6 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
 // Helpers
 //=========
 
-fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
-    let mut rule_nodes = Vec::new();
-    for access_rule in access_rules.into_iter() {
-        match access_rule {
-            AccessRule::AllowAll => return AccessRule::AllowAll,
-            AccessRule::DenyAll => {}
-            AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
-        }
-    }
-    AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
-}
-
 fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let mut access_rules = AccessRules::new();
 
@@ -1016,13 +1004,13 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         AccessRuleKey::Native(NativeFn::AccessController(
             AccessControllerFn::LockPrimaryRole,
         )),
-        access_rule_or([rule_set.primary_role, rule_set.recovery_role.clone()].into()),
+        rule_set.recovery_role.clone(),
     );
     access_rules.set_method_access_rule(
         AccessRuleKey::Native(NativeFn::AccessController(
             AccessControllerFn::UnlockPrimaryRole,
         )),
-        access_rule_or([rule_set.recovery_role, rule_set.confirmation_role].into()),
+        rule_set.recovery_role.clone(),
     );
 
     let non_fungible_local_id = NonFungibleLocalId::Bytes(
