@@ -250,7 +250,7 @@ impl Parser {
                 primary_role: self.parse_value()?,
                 recovery_role: self.parse_value()?,
                 confirmation_role: self.parse_value()?,
-                timed_recovery_delay_in_hours: self.parse_value()?,
+                timed_recovery_delay_in_minutes: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));

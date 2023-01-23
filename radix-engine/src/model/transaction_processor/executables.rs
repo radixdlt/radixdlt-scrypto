@@ -770,7 +770,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     primary_role,
                     recovery_role,
                     confirmation_role,
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 }) => {
                     let rtn = api.invoke(AccessControllerCreateGlobalInvocation {
                         controlled_asset: processor.get_bucket(controlled_asset)?.0,
@@ -779,7 +779,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             recovery_role: recovery_role.clone(),
                             confirmation_role: confirmation_role.clone(),
                         },
-                        timed_recovery_delay_in_hours: *timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: *timed_recovery_delay_in_minutes,
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

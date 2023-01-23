@@ -541,7 +541,7 @@ pub fn generate_instruction(
             primary_role,
             recovery_role,
             confirmation_role,
-            timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes,
         } => BasicInstruction::CreateAccessController {
             controlled_asset: generate_typed_value(
                 controlled_asset,
@@ -557,8 +557,8 @@ pub fn generate_instruction(
                 bech32_decoder,
                 blobs,
             )?,
-            timed_recovery_delay_in_hours: generate_typed_value(
-                timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: generate_typed_value(
+                timed_recovery_delay_in_minutes,
                 resolver,
                 bech32_decoder,
                 blobs,

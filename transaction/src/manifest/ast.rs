@@ -198,7 +198,7 @@ pub enum Instruction {
         primary_role: Value,
         recovery_role: Value,
         confirmation_role: Value,
-        timed_recovery_delay_in_hours: Value,
+        timed_recovery_delay_in_minutes: Value,
     },
 }
 

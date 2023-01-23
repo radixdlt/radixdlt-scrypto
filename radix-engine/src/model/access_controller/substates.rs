@@ -7,14 +7,14 @@ pub struct AccessControllerSubstate {
     pub controlled_asset: VaultId,
 
     /// A mapping of the role that's proposing the recovery to a tuple of the proposed rule set,
-    /// proposed `timed_recovery_delay_in_hours`, and an [`Instant`] of when the timed recovery
+    /// proposed `timed_recovery_delay_in_minutes`, and an [`Instant`] of when the timed recovery
     /// delay for this proposal ends. Since [`Proposer`] is used as the key here, we can have a
     /// maximum of two entries in this [`HashMap`] at any given time.
     pub ongoing_recoveries: Option<HashMap<Proposer, RecoveryProposal>>,
 
-    /// The amount of time (in hours) that it takes for timed recovery to be done. Maximum is 65,535
-    /// hours which is 7.48 years.
-    pub timed_recovery_delay_in_hours: u16,
+    /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
+    /// 4,294,967,295 minutes which is 8171.5511700913 years
+    pub timed_recovery_delay_in_minutes: u32,
 
     /// A boolean of whether the primary role is locked or not.
     pub is_primary_role_locked: bool,
@@ -26,7 +26,7 @@ pub struct RecoveryProposal {
     pub rule_set: RuleSet,
 
     /// The proposed delay of timed recoveries.
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 
     /// An [`Instant`] of the time after which timed recovery can be performed.
     pub timed_recovery_allowed_after: Instant,

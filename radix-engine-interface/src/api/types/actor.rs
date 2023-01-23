@@ -814,7 +814,7 @@ impl AccessControllerPackage {
                     AccessControllerInitiateRecoveryAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -826,7 +826,7 @@ impl AccessControllerPackage {
                     AccessControllerInitiateRecoveryAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -839,7 +839,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -854,7 +854,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -868,7 +868,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -880,7 +880,7 @@ impl AccessControllerPackage {
                     AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -894,7 +894,7 @@ impl AccessControllerPackage {
                     AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -908,7 +908,7 @@ impl AccessControllerPackage {
                     AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }
@@ -921,7 +921,7 @@ impl AccessControllerPackage {
                     AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
                     },
                 )
             }

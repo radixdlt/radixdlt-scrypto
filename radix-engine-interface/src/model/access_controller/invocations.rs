@@ -14,7 +14,7 @@ use crate::*;
 pub struct AccessControllerCreateGlobalInvocation {
     pub controlled_asset: BucketId,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerCreateGlobalInvocation {
@@ -64,14 +64,14 @@ impl Into<CallTableInvocation> for AccessControllerCreateProofInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -98,14 +98,14 @@ impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvo
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsRecoveryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
@@ -133,7 +133,7 @@ impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInv
 pub struct AccessControllerQuickConfirmRecoveryAsPrimaryMethodArgs {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -141,7 +141,7 @@ pub struct AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
@@ -169,7 +169,7 @@ impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsPrimary
 pub struct AccessControllerQuickConfirmRecoveryAsRecoveryMethodArgs {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -177,7 +177,7 @@ pub struct AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
@@ -205,7 +205,7 @@ impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsRecover
 pub struct AccessControllerQuickConfirmRecoveryAsConfirmationMethodArgs {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -213,7 +213,7 @@ pub struct AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
@@ -240,14 +240,14 @@ impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsConfirm
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
@@ -274,14 +274,14 @@ impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsPrimary
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryAsRecoveryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
@@ -308,14 +308,14 @@ impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsRecover
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
@@ -342,14 +342,14 @@ impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsPrimar
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs {
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl Invocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {

@@ -551,14 +551,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             primary_role,
             recovery_role,
             confirmation_role,
-            timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes,
         } => {
             f.write_str("CREATE_ACCESS_CONTROLLER")?;
             format_typed_value(f, context, controlled_asset)?;
             format_typed_value(f, context, primary_role)?;
             format_typed_value(f, context, recovery_role)?;
             format_typed_value(f, context, confirmation_role)?;
-            format_typed_value(f, context, timed_recovery_delay_in_hours)?;
+            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
             f.write_str(";")?;
         }
     }

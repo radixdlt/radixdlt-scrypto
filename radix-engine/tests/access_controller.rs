@@ -180,10 +180,10 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
 mod normal_operations_with_primary_unlocked {
     use super::*;
 
-    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
+    const timed_recovery_delay_in_minutes: u32 = 10;
 
     fn setup_environment() -> AccessControllerTestRunner {
-        AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS)
+        AccessControllerTestRunner::new(timed_recovery_delay_in_minutes)
     }
 
     #[test]
@@ -226,7 +226,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -320,7 +320,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -356,7 +356,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -392,7 +392,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -409,10 +409,10 @@ mod normal_operations_with_primary_unlocked {
 mod normal_operations_with_primary_locked {
     use super::*;
 
-    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
+    const timed_recovery_delay_in_minutes: u32 = 10;
 
     fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        let mut test_runner = AccessControllerTestRunner::new(timed_recovery_delay_in_minutes);
         test_runner
             .lock_primary_role(Role::Primary)
             .expect_commit_success();
@@ -467,7 +467,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -561,7 +561,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -597,7 +597,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -633,7 +633,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -650,17 +650,17 @@ mod normal_operations_with_primary_locked {
 mod recovery_mode_with_primary_unlocked {
     use super::*;
 
-    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
+    const timed_recovery_delay_in_minutes: u32 = 10;
 
     fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        let mut test_runner = AccessControllerTestRunner::new(timed_recovery_delay_in_minutes);
         test_runner
             .initiate_recovery(
                 Role::Recovery,
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             )
             .expect_commit_success();
         test_runner
@@ -711,7 +711,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -805,7 +805,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -841,7 +841,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -874,7 +874,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -891,10 +891,10 @@ mod recovery_mode_with_primary_unlocked {
 mod recovery_mode_with_primary_locked {
     use super::*;
 
-    const TIMED_RECOVERY_DELAY_IN_HOURS: u16 = 10;
+    const timed_recovery_delay_in_minutes: u32 = 10;
 
     fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_HOURS);
+        let mut test_runner = AccessControllerTestRunner::new(timed_recovery_delay_in_minutes);
         test_runner
             .lock_primary_role(Role::Primary)
             .expect_commit_success();
@@ -904,7 +904,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             )
             .expect_commit_success();
         test_runner
@@ -961,7 +961,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -1055,7 +1055,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -1091,7 +1091,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -1124,7 +1124,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_HOURS,
+                timed_recovery_delay_in_minutes,
             );
 
             // Assert
@@ -1198,12 +1198,12 @@ struct AccessControllerTestRunner {
     pub recovery_role_badge: ResourceAddress,
     pub confirmation_role_badge: ResourceAddress,
 
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
-    pub fn new(timed_recovery_delay_in_hours: u16) -> Self {
+    pub fn new(timed_recovery_delay_in_minutes: u32) -> Self {
         let mut test_runner = TestRunner::new(false);
 
         // Creating a new account - this is where the badges will be held
@@ -1230,7 +1230,7 @@ impl AccessControllerTestRunner {
                     rule!(require(primary_role_badge)),
                     rule!(require(recovery_role_badge)),
                     rule!(require(confirmation_role_badge)),
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 )
             })
             .build();
@@ -1252,7 +1252,7 @@ impl AccessControllerTestRunner {
             recovery_role_badge,
             confirmation_role_badge,
 
-            timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes,
         }
     }
 
@@ -1275,7 +1275,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
-        timed_recovery_delay_in_hours: u16,
+        timed_recovery_delay_in_minutes: u32,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::InitiateRecoveryAsPrimary,
@@ -1294,7 +1294,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 })
                 .unwrap(),
             )
@@ -1309,7 +1309,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
-        timed_recovery_delay_in_hours: u16,
+        timed_recovery_delay_in_minutes: u32,
     ) -> TransactionReceipt {
         let proposer = match proposer {
             Role::Primary => Proposer::Primary,
@@ -1335,7 +1335,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 })
                 .unwrap(),
             )
@@ -1349,7 +1349,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
-        timed_recovery_delay_in_hours: u16,
+        timed_recovery_delay_in_minutes: u32,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::TimedConfirmRecoveryAsPrimary,
@@ -1368,7 +1368,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 })
                 .unwrap(),
             )
@@ -1382,7 +1382,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
-        timed_recovery_delay_in_hours: u16,
+        timed_recovery_delay_in_minutes: u32,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::CancelRecoveryAttemptAsPrimary,
@@ -1401,7 +1401,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
-                    timed_recovery_delay_in_hours,
+                    timed_recovery_delay_in_minutes,
                 })
                 .unwrap(),
             )
@@ -1451,9 +1451,9 @@ impl AccessControllerTestRunner {
         manifest_builder
     }
 
-    fn push_time_forward(&mut self, hours: i64) {
+    fn push_time_forward(&mut self, minutes: i64) {
         let current_time = self.test_runner.get_current_time(TimePrecision::Minute);
-        let new_time = current_time.add_hours(hours).unwrap();
+        let new_time = current_time.add_minutes(minutes).unwrap();
         self.test_runner
             .set_current_time(new_time.seconds_since_unix_epoch * 1000);
     }

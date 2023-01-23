@@ -78,7 +78,7 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         let access_controller_substate = AccessControllerSubstate {
             controlled_asset: vault.0,
             ongoing_recoveries: None,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
             is_primary_role_locked: false,
         };
         let access_rules_chain_substate = AccessRulesChainSubstate {
@@ -185,7 +185,7 @@ pub struct AccessControllerInitiateRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -212,7 +212,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -243,7 +243,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -266,7 +266,7 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         // Lock checks and Getting the timed recovery delay
-        let timed_recovery_delay_in_hours = {
+        let timed_recovery_delay_in_minutes = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
@@ -274,12 +274,12 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
                 Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
             }
 
-            access_controller.timed_recovery_delay_in_hours
+            access_controller.timed_recovery_delay_in_minutes
         };
 
         // Getting the time when timed recovery will be allowed
         let timed_recovery_allowed_after = Runtime::sys_current_time(api, TimePrecision::Minute)?
-            .add_hours(timed_recovery_delay_in_hours as i64)
+            .add_minutes(timed_recovery_delay_in_minutes as i64)
             .map_or(
                 Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
                 |instant| Ok(instant),
@@ -306,7 +306,7 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
                     self.proposer,
                     super::RecoveryProposal {
                         rule_set: self.rule_set,
-                        timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+                        timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
                         timed_recovery_allowed_after,
                     },
                 );
@@ -335,7 +335,7 @@ pub struct AccessControllerQuickConfirmRecoveryExecutable {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
     pub confirmor: Role,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
@@ -362,7 +362,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Primary,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -393,7 +393,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Recovery,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -424,7 +424,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmation
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Confirmation,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -461,14 +461,15 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                         proposer,
                         RecoveryProposal {
                             rule_set: proposed_rule_set,
-                            timed_recovery_delay_in_hours,
+                            timed_recovery_delay_in_minutes,
                             ..
                         },
                     )| {
                         **proposer == self.proposer
                             && *proposed_rule_set == self.rule_set
                             && Role::from(self.proposer) != self.confirmor
-                            && *timed_recovery_delay_in_hours == self.timed_recovery_delay_in_hours
+                            && *timed_recovery_delay_in_minutes
+                                == self.timed_recovery_delay_in_minutes
                     },
                 )
                 .map_or(
@@ -499,8 +500,8 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
             access_controller.is_primary_role_locked = false;
-            access_controller.timed_recovery_delay_in_hours =
-                recovery_proposal.timed_recovery_delay_in_hours;
+            access_controller.timed_recovery_delay_in_minutes =
+                recovery_proposal.timed_recovery_delay_in_minutes;
         }
 
         api.drop_lock(handle)?;
@@ -518,7 +519,7 @@ pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
@@ -545,7 +546,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -576,7 +577,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvo
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -613,13 +614,14 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                         proposer,
                         RecoveryProposal {
                             rule_set: proposed_rule_set,
-                            timed_recovery_delay_in_hours,
+                            timed_recovery_delay_in_minutes,
                             ..
                         },
                     )| {
                         **proposer == self.proposer
                             && *proposed_rule_set == self.rule_set
-                            && *timed_recovery_delay_in_hours == self.timed_recovery_delay_in_hours
+                            && *timed_recovery_delay_in_minutes
+                                == self.timed_recovery_delay_in_minutes
                     },
                 )
                 .map_or(
@@ -662,8 +664,8 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
             access_controller.is_primary_role_locked = false;
-            access_controller.timed_recovery_delay_in_hours =
-                recovery_proposal.timed_recovery_delay_in_hours;
+            access_controller.timed_recovery_delay_in_minutes =
+                recovery_proposal.timed_recovery_delay_in_minutes;
         }
 
         api.drop_lock(handle)?;
@@ -681,7 +683,7 @@ pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_minutes: u32,
 }
 
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
@@ -707,7 +709,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -737,7 +739,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
         Ok((actor, call_frame_update, executor))
