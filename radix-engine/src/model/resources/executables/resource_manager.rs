@@ -1540,7 +1540,7 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
         let resource_address = resource_manager.resource_address;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
@@ -1609,7 +1609,7 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
@@ -1663,7 +1663,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
 
         let non_fungible_global_id =
             NonFungibleGlobalId::new(resource_manager.resource_address, self.1.clone());

@@ -117,7 +117,7 @@ pub struct AbortResult {
 
 #[derive(Debug, Clone, Display, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum AbortReason {
-    FeeLoanRepaid,
+    ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
 
 /// Represents a transaction receipt.

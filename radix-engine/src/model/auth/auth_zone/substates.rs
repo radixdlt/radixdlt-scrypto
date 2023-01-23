@@ -329,7 +329,7 @@ impl AuthZone {
 
     pub fn pop(&mut self) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         if self.proofs.is_empty() {
-            return Err(InvokeError::Error(AuthZoneError::EmptyAuthZone));
+            return Err(InvokeError::SelfError(AuthZoneError::EmptyAuthZone));
         }
 
         Ok(self.proofs.remove(self.proofs.len() - 1))
@@ -359,7 +359,7 @@ impl AuthZone {
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         ProofSubstate::compose(&self.proofs, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_amount(
@@ -369,7 +369,7 @@ impl AuthZone {
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         ProofSubstate::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_ids(
@@ -379,6 +379,6 @@ impl AuthZone {
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 }

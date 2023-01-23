@@ -98,7 +98,7 @@ pub struct SystemLoanFeeReserve {
     xrd_owed: u128,
 
     /// The amount of cost units consumed
-    cost_unit_consumed: u32,
+    cost_units_consumed: u32,
     /// The max number of cost units that can be consumed
     cost_unit_limit: u32,
     /// At which point the system loan repayment is checked
@@ -121,13 +121,22 @@ pub struct SystemLoanFeeReserve {
     abort_when_loan_repaid: bool,
 }
 
+#[inline]
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
     a.checked_add(b).ok_or(FeeReserveError::Overflow)
 }
 
-fn checked_assign_add(a: &mut u32, b: u32) -> Result<(), FeeReserveError> {
-    *a = checked_add(*a, b)?;
+#[inline]
+fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
+    *value = checked_add(*value, summand)?;
     Ok(())
+}
+
+#[inline]
+fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, FeeReserveError> {
+    u32::try_from(multiplier)
+        .map_err(|_| FeeReserveError::Overflow)
+        .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))
 }
 
 pub fn u128_to_decimal(a: u128) -> Decimal {
@@ -158,7 +167,7 @@ impl SystemLoanFeeReserve {
             loan_balance: system_loan.into(),
             xrd_balance: 0,
             xrd_owed: 0,
-            cost_unit_consumed: 0,
+            cost_units_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
             execution_deferred: HashMap::new(),
@@ -171,17 +180,17 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    fn consume(&mut self, n: u32, price: u128) -> Result<(), FeeReserveError> {
+    fn consume(&mut self, cost_units: u32, price: u128) -> Result<(), FeeReserveError> {
         // Check limit
-        if checked_add(self.cost_unit_consumed, n)? > self.cost_unit_limit {
+        if checked_add(self.cost_units_consumed, cost_units)? > self.cost_unit_limit {
             return Err(FeeReserveError::LimitExceeded);
         }
 
         // Sort out the amount from system loan
-        let from_loan = min(self.loan_balance, n);
+        let from_loan = min(self.loan_balance, cost_units);
 
         // Sort out the amount from locked payments
-        let from_locked = price * (n - from_loan) as u128;
+        let from_locked = price * (cost_units - from_loan) as u128;
         if self.xrd_balance < from_locked {
             return Err(FeeReserveError::InsufficientBalance);
         }
@@ -190,7 +199,7 @@ impl SystemLoanFeeReserve {
         self.loan_balance -= from_loan;
         self.xrd_balance -= from_locked;
         self.xrd_owed += price * from_loan as u128;
-        self.cost_unit_consumed += n;
+        self.cost_units_consumed += cost_units;
         Ok(())
     }
 
@@ -215,7 +224,9 @@ impl SystemLoanFeeReserve {
         }
 
         if self.abort_when_loan_repaid {
-            return Err(FeeReserveError::Abort(AbortReason::FeeLoanRepaid));
+            return Err(FeeReserveError::Abort(
+                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
+            ));
         }
 
         Ok(())
@@ -249,11 +260,12 @@ impl FeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
 
-        let n = u32::try_from(multiplier)
-            .map_err(|_| FeeReserveError::Overflow)
-            .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))?;
+        let units_consumed = checked_multiply(amount, multiplier)?;
 
-        checked_assign_add(self.execution_deferred.entry(reason).or_default(), n)?;
+        checked_assign_add(
+            self.execution_deferred.entry(reason).or_default(),
+            units_consumed,
+        )?;
 
         Ok(())
     }
@@ -270,7 +282,7 @@ impl FeeReserve for SystemLoanFeeReserve {
         self.consume(amount.into(), self.execution_price())?;
         checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
 
-        if self.cost_unit_consumed >= self.check_point && !self.fully_repaid() {
+        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
         Ok(())
@@ -286,14 +298,12 @@ impl FeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
 
-        let n = u32::try_from(multiplier)
-            .map_err(|_| FeeReserveError::Overflow)
-            .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))?;
+        let units_consumed = checked_multiply(amount, multiplier)?;
 
-        self.consume(n, self.execution_price())?;
-        checked_assign_add(self.execution.entry(reason).or_default(), n)?;
+        self.consume(units_consumed, self.execution_price())?;
+        checked_assign_add(self.execution.entry(reason).or_default(), units_consumed)?;
 
-        if self.cost_unit_consumed >= self.check_point && !self.fully_repaid() {
+        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
 
@@ -328,7 +338,7 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
-            cost_unit_consumed: self.cost_unit_consumed,
+            cost_unit_consumed: self.cost_units_consumed,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
             total_execution_cost_xrd: u128_to_decimal(

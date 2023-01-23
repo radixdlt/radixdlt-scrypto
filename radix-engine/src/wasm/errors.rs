@@ -1,7 +1,7 @@
 use radix_engine_interface::api::wasm::BufferId;
 use wasmi::HostError;
 
-use crate::engine::{CanBeAbortion, InvokeWrappedError, KernelError, RuntimeError};
+use crate::engine::{CanBeAbortion, KernelError, RuntimeError, SelfError};
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
 use crate::transaction::AbortReason;
@@ -121,7 +121,7 @@ pub enum WasmRuntimeError {
     CostingError(FeeReserveError),
 }
 
-impl InvokeWrappedError for WasmRuntimeError {
+impl SelfError for WasmRuntimeError {
     fn into_runtime_error(self) -> RuntimeError {
         RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
     }

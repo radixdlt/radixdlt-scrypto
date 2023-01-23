@@ -239,39 +239,42 @@ impl From<ExecutionTraceError> for ModuleError {
     }
 }
 
+/// This enum is to help with designing intuitive error abstractions.
+/// Each engine module can have its own [`SelfError`], but can also wrap arbitrary downstream errors.
+/// Ultimately these errors get flattened out to a [`RuntimeError`] anyway.
 #[derive(Debug)]
-pub enum InvokeError<E: InvokeWrappedError> {
-    Error(E),
+pub enum InvokeError<E: SelfError> {
+    SelfError(E),
     Downstream(RuntimeError),
 }
 
 /// This is a trait for the non-Downstream part of [`InvokeError`]
-/// We can't use `Into<RuntimeError>` because we need `RuntimeError` _not_ to implement it.
-pub trait InvokeWrappedError {
+/// We can't use `Into<RuntimeError>` because we need [`RuntimeError`] _not_ to implement it.
+pub trait SelfError {
     fn into_runtime_error(self) -> RuntimeError;
 }
 
-impl<E: Into<ApplicationError>> InvokeWrappedError for E {
+impl<E: Into<ApplicationError>> SelfError for E {
     fn into_runtime_error(self) -> RuntimeError {
         self.into().into()
     }
 }
 
-impl<E: InvokeWrappedError> From<RuntimeError> for InvokeError<E> {
+impl<E: SelfError> From<RuntimeError> for InvokeError<E> {
     fn from(runtime_error: RuntimeError) -> Self {
         InvokeError::Downstream(runtime_error)
     }
 }
 
-impl<E: InvokeWrappedError> From<E> for InvokeError<E> {
+impl<E: SelfError> From<E> for InvokeError<E> {
     fn from(error: E) -> Self {
-        InvokeError::Error(error)
+        InvokeError::SelfError(error)
     }
 }
 
-impl<E: InvokeWrappedError> InvokeError<E> {
+impl<E: SelfError> InvokeError<E> {
     pub fn error(error: E) -> Self {
-        InvokeError::Error(error)
+        InvokeError::SelfError(error)
     }
 
     pub fn downstream(runtime_error: RuntimeError) -> Self {
@@ -279,11 +282,11 @@ impl<E: InvokeWrappedError> InvokeError<E> {
     }
 }
 
-impl<E: InvokeWrappedError> From<InvokeError<E>> for RuntimeError {
+impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
     fn from(error: InvokeError<E>) -> Self {
         match error {
             InvokeError::Downstream(runtime_error) => runtime_error,
-            InvokeError::Error(e) => e.into_runtime_error(),
+            InvokeError::SelfError(e) => e.into_runtime_error(),
         }
     }
 }

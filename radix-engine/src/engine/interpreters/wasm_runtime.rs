@@ -63,7 +63,7 @@ where
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         self.buffers
             .remove(&buffer_id)
-            .ok_or(InvokeError::Error(WasmRuntimeError::BufferNotFound(
+            .ok_or(InvokeError::SelfError(WasmRuntimeError::BufferNotFound(
                 buffer_id,
             )))
     }
@@ -75,12 +75,9 @@ where
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let receiver = scrypto_decode::<ScryptoReceiver>(&receiver)
-            .map_err(WasmRuntimeError::InvalidReceiver)
-            .map_err(InvokeError::Error)?;
+            .map_err(WasmRuntimeError::InvalidReceiver)?;
 
-        let ident = String::from_utf8(ident)
-            .map_err(|_| WasmRuntimeError::InvalidIdent)
-            .map_err(InvokeError::Error)?;
+        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
 
         let return_data = self.api.invoke_method(receiver, ident.as_str(), args)?;
 
@@ -89,8 +86,7 @@ where
 
     fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let invocation = scrypto_decode::<CallTableInvocation>(&invocation)
-            .map_err(WasmRuntimeError::InvalidInvocation)
-            .map_err(InvokeError::Error)?;
+            .map_err(WasmRuntimeError::InvalidInvocation)?;
 
         let return_data = invoke_call_table(invocation, self.api)?.into_vec();
 
@@ -98,9 +94,7 @@ where
     }
 
     fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node = scrypto_decode::<ScryptoRENode>(&node)
-            .map_err(WasmRuntimeError::InvalidNode)
-            .map_err(InvokeError::Error)?;
+        let node = scrypto_decode::<ScryptoRENode>(&node).map_err(WasmRuntimeError::InvalidNode)?;
 
         let node_id = self.api.sys_create_node(node)?;
         let node_id_encoded = scrypto_encode(&node_id).expect("Failed to encode node id");
@@ -116,9 +110,8 @@ where
     }
 
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let node_id = scrypto_decode::<RENodeId>(&node_id)
-            .map_err(WasmRuntimeError::InvalidNodeId)
-            .map_err(InvokeError::Error)?;
+        let node_id =
+            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
         self.api.drop_node(node_id)?;
 
@@ -131,13 +124,11 @@ where
         offset: Vec<u8>,
         mutable: bool,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
-        let node_id = scrypto_decode::<RENodeId>(&node_id)
-            .map_err(WasmRuntimeError::InvalidNodeId)
-            .map_err(InvokeError::Error)?;
+        let node_id =
+            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        let offset = scrypto_decode::<SubstateOffset>(&offset)
-            .map_err(WasmRuntimeError::InvalidOffset)
-            .map_err(InvokeError::Error)?;
+        let offset =
+            scrypto_decode::<SubstateOffset>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
 
         let handle = self.api.sys_lock_substate(node_id, offset, mutable)?;
         Ok(handle)
@@ -199,14 +190,14 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         buffer: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn consume_buffer(
         &mut self,
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn invoke_method(
@@ -215,23 +206,23 @@ impl WasmRuntime for NopWasmRuntime {
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn lock_substate(
@@ -240,11 +231,11 @@ impl WasmRuntime for NopWasmRuntime {
         offset: Vec<u8>,
         mutable: bool,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn read_substate(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn write_substate(
@@ -252,20 +243,20 @@ impl WasmRuntime for NopWasmRuntime {
         handle: u32,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn unlock_substate(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::Error(WasmRuntimeError::NotImplemented))
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
             .consume_execution(n, 1, "run_wasm")
-            .map_err(|e| InvokeError::Error(WasmRuntimeError::CostingError(e)))
+            .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
     }
 }
