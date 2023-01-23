@@ -1,37 +1,8 @@
 use std::collections::HashMap;
 
+use super::types::{Nibble, NibblePath, NodeKey};
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
-
-/// A nibble (4 LSBs of the contained u8).
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct Nib(pub u8);
-
-/// A sequence of nibbles (potentially not byte-aligned).
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct Nibs(pub Vec<Nib>);
-
-impl Nibs {
-    /// Creates a new sequence from the given parts.
-    pub fn concat(&self, other: &Nibs) -> Nibs {
-        Nibs([self.0.as_slice(), other.0.as_slice()].concat())
-    }
-
-    /// Consumes the `nib_count` first nibbles of this sequence.
-    pub fn skip(mut self, nib_count: usize) -> Nibs {
-        self.0.drain(0..nib_count);
-        self
-    }
-}
-
-/// A unique key of a "physical" tree node, to be used in the storage.
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct TreeNodeKey {
-    /// State version - starting with 1, incremented strictly by 1.
-    pub version: u64,
-    /// Nibbles, potentially not byte-aligned.
-    pub nib_prefix: Nibs,
-}
 
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -55,7 +26,7 @@ pub struct TreeInternalNode {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct TreeChildEntry {
     /// First of the remaining nibbles in the key.
-    pub nib: Nib,
+    pub nibble: Nibble,
     /// State version at which this child's node was created.
     pub version: u64,
     /// Cached child hash (i.e. needed only for performance).
@@ -68,7 +39,7 @@ pub struct TreeChildEntry {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct TreeLeafNode {
     /// All the remaining nibbles in the _hashed_ `substate_id`.
-    pub nib_suffix: Nibs,
+    pub key_suffix: NibblePath,
     /// ID of the substate's value in an external storage.
     pub substate_id: SubstateId,
     /// An externally-provided hash of the Substate's value.
@@ -78,17 +49,17 @@ pub struct TreeLeafNode {
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore {
     /// Gets node by key, if it exists.
-    fn get_node(&self, key: &TreeNodeKey) -> Option<TreeNode>;
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
 pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&mut self, key: &TreeNodeKey, node: TreeNode);
+    fn insert_node(&mut self, key: &NodeKey, node: TreeNode);
 
     /// Marks the given node for a (potential) future removal by an arbitrary
     /// external pruning process.
-    fn record_stale_node(&mut self, key: &TreeNodeKey);
+    fn record_stale_node(&mut self, key: &NodeKey);
 }
 
 /// A complete tree node storage SPI.
@@ -97,8 +68,8 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 pub struct MemoryTreeStore {
-    pub memory: HashMap<TreeNodeKey, TreeNode>,
-    pub stale_key_buffer: Vec<TreeNodeKey>,
+    pub memory: HashMap<NodeKey, TreeNode>,
+    pub stale_key_buffer: Vec<NodeKey>,
 }
 
 impl MemoryTreeStore {
@@ -112,17 +83,17 @@ impl MemoryTreeStore {
 }
 
 impl ReadableTreeStore for MemoryTreeStore {
-    fn get_node(&self, key: &TreeNodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.memory.get(key).cloned()
     }
 }
 
 impl WriteableTreeStore for MemoryTreeStore {
-    fn insert_node(&mut self, key: &TreeNodeKey, node: TreeNode) {
+    fn insert_node(&mut self, key: &NodeKey, node: TreeNode) {
         self.memory.insert(key.clone(), node);
     }
 
-    fn record_stale_node(&mut self, key: &TreeNodeKey) {
+    fn record_stale_node(&mut self, key: &NodeKey) {
         self.stale_key_buffer.push(key.clone());
     }
 }
@@ -145,7 +116,7 @@ impl<'s, R: ReadableTreeStore> StagedTreeStore<'s, R> {
 }
 
 impl<'s, R: ReadableTreeStore> ReadableTreeStore for StagedTreeStore<'s, R> {
-    fn get_node(&self, key: &TreeNodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.overlay
             .get_node(key)
             .or_else(|| self.base.get_node(key))
@@ -153,11 +124,11 @@ impl<'s, R: ReadableTreeStore> ReadableTreeStore for StagedTreeStore<'s, R> {
 }
 
 impl<'s, R: ReadableTreeStore> WriteableTreeStore for StagedTreeStore<'s, R> {
-    fn insert_node(&mut self, key: &TreeNodeKey, node: TreeNode) {
+    fn insert_node(&mut self, key: &NodeKey, node: TreeNode) {
         self.overlay.insert_node(key, node);
     }
 
-    fn record_stale_node(&mut self, key: &TreeNodeKey) {
+    fn record_stale_node(&mut self, key: &NodeKey) {
         self.overlay.record_stale_node(key)
     }
 }

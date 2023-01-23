@@ -5,7 +5,7 @@
 //! Each non-trivial adjustment is annotated with an "ADJUSTMENT: ..." comment.
 //! Please see types.rs for other copied-from-Aptos dependencies of this file.
 
-use crate::hash_tree::types::{
+use super::types::{
     Child, Children, InternalNode, IteratedHash, LeafNode, Nibble, NibblePath, Node, NodeKey,
     SparseMerkleProof, SparseMerkleProofExt, SparseMerkleRangeProof, TreeReader, Version,
     SPARSE_MERKLE_PLACEHOLDER_HASH,

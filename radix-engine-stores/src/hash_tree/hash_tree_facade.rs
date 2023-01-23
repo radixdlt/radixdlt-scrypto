@@ -1,16 +1,14 @@
 use std::collections::HashMap;
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
 use std::io::Error;
 
 use super::jellyfish::JellyfishMerkleTree;
+use super::types::NibblePath;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 
 use super::tree_store::{
-    Nib, Nibs, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-    TreeNodeKey, TreeStore,
+    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode, TreeStore,
 };
 use super::types::{Child, InternalNode, LeafNode, Nibble, Node, NodeKey, NodeType, TreeReader};
 
@@ -75,12 +73,10 @@ impl<'s, S: TreeStore> HashTree<'s, S> {
             )
             .expect("error while reading tree during put");
         for (key, node) in update_result.node_batch.iter().flatten() {
-            self.store
-                .insert_node(&TreeNodeKey::from(key), TreeNode::from(key, node));
+            self.store.insert_node(key, TreeNode::from(key, node));
         }
         for stale_node in update_result.stale_node_index_batch.iter().flatten() {
-            let key = TreeNodeKey::from(&stale_node.node_key);
-            self.store.record_stale_node(&key);
+            self.store.record_stale_node(&stale_node.node_key);
         }
         self.current_version = next_version;
         root_hash
@@ -97,33 +93,12 @@ impl<'s, S: TreeStore> HashTree<'s, S> {
     }
 }
 
-impl From<&[u8]> for Nibs {
-    fn from(bytes: &[u8]) -> Self {
-        Nibs(
-            bytes
-                .iter()
-                .map(|byte| [Nib(byte >> 4), Nib(byte & 15)])
-                .flatten()
-                .collect(),
-        )
-    }
-}
-
-impl From<&Nibs> for Vec<u8> {
-    fn from(nibs: &Nibs) -> Self {
-        nibs.0
-            .chunks(2)
-            .map(|chunk| chunk[0].0 << 4 | chunk[1].0)
-            .collect::<Vec<u8>>()
-    }
-}
-
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {
         let children = internal_node
             .children_sorted()
             .map(|(nibble, child)| TreeChildEntry {
-                nib: Nib(nibble.clone().into()),
+                nibble: nibble.clone(),
                 version: child.version,
                 hash: child.hash,
                 is_leaf: child.is_leaf(),
@@ -136,8 +111,11 @@ impl TreeInternalNode {
 impl TreeLeafNode {
     fn from(key: &NodeKey, leaf_node: &LeafNode<SubstateId>) -> Self {
         TreeLeafNode {
-            nib_suffix: Nibs::from(leaf_node.account_key().as_ref())
-                .skip(key.nibble_path().num_nibbles()),
+            key_suffix: NibblePath::from_iter(
+                NibblePath::new_even(leaf_node.account_key().to_vec())
+                    .nibbles()
+                    .skip(key.nibble_path().num_nibbles()),
+            ),
             substate_id: leaf_node.value_index().0.clone(),
             value_hash: leaf_node.value_hash(),
         }
@@ -161,11 +139,11 @@ impl InternalNode {
         let child_map: HashMap<Nibble, Child> = internal_node
             .children
             .iter()
-            .map(|child_meta| {
+            .map(|child_entry| {
                 let child: Child = Child::new(
-                    child_meta.hash,
-                    child_meta.version,
-                    if child_meta.is_leaf {
+                    child_entry.hash,
+                    child_entry.version,
+                    if child_entry.is_leaf {
                         NodeType::Leaf
                     } else {
                         // Note: the `0` passed here may be replaced with an actual value (which we
@@ -174,7 +152,7 @@ impl InternalNode {
                         NodeType::Internal { leaf_count: 0 }
                     },
                 );
-                (Nibble::from(child_meta.nib.0), child)
+                (child_entry.nibble, child)
             })
             .collect();
         InternalNode::new(child_map)
@@ -182,18 +160,22 @@ impl InternalNode {
 }
 
 impl LeafNode<SubstateId> {
-    fn from(key: &TreeNodeKey, leaf_node: &TreeLeafNode) -> Self {
-        let nibs = key.nib_prefix.concat(&leaf_node.nib_suffix);
+    fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
+        let full_key = NibblePath::from_iter(
+            key.nibble_path()
+                .nibbles()
+                .chain(leaf_node.key_suffix.nibbles()),
+        );
         LeafNode::new(
-            Hash::try_from(Vec::<u8>::from(&nibs).as_slice()).unwrap(),
+            Hash::try_from(full_key.bytes()).unwrap(),
             leaf_node.value_hash,
-            (leaf_node.substate_id.clone(), key.version),
+            (leaf_node.substate_id.clone(), key.version()),
         )
     }
 }
 
 impl Node<SubstateId> {
-    fn from(key: &TreeNodeKey, tree_node: &TreeNode) -> Self {
+    fn from(key: &NodeKey, tree_node: &TreeNode) -> Self {
         match tree_node {
             TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
             TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, leaf_node)),
@@ -202,62 +184,10 @@ impl Node<SubstateId> {
     }
 }
 
-impl From<&NodeKey> for TreeNodeKey {
-    fn from(node_key: &NodeKey) -> TreeNodeKey {
-        TreeNodeKey {
-            version: node_key.version(),
-            nib_prefix: Nibs(
-                node_key
-                    .nibble_path()
-                    .nibbles()
-                    .map(|nibble| Nib(nibble.into()))
-                    .collect(),
-            ),
-        }
-    }
-}
-
 impl<R: ReadableTreeStore> TreeReader<SubstateId> for R {
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<SubstateId>>, Error> {
-        let tree_node_key = &TreeNodeKey::from(node_key);
         Ok(self
-            .get_node(tree_node_key)
-            .map(|tree_node| Node::from(tree_node_key, &tree_node)))
-    }
-}
-
-impl Display for Nibs {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            self.0
-                .iter()
-                .map(|nib| format!("{}", nib))
-                .collect::<String>()
-                .as_str(),
-        )
-    }
-}
-
-impl Debug for Nibs {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
-
-impl Display for Nib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(format!("{:x}", &self.0).as_str())
-    }
-}
-
-impl Debug for Nib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
-
-impl Display for TreeNodeKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "v{}:{}", self.version, self.nib_prefix)
+            .get_node(node_key)
+            .map(|tree_node| Node::from(node_key, &tree_node)))
     }
 }

@@ -1,7 +1,6 @@
 use super::hash_tree_facade::HashTree;
 use super::tree_store::MemoryTreeStore;
-use super::tree_store::{Nib, Nibs, TreeNodeKey};
-use super::types::SPARSE_MERKLE_PLACEHOLDER_HASH;
+use super::types::{Nibble, NibblePath, NodeKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use radix_engine::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
@@ -176,27 +175,15 @@ fn records_stale_tree_node_keys() {
         store.stale_key_buffer.iter().collect::<HashSet<_>>(),
         vec![
             // tree nodes obsoleted by v=2:
-            TreeNodeKey {
-                // the only node == root == leaf for substate_id(4, 6)
-                version: 1,
-                nib_prefix: Nibs(vec![])
-            },
+            // the only node == root == leaf for substate_id(4, 6)
+            NodeKey::new(1, nibbles("")),
             // tree nodes obsoleted by v=3:
-            TreeNodeKey {
-                // the leaf for substate_id(3, 9)
-                version: 2,
-                nib_prefix: Nibs(vec![Nib(8), Nib(4)])
-            },
-            TreeNodeKey {
-                // the common parent of 2 leaves at v=2
-                version: 2,
-                nib_prefix: Nibs(vec![Nib(8)])
-            },
-            TreeNodeKey {
-                // the root at v=2
-                version: 2,
-                nib_prefix: Nibs(vec![])
-            },
+            // the leaf for substate_id(3, 9)
+            NodeKey::new(2, nibbles("84")),
+            // the common parent of 2 leaves at v=2
+            NodeKey::new(2, nibbles("8")),
+            // the root at v=2
+            NodeKey::new(2, nibbles("")),
         ]
         .iter()
         .collect::<HashSet<_>>()
@@ -228,4 +215,12 @@ fn value_hash(value_seed: u8) -> Option<Hash> {
     let fake_kvs_entry =
         PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(fake_kvs_value));
     Some(hash(scrypto_encode(&fake_kvs_entry).unwrap()))
+}
+
+fn nibbles(hex_string: &str) -> NibblePath {
+    NibblePath::from_iter(
+        hex_string
+            .chars()
+            .map(|nibble| Nibble::from(char::to_digit(nibble, 16).unwrap() as u8)),
+    )
 }
