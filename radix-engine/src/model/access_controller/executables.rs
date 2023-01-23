@@ -22,6 +22,7 @@ pub enum AccessControllerError {
     NoValidProposedRuleSetExists,
     TimeOverflow,
     TimedRecoveryDelayHasNotElapsed,
+    TimedRecoveryCanNotBePerformedWhileDisabled,
 }
 
 impl From<AccessControllerError> for RuntimeError {
@@ -185,7 +186,7 @@ pub struct AccessControllerInitiateRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_minutes: u32,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -278,12 +279,16 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         };
 
         // Getting the time when timed recovery will be allowed
-        let timed_recovery_allowed_after = Runtime::sys_current_time(api, TimePrecision::Minute)?
-            .add_minutes(timed_recovery_delay_in_minutes as i64)
-            .map_or(
-                Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
-                |instant| Ok(instant),
-            )?;
+        let timed_recovery_allowed_after = match timed_recovery_delay_in_minutes {
+            Some(delay_in_minutes) => {
+                let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
+                Some(current_time.add_minutes(delay_in_minutes as i64).map_or(
+                    Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
+                    |instant| Ok(instant),
+                )?)
+            }
+            None => None,
+        };
 
         // Initiate Recovery (if this role doesn't already have a recovery Ongoing)
         {
@@ -335,7 +340,7 @@ pub struct AccessControllerQuickConfirmRecoveryExecutable {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
     pub confirmor: Role,
-    pub timed_recovery_delay_in_minutes: u32,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
@@ -519,7 +524,7 @@ pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_minutes: u32,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
@@ -628,11 +633,19 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
                     |(_, recovery_proposal)| Ok(recovery_proposal.clone()),
                 )?;
-            let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
-                api,
-                recovery_proposal.timed_recovery_allowed_after,
-                TimePrecision::Minute,
-                time::TimeComparisonOperator::Gte,
+
+            let recovery_time_has_elapsed = recovery_proposal.timed_recovery_allowed_after.map_or(
+                Err(RuntimeError::from(
+                    AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled,
+                )),
+                |instant| {
+                    Runtime::sys_compare_against_current_time(
+                        api,
+                        instant,
+                        TimePrecision::Minute,
+                        time::TimeComparisonOperator::Gte,
+                    )
+                },
             )?;
 
             if !recovery_time_has_elapsed {
@@ -683,7 +696,7 @@ pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_minutes: u32,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {

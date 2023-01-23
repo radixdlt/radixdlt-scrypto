@@ -13,8 +13,9 @@ pub struct AccessControllerSubstate {
     pub ongoing_recoveries: Option<HashMap<Proposer, RecoveryProposal>>,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
-    /// 4,294,967,295 minutes which is 8171.5511700913 years
-    pub timed_recovery_delay_in_minutes: u32,
+    /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
+    /// recovery can not be performed through this access controller.
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 
     /// A boolean of whether the primary role is locked or not.
     pub is_primary_role_locked: bool,
@@ -26,8 +27,9 @@ pub struct RecoveryProposal {
     pub rule_set: RuleSet,
 
     /// The proposed delay of timed recoveries.
-    pub timed_recovery_delay_in_minutes: u32,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 
-    /// An [`Instant`] of the time after which timed recovery can be performed.
-    pub timed_recovery_allowed_after: Instant,
+    /// An [`Instant`] of the time after which timed recovery can be performed. If [`None`], then
+    /// timed recovery was not allowed at the time of proposal-initiation.
+    pub timed_recovery_allowed_after: Option<Instant>,
 }
