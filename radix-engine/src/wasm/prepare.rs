@@ -12,7 +12,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::types::*;
 use crate::wasm::{constants::*, errors::*, PrepareError};
 
-use super::{WasmiInstanceEnv, WasmiModule};
+use super::WasmiModule;
 #[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
@@ -513,9 +513,7 @@ impl WasmModule {
         let code = parity_wasm::serialize(self.module.clone())
             .map_err(|_| PrepareError::SerializationError)?;
 
-        //println!("ensure_instantiatable WasmiModule::new");
-        // FIXME
-        let wasmi_module = WasmiModule::new(&code[..]);
+        let _wasmi_module = WasmiModule::new(&code[..]);
 
         Ok(self)
     }

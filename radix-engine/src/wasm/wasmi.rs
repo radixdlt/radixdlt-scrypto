@@ -1,4 +1,5 @@
 use radix_engine_interface::api::wasm::Buffer;
+use radix_engine_interface::api::wasm::BufferId;
 use radix_engine_interface::api::wasm::Slice;
 use sbor::rust::sync::Arc;
 use wasmi::core::Trap;
@@ -42,121 +43,217 @@ impl WasmiInstanceEnv {
     }
 }
 
-// native functions
-fn wasmi_radix_engine(
+macro_rules! grab_runtime {
+    ($caller: expr) => {{
+        // FIXME
+        //let ptr = $env.runtime_ptr.lock().expect("Runtime ptr unavailable");
+        //let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+        let runtime: &mut Box<dyn WasmRuntime> =
+            unsafe { &mut *($caller.data().runtime_ptr as *mut _) };
+
+        let memory = match $caller.get_export(EXPORT_MEMORY) {
+            Some(Extern::Memory(memory)) => memory,
+            _ => panic!("Failed to find memory export"),
+        };
+        (memory, runtime)
+    }};
+}
+
+// native functions start
+fn consume_buffer(
+    caller: Caller<'_, HostState>,
+    buffer_id: BufferId,
+    destination_ptr: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let slice = runtime
+        .consume_buffer(buffer_id)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    write_memory(caller, memory, destination_ptr, &slice)?;
+
+    Ok(())
+}
+
+fn invoke_method(
     mut caller: Caller<'_, HostState>,
-    input_ptr: i32,
-) -> Result<i32, InvokeError<WasmError>> {
-    let memory = match caller.get_export(EXPORT_MEMORY) {
-        Some(Extern::Memory(memory)) => memory,
-        _ => panic!("Failed to find memory export"),
-    };
+    receiver_ptr: u32,
+    receiver_len: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
 
-    let input = read_value(caller.as_context_mut(), memory, input_ptr as usize)
-        .map_err(InvokeError::Error)
-        .unwrap();
+    let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
-    let output = {
-        let env = caller.data();
-        let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(env.runtime_ptr as *mut _) };
+    let buffer = runtime
+        .invoke_method(receiver, ident, args)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
 
-        runtime.main(input).unwrap()
-    };
-    let alloc_func = caller
-        .get_export(EXPORT_SCRYPTO_ALLOC)
-        .and_then(Extern::into_func)
-        .ok_or_else(|| InvokeError::Error(WasmError::FunctionNotFound))
-        .unwrap();
+    Ok(buffer.0)
+}
 
-    send_value(caller.as_context_mut(), memory, alloc_func, &output)
+fn invoke(
+    mut caller: Caller<'_, HostState>,
+    invocation_ptr: u32,
+    invocation_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let invocation = read_memory(
+        caller.as_context_mut(),
+        memory,
+        invocation_ptr,
+        invocation_len,
+    )?;
+
+    let buffer = runtime
+        .invoke(invocation)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(buffer.0)
+}
+
+fn create_node(
+    mut caller: Caller<'_, HostState>,
+    node_ptr: u32,
+    node_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let node = read_memory(caller.as_context_mut(), memory, node_ptr, node_len)?;
+
+    let buffer = runtime
+        .create_node(node)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(buffer.0)
+}
+
+fn get_visible_nodes(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    let buffer = runtime
+        .get_visible_nodes()
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(buffer.0)
+}
+
+fn drop_node(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
+
+    runtime
+        .drop_node(node_id)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(())
+}
+
+fn lock_substate(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+    offset_ptr: u32,
+    offset_len: u32,
+    mutable: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
+    let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
+
+    let handle = runtime
+        .lock_substate(node_id, offset, mutable != 0)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(handle)
+}
+
+fn read_substate(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    let buffer = runtime
+        .read_substate(handle)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(buffer.0)
+}
+
+fn write_substate(
+    mut caller: Caller<'_, HostState>,
+    handle: u32,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime
+        .write_substate(handle, data)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(())
+}
+
+fn unlock_substate(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .unlock_substate(handle)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(())
+}
+
+fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    let buffer = runtime
+        .get_actor()
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
+
+    Ok(buffer.0)
 }
 
 fn consume_cost_units(
     caller: Caller<'_, HostState>,
-    cost_unit: i32,
-) -> Result<(), InvokeError<WasmError>> {
-    let env = caller.data();
-    let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(env.runtime_ptr as *mut _) };
-    runtime.consume_cost_units(cost_unit as u32)
+    cost_unit: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime
+        .consume_cost_units(cost_unit)
+        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))
 }
+// native functions ends
 
-/*
-impl ModuleImportResolver for WasmiEnvModule {
-    fn resolve_func(
-        &self,
-        field_name: &str,
-        signature: &wasmi::Signature,
-    ) -> Result<FuncRef, Error> {
-        match field_name {
-            CONSUME_BUFFER_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                CONSUME_BUFFER_FUNCTION_ID,
-            )),
-            INVOKE_METHOD_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                INVOKE_METHOD_FUNCTION_ID,
-            )),
-            INVOKE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                INVOKE_FUNCTION_ID,
-            )),
-            CREATE_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                CREATE_NODE_FUNCTION_ID,
-            )),
-            GET_VISIBLE_NODES_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                GET_VISIBLE_NODES_FUNCTION_ID,
-            )),
-            DROP_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                DROP_NODE_FUNCTION_ID,
-            )),
-            LOCK_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                LOCK_SUBSTATE_FUNCTION_ID,
-            )),
-            READ_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                READ_SUBSTATE_FUNCTION_ID,
-            )),
-            WRITE_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                WRITE_SUBSTATE_FUNCTION_ID,
-            )),
-            UNLOCK_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                UNLOCK_SUBSTATE_FUNCTION_ID,
-            )),
-            GET_ACTOR_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                GET_ACTOR_FUNCTION_ID,
-            )),
-            CONSUME_COST_UNITS_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                CONSUME_COST_UNITS_FUNCTION_ID,
-            )),
-            _ => Err(Error::Instantiation(format!(
-                "Function {} not found",
-                field_name
-            ))),
-        }
-    }
+macro_rules! linker_define {
+    ($linker: expr, $name: expr, $var: expr) => {
+        $linker
+            .define(MODULE_ENV_NAME, $name, $var)
+            .expect(stringify!("Failed to define new linker item {}", $name));
+    };
 }
-
-impl From<Error> for InvokeError<WasmRuntimeError> {
-    fn from(error: Error) -> Self {
-        let e_str = format!("{:?}", error);
-        match error.into_host_error() {
-            // Pass-through invoke errors
-            Some(host_error) => *host_error
-                .downcast::<InvokeError<WasmRuntimeError>>()
-                .expect("Failed to downcast error into InvokeError<WasmRuntimeError>"),
-            None => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
-        }
-    }
-}
-*/
 
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Self {
@@ -181,43 +278,156 @@ impl WasmiModule {
         module: &Module,
         store: &mut Store<HostState>,
     ) -> Result<InstancePre, Error> {
-        let host_radix_engine = Func::wrap(
+        let host_consume_buffer = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>, input_ptr: i32| -> Result<i32, Trap> {
-                wasmi_radix_engine(caller, input_ptr).map_err(|e| Trap::new(e.to_string()))
+            |caller: Caller<'_, HostState>,
+             buffer_id: BufferId,
+             destination_ptr: u32|
+             -> Result<(), Trap> {
+                consume_buffer(caller, buffer_id, destination_ptr)
+                    .map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_invoke_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             receiver_ptr: u32,
+             receiver_len: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                invoke_method(
+                    caller,
+                    receiver_ptr,
+                    receiver_len,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_invoke = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             invocation_ptr: u32,
+             invocation_len: u32|
+             -> Result<u64, Trap> {
+                invoke(caller, invocation_ptr, invocation_len).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_create_node = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, node_ptr: u32, node_len: u32| -> Result<u64, Trap> {
+                create_node(caller, node_ptr, node_len).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_get_visible_nodes = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_visible_nodes(caller).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_drop_node = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32|
+             -> Result<(), Trap> {
+                drop_node(caller, node_id_ptr, node_id_len).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_lock_substate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32,
+             offset_ptr: u32,
+             offset_len: u32,
+             mutable: u32|
+             -> Result<u32, Trap> {
+                lock_substate(
+                    caller,
+                    node_id_ptr,
+                    node_id_len,
+                    offset_ptr,
+                    offset_len,
+                    mutable,
+                )
+                .map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_read_substate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                read_substate(caller, handle).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_write_substate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             handle: u32,
+             data_ptr: u32,
+             data_len: u32|
+             -> Result<(), Trap> {
+                write_substate(caller, handle, data_ptr, data_len)
+                    .map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_unlock_substate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
+                unlock_substate(caller, handle).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_get_actor = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_actor(caller).map_err(|e| Trap::new(e.to_string()))
             },
         );
 
         let host_consume_cost_units = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>, cost_unit: i32| -> Result<(), Trap> {
+            |caller: Caller<'_, HostState>, cost_unit: u32| -> Result<(), Trap> {
                 consume_cost_units(caller, cost_unit).map_err(|e| Trap::new(e.to_string()))
             },
         );
 
         let mut linker = <Linker<HostState>>::new();
-
-        linker
-            .define(
-                MODULE_ENV_NAME,
-                RADIX_ENGINE_FUNCTION_NAME,
-                host_radix_engine,
-            )
-            .expect(stringify!(
-                "Failed to define new linker item {}",
-                RADIX_ENGINE_FUNCTION_NAME
-            ));
-
-        linker
-            .define(
-                MODULE_ENV_NAME,
-                CONSUME_COST_UNITS_FUNCTION_NAME,
-                host_consume_cost_units,
-            )
-            .expect(stringify!(
-                "Failed to define new linker item {}",
-                CONSUME_COST_UNITS_FUNCTION_NAME
-            ));
+        linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
+        linker_define!(linker, INVOKE_METHOD_FUNCTION_NAME, host_invoke_method);
+        linker_define!(linker, INVOKE_FUNCTION_NAME, host_invoke);
+        linker_define!(linker, CREATE_NODE_FUNCTION_NAME, host_create_node);
+        linker_define!(
+            linker,
+            GET_VISIBLE_NODES_FUNCTION_NAME,
+            host_get_visible_nodes
+        );
+        linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
+        linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
+        linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
+        linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
+        linker_define!(linker, UNLOCK_SUBSTATE_FUNCTION_NAME, host_unlock_substate);
+        linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
+        linker_define!(
+            linker,
+            CONSUME_COST_UNITS_FUNCTION_NAME,
+            host_consume_cost_units
+        );
 
         let pre_instance = match linker.instantiate(store.as_context_mut(), &module) {
             Ok(result) => result,
@@ -244,253 +454,62 @@ impl WasmiModule {
     }
 }
 
-fn send_value(
+fn read_memory(
+    store: impl AsContextMut,
+    memory: Memory,
+    ptr: u32,
+    len: u32,
+) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
+    let store_ctx = store.as_context();
+    let data = memory.data(&store_ctx);
+    let ptr = ptr as usize;
+    let len = len as usize;
+
+    if ptr > data.len() || ptr + len > data.len() {
+        return Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError));
+    }
+    Ok(data[ptr..ptr + len].to_vec())
+}
+
+fn write_memory(
     mut store: impl AsContextMut,
     memory: Memory,
-    alloc_func: Func,
-    value: &[u8],
-) -> Result<i32, InvokeError<WasmError>> {
-    // TODO: fix this shitty arguments
-    let n = [Value::I32(value.len() as i32)];
-    let mut ret: [Value; 1] = [Value::I32(0)];
+    ptr: u32,
+    data: &[u8],
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let mut store_ctx = store.as_context_mut();
+    let mem_data = memory.data(&mut store_ctx);
 
-    let result = alloc_func.call(store.as_context_mut(), &n, &mut ret);
-
-    match result {
-        Ok(()) => {
-            let ret: i32 = i32::try_from(ret[0]).unwrap();
-
-            if memory
-                .write(store.as_context_mut(), (ret + 4) as usize, value)
-                .is_ok()
-            {
-                return Ok(ret);
-            }
-
-            return Err(InvokeError::Error(WasmError::MemoryAllocError));
-        }
-        Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
+    if ptr as usize > mem_data.len() || ptr as usize + data.len() > mem_data.len() {
+        return Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError));
     }
+
+    memory
+        .write(&mut store.as_context_mut(), ptr as usize, data)
+        .or_else(|_| {
+            Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError))
+        })
 }
 
-fn read_value(
-    mut store: impl AsContextMut,
+fn read_slice(
+    store: impl AsContextMut,
     memory: Memory,
-    ptr: usize,
-) -> Result<IndexedScryptoValue, WasmError> {
-    let mut buf = [0_u8; 4];
+    v: Slice,
+) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
+    let ptr = v.ptr();
+    let len = v.len();
 
-    let _result = memory
-        .read(store.as_context_mut(), ptr, &mut buf)
-        .map_err(|_| WasmError::MemoryAccessError);
-
-    let len = u32::from_le_bytes(buf) as usize;
-
-    let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
-    let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
-
-    let ctx = store.as_context_mut();
-    let data = memory.data(&ctx);
-
-    if end > data.len() {
-        return Err(WasmError::MemoryAccessError);
-    }
-    IndexedScryptoValue::from_slice(&data[start..end]).map_err(WasmError::InvalidScryptoValue)
-}
-/*
-    pub fn read_memory(&self, ptr: u32, len: u32) -> Result<Vec<u8>, WasmRuntimeError> {
-        let ptr = ptr as usize;
-        let len = len as usize;
-
-        let memory = self.instance.memory_ref.direct_access();
-        let memory_slice = memory.as_ref();
-        let memory_size = memory_slice.len();
-        if ptr > memory_size || ptr + len > memory_size {
-            return Err(WasmRuntimeError::MemoryAccessError);
-        }
-
-        Ok(memory_slice[ptr..ptr + len].to_vec())
-    }
-
-    pub fn write_memory(&self, ptr: u32, data: &[u8]) -> Result<(), WasmRuntimeError> {
-        let ptr = ptr as usize;
-        let len = data.len();
-
-        let mut memory = self.instance.memory_ref.direct_access_mut();
-        let memory_slice = memory.as_mut();
-        let memory_size = memory_slice.len();
-        if ptr > memory_size || ptr + len > memory_size {
-            return Err(WasmRuntimeError::MemoryAccessError);
-        }
-
-        memory_slice[ptr..ptr + len].copy_from_slice(data);
-        Ok(())
-    }
-
-    pub fn read_slice(&self, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
-        let ptr = v.ptr();
-        let len = v.len();
-
-        self.read_memory(ptr, len)
-    }
-}
-*/
-/*
-impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
-    fn invoke_index(
-        &mut self,
-        index: usize,
-        args: RuntimeArgs,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        match index {
-            CONSUME_BUFFER_FUNCTION_ID => {
-                let buffer_id = args.nth_checked::<u32>(0)?;
-                let destination = args.nth_checked::<u32>(1)?;
-
-                let slice = self.runtime.consume_buffer(buffer_id)?;
-                self.write_memory(destination, &slice)?;
-
-                Ok(None)
-            }
-            INVOKE_METHOD_FUNCTION_ID => {
-                let receiver_ptr = args.nth_checked::<u32>(0)?;
-                let receiver_len = args.nth_checked::<u32>(1)?;
-                let ident_ptr = args.nth_checked::<u32>(2)?;
-                let ident_len = args.nth_checked::<u32>(3)?;
-                let args_ptr = args.nth_checked::<u32>(4)?;
-                let args_len = args.nth_checked::<u32>(5)?;
-
-                let buffer = self.runtime.invoke_method(
-                    self.read_memory(receiver_ptr, receiver_len)?,
-                    self.read_memory(ident_ptr, ident_len)?,
-                    self.read_memory(args_ptr, args_len)?,
-                )?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            INVOKE_FUNCTION_ID => {
-                let invocation_ptr = args.nth_checked::<u32>(0)?;
-                let invocation_len = args.nth_checked::<u32>(1)?;
-
-                let buffer = self
-                    .runtime
-                    .invoke(self.read_memory(invocation_ptr, invocation_len)?)?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            CREATE_NODE_FUNCTION_ID => {
-                let node_ptr = args.nth_checked::<u32>(0)?;
-                let node_len = args.nth_checked::<u32>(1)?;
-
-                let buffer = self
-                    .runtime
-                    .create_node(self.read_memory(node_ptr, node_len)?)?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            GET_VISIBLE_NODES_FUNCTION_ID => {
-                let buffer = self.runtime.get_visible_nodes()?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            DROP_NODE_FUNCTION_ID => {
-                let node_id_ptr = args.nth_checked::<u32>(0)?;
-                let node_id_len = args.nth_checked::<u32>(1)?;
-
-                self.runtime
-                    .drop_node(self.read_memory(node_id_ptr, node_id_len)?)?;
-
-                Ok(None)
-            }
-            LOCK_SUBSTATE_FUNCTION_ID => {
-                let node_id_ptr = args.nth_checked::<u32>(0)?;
-                let node_id_len = args.nth_checked::<u32>(1)?;
-                let offset_ptr = args.nth_checked::<u32>(2)?;
-                let offset_len = args.nth_checked::<u32>(3)?;
-                let mutable = args.nth_checked::<u32>(4)? != 0;
-
-                let handle = self.runtime.lock_substate(
-                    self.read_memory(node_id_ptr, node_id_len)?,
-                    self.read_memory(offset_ptr, offset_len)?,
-                    mutable,
-                )?;
-
-                Ok(Some(RuntimeValue::I32(handle as i32)))
-            }
-            READ_SUBSTATE_FUNCTION_ID => {
-                let handle = args.nth_checked::<u32>(0)?;
-
-                let buffer = self.runtime.read_substate(handle)?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            WRITE_SUBSTATE_FUNCTION_ID => {
-                let handle = args.nth_checked::<u32>(0)?;
-                let data_ptr = args.nth_checked::<u32>(1)?;
-                let data_len = args.nth_checked::<u32>(2)?;
-
-                self.runtime
-                    .write_substate(handle, self.read_memory(data_ptr, data_len)?)?;
-
-                Ok(None)
-            }
-            UNLOCK_SUBSTATE_FUNCTION_ID => {
-                let handle = args.nth_checked::<u32>(0)?;
-
-                self.runtime.unlock_substate(handle)?;
-
-                Ok(None)
-            }
-            GET_ACTOR_FUNCTION_ID => {
-                let buffer = self.runtime.get_actor()?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            CONSUME_COST_UNITS_FUNCTION_ID => {
-                let n: u32 = args.nth_checked(0)?;
-                self.runtime
-                    .consume_cost_units(n)
-                    .map(|_| Option::None)
-                    .map_err(|e| e.into())
-            }
-            _ => Err(WasmRuntimeError::UnknownHostFunction(index).into()),
-        }
-        Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
-    }
-}
-*/
-
-fn read_value(
-    mut store: impl AsContextMut,
-    memory: Memory,
-    ptr: usize,
-) -> Result<IndexedScryptoValue, WasmError> {
-    let mut buf = [0_u8; 4];
-
-    let _result = memory
-        .read(store.as_context_mut(), ptr, &mut buf)
-        .map_err(|_| WasmError::MemoryAccessError);
-
-    let len = u32::from_le_bytes(buf) as usize;
-
-    let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
-    let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
-
-    let ctx = store.as_context_mut();
-    let data = memory.data(&ctx);
-
-    if end > data.len() {
-        return Err(WasmError::MemoryAccessError);
-    }
-    IndexedScryptoValue::from_slice(&data[start..end]).map_err(WasmError::InvalidScryptoValue)
+    read_memory(store, memory, ptr, len)
 }
 
 impl WasmiInstance {
-    fn get_export_func(&mut self, name: &str) -> Result<Func, InvokeError<WasmError>> {
+    fn get_export_func(&mut self, name: &str) -> Result<Func, InvokeError<WasmRuntimeError>> {
         self.instance
             .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
-            .ok_or_else(|| InvokeError::Error(WasmError::FunctionNotFound))
+            .ok_or_else(|| {
+                InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
+            })
     }
 }
 
@@ -500,65 +519,38 @@ impl WasmInstance for WasmiInstance {
         func_name: &str,
         args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
+            // set up runtime pointer
+            //let mut guard = self.store
+            //    data_mut().runtime_ptr.lock().expect("Runtime ptr unavailable");
+            //*guard = runtime as *mut _ as usize;
             self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
         }
 
-        // get_func() lock store as well, thus we call it before locking here
-        let alloc_func = self.get_export_func(EXPORT_SCRYPTO_ALLOC).unwrap();
         let func = self.get_export_func(func_name).unwrap();
-
-        let mut pointers = Vec::new();
-        for arg in args {
-            let pointer = send_value(self.store.as_context_mut(), self.memory, alloc_func, &arg)?;
-            pointers.push(Value::I32(pointer));
-        }
-
-        let mut ret = [Value::I32(0)];
-        let result = func.call(self.store.as_context_mut(), &pointers[..], &mut ret);
-
-        match result {
-            Ok(()) => {
-                let ret: i32 = i32::try_from(ret[0]).unwrap();
-
-                return read_value(self.store.as_context_mut(), self.memory, ret as usize)
-                    .map_err(InvokeError::Error);
-            }
-            Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
-        }
-    }
-}
-/*
-    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
-        let mut externals = WasmiExternals {
-            instance: self,
-            runtime,
-        };
-
-        let args: Vec<RuntimeValue> = args
+        let input: Vec<Value> = args
             .into_iter()
-            .map(|buffer| RuntimeValue::I64(buffer.as_i64()))
+            .map(|buffer| Value::I64(buffer.as_i64()))
             .collect();
+        let mut ret = [Value::I64(0)];
 
-        let return_data = self
-            .module_ref
-            .clone()
-            .invoke_export(func_name, &args, &mut externals)
-            .map_err(|e| {
-                let err: InvokeError<WasmRuntimeError> = e.into();
-                err
-            })?;
+        func.call(self.store.as_context_mut(), &input, &mut ret).unwrap();
 
-        if let Some(RuntimeValue::I64(v)) = return_data {
-            externals.read_slice(Slice::transmute_i64(v))
-        } else {
-            Err(WasmRuntimeError::InvalidExportReturn)
+        match i64::try_from(ret[0]) {
+            Ok(ret) => {
+                read_slice(
+                    self.store.as_context_mut(),
+                    self.memory,
+                    Slice::transmute_i64(ret))
+            },
+            _ => {
+                Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn))
+            }
         }
-        .map_err(InvokeError::Error)
     }
 }
-*/
+
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
     max_cache_size_bytes: usize,

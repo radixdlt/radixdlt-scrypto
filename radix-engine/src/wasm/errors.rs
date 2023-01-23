@@ -1,8 +1,7 @@
-use radix_engine_interface::data::ScryptoValueDecodeError;
-
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
 use crate::types::*;
+use radix_engine_interface::api::wasm::BufferId;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
