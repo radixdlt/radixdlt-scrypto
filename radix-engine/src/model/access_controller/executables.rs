@@ -504,7 +504,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
 
         // Quick confirm and get new rule set
         let new_rule_set = {
-            let mut substate = api.get_ref_mut(handle)?;
+            let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
             access_controller
@@ -538,6 +538,13 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 [access_rules_from_rule_set(new_rule_set)].into();
 
             api.drop_lock(handle)?;
+        }
+
+        // Unlock primary
+        {
+            let mut substate = api.get_ref_mut(handle)?;
+            let access_controller = substate.access_controller();
+            access_controller.is_primary_role_locked = false;
         }
 
         api.drop_lock(handle)?;
@@ -685,6 +692,13 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 [access_rules_from_rule_set(new_rule_set)].into();
 
             api.drop_lock(handle)?;
+        }
+
+        // Unlock primary
+        {
+            let mut substate = api.get_ref_mut(handle)?;
+            let access_controller = substate.access_controller();
+            access_controller.is_primary_role_locked = false;
         }
 
         api.drop_lock(handle)?;

@@ -129,6 +129,38 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     receipt.expect_commit_success();
 }
 
+#[test]
+pub fn primary_is_unlocked_after_a_successful_recovery() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner.initiate_recovery(
+        Role::Primary,
+        rule!(require(test_runner.primary_role_badge)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+    );
+    test_runner
+        .lock_primary_role(Role::Primary)
+        .expect_commit_success();
+
+    test_runner.push_time_forward(10);
+
+    test_runner
+        .timed_confirm_recovery(
+            Role::Primary,
+            rule!(require(test_runner.primary_role_badge)),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.create_proof(Role::Primary);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
 //=============
 // State Tests
 //=============
