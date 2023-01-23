@@ -18,7 +18,7 @@ impl LoggerModule {
     pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
-        api.create_node(node_id, RENode::Logger(logger))?;
+        api.create_node(node_id, RENodeInit::Logger(logger))?;
         Ok(())
     }
 

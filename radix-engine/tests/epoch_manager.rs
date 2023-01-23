@@ -431,7 +431,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
     );
     receipt.expect_commit_success();
 

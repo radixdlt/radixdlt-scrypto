@@ -7,7 +7,7 @@ use radix_engine_interface::api::types::{
 };
 
 #[derive(Debug)]
-pub enum RENode {
+pub enum RENodeInit {
     Global(GlobalAddressSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
@@ -17,6 +17,7 @@ pub enum RENode {
     Worktop(WorktopSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
+    Identity(MetadataSubstate, AccessRulesChainSubstate),
     Component(
         ComponentInfoSubstate,
         ComponentStateSubstate,
@@ -53,38 +54,38 @@ pub enum RENode {
     Logger(LoggerSubstate),
 }
 
-impl RENode {
+impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENode::Bucket(bucket) => {
+            RENodeInit::Bucket(bucket) => {
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     RuntimeSubstate::Bucket(bucket),
                 );
             }
-            RENode::Proof(proof) => {
+            RENodeInit::Proof(proof) => {
                 substates.insert(
                     SubstateOffset::Proof(ProofOffset::Proof),
                     RuntimeSubstate::Proof(proof),
                 );
             }
-            RENode::AuthZoneStack(auth_zone) => {
+            RENodeInit::AuthZoneStack(auth_zone) => {
                 substates.insert(
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENode::Global(global_node) => {
+            RENodeInit::Global(global_node) => {
                 substates.insert(
                     SubstateOffset::Global(GlobalOffset::Global),
                     RuntimeSubstate::Global(global_node),
                 );
             }
-            RENode::Vault(vault) => {
+            RENodeInit::Vault(vault) => {
                 substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
             }
-            RENode::KeyValueStore(store) => {
+            RENodeInit::KeyValueStore(store) => {
                 for (k, v) in store.loaded_entries {
                     substates.insert(
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
@@ -92,7 +93,17 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(
+            RENodeInit::Identity(metadata, access_rules) => {
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules.into(),
+                );
+            }
+            RENodeInit::Component(
                 info,
                 state,
                 royalty_config,
@@ -125,19 +136,19 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::Worktop(worktop) => {
+            RENodeInit::Worktop(worktop) => {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Logger(logger) => {
+            RENodeInit::Logger(logger) => {
                 substates.insert(
                     SubstateOffset::Logger(LoggerOffset::Logger),
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENode::Package(
+            RENodeInit::Package(
                 package_info,
                 package_royalty_config,
                 package_royalty_accumulator,
@@ -165,7 +176,7 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::ResourceManager(
+            RENodeInit::ResourceManager(
                 resource_manager,
                 metadata,
                 access_rules,
@@ -189,7 +200,7 @@ impl RENode {
                     vault_access_rules.into(),
                 );
             }
-            RENode::Validator(validator, access_rules) => {
+            RENodeInit::Validator(validator, access_rules) => {
                 substates.insert(
                     SubstateOffset::Validator(ValidatorOffset::Validator),
                     validator.into(),
@@ -199,7 +210,7 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::NonFungibleStore(non_fungible_store) => {
+            RENodeInit::NonFungibleStore(non_fungible_store) => {
                 for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
                     substates.insert(
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
@@ -207,7 +218,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(
+            RENodeInit::EpochManager(
                 epoch_manager,
                 current_validator_set_substate,
                 preparing_validator_set_substate,
@@ -230,7 +241,7 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::Clock(current_time_rounded_to_minutes_substate, access_rules_substate) => {
+            RENodeInit::Clock(current_time_rounded_to_minutes_substate, access_rules_substate) => {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     current_time_rounded_to_minutes_substate.into(),
@@ -240,13 +251,13 @@ impl RENode {
                     access_rules_substate.into(),
                 );
             }
-            RENode::FeeReserve(fee_reserve) => {
+            RENodeInit::FeeReserve(fee_reserve) => {
                 substates.insert(
                     SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
                     fee_reserve.into(),
                 );
             }
-            RENode::TransactionRuntime(transaction_hash) => {
+            RENodeInit::TransactionRuntime(transaction_hash) => {
                 substates.insert(
                     SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,

@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
-    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
 use crate::types::*;
@@ -592,7 +592,7 @@ impl ValidatorCreator {
         let unstake_nft = Self::create_unstake_nft(api)?;
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
-        let node = RENode::Validator(
+        let node = RENodeInit::Validator(
             ValidatorSubstate {
                 manager,
                 key,
@@ -610,7 +610,7 @@ impl ValidatorCreator {
         api.create_node(node_id, node)?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
         )?;
 
         Ok((global_node_id.into(), liquidity_bucket))
@@ -632,7 +632,7 @@ impl ValidatorCreator {
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
-        let node = RENode::Validator(
+        let node = RENodeInit::Validator(
             ValidatorSubstate {
                 manager,
                 key,
@@ -650,7 +650,7 @@ impl ValidatorCreator {
         api.create_node(node_id, node)?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
         )?;
 
         Ok(global_node_id.into())

@@ -19,6 +19,7 @@ pub enum NativePackage {
     Package,
     Metadata,
     EpochManager,
+    Identity,
     Resource,
     Clock,
     Logger,
@@ -110,6 +111,7 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
+    Identity(IdentityFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
@@ -123,6 +125,7 @@ impl NativeFn {
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
+            NativeFn::Identity(..) => NativePackage::Identity,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -700,6 +703,30 @@ impl ClockPackage {
 
         Ok(invocation)
     }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum IdentityFn {
+    Create,
 }
 
 #[derive(

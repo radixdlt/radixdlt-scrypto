@@ -131,6 +131,9 @@ impl FeeTable {
                 ClockFn::GetCurrentTime => self.fixed_high,
                 ClockFn::CompareCurrentTime => self.fixed_high,
             },
+            NativeFn::Identity(identity_fn) => match identity_fn {
+                IdentityFn::Create => self.fixed_low,
+            },
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,
                 BucketFn::TakeNonFungibles => self.fixed_medium,
