@@ -1,7 +1,9 @@
-//! This file contains a large part of Aptos' jellyfish-merkle/src/lib.rs source
-//! file (which implements a core of a JMT logic) with a couple of manual
-//! adjustments (aimed at reducing dependency on Aptos and adjusting the JMT for
-//! our purposes - still a work in progress).
+// Copyright (c) Aptos
+// SPDX-License-Identifier: Apache-2.0
+
+//! This file contains a large part of Aptos' core JMT implementation source
+//! file with a couple of manual adjustments (aimed at reducing dependency on
+//! Aptos and adjusting the JMT for our purposes - still a work in progress).
 //! Each non-trivial adjustment is annotated with an "ADJUSTMENT: ..." comment.
 //! Please see types.rs for other copied-from-Aptos dependencies of this file.
 
@@ -19,6 +21,7 @@ use std::marker::PhantomData;
 // ADJUSTMENT: the original used a known key size (32) as a limit
 const SANITY_NIBBLE_LIMIT: usize = 1000;
 
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/a665c55ac939369e937b211a6616283d9ba90ba8/storage/jellyfish-merkle/src/lib.rs#L329
 /// The Jellyfish Merkle tree data structure. See [`crate`] for description.
 pub struct JellyfishMerkleTree<'a, R, K> {
     reader: &'a R,

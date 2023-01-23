@@ -1,3 +1,6 @@
+// Copyright (c) Aptos
+// SPDX-License-Identifier: Apache-2.0
+
 //! This file contains copy-pasted excerpts from a couple of Aptos source files
 //! which were used by the Aptos JMT implementation (see jellyfish.rs), with a
 //! couple of manual adjustments (aimed at reducing further dependency on Aptos).
@@ -10,7 +13,7 @@ use std::collections::hash_map::HashMap;
 use std::io::{Error, ErrorKind};
 use std::{fmt, iter::FromIterator};
 
-// COPY-PASTED: from types/src/proof/definition.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/proof/definition.rs#L182
 /// A more detailed version of `SparseMerkleProof` with the only difference that all the leaf
 /// siblings are explicitly set as `SparseMerkleLeafNode` instead of its hash value.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -51,6 +54,7 @@ impl From<SparseMerkleProofExt> for SparseMerkleProof {
     }
 }
 
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/proof/definition.rs#L135
 impl SparseMerkleProof {
     /// Constructs a new `SparseMerkleProof` using leaf and a list of siblings.
     pub fn new(leaf: Option<SparseMerkleLeafNode>, siblings: Vec<Hash>) -> Self {
@@ -88,6 +92,34 @@ pub struct SparseMerkleProof {
     siblings: Vec<Hash>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NodeInProof {
+    Leaf(SparseMerkleLeafNode),
+    Other(Hash),
+}
+
+impl From<Hash> for NodeInProof {
+    fn from(hash: Hash) -> Self {
+        Self::Other(hash)
+    }
+}
+
+impl From<SparseMerkleLeafNode> for NodeInProof {
+    fn from(leaf: SparseMerkleLeafNode) -> Self {
+        Self::Leaf(leaf)
+    }
+}
+
+impl NodeInProof {
+    pub fn hash(&self) -> Hash {
+        match self {
+            Self::Leaf(leaf) => leaf.hash(),
+            Self::Other(hash) => *hash,
+        }
+    }
+}
+
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/proof/definition.rs#L681
 /// Note: this is not a range proof in the sense that a range of nodes is verified!
 /// Instead, it verifies the entire left part of the tree up to a known rightmost node.
 /// See the description below.
@@ -130,34 +162,7 @@ impl SparseMerkleRangeProof {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum NodeInProof {
-    Leaf(SparseMerkleLeafNode),
-    Other(Hash),
-}
-
-impl From<Hash> for NodeInProof {
-    fn from(hash: Hash) -> Self {
-        Self::Other(hash)
-    }
-}
-
-impl From<SparseMerkleLeafNode> for NodeInProof {
-    fn from(leaf: SparseMerkleLeafNode) -> Self {
-        Self::Leaf(leaf)
-    }
-}
-
-impl NodeInProof {
-    pub fn hash(&self) -> Hash {
-        match self {
-            Self::Leaf(leaf) => leaf.hash(),
-            Self::Other(hash) => *hash,
-        }
-    }
-}
-
-// COPY-PASTED: from types/src/proof/mod.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/proof/mod.rs#L97
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SparseMerkleLeafNode {
     key: Hash,
@@ -200,9 +205,11 @@ impl SparseMerkleInternalNode {
     }
 }
 
-// ADJUSTMENT: instead of copy-pasting entire crates/aptos-crypto/src/hash.rs
+// ADJUSTMENT: we propagate usage of our own `Hash` (instead of Aptos' `HashValue`) to avoid
+// copy-pasting entire https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/crates/aptos-crypto/src/hash.rs#L125
 pub const SPARSE_MERKLE_PLACEHOLDER_HASH: Hash = Hash([0u8; Hash::LENGTH]);
 
+// COPY-PASTE from: https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/crates/aptos-crypto/src/hash.rs#L422
 /// An iterator over `Hash` that generates one bit for each iteration.
 pub struct HashBitIterator<'a> {
     /// The reference to the bytes that represent the `Hash`.
@@ -249,7 +256,7 @@ impl<'a> Iterator for HashBitIterator<'a> {
     }
 }
 
-// ADJUSTMENT: since we use our Hash here, we need it to implement these
+// ADJUSTMENT: since we use our Hash here, we need it to implement these for it
 pub trait IteratedHash {
     fn iter_bits(&self) -> HashBitIterator<'_>;
 
@@ -270,10 +277,10 @@ impl IteratedHash for Hash {
     }
 }
 
-// COPY-PASTED: from types/src/transaction/mod.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/transaction/mod.rs#L57
 pub type Version = u64;
 
-// COPY-PASTED: from types/src/nibble/nibble/mod.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/nibble/mod.rs#L20
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Nibble(u8);
 
@@ -296,7 +303,7 @@ impl fmt::LowerHex for Nibble {
     }
 }
 
-// COPY-PASTED: from types/src/nibble/nibble_path/mod.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/types/src/nibble/nibble_path/mod.rs#L22
 /// NibblePath defines a path in Merkle tree in the unit of nibble (4 bits).
 #[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct NibblePath {
@@ -575,7 +582,7 @@ impl<'a> NibbleIterator<'a> {
     }
 }
 
-// COPY-PASTED: from jellyfish-merkle/src/node_type/mod.rs
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/f279d68ba1f69136166fc2e6789b98a4fc9e8949/storage/jellyfish-merkle/src/node_type/mod.rs#L48
 /// The unique key of each node.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct NodeKey {
@@ -1065,8 +1072,7 @@ impl<K: Clone> Node<K> {
     }
 }
 
-// COPY-PASTE: from crates/storage/jellyfish-merkle/src/lib.js
-
+// COPY-PASTED: from https://github.com/aptos-labs/aptos-core/blob/a665c55ac939369e937b211a6616283d9ba90ba8/storage/jellyfish-merkle/src/lib.rs#L129
 pub trait TreeReader<K> {
     /// Gets node given a node key. Returns error if the node does not exist.
     fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>, Error> {
