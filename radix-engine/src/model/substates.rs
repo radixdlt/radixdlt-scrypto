@@ -989,6 +989,9 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component_id) => {
                         owned_nodes.insert(RENodeId::Component(*component_id))
                     }
+                    GlobalAddressSubstate::Identity(identity_id) => {
+                        owned_nodes.insert(RENodeId::Identity(*identity_id))
+                    }
                     GlobalAddressSubstate::EpochManager(epoch_manager_id) => {
                         owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
                     }

@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
@@ -76,7 +76,7 @@ impl Executor for AuthZonePopInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -206,7 +206,7 @@ impl Executor for AuthZoneCreateProofInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -280,7 +280,7 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -354,7 +354,7 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -450,7 +450,7 @@ impl Executor for AuthZoneDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let node_id = api.allocate_node_id(RENodeType::Proof)?;
-            api.create_node(node_id, RENode::Proof(proof))?;
+            api.create_node(node_id, RENodeInit::Proof(proof))?;
             let proof_id = node_id.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));

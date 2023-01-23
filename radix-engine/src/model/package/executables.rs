@@ -101,7 +101,7 @@ impl Executor for PackagePublishInvocation {
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
-            RENode::Package(
+            RENodeInit::Package(
                 package,
                 package_royalty_config,
                 package_royalty_accumulator,
@@ -120,7 +120,7 @@ impl Executor for PackagePublishInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
         )?;
 
         let package_address: PackageAddress = global_node_id.into();

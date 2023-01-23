@@ -351,6 +351,11 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateIdentity { access_rule });
+        self
+    }
+
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,

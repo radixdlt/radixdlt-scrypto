@@ -198,7 +198,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResource { .. }
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateIdentity { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -265,7 +266,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
+        let _worktop_id = api.create_node(node_id, RENodeInit::Worktop(WorktopSubstate::new()))?;
 
         let runtime_substate = TransactionRuntimeSubstate {
             hash: self.transaction_hash,
@@ -275,7 +276,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
         api.create_node(
             runtime_node_id,
-            RENode::TransactionRuntime(runtime_substate),
+            RENodeInit::TransactionRuntime(runtime_substate),
         )?;
 
         // TODO: defer blob hashing to post fee payments as it's computationally costly
@@ -760,6 +761,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         index: index.clone(),
                         key: key.clone(),
                         rule: rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateIdentity { access_rule }) => {
+                    let rtn = api.invoke(IdentityCreateInvocation {
+                        access_rule: access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
