@@ -2,12 +2,12 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, RENodeId, SubstateId, SubstateOffset, VaultFn, VaultId, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -529,7 +529,7 @@ impl ExecutionTraceReceipt {
 
     pub fn new(
         ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
-        actual_fee_payments: &IndexMap<VaultId, Decimal>,
+        actual_fee_payments: &BTreeMap<VaultId, Decimal>,
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {

@@ -1,9 +1,9 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
 use crate::api::types::{ComponentId, RENodeId};
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -19,8 +19,8 @@ impl SerializableInvocation for ComponentGlobalizeInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ComponentGlobalizeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Component(ComponentInvocation::Globalize(self)).into()
     }
 }
@@ -28,7 +28,7 @@ impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
-    pub owner_badge: NonFungibleAddress,
+    pub owner_badge: NonFungibleGlobalId,
 }
 
 impl Invocation for ComponentGlobalizeWithOwnerInvocation {
@@ -39,8 +39,8 @@ impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ComponentGlobalizeWithOwnerInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Component(ComponentInvocation::GlobalizeWithOwner(self)).into()
     }
 }
@@ -60,8 +60,8 @@ impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ComponentSetRoyaltyConfigInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Component(ComponentInvocation::SetRoyaltyConfig(self)).into()
     }
 }
@@ -80,8 +80,8 @@ impl SerializableInvocation for ComponentClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for ComponentClaimRoyaltyInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ComponentClaimRoyaltyInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Component(ComponentInvocation::ClaimRoyalty(self)).into()
     }
 }

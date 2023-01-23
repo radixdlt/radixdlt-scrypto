@@ -39,6 +39,7 @@ pub use logger::*;
 pub use metadata::*;
 pub use method_authorization::*;
 pub use module::*;
+pub use native_wrapper::*;
 pub use package::*;
 pub use package_extractor::{extract_abi, ExtractAbiError};
 pub use resources::*;

@@ -1,5 +1,4 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -22,7 +21,7 @@ pub enum BasicInstruction {
 
     /// Takes resource from worktop by the given non-fungible IDs.
     TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -44,7 +43,7 @@ pub enum BasicInstruction {
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -73,7 +72,7 @@ pub enum BasicInstruction {
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
     CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -108,7 +107,7 @@ pub enum BasicInstruction {
     PublishPackageWithOwner {
         code: ManifestBlobRef,
         abi: ManifestBlobRef,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     },
 
     BurnResource {
@@ -158,7 +157,7 @@ pub enum BasicInstruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
     },
 
     MintUuidNonFungible {
@@ -176,36 +175,24 @@ pub enum BasicInstruction {
     CreateFungibleResourceWithOwner {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     },
 
     CreateNonFungibleResource {
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        owner_badge: NonFungibleGlobalId,
+        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
-    // TODO: Integrate the following with CallMethod
-    CreateValidator {
-        key: EcdsaSecp256k1PublicKey,
-    },
-    RegisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
-    },
-    UnregisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
-    },
-
-    /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
@@ -215,7 +202,7 @@ pub enum BasicInstruction {
         args: Vec<u8>,
     },
 
-    /// Calls a scrypto method.
+    /// Calls a method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {

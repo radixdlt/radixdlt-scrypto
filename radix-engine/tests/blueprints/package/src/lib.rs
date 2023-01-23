@@ -1,27 +1,28 @@
+use radix_engine_interface::api::wasm::*;
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
-static mut LARGE: [u8; 4] = (u32::MAX / 2).to_le_bytes();
-static mut MAX: [u8; 4] = u32::MAX.to_le_bytes();
-static mut ZERO: [u8; 4] = [0, 0, 0, 0];
+static LARGE: u32 = u32::MAX / 2;
+static MAX: u32 = u32::MAX;
+static ZERO: u32 = 0;
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_f_main(_input: *mut u8) -> *mut u8 {
-    unsafe { LARGE.as_mut_ptr() }
+pub extern "C" fn LargeReturnSize_f(_args: u64) -> Slice {
+    Slice(LARGE as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_f_main(_input: *mut u8) -> *mut u8 {
-    unsafe { MAX.as_mut_ptr() }
+pub extern "C" fn MaxReturnSize_f(_args: u64) -> Slice {
+    Slice(MAX as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_f_main(_input: *mut u8) -> *mut u8 {
-    unsafe { ZERO.as_mut_ptr() }
+pub extern "C" fn ZeroReturnSize_f(_args: u64) -> Slice {
+    Slice(ZERO as u64)
 }
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
+pub extern "C" fn LargeReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "LargeReturnSize".to_string(),
         fields: Fields::Unit,
@@ -38,14 +39,14 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
             output: Type::Tuple {
                 element_types: vec![],
             },
-            export_name: "LargeReturnSize_f_main".to_string(),
+            export_name: "LargeReturnSize_f".to_string(),
         }],
     };
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
+pub extern "C" fn MaxReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "MaxReturnSize".to_string(),
         fields: Fields::Unit,
@@ -62,15 +63,15 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
             output: Type::Tuple {
                 element_types: vec![],
             },
-            export_name: "MaxReturnSize_f_main".to_string(),
+            export_name: "MaxReturnSize_f".to_string(),
         }],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
+pub extern "C" fn ZeroReturnSize_abi() -> Slice {
     let structure = Type::Struct {
         name: "ZeroReturnSize".to_string(),
         fields: Fields::Unit,
@@ -87,9 +88,9 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
             output: Type::Tuple {
                 element_types: vec![],
             },
-            export_name: "ZeroReturnSize_f_main".to_string(),
+            export_name: "ZeroReturnSize_f".to_string(),
         }],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }

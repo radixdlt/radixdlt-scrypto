@@ -397,7 +397,6 @@ mod tests {
                     new_component_addresses: Vec::new(),
                     new_package_addresses: Vec::new(),
                     new_resource_addresses: Vec::new(),
-                    new_system_addresses: Vec::new(),
                 },
                 resource_changes: Vec::new(),
             }),

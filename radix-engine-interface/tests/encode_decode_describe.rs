@@ -1,18 +1,18 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use scrypto::prelude::*;
+use radix_engine_interface::math::*;
+use radix_engine_interface::*;
 
 #[derive(NonFungibleData, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct TestStruct {
     pub a: u32,
-    #[scrypto(skip)]
+    #[legacy_skip]
     #[sbor(skip)]
     pub b: String,
+    pub c: Decimal,
 }
 
 #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub enum TestEnum {
     A { named: String },
-    B(u32, u8),
+    B(u32, u8, Decimal),
     C,
 }

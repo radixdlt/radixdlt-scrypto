@@ -57,7 +57,7 @@ pub enum Type {
         name: String,
         fields: Fields,
     },
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // Enum
     Enum {
@@ -76,7 +76,6 @@ pub enum Type {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
     Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
     Bucket,
     Proof,
@@ -95,7 +94,7 @@ pub enum Type {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     Any,
 }

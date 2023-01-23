@@ -1,7 +1,8 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, types::*};
-use crate::wasm::*;
+use crate::api::types::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -19,8 +20,8 @@ impl SerializableInvocation for MetadataSetInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for MetadataSetInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for MetadataSetInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Metadata(MetadataInvocation::Set(self)).into()
     }
 }
@@ -39,8 +40,8 @@ impl SerializableInvocation for MetadataGetInvocation {
     type ScryptoOutput = Option<String>;
 }
 
-impl Into<SerializedInvocation> for MetadataGetInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for MetadataGetInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Metadata(MetadataInvocation::Get(self)).into()
     }
 }

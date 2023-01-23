@@ -44,10 +44,8 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for String {
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
 

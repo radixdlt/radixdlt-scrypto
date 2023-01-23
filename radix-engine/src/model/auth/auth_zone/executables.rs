@@ -26,10 +26,10 @@ pub enum AuthZoneError {
     AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
+impl ExecutableInvocation for AuthZonePopInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -49,7 +49,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
 impl Executor for AuthZonePopInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -75,10 +78,10 @@ impl Executor for AuthZonePopInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
+impl ExecutableInvocation for AuthZonePushInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -101,7 +104,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
 impl Executor for AuthZonePushInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -129,10 +135,10 @@ impl Executor for AuthZonePushInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
+impl ExecutableInvocation for AuthZoneCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -157,7 +163,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
 impl Executor for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -193,10 +202,10 @@ impl Executor for AuthZoneCreateProofInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvocation {
+impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -221,7 +230,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvoc
 impl Executor for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -260,10 +272,10 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocation {
+impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -288,7 +300,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocati
 impl Executor for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -327,10 +342,10 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
+impl ExecutableInvocation for AuthZoneClearInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -350,7 +365,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
 impl Executor for AuthZoneClearInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -365,10 +383,10 @@ impl Executor for AuthZoneClearInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
+impl ExecutableInvocation for AuthZoneDrainInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -388,7 +406,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
 impl Executor for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -423,10 +444,10 @@ impl Executor for AuthZoneDrainInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocation {
+impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -446,7 +467,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocati
 impl Executor for AuthZoneAssertAccessRuleInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

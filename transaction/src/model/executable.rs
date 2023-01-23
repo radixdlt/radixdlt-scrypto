@@ -1,3 +1,4 @@
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::*;
 use radix_engine_interface::*;
@@ -9,13 +10,14 @@ use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneParams {
-    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub initial_proofs: Vec<NonFungibleGlobalId>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
+    pub pre_allocated_ids: BTreeSet<RENodeId>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
@@ -116,6 +118,10 @@ impl<'a> Executable<'a> {
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {
         &self.context.auth_zone_params
+    }
+
+    pub fn pre_allocated_ids(&self) -> &BTreeSet<RENodeId> {
+        &self.context.pre_allocated_ids
     }
 
     pub fn blobs(&self) -> &[Vec<u8>] {

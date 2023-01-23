@@ -1042,7 +1042,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::System(substate.manager));
+                references.insert(GlobalAddress::Component(substate.manager));
                 (references, HashSet::new())
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {

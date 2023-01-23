@@ -1,9 +1,9 @@
-use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
+use radix_engine_interface::model::{CallTableInvocation, LoggerInvocation, NativeInvocation};
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
-use crate::wasm::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::*;
 use sbor::rust::string::String;
 use sbor::*;
@@ -44,8 +44,8 @@ impl SerializableInvocation for LoggerLogInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for LoggerLogInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for LoggerLogInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Logger(LoggerInvocation::Log(self)).into()
     }
 }

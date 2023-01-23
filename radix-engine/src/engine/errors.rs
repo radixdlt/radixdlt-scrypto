@@ -1,20 +1,20 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
 use crate::transaction::AbortReason;
-use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmError;
+use crate::wasm::WasmRuntimeError;
 
 use super::TrackError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum IdAllocationError {
+    RENodeIdWasNotAllocated(RENodeId),
+    AllocatedIDsNotEmpty,
     OutOfID,
 }
 
@@ -60,9 +60,6 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
-
-    /// An unexpected error occurred
-    UnexpectedError(String),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -103,7 +100,6 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::InterpreterError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
-            RuntimeError::UnexpectedError(_) => None,
         }
     }
 }
@@ -113,7 +109,7 @@ pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation
-    WasmError(WasmError),
+    WasmRuntimeError(WasmRuntimeError),
 
     InvalidReferenceWrite(GlobalAddress),
 
@@ -166,7 +162,7 @@ pub enum KernelError {
 impl CanBeAbortion for KernelError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            KernelError::WasmError(err) => err.abortion(),
+            KernelError::WasmRuntimeError(err) => err.abortion(),
             _ => None,
         }
     }
@@ -178,14 +174,11 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
-    RENodeIdWasNotAllocated(RENodeId),
-    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    FunctionNotFound,
     MethodNotFound,
     InvalidInput,
 }
@@ -193,8 +186,9 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
     InvalidInvocation,
-    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
-    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+
+    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoReturn(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

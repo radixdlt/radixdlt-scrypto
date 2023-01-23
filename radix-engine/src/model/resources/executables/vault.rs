@@ -24,10 +24,10 @@ pub enum VaultError {
     LockFeeRepayFailure(FeeReserveError),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
+impl ExecutableInvocation for VaultRecallInvocation {
     type Exec = VaultTakeInvocation;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -45,10 +45,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
+impl ExecutableInvocation for VaultTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -65,7 +65,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
 impl Executor for VaultTakeInvocation {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -90,10 +93,10 @@ impl Executor for VaultTakeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
+impl ExecutableInvocation for VaultPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -113,7 +116,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
 impl Executor for VaultPutInvocation {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -137,10 +143,10 @@ impl Executor for VaultPutInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
+impl ExecutableInvocation for VaultLockFeeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -157,7 +163,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
 impl Executor for VaultLockFeeInvocation {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -205,10 +214,10 @@ impl Executor for VaultLockFeeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocation {
+impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
     type Exec = VaultTakeNonFungiblesInvocation;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -220,16 +229,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocatio
         );
         let executor = VaultTakeNonFungiblesInvocation {
             receiver: self.receiver,
-            non_fungible_ids: self.non_fungible_ids,
+            non_fungible_local_ids: self.non_fungible_local_ids,
         };
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation {
+impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -246,7 +255,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation 
 impl Executor for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -257,7 +269,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         let container = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault.take_non_fungibles(&self.non_fungible_ids)?
+            vault.take_non_fungibles(&self.non_fungible_local_ids)?
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
@@ -271,10 +283,10 @@ impl Executor for VaultTakeNonFungiblesInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
+impl ExecutableInvocation for VaultGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -291,7 +303,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
 impl Executor for VaultGetAmountInvocation {
     type Output = Decimal;
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -307,10 +322,10 @@ impl Executor for VaultGetAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocation {
+impl ExecutableInvocation for VaultGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -327,7 +342,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocatio
 impl Executor for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn execute<'a, Y>(
+    fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -349,30 +364,30 @@ impl Executor for VaultGetResourceAddressInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetNonFungibleIds),
+            NativeFn::Vault(VaultFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for VaultGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for VaultGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
-    fn execute<'a, Y>(
+    fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -392,10 +407,10 @@ impl Executor for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
+impl ExecutableInvocation for VaultCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -412,7 +427,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
 impl Executor for VaultCreateProofInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -443,10 +461,10 @@ impl Executor for VaultCreateProofInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocation {
+impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -463,7 +481,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocati
 impl Executor for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -494,10 +515,10 @@ impl Executor for VaultCreateProofByAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation {
+impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -514,7 +535,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation 
 impl Executor for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

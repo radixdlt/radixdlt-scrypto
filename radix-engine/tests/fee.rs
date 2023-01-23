@@ -38,7 +38,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
                 builder
             })
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let component_address = receipt1
         .expect_commit()
@@ -242,7 +242,7 @@ fn test_fee_accounting_success() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -298,7 +298,7 @@ fn test_fee_accounting_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -347,7 +347,7 @@ fn test_fee_accounting_rejection() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -385,8 +385,8 @@ fn test_contingent_fee_accounting_success() {
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 
@@ -439,8 +439,8 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 

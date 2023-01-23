@@ -5,14 +5,14 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::{constants::*, rule};
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
+impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -29,7 +29,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
 impl Executor for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -68,10 +71,10 @@ impl Executor for ComponentGlobalizeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
+impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -88,7 +91,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvoc
 impl Executor for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -155,10 +161,10 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
+impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -185,7 +191,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
 impl Executor for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -203,10 +209,10 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
+impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -229,7 +235,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation 
 impl Executor for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {

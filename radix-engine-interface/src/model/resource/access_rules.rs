@@ -208,7 +208,7 @@ impl AccessRules {
     }
 }
 
-pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleAddress) -> AccessRules {
+pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) -> AccessRules {
     let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
@@ -234,7 +234,7 @@ pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleAddress) -
 }
 
 pub fn resource_access_rules_from_owner_badge(
-    owner_badge: &NonFungibleAddress,
+    owner_badge: &NonFungibleGlobalId,
 ) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
     let mut access_rules = BTreeMap::new();
     access_rules.insert(

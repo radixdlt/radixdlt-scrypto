@@ -1,6 +1,7 @@
-use crate::api::{api::*, types::*};
+use crate::api::types::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::math::*;
-use crate::wasm::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -28,8 +29,8 @@ impl SerializableInvocation for VaultPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for VaultPutInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultPutInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Put(self)).into()
     }
 }
@@ -48,8 +49,8 @@ impl SerializableInvocation for VaultTakeInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultTakeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultTakeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Take(self)).into()
     }
 }
@@ -57,7 +58,7 @@ impl Into<SerializedInvocation> for VaultTakeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for VaultTakeNonFungiblesInvocation {
@@ -68,8 +69,8 @@ impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultTakeNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultTakeNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::TakeNonFungibles(self)).into()
     }
 }
@@ -87,8 +88,8 @@ impl SerializableInvocation for VaultGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<SerializedInvocation> for VaultGetAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultGetAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetAmount(self)).into()
     }
 }
@@ -107,8 +108,8 @@ impl SerializableInvocation for VaultRecallInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultRecallInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultRecallInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Recall(self)).into()
     }
 }
@@ -116,7 +117,7 @@ impl Into<SerializedInvocation> for VaultRecallInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallNonFungiblesInvocation {
     pub receiver: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for VaultRecallNonFungiblesInvocation {
@@ -127,8 +128,8 @@ impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultRecallNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::RecallNonFungibles(self)).into()
     }
 }
@@ -146,28 +147,28 @@ impl SerializableInvocation for VaultGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for VaultGetResourceAddressInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultGetResourceAddressInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetResourceAddress(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetNonFungibleIdsInvocation {
+pub struct VaultGetNonFungibleLocalIdsInvocation {
     pub receiver: VaultId,
 }
 
-impl Invocation for VaultGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Invocation for VaultGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 }
 
-impl SerializableInvocation for VaultGetNonFungibleIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleId>;
+impl SerializableInvocation for VaultGetNonFungibleLocalIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
 }
 
-impl Into<SerializedInvocation> for VaultGetNonFungibleIdsInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeInvocation::Vault(VaultInvocation::GetNonFungibleIds(self)).into()
+impl Into<CallTableInvocation> for VaultGetNonFungibleLocalIdsInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Vault(VaultInvocation::GetNonFungibleLocalIds(self)).into()
     }
 }
 
@@ -184,8 +185,8 @@ impl SerializableInvocation for VaultCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProof(self)).into()
     }
 }
@@ -204,8 +205,8 @@ impl SerializableInvocation for VaultCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofByAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProofByAmount(self)).into()
     }
 }
@@ -213,7 +214,7 @@ impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for VaultCreateProofByIdsInvocation {
@@ -224,8 +225,8 @@ impl SerializableInvocation for VaultCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofByIdsInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProofByIds(self)).into()
     }
 }
@@ -245,8 +246,8 @@ impl SerializableInvocation for VaultLockFeeInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for VaultLockFeeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultLockFeeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::LockFee(self)).into()
     }
 }

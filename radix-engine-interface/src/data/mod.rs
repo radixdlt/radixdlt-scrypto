@@ -1,4 +1,3 @@
-#[cfg(feature = "schema")]
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
 /// Defines the model of Scrypto custom values.
@@ -20,7 +19,7 @@ mod value_formatter;
 mod value_serializer;
 
 pub use crate::args;
-#[cfg(feature = "schema")]
+
 pub use custom_schema::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
@@ -141,8 +140,8 @@ mod tests {
     }
 
     #[test]
-    fn test_args_with_non_fungible_id() {
-        let id = NonFungibleId::Number(1);
+    fn test_args_with_non_fungible_local_id() {
+        let id = NonFungibleLocalId::Integer(1);
         let _x = args!(BTreeSet::from([id]));
     }
 

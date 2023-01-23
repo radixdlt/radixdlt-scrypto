@@ -109,6 +109,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                     }
                     .enforced(),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -170,6 +171,7 @@ impl NotarizedTransactionValidator {
                     }
                     .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -297,9 +299,6 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
                 BasicInstruction::CreateNonFungibleResource { .. } => {}
                 BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
-                BasicInstruction::CreateValidator { .. } => {}
-                BasicInstruction::RegisterValidator { .. } => {}
-                BasicInstruction::UnregisterValidator { .. } => {}
             }
         }
 

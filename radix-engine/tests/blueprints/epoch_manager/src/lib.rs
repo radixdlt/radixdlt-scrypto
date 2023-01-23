@@ -1,4 +1,4 @@
-use radix_engine_interface::wasm::*;
+use radix_engine_interface::api::Invokable;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -10,16 +10,13 @@ blueprint! {
             Runtime::current_epoch()
         }
 
-        pub fn next_round(epoch_manager: SystemAddress, round: u64) {
-            let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
-                NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
-                    EpochManagerNextRoundInvocation {
-                        receiver: epoch_manager,
-                        round,
-                    },
-                )),
-            ));
-            call_engine(input)
+        pub fn next_round(epoch_manager: ComponentAddress, round: u64) {
+            ScryptoEnv
+                .invoke(EpochManagerNextRoundInvocation {
+                    receiver: epoch_manager,
+                    round,
+                })
+                .unwrap();
         }
     }
 }

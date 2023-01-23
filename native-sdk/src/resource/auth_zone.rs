@@ -1,5 +1,5 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -93,7 +93,7 @@ impl ComponentAuthZone {
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         env: &mut Y,
     ) -> Result<Proof, E>

@@ -54,7 +54,7 @@ pub enum TokenKind {
     Ok,
     Err,
     Bytes,
-    NonFungibleAddress,
+    NonFungibleGlobalId,
 
     // ==============
     // SBOR custom types
@@ -62,7 +62,6 @@ pub enum TokenKind {
 
     /* RE global address types */
     PackageAddress,
-    SystemAddress,
     ComponentAddress,
     ResourceAddress,
 
@@ -83,7 +82,7 @@ pub enum TokenKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -130,9 +129,6 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
-    CreateValidator,
-    RegisterValidator,
-    UnregisterValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -145,7 +141,7 @@ pub struct Token {
 pub enum LexerError {
     UnexpectedEof,
     UnexpectedChar(char, usize),
-    InvalidNumber(String),
+    InvalidInteger(String),
     InvalidUnicode(u32),
     UnknownIdentifier(String),
 }
@@ -316,7 +312,7 @@ impl Lexer {
     ) -> Result<TokenKind, LexerError> {
         int.parse::<T>()
             .map(map)
-            .map_err(|_| LexerError::InvalidNumber(format!("{}{}", int, ty)))
+            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty)))
     }
 
     fn tokenize_string(&mut self) -> Result<Token, LexerError> {
@@ -412,10 +408,9 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "SystemAddress" => Ok(TokenKind::SystemAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
@@ -433,7 +428,7 @@ impl Lexer {
             "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -475,9 +470,6 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
-            "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
-            "REGISTER_VALIDATOR" => Ok(TokenKind::RegisterValidator),
-            "UNREGISTER_VALIDATOR" => Ok(TokenKind::UnregisterValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

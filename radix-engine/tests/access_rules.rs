@@ -111,13 +111,13 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -142,13 +142,13 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -173,17 +173,17 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
     let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
@@ -198,17 +198,17 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
     let receipt = test_runner.lock_method_auth(1, "deposit_funds");
@@ -236,17 +236,17 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     test_runner.lock_default_auth(1);
 
@@ -269,22 +269,22 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .method(
             "borrow_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -321,7 +321,8 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
         let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+        let virtual_badge_non_fungible_global_id =
+            NonFungibleGlobalId::from_public_key(&public_key);
 
         let access_rules = vec![scrypto_decode::<AccessRules>(&args!(
             HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
@@ -334,7 +335,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         .unwrap()];
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-        test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+        test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
         // Act
         let receipt = test_runner.execute_manifest(
@@ -362,7 +363,7 @@ struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     package_address: PackageAddress,
     component_address: ComponentAddress,
-    initial_proofs: Vec<NonFungibleAddress>,
+    initial_proofs: Vec<NonFungibleGlobalId>,
 }
 
 impl MutableAccessRulesTestRunner {
@@ -391,7 +392,7 @@ impl MutableAccessRulesTestRunner {
         }
     }
 
-    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleAddress) {
+    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleGlobalId) {
         self.initial_proofs.push(initial_proof);
     }
 

@@ -1,10 +1,10 @@
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::*;
+use sbor::rust::collections::*;
 use transaction::model::Executable;
 
 use crate::engine::*;
@@ -662,7 +662,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         // Finalize payments
-        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = IndexMap::new();
+        let mut actual_fee_payments: BTreeMap<VaultId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;

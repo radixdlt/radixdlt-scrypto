@@ -11,8 +11,12 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
     let instructions = vec![Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {}),
+        ClockInvocation::Create(ClockCreateInvocation {
+            component_address: CLOCK.raw(),
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -20,6 +24,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![AuthAddresses::system_role()]),
     );
@@ -34,8 +39,12 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
     let instructions = vec![Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {}),
+        ClockInvocation::Create(ClockCreateInvocation {
+            component_address: CLOCK.raw(),
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -43,6 +52,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![]),
     );

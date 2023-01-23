@@ -7,9 +7,9 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
+use radix_engine_interface::api::InvokableModel;
 use radix_engine_interface::model::*;
 
 pub struct Package;
@@ -38,10 +38,10 @@ impl Package {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
+impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -55,7 +55,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
 impl Executor for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -109,7 +112,12 @@ impl Executor for PackagePublishInvocation {
         let package_id: PackageId = node_id.into();
 
         // Globalize
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        let global_node_id = if let Some(address) = self.package_address {
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+        } else {
+            api.allocate_node_id(RENodeType::GlobalPackage)?
+        };
+
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
@@ -120,10 +128,10 @@ impl Executor for PackagePublishInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
+impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -150,7 +158,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
 impl Executor for PackageSetRoyaltyConfigExecutable {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -168,10 +176,10 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
+impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -194,7 +202,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
 impl Executor for PackageClaimRoyaltyExecutable {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {

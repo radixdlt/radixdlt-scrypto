@@ -2,11 +2,11 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-use crate::api::api::*;
 use crate::api::types::AuthZoneStackId;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::math::Decimal;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -22,8 +22,8 @@ impl SerializableInvocation for AuthZonePopInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for AuthZonePopInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZonePopInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Pop(self)).into()
     }
 }
@@ -51,8 +51,8 @@ impl SerializableInvocation for AuthZonePushInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AuthZonePushInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZonePushInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Push(self)).into()
     }
 }
@@ -71,8 +71,8 @@ impl SerializableInvocation for AuthZoneCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneCreateProofInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProof(self)).into()
     }
 }
@@ -92,8 +92,8 @@ impl SerializableInvocation for AuthZoneCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneCreateProofByAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByAmount(self)).into()
     }
 }
@@ -101,7 +101,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
@@ -113,8 +113,8 @@ impl SerializableInvocation for AuthZoneCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneCreateProofByIdsInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByIds(self)).into()
     }
 }
@@ -132,8 +132,8 @@ impl SerializableInvocation for AuthZoneClearInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AuthZoneClearInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneClearInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Clear(self)).into()
     }
 }
@@ -151,8 +151,8 @@ impl SerializableInvocation for AuthZoneDrainInvocation {
     type ScryptoOutput = Vec<Proof>;
 }
 
-impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneDrainInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Drain(self)).into()
     }
 }
@@ -171,8 +171,8 @@ impl SerializableInvocation for AuthZoneAssertAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AuthZoneAssertAccessRuleInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AuthZoneAssertAccessRuleInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::AssertAuthRule(self)).into()
     }
 }

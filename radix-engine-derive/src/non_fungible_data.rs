@@ -1,14 +1,17 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
+use sbor_derive_common::utils::extract_attributes;
 use syn::*;
-
-use crate::utils::is_mutable;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
         println!($($arg),*);
     }};
+}
+
+pub fn is_mutable(f: &Field) -> bool {
+    extract_attributes(&f.attrs, "mutable").is_some()
 }
 
 pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
@@ -46,15 +49,14 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     impl radix_engine_interface::model::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{value_kind::*, *};
-                            use ::scrypto::data::*;
-                            let mut decoder_nm = ScryptoDecoder::new(immutable_data);
-                            decoder_nm.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            decoder_nm.read_and_check_value_kind(ScryptoValueKind::Tuple)?;
+                            let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data);
+                            decoder_nm.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                            decoder_nm.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             decoder_nm.read_and_check_size(#im_n)?;
 
-                            let mut decoder_m = ScryptoDecoder::new(mutable_data);
-                            decoder_m.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            decoder_m.read_and_check_value_kind(ScryptoValueKind::Tuple)?;
+                            let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data);
+                            decoder_m.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                            decoder_m.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             decoder_m.read_and_check_size(#m_n)?;
 
                             let decoded = Self {
@@ -70,12 +72,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                         fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                             use ::sbor::{value_kind::*, *};
-                            use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = ScryptoEncoder::new(&mut bytes);
-                            encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            encoder.write_value_kind(ScryptoValueKind::Tuple)?;
+                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                            encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                            encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             encoder.write_size(#im_n)?;
                             #(
                                 encoder.encode(&self.#im_ids2)?;
@@ -87,12 +88,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                             use ::sbor::{value_kind::*, *};
                             use ::sbor::rust::vec::Vec;
-                            use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = ScryptoEncoder::new(&mut bytes);
-                            encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            encoder.write_value_kind(ScryptoValueKind::Tuple)?;
+                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                            encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                            encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             encoder.write_size(#m_n)?;
                             #(
                                 encoder.encode(&self.#m_ids2)?;
@@ -101,27 +101,27 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             Ok(bytes)
                         }
 
-                        fn immutable_data_schema() -> ::scrypto::abi::Type {
+                        fn immutable_data_schema() -> radix_engine_interface::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto::abi::LegacyDescribe;
+                            use radix_engine_interface::abi::LegacyDescribe;
 
-                            ::scrypto::abi::Type::Struct {
+                            radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::scrypto::abi::Fields::Named {
+                                fields: radix_engine_interface::abi::Fields::Named {
                                     named: vec![#((#im_names.to_owned(), <#im_types2>::describe())),*]
                                 },
                             }
                         }
 
-                        fn mutable_data_schema() -> ::scrypto::abi::Type {
+                        fn mutable_data_schema() -> radix_engine_interface::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto::abi::LegacyDescribe;
+                            use radix_engine_interface::abi::LegacyDescribe;
 
-                            ::scrypto::abi::Type::Struct {
+                            radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::scrypto::abi::Fields::Named {
+                                fields: radix_engine_interface::abi::Fields::Named {
                                     named: vec![#((#m_names.to_owned(), <#m_types2>::describe())),*]
                                 },
                             }
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_non_fungible() {
         let input = TokenStream::from_str(
-            "pub struct MyStruct { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
+            "pub struct MyStruct { pub field_1: u32, #[mutable] pub field_2: String, }",
         )
         .unwrap();
         let output = handle_non_fungible_data(input).unwrap();
@@ -182,14 +182,13 @@ mod tests {
                 impl radix_engine_interface::model::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{value_kind::*, *};
-                        use ::scrypto::data::*;
-                        let mut decoder_nm = ScryptoDecoder::new(immutable_data);
-                        decoder_nm.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        decoder_nm.read_and_check_value_kind(ScryptoValueKind::Tuple)?;
+                        let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data);
+                        decoder_nm.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                        decoder_nm.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         decoder_nm.read_and_check_size(1)?;
-                        let mut decoder_m = ScryptoDecoder::new(mutable_data);
-                        decoder_m.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        decoder_m.read_and_check_value_kind(ScryptoValueKind::Tuple)?;
+                        let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data);
+                        decoder_m.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                        decoder_m.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         decoder_m.read_and_check_size(1)?;
                         let decoded = Self {
                             field_1: decoder_nm.decode::<u32>()?,
@@ -201,11 +200,10 @@ mod tests {
                     }
                     fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                         use ::sbor::{value_kind::*, *};
-                        use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = ScryptoEncoder::new(&mut bytes);
-                        encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        encoder.write_value_kind(ScryptoValueKind::Tuple)?;
+                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                        encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                        encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         encoder.write_size(1)?;
                         encoder.encode(&self.field_1)?;
                         Ok(bytes)
@@ -213,33 +211,32 @@ mod tests {
                     fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                         use ::sbor::{value_kind::*, *};
                         use ::sbor::rust::vec::Vec;
-                        use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = ScryptoEncoder::new(&mut bytes);
-                        encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        encoder.write_value_kind(ScryptoValueKind::Tuple)?;
+                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                        encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
+                        encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         encoder.write_size(1)?;
                         encoder.encode(&self.field_2)?;
                         Ok(bytes)
                     }
-                    fn immutable_data_schema() -> ::scrypto::abi::Type {
+                    fn immutable_data_schema() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto::abi::LegacyDescribe;
-                        ::scrypto::abi::Type::Struct {
+                        use radix_engine_interface::abi::LegacyDescribe;
+                        radix_engine_interface::abi::Type::Struct {
                             name: "MyStruct".to_owned(),
-                            fields: ::scrypto::abi::Fields::Named {
+                            fields: radix_engine_interface::abi::Fields::Named {
                                 named: vec![("field_1".to_owned(), <u32>::describe())]
                             },
                         }
                     }
-                    fn mutable_data_schema() -> ::scrypto::abi::Type {
+                    fn mutable_data_schema() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto::abi::LegacyDescribe;
-                        ::scrypto::abi::Type::Struct {
+                        use radix_engine_interface::abi::LegacyDescribe;
+                        radix_engine_interface::abi::Type::Struct {
                             name: "MyStruct".to_owned(),
-                            fields: ::scrypto::abi::Fields::Named {
+                            fields: radix_engine_interface::abi::Fields::Named {
                                 named: vec![("field_2".to_owned(), <String>::describe())]
                             },
                         }

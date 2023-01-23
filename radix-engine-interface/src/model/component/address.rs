@@ -17,6 +17,9 @@ pub enum ComponentAddress {
     Account([u8; 26]),
     EcdsaSecp256k1VirtualAccount([u8; 26]),
     EddsaEd25519VirtualAccount([u8; 26]),
+    Clock([u8; 26]),
+    EpochManager([u8; 26]),
+    Validator([u8; 26]),
 }
 
 //========
@@ -39,6 +42,9 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::EddsaEd25519VirtualAccountComponent => {
                     Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
+                EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
+                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
+                EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -47,6 +53,18 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
+    pub fn raw(&self) -> [u8; 26] {
+        match self {
+            Self::Normal(v) => v.clone(),
+            Self::Account(v) => v.clone(),
+            Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
+            Self::EddsaEd25519VirtualAccount(v) => v.clone(),
+            Self::Clock(v) => v.clone(),
+            Self::EpochManager(v) => v.clone(),
+            Self::Validator(v) => v.clone(),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
@@ -54,7 +72,10 @@ impl ComponentAddress {
             Self::Normal(v)
             | Self::Account(v)
             | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v) => buf.extend(v),
+            | Self::EcdsaSecp256k1VirtualAccount(v)
+            | Self::Clock(v)
+            | Self::EpochManager(v)
+            | Self::Validator(v) => buf.extend(v),
         }
         buf
     }
@@ -121,6 +142,15 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::Clock(_) => {
+                write!(f, "ClockComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::EpochManager(_) => {
+                write!(f, "EpochManagerComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::Validator(_) => {
+                write!(f, "ValidatorComponent[{}]", self.to_hex())
             }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
                 write!(

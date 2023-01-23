@@ -361,7 +361,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
         .call_function(
             package_address,
             "VaultTest",
-            "new_vault_with_get_non_fungible_ids",
+            "new_vault_with_get_non_fungible_local_ids",
             args!(),
         )
         .build();
@@ -383,7 +383,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
         .call_function(
             package_address,
             "VaultTest",
-            "new_vault_with_get_non_fungible_id",
+            "new_vault_with_get_non_fungible_local_id",
             args!(),
         )
         .build();
