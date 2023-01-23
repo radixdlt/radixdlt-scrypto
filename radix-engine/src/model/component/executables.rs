@@ -5,8 +5,8 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::{constants::*, rule};
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {

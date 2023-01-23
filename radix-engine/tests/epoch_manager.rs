@@ -158,7 +158,7 @@ fn register_validator_with_auth_succeeds() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
 
     // Assert
@@ -237,7 +237,7 @@ fn unregister_validator_with_auth_succeeds() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
 
     // Assert
@@ -303,7 +303,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -362,7 +362,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -431,7 +431,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&validator_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -503,7 +503,7 @@ fn cannot_claim_unstake_immediately() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
 
     receipt.expect_specific_failure(|e| {
@@ -554,7 +554,7 @@ fn can_claim_unstake_after_epochs() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
     test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
@@ -574,7 +574,7 @@ fn can_claim_unstake_after_epochs() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
 
     // Assert
@@ -623,7 +623,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
 

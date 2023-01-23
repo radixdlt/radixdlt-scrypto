@@ -1,6 +1,6 @@
 pub use crate::abi::*;
 pub use crate::component::*;
-pub use crate::resource::non_fungible::ScryptoNonFungibleId;
+pub use crate::resource::non_fungible::ScryptoNonFungibleLocalId;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{

@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -23,9 +23,9 @@ pub trait SysBucket {
     fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleId>, E>
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>;
+        Y: Invokable<BucketGetNonFungibleLocalIdsInvocation, E>;
 
     fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -45,7 +45,7 @@ pub trait SysBucket {
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &mut self,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -70,11 +70,6 @@ pub trait SysBucket {
     ) -> Result<Proof, E>
     where
         Y: Invokable<BucketCreateProofInvocation, E>;
-
-    fn sys_non_fungible_ids<Y, E>(&self, env: &mut Y) -> Result<BTreeSet<NonFungibleId>, E>
-    where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode;
 
     fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -108,11 +103,11 @@ impl SysBucket for Bucket {
     fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleId>, E>
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
+        Y: Invokable<BucketGetNonFungibleLocalIdsInvocation, E>,
     {
-        api.invoke(BucketGetNonFungibleIdsInvocation { receiver: self.0 })
+        api.invoke(BucketGetNonFungibleLocalIdsInvocation { receiver: self.0 })
     }
 
     fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -145,7 +140,7 @@ impl SysBucket for Bucket {
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &mut self,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -167,14 +162,6 @@ impl SysBucket for Bucket {
             receiver,
             bucket: Bucket(self.0),
         })
-    }
-
-    fn sys_non_fungible_ids<Y, E>(&self, api: &mut Y) -> Result<BTreeSet<NonFungibleId>, E>
-    where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
-        api.invoke(BucketGetNonFungibleIdsInvocation { receiver: self.0 })
     }
 
     fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>

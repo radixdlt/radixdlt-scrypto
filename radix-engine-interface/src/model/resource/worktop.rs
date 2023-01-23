@@ -1,7 +1,7 @@
-use crate::api::api::Invocation;
+use crate::api::wasm::*;
+use crate::api::Invocation;
 use crate::math::Decimal;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -55,7 +55,7 @@ impl Into<CallTableInvocation> for WorktopTakeAmountInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopTakeNonFungiblesInvocation {
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
@@ -133,7 +133,7 @@ impl Into<CallTableInvocation> for WorktopAssertContainsAmountInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for WorktopAssertContainsNonFungiblesInvocation {

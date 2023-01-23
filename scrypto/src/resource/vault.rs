@@ -1,5 +1,5 @@
-use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::ScryptoCustomValueKind;
 use radix_engine_interface::math::Decimal;
@@ -68,21 +68,24 @@ pub trait ScryptoVault {
     fn lock_fee_internal(&mut self, amount: Decimal) -> ();
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> ();
     fn put(&mut self, bucket: Bucket) -> ();
-    fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket;
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket;
     fn resource_address(&self) -> ResourceAddress;
-    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn create_proof(&self) -> Proof;
     fn create_proof_by_amount(&self, amount: Decimal) -> Proof;
-    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof;
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
     fn take_all(&mut self) -> Bucket;
-    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket;
+    fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Bucket;
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
     fn is_empty(&self) -> bool;
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
-    fn non_fungible_id(&self) -> NonFungibleId;
+    fn non_fungible_local_id(&self) -> NonFungibleLocalId;
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 }
 
@@ -144,10 +147,10 @@ impl ScryptoVault for Vault {
             }
         }
 
-        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
             VaultTakeNonFungiblesInvocation {
                 receiver: self.0,
-                non_fungible_ids: non_fungible_ids.clone(),
+                non_fungible_local_ids: non_fungible_local_ids.clone(),
             }
         }
 
@@ -157,8 +160,8 @@ impl ScryptoVault for Vault {
             }
         }
 
-        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-            VaultGetNonFungibleIdsInvocation {
+        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+            VaultGetNonFungibleLocalIdsInvocation {
                 receiver: self.0,
             }
         }
@@ -173,7 +176,7 @@ impl ScryptoVault for Vault {
             VaultCreateProofByAmountInvocation {  receiver: self.0,amount }
         }
 
-        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
             VaultCreateProofByIdsInvocation {  receiver: self.0, ids: ids.clone(), }
         }
     }
@@ -208,8 +211,8 @@ impl ScryptoVault for Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
-    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
-        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]));
+    fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Bucket {
+        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_local_id.clone()]));
         Bucket(bucket.0)
     }
 
@@ -232,9 +235,9 @@ impl ScryptoVault for Vault {
     /// Panics if this is not a non-fungible vault.
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
-        self.non_fungible_ids()
+        self.non_fungible_local_ids()
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
             .collect()
     }
 
@@ -242,12 +245,12 @@ impl ScryptoVault for Vault {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    fn non_fungible_id(&self) -> NonFungibleId {
-        let non_fungible_ids = self.non_fungible_ids();
-        if non_fungible_ids.len() != 1 {
+    fn non_fungible_local_id(&self) -> NonFungibleLocalId {
+        let non_fungible_local_ids = self.non_fungible_local_ids();
+        if non_fungible_local_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
-        self.non_fungible_ids().into_iter().next().unwrap()
+        self.non_fungible_local_ids().into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.

@@ -1,9 +1,9 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
 use crate::api::types::{ComponentId, RENodeId};
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -28,7 +28,7 @@ impl Into<CallTableInvocation> for ComponentGlobalizeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
-    pub owner_badge: NonFungibleAddress,
+    pub owner_badge: NonFungibleGlobalId,
 }
 
 impl Invocation for ComponentGlobalizeWithOwnerInvocation {

@@ -140,9 +140,9 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum NonFungibleIdKind {
+            enum NonFungibleIdType {
                 String = 0;
-                Number = 1;
+                Integer = 1;
                 Bytes = 2;
                 UUID = 3;
             }

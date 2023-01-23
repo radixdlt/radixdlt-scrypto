@@ -236,7 +236,7 @@ impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
         );
         let executor = VaultTakeNonFungiblesInvocation {
             receiver: self.receiver,
-            non_fungible_ids: self.non_fungible_ids,
+            non_fungible_local_ids: self.non_fungible_local_ids,
         };
         Ok((actor, call_frame_update, executor))
     }
@@ -277,7 +277,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .take_non_fungibles(&self.non_fungible_ids)
+                .take_non_fungibles(&self.non_fungible_local_ids)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::VaultError(e))
@@ -378,7 +378,7 @@ impl Executor for VaultGetResourceAddressInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -388,20 +388,20 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetNonFungibleIds),
+            NativeFn::Vault(VaultFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for VaultGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for VaultGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

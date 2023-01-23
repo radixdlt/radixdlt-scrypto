@@ -1,5 +1,5 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
@@ -73,7 +73,7 @@ impl ComponentAuthZone {
     }
 
     pub fn create_proof_by_ids(
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;

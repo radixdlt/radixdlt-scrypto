@@ -1,8 +1,8 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::LegacyDescribe;
 use radix_engine_derive::*;
-use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId, ToString};
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
     AccessRulesSetMethodMutabilityInvocation, ComponentAddress,

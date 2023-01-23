@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::EngineApi;
 
 impl ExecutableInvocation for LoggerLogInvocation {
     type Exec = Self;

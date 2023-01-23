@@ -76,7 +76,7 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::ResourceManager(
             ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
-                id_type: NonFungibleIdTypeId::Bytes,
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
             }),
@@ -96,7 +96,7 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::ResourceManager(
             ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
-                id_type: NonFungibleIdTypeId::Bytes,
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
             }),
@@ -114,7 +114,7 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::ResourceManager(
             ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
-                id_type: NonFungibleIdTypeId::Bytes,
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
             }),
@@ -131,7 +131,7 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::ResourceManager(
             ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
-                id_type: NonFungibleIdTypeId::Bytes,
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
             }),

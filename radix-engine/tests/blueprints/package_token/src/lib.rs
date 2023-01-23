@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-blueprint! {
+mod blueprint {
     struct Factory {
         my_address: Option<ComponentAddress>,
     }

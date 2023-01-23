@@ -1,8 +1,8 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
 pub struct ScryptoExecutor {
@@ -49,23 +49,37 @@ impl Executor for ScryptoExecutor {
             .vm()
             .create_instance(self.package_address, &package.code);
 
-        let mut args = Vec::new();
-        if let Some(component_id) = self.component_id {
-            args.push(scrypto_encode(&component_id).unwrap());
-        }
-        let arg = scrypto_encode(&self.args)
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-        args.push(arg);
-
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
+
+            let mut input = Vec::new();
+            if let Some(component_id) = self.component_id {
+                input.push(
+                    runtime
+                        .allocate_buffer(
+                            scrypto_encode(&component_id).expect("Failed to encode component id"),
+                        )
+                        .expect("Failed to allocate buffer"),
+                );
+            }
+            input.push(
+                runtime
+                    .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
+                    .expect("Failed to allocate buffer"),
+            );
+
             instance
-                .invoke_export(&self.export_name, args, &mut runtime)
+                .invoke_export(&self.export_name, input, &mut runtime)
                 .map_err(|e| match e {
-                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                    InvokeError::Error(e) => {
+                        RuntimeError::KernelError(KernelError::WasmRuntimeError(e))
+                    }
                     InvokeError::Downstream(runtime_error) => runtime_error,
                 })?
         };
+        let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
+        })?;
 
         let rtn = if !match_schema_with_value(&rtn_type, output.as_value()) {
             Err(RuntimeError::KernelError(

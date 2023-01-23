@@ -522,17 +522,17 @@ pub fn serialize_custom_value<S: Serializer>(
             ScryptoCustomValueKind::PreciseDecimal,
             &format!("{}", value),
         ),
-        ScryptoCustomValue::NonFungibleId(value) => serialize_value(
+        ScryptoCustomValue::NonFungibleLocalId(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomValueKind::NonFungibleId,
-            &value.serializable(*context),
+            ScryptoCustomValueKind::NonFungibleLocalId,
+            &format!("{}", value),
         ),
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleAddress {
+impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleGlobalId {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
@@ -545,48 +545,8 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleA
                 .display(context.display_context.bech32_encoder)
                 .to_string(),
         )?;
-        tuple.serialize_element(&self.non_fungible_id().serializable(*context))?;
+        tuple.serialize_element(&self.local_id().to_string())?;
         tuple.end()
-    }
-}
-
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleId {
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            NonFungibleId::String(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::String,
-                value,
-            ),
-            NonFungibleId::Number(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U64,
-                &value.to_string(),
-            ),
-            NonFungibleId::Bytes(value) => serialize_value_with_element_type(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::Array,
-                ValueKind::U8,
-                &BytesValue { bytes: value }.serializable(*context),
-            ),
-            NonFungibleId::UUID(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U128,
-                &value.to_string(),
-            ),
-        }
     }
 }
 
@@ -876,20 +836,24 @@ mod tests {
                             value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::String(
-                                "hello".to_string(),
-                            )),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::String("hello".to_string()),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Number(123)),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::Integer(123),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![
-                                0x23, 0x45,
-                            ])),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::Bytes(vec![0x23, 0x45]),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::UUID(371)),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::UUID(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd),
+                            ),
                         },
                     ],
                 },
@@ -933,10 +897,10 @@ mod tests {
                 "1",
                 "0.01",
                 "0",
-                { "type": "NonFungibleId", "value": "hello" },
-                { "type": "NonFungibleId", "value": "123" },
-                { "type": "NonFungibleId", "value": { "hex": "2345" } },
-                { "type": "NonFungibleId", "value": "371" },
+                { "type": "NonFungibleLocalId", "value": "<hello>" },
+                { "type": "NonFungibleLocalId", "value": "#123#" },
+                { "type": "NonFungibleLocalId", "value": "[2345]" },
+                { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
             ]
         ]);
 
@@ -988,10 +952,10 @@ mod tests {
                         { "type": "Decimal", "value": "1" },
                         { "type": "Decimal", "value": "0.01" },
                         { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "NonFungibleId", "value": { "type": "String", "value": "hello" } },
-                        { "type": "NonFungibleId", "value": { "type": "U64", "value": "123" } },
-                        { "type": "NonFungibleId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
-                        { "type": "NonFungibleId", "value": { "type": "U128", "value": "371" } },
+                        { "type": "NonFungibleLocalId", "value": "<hello>" },
+                        { "type": "NonFungibleLocalId", "value": "#123#" },
+                        { "type": "NonFungibleLocalId", "value": "[2345]" },
+                        { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
                     ]
                 }
             ]

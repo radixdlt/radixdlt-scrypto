@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -18,15 +18,15 @@ impl ResourceManager {
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
-        where
-            Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
+    where
+        Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
     {
         api.invoke(ResourceManagerCreateFungibleInvocation {
             metadata,
             access_rules,
             divisibility,
         })
-            .map(|address| ResourceManager(address))
+        .map(|address| ResourceManager(address))
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
@@ -36,21 +36,21 @@ impl ResourceManager {
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
-        where
-            Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
+    where
+        Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
     {
         api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
             resource_address: None,
             metadata,
             access_rules,
             divisibility,
-            initial_supply: amount
+            initial_supply: amount,
         })
-            .map(|(address, bucket)| (ResourceManager(address), bucket))
+        .map(|(address, bucket)| (ResourceManager(address), bucket))
     }
 
     pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
@@ -103,7 +103,7 @@ impl ResourceManager {
 
     pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
         &self,
-        id: NonFungibleId,
+        id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<T, E>
     where

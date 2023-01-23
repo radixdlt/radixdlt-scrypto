@@ -8,10 +8,11 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
@@ -117,7 +118,7 @@ impl Executor for EpochManagerCreateInvocation {
         let mut validator_set = BTreeMap::new();
 
         for (key, (initial_stake, account_address)) in self.validator_set {
-            let stake = Decimal::one();
+            let stake = initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
@@ -132,7 +133,7 @@ impl Executor for EpochManagerCreateInvocation {
                 blueprint_name: "Account".to_string(),
                 fn_name: "deposit".to_string(),
                 receiver: Some(ScryptoReceiver::Global(account_address)),
-                args: args!(lp_bucket)
+                args: args!(lp_bucket),
             })?;
         }
 
@@ -159,13 +160,13 @@ impl Executor for EpochManagerCreateInvocation {
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator)),
             rule!(allow_all),
         );
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),

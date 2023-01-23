@@ -2,7 +2,7 @@ use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleId;
+use radix_engine_interface::model::NonFungibleLocalId;
 use radix_engine_interface::node::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -143,9 +143,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
+                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -187,9 +187,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone())
+                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone())
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
@@ -263,8 +263,8 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
-                .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -617,10 +617,10 @@ pub fn format_args<F: fmt::Write>(
 }
 
 fn transform_non_fungible_mint_params(
-    mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, DecodeError> {
+    mint_params: &BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+) -> Result<BTreeMap<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value =
-        BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
+        BTreeMap::<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
         mint_params_scrypto_value.insert(
             id.clone(),

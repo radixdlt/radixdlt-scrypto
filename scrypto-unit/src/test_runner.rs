@@ -24,7 +24,7 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleAddress, NonFungibleIdTypeId,
+    NativeInvocation, NonFungibleGlobalId, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
@@ -174,13 +174,13 @@ impl TestRunner {
     ) -> (
         EcdsaSecp256k1PublicKey,
         EcdsaSecp256k1PrivateKey,
-        NonFungibleAddress,
+        NonFungibleGlobalId,
     ) {
         let key_pair = self.new_allocated_account();
         (
             key_pair.0,
             key_pair.1,
-            NonFungibleAddress::from_public_key(&key_pair.0),
+            NonFungibleGlobalId::from_public_key(&key_pair.0),
         )
     }
 
@@ -318,7 +318,7 @@ impl TestRunner {
         vault_finder.to_vaults()
     }
 
-    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleId>> {
+    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
@@ -457,7 +457,7 @@ impl TestRunner {
         ComponentAddress,
     ) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
@@ -522,7 +522,7 @@ impl TestRunner {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -548,7 +548,7 @@ impl TestRunner {
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let (code, abi) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, abi, owner_badge)
@@ -557,7 +557,7 @@ impl TestRunner {
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
@@ -573,7 +573,7 @@ impl TestRunner {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         self.execute_manifest_with_cost_unit_limit(
             manifest,
@@ -585,7 +585,7 @@ impl TestRunner {
     pub fn execute_manifest_with_cost_unit_limit(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
         cost_unit_limit: u32,
     ) -> TransactionReceipt {
         let transactions =
@@ -670,7 +670,7 @@ impl TestRunner {
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -697,7 +697,7 @@ impl TestRunner {
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -844,14 +844,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleId::Number(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::Number(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::Number(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdTypeId::Number,
+                NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),
@@ -925,7 +925,7 @@ impl TestRunner {
 
     pub fn instantiate_component<F>(
         &mut self,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
         handler: F,
     ) -> ComponentAddress
     where
@@ -1038,15 +1038,17 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
             .replace("${memmove}", include_str!("snippets/memmove.wat"))
-            .replace("${memset}", include_str!("snippets/memset.wat"))
-            .replace("${buffer}", include_str!("snippets/buffer.wat")),
+            .replace("${memset}", include_str!("snippets/memset.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }

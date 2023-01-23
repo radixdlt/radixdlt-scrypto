@@ -1,4 +1,5 @@
 use crate::api::types::*;
+use crate::api::*;
 use crate::data::scrypto_decode;
 use crate::model::*;
 use crate::*;
@@ -530,7 +531,7 @@ pub enum BucketFn {
     Take,
     TakeNonFungibles,
     Put,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetAmount,
     GetResourceAddress,
     CreateProof,
@@ -563,7 +564,7 @@ pub enum VaultFn {
     TakeNonFungibles,
     GetAmount,
     GetResourceAddress,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
@@ -594,7 +595,7 @@ pub enum VaultFn {
 pub enum ProofFn {
     Clone,
     GetAmount,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetResourceAddress,
 }
 

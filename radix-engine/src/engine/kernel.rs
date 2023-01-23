@@ -1,10 +1,10 @@
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::api::{
-    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
-};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
+};
+use radix_engine_interface::api::{
+    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -144,24 +144,24 @@ where
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 // Lazy create component if missing
-                let non_fungible_address = match component_address {
+                let non_fungible_global_id = match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        NonFungibleAddress::new(
+                        NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        NonFungibleAddress::new(
+                        NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleId::Bytes(address.into()),
+                            NonFungibleLocalId::Bytes(address.into()),
                         )
                     }
                     _ => return Ok(false),
                 };
 
                 // TODO: Replace with trusted IndexedScryptoValue
-                let access_rule = rule!(require(non_fungible_address));
+                let access_rule = rule!(require(non_fungible_global_id));
                 let result = self.invoke(ScryptoInvocation {
                     package_address: ACCOUNT_PACKAGE,
                     blueprint_name: "Account".to_string(),
@@ -169,7 +169,7 @@ where
                     receiver: None,
                     args: args!(access_rule),
                 })?;
-                let component_id = IndexedScryptoValue::from_typed(&result)
+                let component_id = IndexedScryptoValue::from_value(result)
                     .owned_node_ids()
                     .expect("No duplicates expected")
                     .into_iter()
@@ -638,13 +638,11 @@ where
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
-        args: &ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
+        args: Vec<u8>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // TODO: Use execution mode?
-        let invocation =
-            resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
-        let rtn = invoke_call_table(invocation, self)?;
-        Ok(rtn.into())
+        let invocation = resolve_method(receiver, method_name, &args, self)?;
+        invoke_call_table(invocation, self)
     }
 }
 
@@ -729,7 +727,7 @@ where
         Ok(fee)
     }
 
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,

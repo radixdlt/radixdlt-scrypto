@@ -63,7 +63,7 @@ impl Executor for ProofGetAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for ProofGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -73,20 +73,20 @@ impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeFn::Proof(ProofFn::GetNonFungibleIds),
+            NativeFn::Proof(ProofFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for ProofGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for ProofGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
     fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

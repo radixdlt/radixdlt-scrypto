@@ -20,8 +20,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod abi {
     pub use scrypto_abi::*;
 }
-/// Scrypto buffer for wasm-engine data exchange.
-pub mod buffer;
 /// Scrypto component abstraction.
 pub mod component;
 /// Scrypto runtime abstraction.

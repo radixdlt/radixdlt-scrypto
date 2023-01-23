@@ -6,8 +6,8 @@ use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
+use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 
@@ -188,7 +188,10 @@ impl ExecutableInvocation for ValidatorStakeInvocation {
 impl Executor for ValidatorStakeExecutable {
     type Output = Bucket;
 
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -424,7 +427,7 @@ impl Executor for ValidatorClaimXrdExecutable {
 
         let mut unstake_amount = Decimal::zero();
 
-        for id in bucket.sys_non_fungible_ids(api)? {
+        for id in bucket.sys_total_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
@@ -452,20 +455,20 @@ impl ValidatorCreator {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(non_fungible_address.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_address)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -486,30 +489,26 @@ impl ValidatorCreator {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(non_fungible_address.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_address)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager = ResourceManager::new_fungible(
-            0,
-            BTreeMap::new(),
-            liquidity_token_auth,
-            api,
-        )?;
+        let unstake_resource_manager =
+            ResourceManager::new_fungible(0, BTreeMap::new(), liquidity_token_auth, api)?;
 
         Ok(unstake_resource_manager.0)
     }
@@ -519,26 +518,26 @@ impl ValidatorCreator {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         unstake_token_auth.insert(
             Mint,
             (
-                rule!(require(non_fungible_address.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_address)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resource_manager = ResourceManager::new_non_fungible(
-                NonFungibleIdTypeId::UUID,
+            NonFungibleIdType::UUID,
             BTreeMap::new(),
             unstake_token_auth,
             api,
@@ -551,11 +550,11 @@ impl ValidatorCreator {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),

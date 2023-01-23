@@ -7,10 +7,10 @@ use crate::model::{
 };
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::model::{
@@ -99,7 +99,7 @@ where
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.get_visible_node_ids()
+        self.get_visible_nodes()
     }
 
     fn sys_lock_substate(
