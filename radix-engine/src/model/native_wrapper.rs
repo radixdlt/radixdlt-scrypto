@@ -11,6 +11,15 @@ pub fn resolve_method<Y: SystemApi>(
 ) -> Result<CallTableInvocation, RuntimeError> {
     let invocation = match receiver {
         ScryptoReceiver::Global(component_address) => match component_address {
+            ComponentAddress::Identity(..)
+            | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+            | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ResolveError(ResolveError::NotAMethod),
+                    ),
+                ));
+            }
             ComponentAddress::EpochManager(..) | ComponentAddress::Validator(..) => {
                 let invocation = EpochManagerPackage::resolve_method_invocation(
                     component_address,
@@ -454,6 +463,12 @@ where
                 Ok(Box::new(rtn))
             }
             ClockInvocation::CompareCurrentTime(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeInvocation::Identity(invocation) => match invocation {
+            IdentityInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

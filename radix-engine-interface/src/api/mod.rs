@@ -140,6 +140,7 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopAssertContainsAmountInvocation, E>
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
+    + Invokable<IdentityCreateInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>

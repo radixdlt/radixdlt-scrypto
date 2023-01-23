@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
-    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -124,7 +124,7 @@ impl Executor for EpochManagerCreateInvocation {
 
         api.create_node(
             underlying_node_id,
-            RENode::EpochManager(
+            RENodeInit::EpochManager(
                 epoch_manager,
                 current_validator_set,
                 preparing_validator_set,
@@ -136,7 +136,7 @@ impl Executor for EpochManagerCreateInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::EpochManager(
+            RENodeInit::Global(GlobalAddressSubstate::EpochManager(
                 underlying_node_id.into(),
             )),
         )?;
@@ -474,7 +474,7 @@ impl EpochManager {
             stake_vault.sys_put(bucket, api)?;
         }
 
-        let node = RENode::Validator(
+        let node = RENodeInit::Validator(
             ValidatorSubstate {
                 manager,
                 key,
@@ -489,7 +489,7 @@ impl EpochManager {
         api.create_node(node_id, node)?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
         )?;
 
         Ok(global_node_id.into())

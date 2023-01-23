@@ -93,6 +93,7 @@ impl IdAllocator {
             }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
+            RENodeType::Identity => self.new_component_id().map(|id| RENodeId::Identity(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
@@ -110,6 +111,9 @@ impl IdAllocator {
                 .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
             RENodeType::GlobalAccount => self
                 .new_account_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalIdentity => self
+                .new_identity_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalComponent => self
                 .new_component_address()
@@ -165,6 +169,12 @@ impl IdAllocator {
         let next_id = self.next_entity_id(EntityType::Package)?;
         data.extend(next_id.to_le_bytes());
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_identity_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::Identity(hash(data).lower_26_bytes()))
     }
 
     pub fn new_account_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
