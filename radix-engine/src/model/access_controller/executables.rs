@@ -265,18 +265,25 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Lock checks
-        {
+        // Lock checks and Getting the timed recovery delay
+        let timed_recovery_delay_in_hours = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
             if self.proposer == Proposer::Primary && access_controller.is_primary_role_locked {
                 Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
             }
-        }
 
-        // Getting the current time
-        let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
+            access_controller.timed_recovery_delay_in_hours
+        };
+
+        // Getting the time when timed recovery will be allowed
+        let timed_recovery_end_time = Runtime::sys_current_time(api, TimePrecision::Minute)?
+            .add_hours(timed_recovery_delay_in_hours as i64)
+            .map_or(
+                Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
+                |instant| Ok(instant),
+            )?;
 
         // Initiate Recovery (if this role doesn't already have a recovery Ongoing)
         {
@@ -300,7 +307,7 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
                     (
                         self.rule_set,
                         self.timed_recovery_delay_in_hours,
-                        current_time,
+                        timed_recovery_end_time,
                     ),
                 );
             } else {
@@ -590,41 +597,39 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            let (new_rule_set, timed_recovery_delay_in_hours, proposed_at) = access_controller
-                .ongoing_recoveries
-                .as_ref()
-                .unwrap_or(&HashMap::new())
-                .iter()
-                .find(
-                    |(proposer, (proposed_rule_set, timed_recovery_delay_in_hours, _))| {
-                        **proposer == self.proposer
-                            && *proposed_rule_set == self.rule_set
-                            && *timed_recovery_delay_in_hours == self.timed_recovery_delay_in_hours
-                    },
-                )
-                .map_or(
-                    Err(AccessControllerError::NoValidProposedRuleSetExists),
-                    |(_, (rule_set, timed_recovery_delay_in_hours, proposed_at))| {
-                        Ok((
-                            rule_set.clone(),
-                            *timed_recovery_delay_in_hours,
-                            proposed_at.clone(),
-                        ))
-                    },
-                )?;
-            let recovery_time_has_elapsed = proposed_at
-                .add_hours(access_controller.timed_recovery_delay_in_hours as i64)
-                .map_or(
-                    Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
-                    |instant| {
-                        Runtime::sys_compare_against_current_time(
-                            api,
-                            instant,
-                            TimePrecision::Minute,
-                            time::TimeComparisonOperator::Gte,
-                        )
-                    },
-                )?;
+            let (new_rule_set, timed_recovery_delay_in_hours, timed_recovery_end_time) =
+                access_controller
+                    .ongoing_recoveries
+                    .as_ref()
+                    .unwrap_or(&HashMap::new())
+                    .iter()
+                    .find(
+                        |(proposer, (proposed_rule_set, timed_recovery_delay_in_hours, _))| {
+                            **proposer == self.proposer
+                                && *proposed_rule_set == self.rule_set
+                                && *timed_recovery_delay_in_hours
+                                    == self.timed_recovery_delay_in_hours
+                        },
+                    )
+                    .map_or(
+                        Err(AccessControllerError::NoValidProposedRuleSetExists),
+                        |(
+                            _,
+                            (rule_set, timed_recovery_delay_in_hours, timed_recovery_end_time),
+                        )| {
+                            Ok((
+                                rule_set.clone(),
+                                *timed_recovery_delay_in_hours,
+                                timed_recovery_end_time.clone(),
+                            ))
+                        },
+                    )?;
+            let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
+                api,
+                timed_recovery_end_time,
+                TimePrecision::Minute,
+                time::TimeComparisonOperator::Gte,
+            )?;
 
             if !recovery_time_has_elapsed {
                 Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
