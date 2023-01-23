@@ -29,7 +29,6 @@ pub enum TokenKind {
     // ==============
     // SBOR basic types
     // ==============
-    Unit,
     Bool,
     I8,
     I16,
@@ -45,6 +44,7 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+    Map,
 
     // ==============
     // SBOR aliases
@@ -54,6 +54,7 @@ pub enum TokenKind {
     Ok,
     Err,
     Bytes,
+    NonFungibleGlobalId,
 
     // ==============
     // SBOR custom types
@@ -61,13 +62,11 @@ pub enum TokenKind {
 
     /* RE global address types */
     PackageAddress,
-    SystemAddress,
     ComponentAddress,
     ResourceAddress,
 
     /* RE interpreted types */
     Own,
-    NonFungibleAddress,
     Blob,
 
     /* TX interpreted types */
@@ -83,7 +82,7 @@ pub enum TokenKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -125,6 +124,7 @@ pub enum TokenKind {
     SetMethodAccessRule,
     MintFungible,
     MintNonFungible,
+    MintUuidNonFungible,
     CreateFungibleResource,
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
@@ -386,7 +386,6 @@ impl Lexer {
             "true" => Ok(TokenKind::BoolLiteral(true)),
             "false" => Ok(TokenKind::BoolLiteral(false)),
 
-            "Unit" => Ok(TokenKind::Unit),
             "Bool" => Ok(TokenKind::Bool),
             "I8" => Ok(TokenKind::I8),
             "I16" => Ok(TokenKind::I16),
@@ -402,20 +401,20 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+            "Map" => Ok(TokenKind::Map),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
+            "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "SystemAddress" => Ok(TokenKind::SystemAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
             "Own" => Ok(TokenKind::Own),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Blob" => Ok(TokenKind::Blob),
 
             "Bucket" => Ok(TokenKind::Bucket),
@@ -429,7 +428,7 @@ impl Lexer {
             "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -464,6 +463,7 @@ impl Lexer {
             "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
+            "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
             "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
@@ -622,15 +622,15 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION Array<Tuple>(Tuple("test", Array<String>("abc")));"#,
+            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Array,
+                TokenKind::Map,
                 TokenKind::LessThan,
-                TokenKind::Tuple,
+                TokenKind::String,
+                TokenKind::Comma,
+                TokenKind::Array,
                 TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::Tuple,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
@@ -640,7 +640,6 @@ mod tests {
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,

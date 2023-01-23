@@ -1,7 +1,7 @@
 use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::data::types::ManifestProof;
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::collections::*;
+use sbor::SborPath;
 
 use crate::errors::*;
 use crate::validation::*;
@@ -46,7 +46,7 @@ impl ManifestIdValidator {
     ) -> Result<(), ManifestIdValidationError> {
         if let Some(cnt) = self.bucket_ids.get(bucket_id) {
             if *cnt == 0 {
-                self.bucket_ids.remove(&bucket_id);
+                self.bucket_ids.remove(bucket_id);
                 Ok(())
             } else {
                 Err(ManifestIdValidationError::BucketLocked(bucket_id.clone()))
@@ -85,7 +85,7 @@ impl ManifestIdValidator {
     ) -> Result<ManifestProof, ManifestIdValidationError> {
         if let Some(kind) = self.proof_ids.get(proof_id).cloned() {
             if let ProofKind::BucketProof(bucket_id) = &kind {
-                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
                 } else {
                     panic!("Illegal state");
@@ -127,13 +127,14 @@ impl ManifestIdValidator {
 
     pub fn move_resources(
         &mut self,
-        args: &IndexedScryptoValue,
+        buckets: &Vec<(ManifestBucket, SborPath)>,
+        proofs: &Vec<(ManifestProof, SborPath)>,
     ) -> Result<(), ManifestIdValidationError> {
-        for (bucket_id, _) in &args.buckets {
-            self.drop_bucket(bucket_id)?;
+        for (bucket, _) in buckets {
+            self.drop_bucket(bucket)?;
         }
-        for (proof_id, _) in &args.proofs {
-            self.drop_proof(proof_id)?;
+        for (proof, _) in proofs {
+            self.drop_proof(proof)?;
         }
         Ok(())
     }

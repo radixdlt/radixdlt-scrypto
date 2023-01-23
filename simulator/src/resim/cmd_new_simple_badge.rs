@@ -1,8 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleAddress;
+use radix_engine_interface::model::NonFungibleGlobalId;
 use radix_engine_interface::node::*;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
@@ -10,7 +9,7 @@ use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply
@@ -80,16 +79,16 @@ impl NewSimpleBadge {
             (rule!(allow_all), rule!(deny_all)),
         );
         let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleId::U32(1), EmptyStruct {});
+        initial_supply.insert(NonFungibleLocalId::Number(1), EmptyStruct {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::U32,
+                id_type: NonFungibleIdType::Number,
                 metadata: metadata,
                 access_rules: resource_auth,
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleId::U32(1),
+                    NonFungibleLocalId::Number(1),
                     (
                         scrypto_encode(&EmptyStruct).unwrap(),
                         scrypto_encode(&EmptyStruct).unwrap(),
@@ -123,8 +122,8 @@ impl NewSimpleBadge {
             let bech32_encoder = Bech32Encoder::new(&network_definition);
             writeln!(
                 out,
-                "NFAddress: {}",
-                NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
+                "NonFungibleGlobalId: {}",
+                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::Number(1))
                     // This should be the opposite of parse_args in the manifest builder
                     .to_canonical_string(&bech32_encoder)
                     .green()
@@ -136,8 +135,12 @@ impl NewSimpleBadge {
                 resource_address.to_string(&bech32_encoder).green()
             )
             .map_err(Error::IOError)?;
-            writeln!(out, "NFID: {}", NonFungibleId::U32(1).to_simple_string())
-                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "non_fungible_local_id: {}",
+                NonFungibleLocalId::Number(1).to_simple_string()
+            )
+            .map_err(Error::IOError)?;
         };
 
         Ok(())

@@ -7,12 +7,12 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
+    Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -31,6 +31,14 @@ pub enum PersistedSubstate {
 
 impl PersistedSubstate {
     pub fn vault(&self) -> &VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
         if let PersistedSubstate::Vault(vault) = self {
             vault
         } else {
@@ -87,6 +95,7 @@ impl PersistedSubstate {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
+            PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -128,6 +137,7 @@ pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
+    Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -157,6 +167,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
+            RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
             RuntimeSubstate::AccessRulesChain(value) => {
                 PersistedSubstate::AccessRulesChain(value.clone())
             }
@@ -211,6 +222,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
             RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
@@ -261,17 +273,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
@@ -289,6 +301,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
@@ -328,6 +341,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
@@ -472,6 +486,12 @@ impl Into<RuntimeSubstate> for EpochManagerSubstate {
 impl Into<RuntimeSubstate> for ValidatorSetSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::ValidatorSet(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for ValidatorSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Validator(self)
     }
 }
 
@@ -739,6 +759,16 @@ impl Into<MetadataSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSetSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(substate) = self {
+            substate
+        } else {
+            panic!("Not a validator set");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
@@ -759,6 +789,7 @@ pub enum SubstateRef<'a> {
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
+    Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
@@ -804,6 +835,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::EpochManager(epoch_manager_substate) => *epoch_manager_substate,
             _ => panic!("Not an epoch manager substate"),
+        }
+    }
+
+    pub fn validator(&self) -> &ValidatorSubstate {
+        match self {
+            SubstateRef::Validator(substate) => *substate,
+            _ => panic!("Not a validator substate"),
         }
     }
 
@@ -960,9 +998,20 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Package(package_id) => {
                         owned_nodes.insert(RENodeId::Package(*package_id))
                     }
+                    GlobalAddressSubstate::Validator(validator_id) => {
+                        owned_nodes.insert(RENodeId::Validator(*validator_id))
+                    }
                 };
 
                 (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::Worktop(worktop) => {
+                let nodes = worktop
+                    .resources
+                    .values()
+                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .collect();
+                (HashSet::new(), nodes)
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
@@ -991,12 +1040,29 @@ impl<'a> SubstateRef<'a> {
                 }
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::Validator(substate) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Component(substate.manager));
+                (references, HashSet::new())
+            }
+            SubstateRef::PackageRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (
                     scrypto_value.global_references(),
-                    scrypto_value.owned_node_ids(),
+                    scrypto_value
+                        .owned_node_ids()
+                        .expect("No duplicates expected"),
                 )
+            }
+            SubstateRef::ComponentRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -1006,7 +1072,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())
@@ -1020,7 +1088,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())
@@ -1045,6 +1115,7 @@ pub enum SubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
+    Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),

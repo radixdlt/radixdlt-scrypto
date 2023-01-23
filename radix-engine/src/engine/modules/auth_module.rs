@@ -1,15 +1,13 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::ActorApi;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::api::ActorApi;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {
@@ -57,6 +55,7 @@ impl AuthModule {
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
                             || matches!(method, NativeFn::EpochManager(..))
+                            || matches!(method, NativeFn::Validator(..))
                             || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Clock(..))
@@ -119,11 +118,7 @@ impl AuthModule {
                                 VaultFn::Recall | VaultFn::RecallNonFungibles => {
                                     let access_rule =
                                         substate.access_rules_chain[0].get_group("recall");
-                                    let authorization = convert(
-                                        &Type::Any,
-                                        &IndexedScryptoValue::unit(),
-                                        access_rule,
-                                    );
+                                    let authorization = convert_contextless(access_rule);
                                     vec![authorization]
                                 }
                                 _ => {
@@ -200,7 +195,7 @@ impl AuthModule {
             _ => vec![],
         };
 
-        let refed = system_api.get_visible_node_ids()?;
+        let refed = system_api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
@@ -236,7 +231,7 @@ impl AuthModule {
         actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_node_ids()?;
+        let refed = system_api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
@@ -260,9 +255,10 @@ impl AuthModule {
 
             // Add Package Actor Auth
             let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
-            let address = NonFungibleAddress::new(PACKAGE_TOKEN, NonFungibleId::Bytes(id));
+            let non_fungible_global_id =
+                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(id));
             let mut virtual_non_fungibles = BTreeSet::new();
-            virtual_non_fungibles.insert(address);
+            virtual_non_fungibles.insert(non_fungible_global_id);
 
             auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
             system_api.drop_lock(handle)?;
@@ -295,7 +291,7 @@ impl AuthModule {
             return Ok(());
         }
 
-        let refed = api.get_visible_node_ids()?;
+        let refed = api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))

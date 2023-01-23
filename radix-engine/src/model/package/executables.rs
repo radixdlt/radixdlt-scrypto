@@ -2,20 +2,19 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
-    AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
-    PackageInfoSubstate, Resource,
+    AccessRulesChainSubstate, GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::BlobApi;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
+use radix_engine_interface::api::InvokableModel;
 use radix_engine_interface::model::*;
 
 pub struct Package;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
@@ -39,14 +38,15 @@ impl Package {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
+impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         let actor = ResolvedActor::function(NativeFn::Package(PackageFn::Publish));
         Ok((actor, call_frame_update, self))
     }
@@ -55,18 +55,25 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
 impl Executor for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + BlobApi<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
-        let code = api.get_blob(&self.code.0)?.to_vec();
-        let blob = api.get_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let royalty_vault_id = api
+            .invoke(ResourceManagerCreateVaultInvocation {
+                receiver: RADIX_TOKEN,
+            })?
+            .vault_id();
+
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
         })?;
-        let package = Package::new(code, abi).map_err(|e| {
+        let package = Package::new(self.code, abi).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(e),
             ))
@@ -75,7 +82,7 @@ impl Executor for PackagePublishInvocation {
             royalty_config: self.royalty_config,
         };
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
-            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+            royalty: Own::Vault(royalty_vault_id),
         };
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
@@ -105,7 +112,12 @@ impl Executor for PackagePublishInvocation {
         let package_id: PackageId = node_id.into();
 
         // Globalize
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        let global_node_id = if let Some(address) = self.package_address {
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+        } else {
+            api.allocate_node_id(RENodeType::GlobalPackage)?
+        };
+
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
@@ -116,10 +128,10 @@ impl Executor for PackagePublishInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
+impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -146,28 +158,28 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
 impl Executor for PackageSetRoyaltyConfigExecutable {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate = system_api.get_ref_mut(handle)?;
+        let mut substate = api.get_ref_mut(handle)?;
         substate.package_royalty_config().royalty_config = self.royalty_config;
 
-        system_api.drop_lock(handle)?;
+        api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
+impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -190,28 +202,32 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
 impl Executor for PackageClaimRoyaltyExecutable {
     type Output = Bucket;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        let resource = substate_mut
-            .package_royalty_accumulator()
-            .royalty
-            .take_all();
-        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
-        system_api.create_node(
-            bucket_node_id,
-            RENode::Bucket(BucketSubstate::new(resource)),
-        )?;
-        let bucket_id = bucket_node_id.into();
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
 
-        system_api.drop_lock(handle)?;
+        let amount = api.invoke(VaultGetAmountInvocation {
+            receiver: royalty_vault.vault_id(),
+        })?;
+
+        let bucket = api.invoke(VaultTakeInvocation {
+            receiver: royalty_vault.vault_id(),
+            amount,
+        })?;
+        let bucket_id = bucket.0;
+
+        api.drop_lock(handle)?;
 
         Ok((
             Bucket(bucket_id),

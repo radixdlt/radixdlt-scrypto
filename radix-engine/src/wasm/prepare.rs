@@ -172,18 +172,155 @@ impl WasmModule {
         // Only allow `env::radix_engine` import
         if let Some(sec) = self.module.import_section() {
             for entry in sec.entries() {
-                if entry.module() == MODULE_ENV_NAME && entry.field() == RADIX_ENGINE_FUNCTION_NAME
-                {
-                    if let External::Function(type_index) = entry.external() {
-                        if Self::function_type_matches(
-                            &self.module,
-                            *type_index as usize,
-                            vec![ValueType::I32],
-                            vec![ValueType::I32],
-                        ) {
-                            continue;
+                if entry.module() == MODULE_ENV_NAME {
+                    match entry.field() {
+                        CONSUME_BUFFER_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
                         }
-                    }
+                        INVOKE_METHOD_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        INVOKE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        CREATE_NODE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_VISIBLE_NODES_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        DROP_NODE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        LOCK_SUBSTATE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        READ_SUBSTATE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        WRITE_SUBSTATE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        UNLOCK_SUBSTATE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_ACTOR_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        _ => {}
+                    };
                 }
 
                 return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
@@ -314,15 +451,15 @@ impl WasmModule {
                                 Self::function_matches(
                                     &self.module,
                                     *func_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I32],
+                                    vec![ValueType::I64, ValueType::I64],
+                                    vec![ValueType::I64],
                                 )
                             } else {
                                 Self::function_matches(
                                     &self.module,
                                     *func_index as usize,
-                                    vec![ValueType::I32],
-                                    vec![ValueType::I32],
+                                    vec![ValueType::I64],
+                                    vec![ValueType::I64],
                                 )
                             }
                         } else {
@@ -617,7 +754,9 @@ mod tests {
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {
-                structure: scrypto::abi::Type::Unit,
+                structure: scrypto::abi::Type::Tuple {
+                    element_types: vec![],
+                },
                 fns: vec![abi::Fn {
                     ident: "f".to_string(),
                     mutability: Option::None,
@@ -625,7 +764,9 @@ mod tests {
                         name: "Any".to_string(),
                         fields: scrypto::abi::Fields::Named { named: vec![] },
                     },
-                    output: scrypto::abi::Type::Unit,
+                    output: scrypto::abi::Type::Tuple {
+                        element_types: vec![],
+                    },
                     export_name: "Test_f".to_string(),
                 }],
             },

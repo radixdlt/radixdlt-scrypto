@@ -1,26 +1,24 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
-use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
-};
-use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
+use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmError;
+use crate::wasm::WasmRuntimeError;
 
 use super::TrackError;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum IdAllocationError {
+    RENodeIdWasNotAllocated(RENodeId),
+    AllocatedIDsNotEmpty,
     OutOfID,
 }
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -41,8 +39,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -58,9 +55,6 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
-
-    /// An unexpected error occurred
-    UnexpectedError(String),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -69,13 +63,12 @@ impl From<KernelError> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation
-    WasmError(WasmError),
+    WasmRuntimeError(WasmRuntimeError),
 
     InvalidReferenceWrite(GlobalAddress),
 
@@ -87,9 +80,9 @@ pub enum KernelError {
     IdAllocationError(IdAllocationError),
 
     // SBOR decoding
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidSborValue(DecodeError),
-    InvalidSborValueOnEncode(EncodeError),
+    SborDecodeError(DecodeError),
+    SborEncodeError(EncodeError),
+    ReadOwnedNodesError(ReadOwnedNodesError), // semantic error
 
     // RENode
     StoredNodeRemoved(RENodeId),
@@ -125,15 +118,12 @@ pub enum KernelError {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CallFrameError {
     OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
-    RENodeIdWasNotAllocated(RENodeId),
-    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 impl From<CallFrameError> for RuntimeError {
@@ -142,24 +132,22 @@ impl From<CallFrameError> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    FunctionNotFound,
     MethodNotFound,
     InvalidInput,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
     InvalidInvocation,
-    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
-    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+
+    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoReturn(DecodeError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
@@ -196,8 +184,7 @@ impl<E> InvokeError<E> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 

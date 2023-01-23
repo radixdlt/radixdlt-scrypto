@@ -1,7 +1,7 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
@@ -97,7 +97,7 @@ impl ManifestBuilder {
     /// Takes resource from worktop, by non-fungible ids.
     pub fn take_from_worktop_by_ids<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
@@ -140,7 +140,7 @@ impl ManifestBuilder {
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::AssertWorktopContainsByIds {
@@ -205,7 +205,7 @@ impl ManifestBuilder {
     /// Creates proof from the auth zone by non-fungible ids.
     pub fn create_proof_from_auth_zone_by_ids<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
@@ -280,7 +280,7 @@ impl ManifestBuilder {
         &mut self,
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
@@ -302,7 +302,7 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         R: Into<AccessRule>,
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let initial_supply = initial_supply.map(|entries| {
@@ -329,11 +329,11 @@ impl ManifestBuilder {
         &mut self,
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let initial_supply = initial_supply.map(|entries| {
@@ -347,6 +347,33 @@ impl ManifestBuilder {
             metadata,
             owner_badge,
             initial_supply,
+        });
+        self
+    }
+
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: "create_validator".to_string(),
+            args: args!(key),
+        });
+        self
+    }
+
+    pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "register".to_string(),
+            args: args!(),
+        });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unregister".to_string(),
+            args: args!(),
         });
         self
     }
@@ -464,8 +491,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackage {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             royalty_config,
             metadata,
             access_rules,
@@ -478,7 +505,7 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -488,8 +515,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackageWithOwner {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             owner_badge,
         });
         self
@@ -596,7 +623,7 @@ impl ManifestBuilder {
         entries: T,
     ) -> &mut Self
     where
-        T: IntoIterator<Item = (NonFungibleId, V)>,
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
         let entries = entries
@@ -610,17 +637,37 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn mint_uuid_non_fungible<T, V>(
+        &mut self,
+        resource_address: ResourceAddress,
+        entries: T,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = V>,
+        V: NonFungibleData,
+    {
+        let entries = entries
+            .into_iter()
+            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .collect();
+        self.add_instruction(BasicInstruction::MintUuidNonFungible {
+            resource_address,
+            entries,
+        });
+        self
+    }
+
     pub fn recall(&mut self, vault_id: VaultId, amount: Decimal) -> &mut Self {
         self.add_instruction(BasicInstruction::RecallResource { vault_id, amount });
         self
     }
 
-    pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
+    pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_address.non_fungible_id().clone());
+        ids.insert(non_fungible_global_id.non_fungible_local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
-            non_fungible_address.resource_address(),
+            non_fungible_global_id.resource_address().clone(),
             |builder, bucket_id| {
                 builder
                     .add_instruction(BasicInstruction::BurnResource { bucket_id })
@@ -689,7 +736,7 @@ impl ManifestBuilder {
         &mut self,
         account: ComponentAddress,
         amount_to_lock: Decimal,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
@@ -757,7 +804,7 @@ impl ManifestBuilder {
     pub fn withdraw_from_account_by_ids(
         &mut self,
         account: ComponentAddress,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
@@ -804,7 +851,7 @@ impl ManifestBuilder {
     pub fn create_proof_from_account_by_ids(
         &mut self,
         account: ComponentAddress,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {

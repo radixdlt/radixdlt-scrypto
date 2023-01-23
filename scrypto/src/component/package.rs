@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeMap;

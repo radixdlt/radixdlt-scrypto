@@ -7,7 +7,7 @@ use crate::wasm::*;
 #[derive(Debug)]
 pub enum ExtractAbiError {
     InvalidWasm(PrepareError),
-    FailedToExportBlueprintAbi(InvokeError<WasmError>),
+    FailedToExportBlueprintAbi(InvokeError<WasmRuntimeError>),
     AbiDecodeError(DecodeError),
     InvalidBlueprintAbi,
 }
@@ -33,15 +33,11 @@ pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, Extrac
     let mut blueprints = BTreeMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(
-                &method_name,
-                vec![scrypto_encode(&()).unwrap()],
-                &mut runtime,
-            )
+            .invoke_export(&method_name, vec![], &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =
-            scrypto_decode(&rtn.raw).map_err(ExtractAbiError::AbiDecodeError)?;
+            scrypto_decode(rtn.as_slice()).map_err(ExtractAbiError::AbiDecodeError)?;
 
         if let Type::Struct { name, fields: _ } = &abi.structure {
             blueprints.insert(name.clone(), abi);

@@ -41,8 +41,10 @@ pub enum RENode {
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
+        ValidatorSetSubstate,
         AccessRulesChainSubstate,
     ),
+    Validator(ValidatorSubstate, AccessRulesChainSubstate),
     Clock(
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
@@ -187,6 +189,16 @@ impl RENode {
                     vault_access_rules.into(),
                 );
             }
+            RENode::Validator(validator, access_rules) => {
+                substates.insert(
+                    SubstateOffset::Validator(ValidatorOffset::Validator),
+                    validator.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules.into(),
+                );
+            }
             RENode::NonFungibleStore(non_fungible_store) => {
                 for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
                     substates.insert(
@@ -195,14 +207,23 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(epoch_manager, validator_set_substate, access_rules) => {
+            RENode::EpochManager(
+                epoch_manager,
+                current_validator_set_substate,
+                preparing_validator_set_substate,
+                access_rules,
+            ) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     epoch_manager.into(),
                 );
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet),
-                    validator_set_substate.into(),
+                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                    current_validator_set_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+                    preparing_validator_set_substate.into(),
                 );
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),

@@ -1,18 +1,28 @@
 use super::*;
 use crate::model::*;
-use crate::scrypto;
+use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ScryptoRENode {
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
 
 // TODO: Remove when better type system implemented
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeType {
     Bucket,
     Proof,
@@ -23,6 +33,7 @@ pub enum RENodeType {
     GlobalResourceManager,
     GlobalPackage,
     GlobalEpochManager,
+    GlobalValidator,
     GlobalClock,
     KeyValueStore,
     NonFungibleStore,
@@ -31,13 +42,25 @@ pub enum RENodeType {
     ResourceManager,
     Package,
     EpochManager,
+    Validator,
     Clock,
     TransactionRuntime,
     Logger,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -54,6 +77,7 @@ pub enum RENodeId {
     Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
+    Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
 }
 
@@ -67,6 +91,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
+            RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -113,22 +138,23 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-impl Into<SystemAddress> for RENodeId {
-    fn into(self) -> SystemAddress {
-        match self {
-            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
-            _ => panic!("Not a system address"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
-    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {
@@ -158,22 +184,22 @@ impl Into<ResourceAddress> for GlobalAddress {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
     AuthZoneStack,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessRulesChainOffset {
     AccessRulesChain,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MetadataOffset {
     Metadata,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     Info,
     State,
@@ -181,83 +207,109 @@ pub enum ComponentOffset {
     RoyaltyAccumulator,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     Info,
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalOffset {
     Global,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleId),
+    Entry(NonFungibleLocalId),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Vault,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
-    ValidatorSet,
+    CurrentValidatorSet,
+    PreparingValidatorSet,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ValidatorOffset {
+    Validator,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum FeeReserveOffset {
     FeeReserve,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
     Proof,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WorktopOffset {
     Worktop,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum LoggerOffset {
     Logger,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
@@ -272,6 +324,7 @@ pub enum SubstateOffset {
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
+    Validator(ValidatorOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
@@ -281,6 +334,16 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct SubstateId(pub RENodeId, pub SubstateOffset);

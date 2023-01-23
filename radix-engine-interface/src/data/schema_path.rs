@@ -7,10 +7,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use self::SchemaSubPath::{Field, Index};
-use crate::Describe;
+use crate::*;
 use scrypto_abi::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, LegacyDescribe, Categorize, Encode, Decode, Ord, PartialOrd,
+)]
 pub enum SchemaSubPath {
     Index(usize),
     Field(String),
@@ -30,7 +32,9 @@ impl FromStr for SchemaSubPath {
 }
 
 /// Describes a value located in some sbor given a schema for that sbor
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, LegacyDescribe, Categorize, Encode, Decode, Ord, PartialOrd,
+)]
 pub struct SchemaPath(pub Vec<SchemaSubPath>);
 
 impl SchemaPath {
@@ -53,7 +57,7 @@ impl SchemaPath {
         self
     }
 
-    pub fn to_sbor_path(&self, schema: &Type) -> Option<SborPath> {
+    pub fn to_sbor_path<'a>(&self, schema: &'a Type) -> Option<(SborPath, &'a Type)> {
         let mut cur_type = schema;
         let mut sbor_path: Vec<usize> = vec![];
 
@@ -71,7 +75,7 @@ impl SchemaPath {
                         cur_type = element_type.as_ref();
                         sbor_path.push(*index);
                     }
-                    _ => return Option::None,
+                    _ => return None,
                 },
                 SchemaSubPath::Field(field) => {
                     if let Type::Struct { name: _, fields } = cur_type {
@@ -85,19 +89,19 @@ impl SchemaPath {
                                     cur_type = next_type;
                                     sbor_path.push(index);
                                 } else {
-                                    return Option::None;
+                                    return None;
                                 }
                             }
-                            _ => return Option::None,
+                            _ => return None,
                         }
                     } else {
-                        return Option::None;
+                        return None;
                     }
                 }
             }
         }
 
-        Option::Some(SborPath::new(sbor_path))
+        Some((SborPath::new(sbor_path), cur_type))
     }
 }
 

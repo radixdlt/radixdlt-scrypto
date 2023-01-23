@@ -1,15 +1,13 @@
-use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoReceiver,
 };
+use radix_engine_interface::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -27,11 +25,11 @@ impl Runtime {
             .unwrap()
     }
 
-    pub fn package_token() -> NonFungibleAddress {
-        let non_fungible_id = NonFungibleId::Bytes(
+    pub fn package_token() -> NonFungibleGlobalId {
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
         );
-        NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id)
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.
@@ -55,16 +53,15 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let buffer = ScryptoEnv
-            .invoke(ScryptoInvocation::Function(
-                ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(package_address),
-                    blueprint_name: blueprint_name.as_ref().to_owned(),
-                    function_name: function_name.as_ref().to_owned(),
-                },
+            .invoke(ScryptoInvocation {
+                package_address,
+                blueprint_name: blueprint_name.as_ref().to_owned(),
+                fn_name: function_name.as_ref().to_owned(),
+                receiver: None,
                 args,
-            ))
+            })
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
     }
 
     /// Invokes a method on a component.
@@ -73,16 +70,14 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let buffer = ScryptoEnv
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component_address),
-                    method_name: method.as_ref().to_string(),
-                },
+        let output = ScryptoEnv
+            .invoke_method(
+                ScryptoReceiver::Global(component_address),
+                method.as_ref(),
                 args,
-            ))
+            )
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the transaction hash.

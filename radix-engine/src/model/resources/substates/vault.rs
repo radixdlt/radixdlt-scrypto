@@ -6,8 +6,7 @@ use crate::model::{
 use crate::types::*;
 use sbor::rust::ops::Deref;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultSubstate(pub Resource);
 
 impl VaultSubstate {
@@ -84,7 +83,7 @@ impl VaultRuntimeSubstate {
 
     pub fn take_non_fungibles(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<Resource, InvokeError<VaultError>> {
         let resource = self
             .borrow_resource_mut()
@@ -137,7 +136,7 @@ impl VaultRuntimeSubstate {
 
     pub fn create_proof_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         container_id: ResourceContainerId,
     ) -> Result<ProofSubstate, ProofError> {
         // lock the specified id set
@@ -172,7 +171,7 @@ impl VaultRuntimeSubstate {
         self.borrow_resource().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         self.borrow_resource().total_ids()
     }
 

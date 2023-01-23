@@ -1,8 +1,7 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine::wasm::WasmError;
-use radix_engine_interface::data::*;
+use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -39,7 +38,10 @@ fn deep_auth_rules_on_component_create_creation_fails() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| {
-        matches!(f, RuntimeError::KernelError(KernelError::WasmError(_)))
+        matches!(
+            f,
+            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
+        )
     });
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
@@ -79,7 +81,10 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| {
-        matches!(f, RuntimeError::KernelError(KernelError::WasmError(_)))
+        matches!(
+            f,
+            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
+        )
     });
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
@@ -102,9 +107,9 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::KernelError(KernelError::WasmError(WasmError::InvalidScryptoValue(
-                ScryptoValueDecodeError::DecodeError(DecodeError::MaxDepthExceeded(_))
-            )))
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(
+                DecodeError::MaxDepthExceeded(_)
+            ))
         )
     });
 }

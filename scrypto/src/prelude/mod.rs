@@ -1,12 +1,13 @@
 pub use crate::abi::*;
 pub use crate::component::*;
-pub use crate::resource::non_fungible::ScryptoNonFungibleId;
+pub use crate::resource::non_fungible::ScryptoNonFungibleLocalId;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
     blueprint, borrow_component, borrow_package, borrow_resource_manager, debug, error,
     external_blueprint, external_component, import, include_abi, include_code, info, resource_list,
-    scrypto, this_package, trace, warn, NonFungibleData,
+    this_package, trace, warn, LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode,
+    ScryptoEncode,
 };
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
@@ -31,7 +32,7 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, TypeId};
+pub use sbor::{Categorize, Decode, DecodeError, Encode};
 
 pub use super::radix_engine_derive;
 pub use super::radix_engine_interface;

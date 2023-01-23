@@ -12,15 +12,14 @@ use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -35,18 +34,18 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub application_logs: Vec<(Level, String)>,
-    pub next_epoch: Option<(HashSet<EcdsaSecp256k1PublicKey>, u64)>,
+    pub next_epoch: Option<(BTreeSet<Validator>, u64)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TransactionOutcome {
     Success(Vec<InstructionOutput>),
     Failure(RuntimeError),
@@ -71,13 +70,11 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
-    pub new_system_addresses: Vec<SystemAddress>,
 }
 
 impl EntityChanges {
@@ -86,7 +83,6 @@ impl EntityChanges {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
             new_resource_addresses: Vec::new(),
-            new_system_addresses: Vec::new(),
         };
 
         for new_global_address in new_global_addresses {
@@ -100,9 +96,6 @@ impl EntityChanges {
                 GlobalAddress::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
                 }
-                GlobalAddress::System(system_address) => {
-                    entity_changes.new_system_addresses.push(system_address)
-                }
             }
         }
 
@@ -110,13 +103,13 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
+#[derive(Clone)]
 pub struct TransactionReceipt {
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
@@ -230,12 +223,13 @@ impl TransactionReceipt {
         match &self.expect_commit_success()[nth] {
             InstructionOutput::Native(native) => {
                 // TODO: Use downcast
-                let value = IndexedScryptoValue::from_typed(&native.as_ref());
-                scrypto_decode::<T>(&value.raw).expect("Wrong native instruction output type!")
+                IndexedScryptoValue::from_typed(&native.as_ref())
+                    .as_typed()
+                    .expect("Wrong native instruction output type!")
             }
-            InstructionOutput::Scrypto(value) => {
-                scrypto_decode::<T>(&value.raw).expect("Wrong scrypto instruction output type!")
-            }
+            InstructionOutput::Scrypto(value) => value
+                .as_typed()
+                .expect("Wrong scrypto instruction output type!"),
         }
     }
 
@@ -252,11 +246,6 @@ impl TransactionReceipt {
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
-    }
-
-    pub fn new_system_addresses(&self) -> &Vec<SystemAddress> {
-        let commit = self.expect_commit();
-        &commit.entity_changes.new_system_addresses
     }
 }
 

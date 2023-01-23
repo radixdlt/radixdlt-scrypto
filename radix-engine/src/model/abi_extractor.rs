@@ -8,8 +8,7 @@ use crate::ledger::*;
 use crate::model::*;
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ExportError {
     ComponentNotFound(ComponentAddress),
     PackageNotFound(PackageAddress),

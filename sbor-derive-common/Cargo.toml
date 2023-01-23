@@ -1,0 +1,13 @@
+[package]
+name = "sbor-derive-common"
+version = "0.8.0"
+edition = "2021"
+
+[dependencies]
+proc-macro2 = { version = "1.0.38" }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+quote = { version = "1.0.18" }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+
+[features]
+trace = []

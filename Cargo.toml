@@ -13,8 +13,9 @@
 #   to avoid falling back to the root workspace.
 
 members = [
-    "sbor-derive",
     "sbor",
+    "sbor-derive-common",
+    "sbor-derive",
     "sbor-tests",
     "scrypto-abi",
     "scrypto-derive",

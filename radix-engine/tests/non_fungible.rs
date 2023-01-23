@@ -1,6 +1,6 @@
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
+use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -28,7 +28,7 @@ fn create_non_fungible_mutable() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -61,20 +61,22 @@ fn can_burn_non_fungible() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::U32(0));
-    let mut ids = BTreeSet::new();
-    ids.insert(NonFungibleId::U32(0));
+    let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
+    let ids = test_runner.inspect_nft_vault(vault_id).unwrap();
+    let first_id = ids.into_iter().next().unwrap();
+
+    let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, first_id);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, resource_address)
-        .burn_non_fungible(non_fungible_address.clone())
+        .burn_non_fungible(non_fungible_global_id.clone())
         .call_function(
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
-            args!(non_fungible_address),
+            args!(non_fungible_global_id),
         )
         .call_method(
             account,
@@ -84,7 +86,7 @@ fn can_burn_non_fungible() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -188,13 +190,13 @@ fn test_non_fungible() {
         .call_function(
             package_address,
             "NonFungibleTest",
-            "get_non_fungible_ids_bucket",
+            "get_non_fungible_local_ids_bucket",
             args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            "get_non_fungible_ids_vault",
+            "get_non_fungible_local_ids_vault",
             args!(),
         )
         .call_method(
@@ -205,7 +207,7 @@ fn test_non_fungible() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -232,7 +234,7 @@ fn test_singleton_non_fungible() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -262,7 +264,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
     let badge_resource_address = receipt
@@ -297,7 +299,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
@@ -313,7 +315,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -331,7 +333,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_wrong_non_fungible_id_type",
+            "create_wrong_non_fungible_local_id_type",
             args!(),
         )
         .call_method(
@@ -342,7 +344,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -350,7 +352,63 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 }
 
 #[test]
-fn create_non_fungible_with_default_id_type() {
+fn create_bytes_non_fungible() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_bytes_non_fungible",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_string_non_fungible() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_string_non_fungible",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_uuid_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -362,7 +420,7 @@ fn create_non_fungible_with_default_id_type() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_with_default_non_fungible_id_type",
+            "create_uuid_non_fungible",
             args!(),
         )
         .call_method(
@@ -373,7 +431,7 @@ fn create_non_fungible_with_default_id_type() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -381,7 +439,86 @@ fn create_non_fungible_with_default_id_type() {
 }
 
 #[test]
-fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
+fn can_mint_uuid_non_fungible_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_uuid_non_fungible_and_mint",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[derive(NonFungibleData)]
+pub struct Sandwich {
+    pub name: String,
+    #[mutable]
+    pub available: bool,
+}
+
+#[test]
+fn can_mint_uuid_non_fungible_in_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_mintable_uuid_non_fungible",
+            args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .mint_uuid_non_fungible(
+            resource_address,
+            vec![Sandwich {
+                name: "test".to_string(),
+                available: false,
+            }],
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -406,17 +543,18 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::UUID(0));
+    let non_fungible_global_id =
+        NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::UUID(0));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, resource_address)
-        .burn_non_fungible(non_fungible_address.clone())
+        .burn_non_fungible(non_fungible_global_id.clone())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

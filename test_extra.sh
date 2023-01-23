@@ -8,12 +8,17 @@ source test_utils.sh
 
 setup_test_runner
 
-echo "Testing scrypto with release profile..."
+echo "Testing sbor with release profile..."
 test_crates_features \
     "sbor" \
     "--release"
 
-echo "Testing raidx engine with wasmer..."
+echo "Testing sbor with indexmap..."
+test_crates_features \
+    "sbor" \
+    "--features indexmap"
+
+echo "Testing radix engine with wasmer..."
 test_crates_features \
     "radix-engine" \
     "--features wasmer"

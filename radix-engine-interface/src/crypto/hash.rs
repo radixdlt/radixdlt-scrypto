@@ -89,7 +89,7 @@ impl Hash {
     }
 }
 
-scrypto_type!(Hash, ScryptoCustomTypeId::Hash, Type::Hash, 32);
+scrypto_type!(Hash, ScryptoCustomValueKind::Hash, Type::Hash, 32);
 
 //======
 // text

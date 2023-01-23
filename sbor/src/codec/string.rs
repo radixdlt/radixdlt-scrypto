@@ -1,11 +1,14 @@
 use crate::rust::string::String;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
-impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for str {
+categorize_simple!(str, ValueKind::String);
+categorize_simple!(String, ValueKind::String);
+
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for str {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -16,10 +19,10 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for str {
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for String {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for String {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -28,15 +31,24 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for String {
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for String {
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for String {
     #[inline]
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let len = decoder.read_size()?;
         let slice = decoder.read_slice(len)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
+}
+
+pub use schema::*;
+
+mod schema {
+    use super::*;
+
+    describe_basic_well_known_type!(String, STRING_ID);
+    describe_basic_well_known_type!(str, STRING_ID);
 }

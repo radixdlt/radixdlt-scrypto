@@ -15,14 +15,17 @@ pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 /// A unique identifier used in the addressing of Epoch Manager System Addresses.
 pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
 
+/// A unique identifier used in the addressing of Validator System Addresses.
+pub const VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x05;
+
 /// A unique identifier used in the addressing of Clock System Addresses.
-pub const CLOCK_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x05;
+pub const CLOCK_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x06;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x06;
+pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x07;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x07;
+pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
@@ -34,6 +37,7 @@ pub enum EntityType {
     EcdsaSecp256k1VirtualAccountComponent,
     EddsaEd25519VirtualAccountComponent,
     EpochManager,
+    Validator,
     Clock,
 }
 
@@ -48,19 +52,15 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::Clock(_) => Self::Clock,
+            ComponentAddress::EpochManager(_) => Self::EpochManager,
+            ComponentAddress::Validator(_) => Self::Validator,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
                 Self::EcdsaSecp256k1VirtualAccountComponent
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 Self::EddsaEd25519VirtualAccountComponent
             }
-        }
-    }
-
-    pub fn system(address: &SystemAddress) -> Self {
-        match address {
-            SystemAddress::EpochManager(_) => Self::EpochManager,
-            SystemAddress::Clock(_) => Self::Clock,
         }
     }
 
@@ -77,6 +77,7 @@ impl EntityType {
                 EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
             }
             Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
+            Self::Validator => VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID,
             Self::Clock => CLOCK_SYSTEM_ADDRESS_ENTITY_ID,
         }
     }
@@ -98,6 +99,7 @@ impl TryFrom<u8> for EntityType {
                 Ok(Self::EddsaEd25519VirtualAccountComponent)
             }
             EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
+            VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Validator),
             CLOCK_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Clock),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }

@@ -5,7 +5,7 @@ use crate::model::InvokeError;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
 pub enum PrepareError {
     /// Failed to deserialize.
     /// See <https://webassembly.github.io/spec/core/syntax/index.html>
@@ -49,13 +49,13 @@ pub enum PrepareError {
     NotCompilable,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
     NoMemorySection,
@@ -69,7 +69,7 @@ pub enum InvalidMemory {
     MemoryNotExported,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,
@@ -78,35 +78,60 @@ pub enum InvalidTable {
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum WasmError {
-    MemoryAllocError,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum WasmRuntimeError {
+    /// Error when reading wasm memory.
     MemoryAccessError,
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidScryptoValueResponse(EncodeError),
-    WasmError(String),
-    FunctionNotFound,
-    InvalidRadixEngineInput,
-    MissingReturnData,
-    InvalidReturnData,
+
+    /// WASM attempted to call undefined host function, addressed by offset.
+    UnknownHostFunction(usize),
+
+    /// Host attempted to call unknown WASM function, addressed by name.
+    UnknownWasmFunction(String),
+
+    /// WASM interpreter error, such as traps.
+    InterpreterError(String),
+
+    /// WASM function return is not a `u64`, which points to a valid memory range.
+    InvalidExportReturn,
+
+    //=============
+    // SHIM ERRORS
+    //=============
+    /// Not implemented, no-op wasm runtime
+    NotImplemented,
+    /// Buffer not found
+    BufferNotFound(BufferId),
+    /// Invalid scrypto receiver
+    InvalidReceiver(DecodeError),
+    /// Invalid method ident
+    InvalidIdent,
+    /// Invalid invocation
+    InvalidInvocation(DecodeError),
+    /// Invalid RE node data
+    InvalidNode(DecodeError),
+    /// Invalid RE node ID
+    InvalidNodeId(DecodeError),
+    /// Invalid substate offset
+    InvalidOffset(DecodeError),
+    /// Costing error
     CostingError(FeeReserveError),
 }
 
-impl fmt::Display for WasmError {
+impl fmt::Display for WasmRuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmError {}
+impl std::error::Error for WasmRuntimeError {}
 
-impl fmt::Display for InvokeError<WasmError> {
+impl fmt::Display for InvokeError<WasmRuntimeError> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for InvokeError<WasmError> {}
+impl std::error::Error for InvokeError<WasmRuntimeError> {}

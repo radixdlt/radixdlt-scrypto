@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -122,7 +121,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -48,7 +47,7 @@ fn stored_component_addresses_are_invokable() {
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -61,7 +60,7 @@ fn stored_component_addresses_are_invokable() {
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

@@ -1,7 +1,6 @@
-use crate::scrypto;
-use sbor::*;
+use crate::*;
 
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Reference {
     // TODO: add more
 }

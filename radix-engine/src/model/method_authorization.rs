@@ -1,57 +1,44 @@
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum MethodAuthorizationError {
     NotAuthorized,
     UnsupportedMethod,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardDecimal {
     Amount(Decimal),
-    SoftDecimalNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum HardCount {
     Count(u8),
-    SoftCountNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardResourceOrNonFungible {
-    NonFungible(NonFungibleAddress),
+    NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
-    SoftResourceNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
-impl From<NonFungibleAddress> for HardResourceOrNonFungible {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        HardResourceOrNonFungible::NonFungible(non_fungible_address)
-    }
-}
-
-impl From<ResourceAddress> for HardResourceOrNonFungible {
-    fn from(resource_address: ResourceAddress) -> Self {
-        HardResourceOrNonFungible::Resource(resource_address)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
-    SoftResourceListNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardProofRule {
     Require(HardResourceOrNonFungible),
     AmountOf(HardDecimal, HardResourceOrNonFungible),
@@ -60,8 +47,7 @@ pub enum HardProofRule {
     CountOf(HardCount, HardProofRuleResourceList),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardAuthRule {
     ProofRule(HardProofRule),
     AnyOf(Vec<HardAuthRule>),
@@ -69,8 +55,7 @@ pub enum HardAuthRule {
 }
 
 /// Authorization of a method call
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),
     AllowAll,

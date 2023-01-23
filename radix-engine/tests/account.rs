@@ -1,7 +1,5 @@
 use radix_engine::model::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -25,7 +23,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -69,7 +67,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -104,7 +102,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -141,7 +139,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -172,7 +170,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let outputs = receipt.expect_commit_success();
 
@@ -180,7 +178,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
     assert_eq!(
         outputs[1].as_vec(),
-        IndexedScryptoValue::from_typed(&Decimal::from(1000)).raw
+        IndexedScryptoValue::from_typed(&Decimal::from(1000)).into_vec()
     );
 }
 

@@ -7,7 +7,7 @@ use bitflags::bitflags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
-    #[derive(Encode, Decode, TypeId)]
+    #[derive(Encode, Decode, Categorize)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;
@@ -42,7 +42,7 @@ pub trait SystemApi {
     ) -> Result<Resource, RuntimeError>;
 
     /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     fn get_visible_node_data(
         &mut self,
@@ -79,9 +79,12 @@ pub trait SystemApi {
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 }
 
-// TODO: Clean this up
-pub trait ResolverApi<W: WasmEngine> {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
-    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+pub trait VmApi<W: WasmEngine> {
     fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+}
+
+// TODO: Clean this up
+pub trait ResolverApi {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }

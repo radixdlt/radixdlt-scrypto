@@ -1,20 +1,18 @@
-use sbor::rust::string::String;
-use sbor::*;
-
 use crate::api::types::*;
+use crate::api::*;
+use crate::data::scrypto_decode;
 use crate::model::*;
-use crate::scrypto;
-use crate::Describe;
+use crate::*;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageIdentifier {
     Scrypto(PackageAddress),
     Native(NativePackage),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
     Component,
@@ -28,8 +26,7 @@ pub enum NativePackage {
     TransactionProcessor,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
@@ -60,8 +57,7 @@ impl FnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ScryptoFnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -86,14 +82,27 @@ impl ScryptoFnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
     Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
+    Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
@@ -113,7 +122,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -141,8 +150,11 @@ impl NativeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesChainFn {
     AddAccessCheck,
@@ -167,8 +179,11 @@ pub enum AccessRulesChainFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataFn {
     Set,
@@ -189,8 +204,11 @@ pub enum MetadataFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentFn {
     SetRoyaltyConfig,
@@ -213,8 +231,11 @@ pub enum ComponentFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
@@ -236,14 +257,19 @@ pub enum PackageFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
     Create,
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
+    CreateValidator,
+    UpdateValidator,
 }
 
 #[derive(
@@ -260,8 +286,138 @@ pub enum EpochManagerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ValidatorFn {
+    Register,
+    Unregister,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ResolveError {
+    DecodeError(DecodeError),
+    NotAMethod,
+}
+
+pub struct EpochManagerPackage;
+
+impl EpochManagerPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<NativeInvocation, ResolveError> {
+        let invocation = match receiver {
+            ComponentAddress::EpochManager(..) => {
+                let epoch_manager_fn =
+                    EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match epoch_manager_fn {
+                    EpochManagerFn::Create => {
+                        return Err(ResolveError::NotAMethod);
+                    }
+                    EpochManagerFn::GetCurrentEpoch => {
+                        let _args: EpochManagerGetCurrentEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
+                            EpochManagerGetCurrentEpochInvocation { receiver },
+                        ))
+                    }
+                    EpochManagerFn::NextRound => {
+                        let args: EpochManagerNextRoundMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+                            EpochManagerNextRoundInvocation {
+                                receiver,
+                                round: args.round,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::SetEpoch => {
+                        let args: EpochManagerSetEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
+                            EpochManagerSetEpochInvocation {
+                                receiver,
+                                epoch: args.epoch,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::CreateValidator => {
+                        let args: EpochManagerCreateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
+                            EpochManagerCreateValidatorInvocation {
+                                receiver,
+                                key: args.validator,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::UpdateValidator => {
+                        let args: EpochManagerUpdateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
+                            EpochManagerUpdateValidatorInvocation {
+                                receiver,
+                                validator_address: args.validator_address,
+                                register: args.register,
+                                key: args.key,
+                            },
+                        ))
+                    }
+                }
+            }
+            ComponentAddress::Validator(..) => {
+                let validator_fn =
+                    ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match validator_fn {
+                    ValidatorFn::Register => {
+                        let _args: ValidatorRegisterMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Register(
+                            ValidatorRegisterInvocation { receiver },
+                        ))
+                    }
+                    ValidatorFn::Unregister => {
+                        let _args: ValidatorUnregisterValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unregister(
+                            ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+                }
+            }
+            _ => return Err(ResolveError::NotAMethod),
+        };
+
+        Ok(invocation)
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneStackFn {
     Pop,
@@ -288,11 +444,21 @@ pub enum AuthZoneStackFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
-    Mint,
+    CreateNonFungible,
+    CreateFungible,
+    CreateNonFungibleWithInitialSupply,
+    CreateUuidNonFungibleWithInitialSupply,
+    CreateFungibleWithInitialSupply,
+    MintNonFungible,
+    MintUuidNonFungible,
+    MintFungible,
     Burn,
     UpdateVaultAuth,
     LockAuth,
@@ -303,7 +469,6 @@ pub enum ResourceManagerFn {
     NonFungibleExists,
     CreateBucket,
     CreateVault,
-    Create,
     BurnBucket,
 }
 
@@ -321,14 +486,17 @@ pub enum ResourceManagerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketFn {
     Take,
     TakeNonFungibles,
     Put,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetAmount,
     GetResourceAddress,
     CreateProof,
@@ -348,8 +516,11 @@ pub enum BucketFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultFn {
     Take,
@@ -358,7 +529,7 @@ pub enum VaultFn {
     TakeNonFungibles,
     GetAmount,
     GetResourceAddress,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
@@ -380,13 +551,16 @@ pub enum VaultFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofFn {
     Clone,
     GetAmount,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetResourceAddress,
 }
 
@@ -404,8 +578,11 @@ pub enum ProofFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopFn {
     TakeAll,
@@ -432,14 +609,62 @@ pub enum WorktopFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
     Create,
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+pub struct ClockPackage;
+
+impl ClockPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<ClockInvocation, ResolveError> {
+        let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match clock_fn {
+            ClockFn::Create => {
+                return Err(ResolveError::NotAMethod);
+            }
+            ClockFn::CompareCurrentTime => {
+                let args: ClockCompareCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::CompareCurrentTime(ClockCompareCurrentTimeInvocation {
+                    receiver,
+                    instant: args.instant,
+                    precision: args.precision,
+                    operator: args.operator,
+                })
+            }
+            ClockFn::GetCurrentTime => {
+                let args: ClockGetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                    receiver,
+                    precision: args.precision,
+                })
+            }
+            ClockFn::SetCurrentTime => {
+                let args: ClockSetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                    receiver,
+                    current_time_ms: args.current_time_ms,
+                })
+            }
+        };
+
+        Ok(invocation)
+    }
 }
 
 #[derive(
@@ -456,8 +681,11 @@ pub enum ClockFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum LoggerFn {
     Log,
@@ -477,8 +705,11 @@ pub enum LoggerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionRuntimeFn {
     Get,
@@ -499,8 +730,11 @@ pub enum TransactionRuntimeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,

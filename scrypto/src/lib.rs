@@ -20,8 +20,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod abi {
     pub use scrypto_abi::*;
 }
-/// Scrypto buffer for wasm-engine data exchange.
-pub mod buffer;
 /// Scrypto component abstraction.
 pub mod component;
 /// Scrypto runtime abstraction.
@@ -56,11 +54,13 @@ pub use macros::*;
 
 // Re-export radix engine derives
 pub extern crate radix_engine_derive;
-pub use radix_engine_derive::{scrypto, Describe};
+pub use radix_engine_derive::{
+    LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+};
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, NonFungibleData};
+pub use scrypto_derive::{blueprint, import};
 
 pub extern crate radix_engine_interface;
 pub extern crate scrypto_abi;

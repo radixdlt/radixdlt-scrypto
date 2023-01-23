@@ -1,10 +1,10 @@
+use radix_engine::engine::ApplicationError;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
+use radix_engine::model::TransactionProcessorError;
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use scrypto::runtime::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
@@ -15,7 +15,7 @@ fn test_manifest_with_non_existent_resource() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let non_existent_resource = ResourceAddress::Normal([0u8; 26]);
+    let non_existent_resource = ResourceAddress::Normal([1u8; 26]);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -26,7 +26,7 @@ fn test_manifest_with_non_existent_resource() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -77,7 +77,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
@@ -101,7 +101,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
@@ -119,8 +119,8 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .add_instruction(BasicInstruction::PublishPackage {
-            code: Blob(Hash([0; 32])),
-            abi: Blob(Hash([0; 32])),
+            code: ManifestBlobRef(Hash([0; 32])),
+            abi: ManifestBlobRef(Hash([0; 32])),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new(),
@@ -129,13 +129,18 @@ fn test_non_existent_blob_hash() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::BlobNotFound(_)))
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::BlobNotFound(_)
+            ))
+        )
     });
 }
 
@@ -159,7 +164,7 @@ fn test_entire_auth_zone() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
@@ -186,7 +191,7 @@ fn test_faucet_drain_attempt_should_fail() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 

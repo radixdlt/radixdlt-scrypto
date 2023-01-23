@@ -1,10 +1,9 @@
 use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, RuntimeError, SystemApi};
 use crate::types::*;
-use radix_engine_interface::api::api::ActorApi;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::ActorApi;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NodeMoveError {
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
@@ -78,6 +77,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                 NodeMoveError::CantMoveDownstream(node_id),
@@ -120,6 +120,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                 NodeMoveError::CantMoveUpstream(node_id),
