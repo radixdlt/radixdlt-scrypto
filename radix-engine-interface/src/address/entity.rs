@@ -37,7 +37,7 @@ pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x
 pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
 
 /// An enum which represents the different addressable entities.
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
     Resource,
     Package,

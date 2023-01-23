@@ -773,7 +773,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::System(invocation) => {
-                    let rtn = invoke_native_fn(invocation.clone(), api)?;
+                    let mut invocation = invocation.clone();
+                    processor.replace_ids_native(&mut invocation)?;
+                    let rtn = invoke_native_fn(invocation, api)?;
 
                     // TODO: Move buckets/proofs to worktop/authzone without serialization
                     let result = IndexedScryptoValue::from_typed(rtn.as_ref());
@@ -913,6 +915,19 @@ impl TransactionProcessor {
         }
 
         Ok(())
+    }
+
+    fn replace_ids_native(
+        &mut self,
+        invocation: &mut NativeInvocation,
+    ) -> Result<(), RuntimeError> {
+        invocation
+            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReplaceManifestValuesError(e),
+                ))
+            })
     }
 
     fn replace_manifest_values<'a, Y>(
