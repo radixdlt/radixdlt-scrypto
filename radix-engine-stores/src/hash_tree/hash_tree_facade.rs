@@ -168,6 +168,9 @@ impl InternalNode {
                     if child_meta.is_leaf {
                         NodeType::Leaf
                     } else {
+                        // Note: the `0` passed here may be replaced with an actual value (which we
+                        // would have to persist) once we have use-cases for quick look-ups of leaf
+                        // counts.
                         NodeType::Internal { leaf_count: 0 }
                     },
                 );
