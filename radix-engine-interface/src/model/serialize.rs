@@ -234,8 +234,7 @@ pub enum AccessControllerInvocation {
         AccessControllerQuickConfirmRecoveryAsConfirmationInvocation,
     ),
 
-    TimedConfirmRecoveryAsPrimary(AccessControllerTimedConfirmRecoveryAsPrimaryInvocation),
-    TimedConfirmRecoveryAsRecovery(AccessControllerTimedConfirmRecoveryAsRecoveryInvocation),
+    TimedConfirmRecovery(AccessControllerTimedConfirmRecoveryInvocation),
 
     CancelRecoveryAttemptAsPrimary(AccessControllerCancelRecoveryAttemptAsPrimaryInvocation),
     CancelRecoveryAttemptAsRecovery(AccessControllerCancelRecoveryAttemptAsRecoveryInvocation),
@@ -523,11 +522,8 @@ impl NativeInvocation {
                         receiver, ..
                     },
                 )
-                | AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(
-                    AccessControllerTimedConfirmRecoveryAsPrimaryInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(
-                    AccessControllerTimedConfirmRecoveryAsRecoveryInvocation { receiver, .. },
+                | AccessControllerInvocation::TimedConfirmRecovery(
+                    AccessControllerTimedConfirmRecoveryInvocation { receiver, .. },
                 )
                 | AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(
                     AccessControllerCancelRecoveryAttemptAsPrimaryInvocation { receiver, .. },

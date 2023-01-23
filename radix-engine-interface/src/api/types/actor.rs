@@ -825,8 +825,7 @@ pub enum AccessControllerFn {
     QuickConfirmRecoveryAsRecovery,
     QuickConfirmRecoveryAsConfirmation,
 
-    TimedConfirmRecoveryAsPrimary,
-    TimedConfirmRecoveryAsRecovery,
+    TimedConfirmRecovery,
 
     CancelRecoveryAttemptAsPrimary,
     CancelRecoveryAttemptAsRecovery,
@@ -922,26 +921,11 @@ impl AccessControllerPackage {
                     },
                 )
             }
-            AccessControllerFn::TimedConfirmRecoveryAsPrimary => {
-                let args =
-                    scrypto_decode::<AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs>(args)
-                        .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(
-                    AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
-                        receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                    },
-                )
-            }
-            AccessControllerFn::TimedConfirmRecoveryAsRecovery => {
-                let args =
-                    scrypto_decode::<AccessControllerTimedConfirmRecoveryAsRecoveryMethodArgs>(
-                        args,
-                    )
+            AccessControllerFn::TimedConfirmRecovery => {
+                let args = scrypto_decode::<AccessControllerTimedConfirmRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(
-                    AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
+                AccessControllerInvocation::TimedConfirmRecovery(
+                    AccessControllerTimedConfirmRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
                         timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,

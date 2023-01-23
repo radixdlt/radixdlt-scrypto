@@ -267,7 +267,7 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let timed_recovery_allowed_after = {
+        {
             // Checking if primary is locked or not - If it is, and the proposer is primary, then we
             // error out.
             let substate = api.get_ref(handle)?;
@@ -276,20 +276,33 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
             if self.proposer == Proposer::Primary && access_controller.is_primary_role_locked {
                 Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
             }
+        }
 
-            // Calculating when timed recovery may be performed (if allowed by this access
-            // controller)
-            match access_controller.timed_recovery_delay_in_minutes {
-                Some(delay_in_minutes) => {
-                    let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
-                    let timed_recovery_allowed_after =
-                        current_time.add_minutes(delay_in_minutes as i64).map_or(
-                            Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
-                            |instant| Ok(instant),
-                        )?;
-                    Some(timed_recovery_allowed_after)
+        let timed_recovery_allowed_after = {
+            // Only the recovery role is allowed to perform timed recoveries. If the proposer is not
+            // Recovery, then return None
+            match self.proposer {
+                Proposer::Primary => None,
+                Proposer::Recovery => {
+                    let substate = api.get_ref(handle)?;
+                    let access_controller = substate.access_controller();
+
+                    // Calculating when timed recovery may be performed (if allowed by this access
+                    // controller)
+                    match access_controller.timed_recovery_delay_in_minutes {
+                        Some(delay_in_minutes) => {
+                            let current_time =
+                                Runtime::sys_current_time(api, TimePrecision::Minute)?;
+                            let timed_recovery_allowed_after =
+                                current_time.add_minutes(delay_in_minutes as i64).map_or(
+                                    Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
+                                    |instant| Ok(instant),
+                                )?;
+                            Some(timed_recovery_allowed_after)
+                        }
+                        None => None,
+                    }
                 }
-                None => None,
             }
         };
 
@@ -534,11 +547,10 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
 pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
-    pub proposer: Proposer,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
+impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Exec = AccessControllerTimedConfirmRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
@@ -554,45 +566,13 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
-            proposer: Proposer::Primary,
-            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerTimedConfirmRecoveryExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecoveryAsRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            rule_set: self.rule_set,
-            proposer: Proposer::Recovery,
             timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
         };
 
@@ -633,7 +613,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                                 ..
                             },
                         )| {
-                            self.proposer == **proposer
+                            Proposer::Recovery == **proposer
                                 && self.rule_set == *rule_set
                                 && self.timed_recovery_delay_in_minutes
                                     == *timed_recovery_delay_in_minutes
@@ -985,12 +965,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     );
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::TimedConfirmRecoveryAsPrimary,
-        )),
-        primary_group.into(),
-    );
-    access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
             AccessControllerFn::CancelRecoveryAttemptAsPrimary,
         )),
         primary_group.into(),
@@ -1013,7 +987,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     );
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::TimedConfirmRecoveryAsRecovery,
+            AccessControllerFn::TimedConfirmRecovery,
         )),
         recovery_group.into(),
     );

@@ -151,8 +151,7 @@ pub trait InvokableModel<E>:
     + Invokable<AccessControllerQuickConfirmRecoveryAsPrimaryInvocation, E>
     + Invokable<AccessControllerQuickConfirmRecoveryAsRecoveryInvocation, E>
     + Invokable<AccessControllerQuickConfirmRecoveryAsConfirmationInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryAsPrimaryInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryInvocation, E>
     + Invokable<AccessControllerCancelRecoveryAttemptAsPrimaryInvocation, E>
     + Invokable<AccessControllerCancelRecoveryAttemptAsRecoveryInvocation, E>
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>

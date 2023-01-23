@@ -234,70 +234,34 @@ impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryAsConfirm
 }
 
 //=================================
-// Access Controller Timed Confirm As Primary
+// Access Controller Timed Confirm
 //=================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs {
+pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
+pub struct AccessControllerTimedConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-impl Invocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
+impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
+impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
+impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(self),
-        )
-        .into()
-    }
-}
-
-//============================================
-// Access Controller Timed Confirm As Primary
-//============================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsRecoveryMethodArgs {
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-impl Invocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(self),
-        )
-        .into()
+        NativeInvocation::AccessController(AccessControllerInvocation::TimedConfirmRecovery(self))
+            .into()
     }
 }
 

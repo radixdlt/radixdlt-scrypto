@@ -92,7 +92,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
-        Role::Primary,
+        Role::Recovery,
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
@@ -102,7 +102,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
-        Role::Primary,
+        Role::Recovery,
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
@@ -118,7 +118,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
-        Role::Primary,
+        Role::Recovery,
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
@@ -128,7 +128,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
-        Role::Primary,
+        Role::Recovery,
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
@@ -141,6 +141,32 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
 
 #[test]
 pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(None);
+    test_runner.initiate_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
+    test_runner.push_time_forward(10);
+
+    // Act
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(is_timed_recovery_can_not_be_performed_while_disabled_error);
+}
+
+#[test]
+pub fn timed_confirm_recovery_with_non_recovery_role_fails() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(None);
     test_runner.initiate_recovery(
@@ -162,7 +188,7 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_timed_recovery_can_not_be_performed_while_disabled_error);
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
 }
 
 #[test]
@@ -170,7 +196,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
-        Role::Primary,
+        Role::Recovery,
         rule!(require(test_runner.primary_role_badge)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
@@ -184,7 +210,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
 
     test_runner
         .timed_confirm_recovery(
-            Role::Primary,
+            Role::Recovery,
             rule!(require(test_runner.primary_role_badge)),
             rule!(require(RADIX_TOKEN)),
             rule!(require(RADIX_TOKEN)),
@@ -363,10 +389,7 @@ mod normal_operations_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (
-                Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
-            ),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -604,10 +627,7 @@ mod normal_operations_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (
-                Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
-            ),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (
                 Role::Recovery,
                 Some(is_no_valid_proposed_rule_set_exists_error),
@@ -848,10 +868,7 @@ mod recovery_mode_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (
-                Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
-            ),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1098,10 +1115,7 @@ mod recovery_mode_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (
-                Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
-            ),
+            (Role::Primary, Some(is_auth_unauthorized_error)),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1386,18 +1400,14 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
-        let method_name = match as_role {
-            Role::Primary => AccessControllerFn::TimedConfirmRecoveryAsPrimary,
-            Role::Recovery => AccessControllerFn::TimedConfirmRecoveryAsRecovery,
-            Role::Confirmation => panic!("No method for the given role"),
-        };
+        let method_name = AccessControllerFn::TimedConfirmRecovery;
 
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 &method_name.to_string(),
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryAsPrimaryMethodArgs {
+                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

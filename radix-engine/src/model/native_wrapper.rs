@@ -565,11 +565,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::TimedConfirmRecoveryAsPrimary(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::TimedConfirmRecoveryAsRecovery(invocation) => {
+            AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
