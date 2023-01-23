@@ -75,23 +75,22 @@ impl Executor for AccessControllerCreateGlobalInvocation {
             vault
         };
 
-        // Creating the Access Controller substate
-        let access_controller_substate = AccessControllerSubstate {
-            controlled_asset: vault.0,
-            ongoing_recoveries: None,
-            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
-            is_primary_role_locked: false,
-        };
-        let access_rules_chain_substate = AccessRulesChainSubstate {
-            access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
-        };
+        // Constructing the Access Controller RENode and Substates
+        let access_controller = RENode::AccessController(
+            AccessControllerSubstate {
+                controlled_asset: vault.0,
+                ongoing_recoveries: None,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+                is_primary_role_locked: false,
+            },
+            AccessRulesChainSubstate {
+                access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
+            },
+        );
 
         // Allocating an RENodeId and creating the access controller RENode
         let node_id = api.allocate_node_id(RENodeType::AccessController)?;
-        api.create_node(
-            node_id,
-            RENode::AccessController(access_controller_substate, access_rules_chain_substate),
-        )?;
+        api.create_node(node_id, access_controller)?;
 
         // Creating a global component address for the access controller RENode
         let global_node_id = api.allocate_node_id(RENodeType::GlobalAccessController)?;
@@ -201,6 +200,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
@@ -232,6 +232,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
@@ -266,8 +267,9 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Lock checks and Getting the timed recovery delay
-        let timed_recovery_delay_in_minutes = {
+        let timed_recovery_allowed_after = {
+            // Checking if primary is locked or not - If it is, and the proposer is primary, then we
+            // error out.
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
@@ -275,22 +277,23 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
                 Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
             }
 
-            access_controller.timed_recovery_delay_in_minutes
-        };
-
-        // Getting the time when timed recovery will be allowed
-        let timed_recovery_allowed_after = match timed_recovery_delay_in_minutes {
-            Some(delay_in_minutes) => {
-                let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
-                Some(current_time.add_minutes(delay_in_minutes as i64).map_or(
-                    Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
-                    |instant| Ok(instant),
-                )?)
+            // Calculating when timed recovery may be performed (if allowed by this access
+            // controller)
+            match access_controller.timed_recovery_delay_in_minutes {
+                Some(delay_in_minutes) => {
+                    let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
+                    let timed_recovery_allowed_after =
+                        current_time.add_minutes(delay_in_minutes as i64).map_or(
+                            Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
+                            |instant| Ok(instant),
+                        )?;
+                    Some(timed_recovery_allowed_after)
+                }
+                None => None,
             }
-            None => None,
         };
 
-        // Initiate Recovery (if this role doesn't already have a recovery Ongoing)
+        // Initiate Recovery (if this role doesn't already have an ongoing recovery)
         {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
@@ -451,41 +454,43 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Quick confirm and get new rule set
+        // The following code attempts to get the recovery proposal given the inputs of the
+        // invocation.
         let recovery_proposal = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            access_controller
-                .ongoing_recoveries
-                .as_ref()
-                .unwrap_or(&HashMap::new())
-                .iter()
-                .find(
-                    |(
-                        proposer,
-                        RecoveryProposal {
-                            rule_set: proposed_rule_set,
-                            timed_recovery_delay_in_minutes,
-                            ..
+            match access_controller.ongoing_recoveries.as_ref() {
+                Some(ongoing_recoveries) => ongoing_recoveries
+                    .iter()
+                    .find(
+                        |(
+                            proposer,
+                            RecoveryProposal {
+                                rule_set,
+                                timed_recovery_delay_in_minutes,
+                                ..
+                            },
+                        )| {
+                            self.proposer == **proposer
+                                && self.confirmor != self.proposer.into()
+                                && self.rule_set == *rule_set
+                                && self.timed_recovery_delay_in_minutes
+                                    == *timed_recovery_delay_in_minutes
                         },
-                    )| {
-                        **proposer == self.proposer
-                            && *proposed_rule_set == self.rule_set
-                            && Role::from(self.proposer) != self.confirmor
-                            && *timed_recovery_delay_in_minutes
-                                == self.timed_recovery_delay_in_minutes
-                    },
-                )
-                .map_or(
-                    Err(AccessControllerError::NoValidProposedRuleSetExists),
-                    |(_, proposal)| Ok(proposal.clone()),
-                )?
-        };
+                    )
+                    .map_or(
+                        Err(AccessControllerError::NoValidProposedRuleSetExists),
+                        |(_, proposal)| Ok(proposal.clone()),
+                    ),
+                None => Err(AccessControllerError::NoValidProposedRuleSetExists),
+            }
+        }?;
 
         // Update the access rules substate
-        // TODO: We need something better here. Update once we have an AccessRulesChain invocation
-        //       for bulk updates.
+        // TODO: The following is a temporary solution and is far from perfect.
+        //       Something better is needed here that respects the mutability of rules. Perhaps
+        //       some kind of bulk update invocation to `AccessRulesChain` RENodes?
         {
             let node_id = self.receiver;
             let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -500,7 +505,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
             api.drop_lock(handle)?;
         }
 
-        // Unlock Primary and set the timed recovery delay
+        // Enact the recovery proposal.
         {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
@@ -604,60 +609,58 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Getting the RuleSet (if exists) of the new active role
+        // The following code attempts to get the recovery proposal given the inputs of the
+        // invocation.
         let recovery_proposal = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            let recovery_proposal = access_controller
-                .ongoing_recoveries
-                .as_ref()
-                .unwrap_or(&HashMap::new())
-                .iter()
-                .find(
-                    |(
-                        proposer,
-                        RecoveryProposal {
-                            rule_set: proposed_rule_set,
-                            timed_recovery_delay_in_minutes,
-                            ..
+            match access_controller.ongoing_recoveries.as_ref() {
+                Some(ongoing_recoveries) => ongoing_recoveries
+                    .iter()
+                    .find(
+                        |(
+                            proposer,
+                            RecoveryProposal {
+                                rule_set,
+                                timed_recovery_delay_in_minutes,
+                                ..
+                            },
+                        )| {
+                            self.proposer == **proposer
+                                && self.rule_set == *rule_set
+                                && self.timed_recovery_delay_in_minutes
+                                    == *timed_recovery_delay_in_minutes
                         },
-                    )| {
-                        **proposer == self.proposer
-                            && *proposed_rule_set == self.rule_set
-                            && *timed_recovery_delay_in_minutes
-                                == self.timed_recovery_delay_in_minutes
-                    },
-                )
-                .map_or(
-                    Err(AccessControllerError::NoValidProposedRuleSetExists),
-                    |(_, recovery_proposal)| Ok(recovery_proposal.clone()),
-                )?;
-
-            let recovery_time_has_elapsed = recovery_proposal.timed_recovery_allowed_after.map_or(
-                Err(RuntimeError::from(
-                    AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled,
-                )),
-                |instant| {
-                    Runtime::sys_compare_against_current_time(
-                        api,
-                        instant,
-                        TimePrecision::Minute,
-                        time::TimeComparisonOperator::Gte,
                     )
-                },
-            )?;
-
-            if !recovery_time_has_elapsed {
-                Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
+                    .map_or(
+                        Err(AccessControllerError::NoValidProposedRuleSetExists),
+                        |(_, proposal)| Ok(proposal.clone()),
+                    ),
+                None => Err(AccessControllerError::NoValidProposedRuleSetExists),
             }
+        }?;
 
-            recovery_proposal
-        };
+        // Check that the timed recovery delay (if any) for the proposal has already elapsed.
+        let recovery_time_has_elapsed = match recovery_proposal.timed_recovery_allowed_after {
+            Some(instant) => Runtime::sys_compare_against_current_time(
+                api,
+                instant,
+                TimePrecision::Minute,
+                time::TimeComparisonOperator::Gte,
+            ),
+            None => Err(RuntimeError::from(
+                AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled,
+            )),
+        }?;
+        if !recovery_time_has_elapsed {
+            Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
+        }
 
         // Update the access rules substate
-        // TODO: We need something better here. Update once we have an AccessRulesChain invocation
-        //       for bulk updates.
+        // TODO: The following is a temporary solution and is far from perfect.
+        //       Something better is needed here that respects the mutability of rules. Perhaps
+        //       some kind of bulk update invocation to `AccessRulesChain` RENodes?
         {
             let node_id = self.receiver;
             let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -672,7 +675,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             api.drop_lock(handle)?;
         }
 
-        // Unlock primary
+        // Enact the recovery proposal.
         {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
@@ -774,23 +777,31 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Removing the proposed rule set
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
+        let mut substate = api.get_ref_mut(handle)?;
+        let access_controller = substate.access_controller();
 
-            access_controller
-                .ongoing_recoveries
-                .as_mut()
-                .unwrap_or(&mut HashMap::new())
-                .remove_entry(&self.proposer)
-                .map_or(
-                    Err(RuntimeError::from(
-                        AccessControllerError::NoValidProposedRuleSetExists,
-                    )),
-                    |_| Ok(()),
-                )?;
-        }
+        match access_controller.ongoing_recoveries.as_mut() {
+            Some(ongoing_recoveries) => {
+                let recovery_proposal = ongoing_recoveries.get(&self.proposer);
+                match recovery_proposal {
+                    Some(recovery_proposal) => {
+                        if self.rule_set == recovery_proposal.rule_set
+                            && self.timed_recovery_delay_in_minutes
+                                == recovery_proposal.timed_recovery_delay_in_minutes
+                        {
+                            ongoing_recoveries.remove_entry(&self.proposer).map_or(
+                                Err(AccessControllerError::NoValidProposedRuleSetExists),
+                                |_| Ok(()),
+                            )
+                        } else {
+                            Err(AccessControllerError::NoValidProposedRuleSetExists)
+                        }
+                    }
+                    None => Err(AccessControllerError::NoValidProposedRuleSetExists),
+                }
+            }
+            None => Err(AccessControllerError::NoValidProposedRuleSetExists),
+        }?;
 
         api.drop_lock(handle)?;
 
@@ -849,13 +860,10 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Lock the primary role
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
+        let mut substate = api.get_ref_mut(handle)?;
+        let access_controller = substate.access_controller();
 
-            access_controller.is_primary_role_locked = true
-        }
+        access_controller.is_primary_role_locked = true;
 
         api.drop_lock(handle)?;
 
@@ -914,13 +922,10 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
         let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        // Unlock the primary role
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
+        let mut substate = api.get_ref_mut(handle)?;
+        let access_controller = substate.access_controller();
 
-            access_controller.is_primary_role_locked = false
-        }
+        access_controller.is_primary_role_locked = false;
 
         api.drop_lock(handle)?;
 
