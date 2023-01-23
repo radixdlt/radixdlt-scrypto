@@ -3,23 +3,16 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::Error;
 
-use jellyfish::JellyfishMerkleTree;
+use super::jellyfish::JellyfishMerkleTree;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 
-use tree_store::{
+use super::tree_store::{
     Nib, Nibs, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
     TreeNodeKey, TreeStore,
 };
-use types::{Child, InternalNode, LeafNode, Nibble, Node, NodeKey, NodeType, TreeReader};
-
-pub mod tree_store;
-
-mod jellyfish;
-#[cfg(test)]
-mod test;
-mod types;
+use super::types::{Child, InternalNode, LeafNode, Nibble, Node, NodeKey, NodeType, TreeReader};
 
 /// A top-level API for a hash-computing tree.
 pub struct HashTree<'s, S: TreeStore> {
