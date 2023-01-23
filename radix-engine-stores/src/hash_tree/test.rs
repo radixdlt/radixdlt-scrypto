@@ -203,6 +203,17 @@ fn records_stale_tree_node_keys() {
     );
 }
 
+#[test]
+fn hash_returned_by_put_same_as_queried_directly() {
+    let mut store = MemoryTreeStore::new();
+    let mut tree = HashTree::new(&mut store, 0);
+
+    let returned = tree.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
+    let queried = tree.get_current_root_hash();
+
+    assert_eq!(returned, queried);
+}
+
 fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
     let fake_kvs_key = vec![substate_offset_seed; substate_offset_seed as usize];

@@ -28,6 +28,8 @@ pub struct HashTree<'s, S: TreeStore> {
 
 impl<'s, S: TreeStore> HashTree<'s, S> {
     /// A direct constructor.
+    /// The root node of the given [`current_version`] (when non-0) is assumed
+    /// to exist in the underlying storage.
     pub fn new(store: &'s mut S, current_version: u64) -> HashTree<'s, S> {
         HashTree {
             store,
@@ -45,7 +47,12 @@ impl<'s, S: TreeStore> HashTree<'s, S> {
     /// All nodes that became stale precisely due to this (i.e. not previous)
     /// operation will be repoerted before the function returns (see
     /// [`tree_store::WriteableTreeStore::record_stale_node`]).
-    pub fn put_at_next_version(&mut self, changes: &[(SubstateId, Option<Hash>)]) {
+    /// Returns the hash of the newly-created root (i.e. representing state at
+    /// version [`HashTree::current_version`] + 1).
+    ///
+    /// # Panics
+    /// Panics if a root node for [`HashTree::current_version`] does not exist.
+    pub fn put_at_next_version(&mut self, changes: &[(SubstateId, Option<Hash>)]) -> Hash {
         let value_set: Vec<(Hash, Option<(Hash, SubstateId)>)> = changes
             .iter()
             .map(|(id, value_hash)| {
@@ -56,7 +63,7 @@ impl<'s, S: TreeStore> HashTree<'s, S> {
             })
             .collect();
         let next_version = self.current_version + 1;
-        let (_, update_result) = JellyfishMerkleTree::new(self.store)
+        let (root_hash, update_result) = JellyfishMerkleTree::new(self.store)
             .batch_put_value_set(
                 value_set
                     .iter()
@@ -76,9 +83,13 @@ impl<'s, S: TreeStore> HashTree<'s, S> {
             self.store.record_stale_node(&key);
         }
         self.current_version = next_version;
+        root_hash
     }
 
     /// Returns the hash of a state at version [`HashTree::current_version`].
+    ///
+    /// # Panics
+    /// Panics if a root node for [`HashTree::current_version`] does not exist.
     pub fn get_current_root_hash(&self) -> Hash {
         JellyfishMerkleTree::new(self.store)
             .get_root_hash(self.current_version)
