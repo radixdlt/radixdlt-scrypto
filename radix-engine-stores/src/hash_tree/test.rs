@@ -1,6 +1,6 @@
-use super::hash_tree_facade::HashTree;
 use super::tree_store::MemoryTreeStore;
 use super::types::{Nibble, NibblePath, NodeKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::put_at_next_version;
 use radix_engine::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
@@ -13,147 +13,113 @@ use std::collections::HashSet;
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[(substate_id(1, 2), value_hash(70))]);
-    let hash_v2 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(&mut store, None, &[(substate_id(1, 2), value_hash(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), value_hash(70))]);
     assert_ne!(hash_v1, hash_v2);
 }
 
 #[test]
 fn hash_of_next_version_same_when_write_repeated() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[
-        (substate_id(4, 6), value_hash(30)),
-        (substate_id(3, 9), value_hash(40)),
-    ]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[(substate_id(4, 6), value_hash(30))]);
-    let hash_v2 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(
+        &mut store,
+        None,
+        &[
+            (substate_id(4, 6), value_hash(30)),
+            (substate_id(3, 9), value_hash(40)),
+        ],
+    );
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(4, 6), value_hash(30))]);
     assert_eq!(hash_v1, hash_v2);
 }
 
 #[test]
 fn hash_of_next_version_same_when_write_empty() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[
-        (substate_id(1, 2), value_hash(30)),
-        (substate_id(3, 1), value_hash(40)),
-    ]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[]);
-    let hash_v2 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(
+        &mut store,
+        None,
+        &[
+            (substate_id(1, 2), value_hash(30)),
+            (substate_id(3, 1), value_hash(40)),
+        ],
+    );
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[]);
     assert_eq!(hash_v1, hash_v2);
 }
 
 #[test]
 fn hash_of_next_version_differs_when_substate_added() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[(substate_id(1, 8), value_hash(30))]);
-    let hash_v2 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(&mut store, None, &[(substate_id(1, 2), value_hash(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 8), value_hash(30))]);
     assert_ne!(hash_v1, hash_v2);
 }
 
 #[test]
 fn hash_of_next_version_differs_when_substate_removed() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[
-        (substate_id(1, 2), value_hash(30)),
-        (substate_id(4, 3), value_hash(20)),
-    ]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[(substate_id(1, 2), None)]);
-    let hash_v2 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(
+        &mut store,
+        None,
+        &[
+            (substate_id(1, 2), value_hash(30)),
+            (substate_id(4, 3), value_hash(20)),
+        ],
+    );
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), None)]);
     assert_ne!(hash_v1, hash_v2);
 }
 
 #[test]
 fn hash_returns_to_same_when_previous_state_restored() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[
-        (substate_id(1, 2), value_hash(30)),
-        (substate_id(3, 1), value_hash(40)),
-    ]);
-    let hash_v1 = tree.get_current_root_hash();
-
-    tree.put_at_next_version(&[
-        (substate_id(1, 2), value_hash(90)),
-        (substate_id(3, 1), None),
-        (substate_id(1, 5), value_hash(10)),
-    ]);
-
-    tree.put_at_next_version(&[
-        (substate_id(1, 2), value_hash(30)),
-        (substate_id(3, 1), value_hash(40)),
-        (substate_id(1, 5), None),
-    ]);
-    let hash_v3 = tree.get_current_root_hash();
-
+    let hash_v1 = put_at_next_version(
+        &mut store,
+        None,
+        &[
+            (substate_id(1, 2), value_hash(30)),
+            (substate_id(3, 1), value_hash(40)),
+        ],
+    );
+    put_at_next_version(
+        &mut store,
+        Some(1),
+        &[
+            (substate_id(1, 2), value_hash(90)),
+            (substate_id(3, 1), None),
+            (substate_id(1, 5), value_hash(10)),
+        ],
+    );
+    let hash_v3 = put_at_next_version(
+        &mut store,
+        Some(1),
+        &[
+            (substate_id(1, 2), value_hash(30)),
+            (substate_id(3, 1), value_hash(40)),
+            (substate_id(1, 5), None),
+        ],
+    );
     assert_eq!(hash_v1, hash_v3);
 }
 
 #[test]
 fn hash_differs_when_states_only_differ_by_keys() {
     let mut store_1 = MemoryTreeStore::new();
-    let mut tree_1 = HashTree::new(&mut store_1, 0);
-    tree_1.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
-    let hash_1 = tree_1.get_current_root_hash();
-
+    let hash_1 = put_at_next_version(&mut store_1, None, &[(substate_id(1, 2), value_hash(30))]);
     let mut store_2 = MemoryTreeStore::new();
-    let mut tree_2 = HashTree::new(&mut store_2, 0);
-    tree_2.put_at_next_version(&[(substate_id(1, 3), value_hash(30))]);
-    let hash_2 = tree_2.get_current_root_hash();
-
+    let hash_2 = put_at_next_version(&mut store_2, None, &[(substate_id(1, 3), value_hash(30))]);
     assert_ne!(hash_1, hash_2);
-}
-
-#[test]
-#[should_panic]
-fn does_not_support_hash_at_version_0() {
-    let mut store = MemoryTreeStore::new();
-    let tree = HashTree::new(&mut store, 0);
-    tree.get_current_root_hash();
 }
 
 #[test]
 fn supports_empty_state() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    tree.put_at_next_version(&[]);
-    let hash_v1 = tree.get_current_root_hash();
+    let hash_v1 = put_at_next_version(&mut store, None, &[]);
     assert_eq!(hash_v1, SPARSE_MERKLE_PLACEHOLDER_HASH);
-
-    tree.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
-    let hash_v2 = tree.get_current_root_hash();
+    let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), value_hash(30))]);
     assert_ne!(hash_v2, SPARSE_MERKLE_PLACEHOLDER_HASH);
-
-    tree.put_at_next_version(&[(substate_id(1, 2), None)]);
-    let hash_v3 = tree.get_current_root_hash();
+    let hash_v3 = put_at_next_version(&mut store, Some(2), &[(substate_id(1, 2), None)]);
     assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
 }
 
@@ -164,13 +130,11 @@ fn supports_empty_state() {
 #[test]
 fn records_stale_tree_node_keys() {
     let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
     // the substate_id(4, 6) and substate_id(3, 9) below are deliberately
     // chosen so that their hashes have a common prefix (a nibble 8).
-    tree.put_at_next_version(&[(substate_id(4, 6), value_hash(30))]);
-    tree.put_at_next_version(&[(substate_id(3, 9), value_hash(70))]);
-    tree.put_at_next_version(&[(substate_id(3, 9), value_hash(80))]);
+    put_at_next_version(&mut store, None, &[(substate_id(4, 6), value_hash(30))]);
+    put_at_next_version(&mut store, Some(1), &[(substate_id(3, 9), value_hash(70))]);
+    put_at_next_version(&mut store, Some(2), &[(substate_id(3, 9), value_hash(80))]);
     assert_eq!(
         store.stale_key_buffer.iter().collect::<HashSet<_>>(),
         vec![
@@ -188,17 +152,6 @@ fn records_stale_tree_node_keys() {
         .iter()
         .collect::<HashSet<_>>()
     );
-}
-
-#[test]
-fn hash_returned_by_put_same_as_queried_directly() {
-    let mut store = MemoryTreeStore::new();
-    let mut tree = HashTree::new(&mut store, 0);
-
-    let returned = tree.put_at_next_version(&[(substate_id(1, 2), value_hash(30))]);
-    let queried = tree.get_current_root_hash();
-
-    assert_eq!(returned, queried);
 }
 
 fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {

@@ -1,97 +1,14 @@
 use std::collections::HashMap;
 use std::io::Error;
 
-use super::jellyfish::JellyfishMerkleTree;
 use super::types::NibblePath;
 use radix_engine_interface::api::types::SubstateId;
-use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::crypto::Hash;
 
 use super::tree_store::{
-    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode, TreeStore,
+    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
 };
 use super::types::{Child, InternalNode, LeafNode, Nibble, Node, NodeKey, NodeType, TreeReader};
-
-/// A top-level API for a hash-computing tree.
-pub struct HashTree<'s, S: TreeStore> {
-    /// Storage SPI.
-    store: &'s mut S,
-    /// Latest state version expected to be found in the storage.
-    /// This is equal to a number of past [`HashTree::put_at_next_version()`]
-    /// invocations (i.e. in practice, equal to a number of executed
-    /// transactions that lead to a particular state of a substate store).
-    /// This value can potentially be 0 (for an absolutely empty state).
-    current_version: u64,
-}
-
-impl<'s, S: TreeStore> HashTree<'s, S> {
-    /// A direct constructor.
-    /// The root node of the given [`current_version`] (when non-0) is assumed
-    /// to exist in the underlying storage.
-    pub fn new(store: &'s mut S, current_version: u64) -> HashTree<'s, S> {
-        HashTree {
-            store,
-            current_version,
-        }
-    }
-
-    /// Inserts a new set of nodes at version [`HashTree::current_version`] + 1.
-    /// This inserts a new leaf node for each given "change", together with an
-    /// entire new "parent chain" leading from that leaf to a new root node
-    /// (common for all of them).
-    /// Each change may either create/update a substate's value (denoted by
-    /// `Some(hash(scrypto_encode(value)))`), or delete a substate (denoted by
-    /// `None`).
-    /// All nodes that became stale precisely due to this (i.e. not previous)
-    /// operation will be repoerted before the function returns (see
-    /// [`tree_store::WriteableTreeStore::record_stale_node`]).
-    /// Returns the hash of the newly-created root (i.e. representing state at
-    /// version [`HashTree::current_version`] + 1).
-    ///
-    /// # Panics
-    /// Panics if a root node for [`HashTree::current_version`] does not exist.
-    pub fn put_at_next_version(&mut self, changes: &[(SubstateId, Option<Hash>)]) -> Hash {
-        let value_set: Vec<(Hash, Option<(Hash, SubstateId)>)> = changes
-            .iter()
-            .map(|(id, value_hash)| {
-                (
-                    hash(scrypto_encode(id).unwrap()),
-                    value_hash.map(|value_hash| (value_hash, id.clone())),
-                )
-            })
-            .collect();
-        let next_version = self.current_version + 1;
-        let (root_hash, update_result) = JellyfishMerkleTree::new(self.store)
-            .batch_put_value_set(
-                value_set
-                    .iter()
-                    .map(|(x, y)| (x.clone(), y.as_ref()))
-                    .collect(),
-                None,
-                Some(self.current_version).filter(|version| *version > 0u64),
-                next_version,
-            )
-            .expect("error while reading tree during put");
-        for (key, node) in update_result.node_batch.iter().flatten() {
-            self.store.insert_node(key, TreeNode::from(key, node));
-        }
-        for stale_node in update_result.stale_node_index_batch.iter().flatten() {
-            self.store.record_stale_node(&stale_node.node_key);
-        }
-        self.current_version = next_version;
-        root_hash
-    }
-
-    /// Returns the hash of a state at version [`HashTree::current_version`].
-    ///
-    /// # Panics
-    /// Panics if a root node for [`HashTree::current_version`] does not exist.
-    pub fn get_current_root_hash(&self) -> Hash {
-        JellyfishMerkleTree::new(self.store)
-            .get_root_hash(self.current_version)
-            .expect("error while reading root hash")
-    }
-}
 
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {
@@ -123,7 +40,7 @@ impl TreeLeafNode {
 }
 
 impl TreeNode {
-    fn from(key: &NodeKey, node: &Node<SubstateId>) -> Self {
+    pub fn from(key: &NodeKey, node: &Node<SubstateId>) -> Self {
         match node {
             Node::Internal(internal_node) => {
                 TreeNode::Internal(TreeInternalNode::from(internal_node))
