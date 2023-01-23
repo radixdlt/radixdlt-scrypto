@@ -143,7 +143,6 @@ pub trait InvokableModel<E>:
     + Invokable<LoggerLogInvocation, E>
     + Invokable<AccessControllerCreateGlobalInvocation, E>
     + Invokable<AccessControllerCreateProofInvocation, E>
-    + Invokable<AccessControllerUpdateTimedRecoveryDelayInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
     + Invokable<AccessControllerQuickConfirmRecoveryAsPrimaryInvocation, E>

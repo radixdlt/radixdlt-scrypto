@@ -191,7 +191,6 @@ pub enum AccessControllerInvocation {
     CreateGlobal(AccessControllerCreateGlobalInvocation),
 
     CreateProof(AccessControllerCreateProofInvocation),
-    UpdateTimedRecoveryDelay(AccessControllerUpdateTimedRecoveryDelayInvocation),
 
     InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
     InitiateRecoveryAsRecovery(AccessControllerInitiateRecoveryAsRecoveryInvocation),
@@ -460,9 +459,6 @@ impl NativeInvocation {
                 AccessControllerInvocation::CreateGlobal(..) => {}
                 AccessControllerInvocation::CreateProof(
                     AccessControllerCreateProofInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::UpdateTimedRecoveryDelay(
-                    AccessControllerUpdateTimedRecoveryDelayInvocation { receiver, .. },
                 )
                 | AccessControllerInvocation::InitiateRecoveryAsPrimary(
                     AccessControllerInitiateRecoveryAsPrimaryInvocation { receiver, .. },

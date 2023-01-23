@@ -18,7 +18,6 @@ use super::AccessControllerSubstate;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerError {
     OperationNotAllowedWhenPrimaryIsLocked,
-    OperationNotAllowedDuringRecovery,
     RecoveryForThisProposerAlreadyExists { proposer: Proposer },
     NoValidProposedRuleSetExists,
     TimeOverflow,
@@ -177,85 +176,6 @@ impl Executor for AccessControllerCreateProofExecutable {
     }
 }
 
-//===============================================
-// Access Controller Update Timed Recovery Delay
-//===============================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerUpdateTimedRecoveryDelayExecutable {
-    pub receiver: RENodeId,
-    pub timed_recovery_delay_in_hours: u16,
-}
-
-impl ExecutableInvocation for AccessControllerUpdateTimedRecoveryDelayInvocation {
-    type Exec = AccessControllerUpdateTimedRecoveryDelayExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CreateProof),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerUpdateTimedRecoveryDelayExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        // Lock and recovery checks
-        {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            if access_controller.is_primary_role_locked {
-                Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
-            }
-            if access_controller.ongoing_recoveries.is_some() {
-                Err(AccessControllerError::OperationNotAllowedDuringRecovery)?
-            }
-        }
-
-        // Update the timed recovery delay
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
-            access_controller.timed_recovery_delay_in_hours = self.timed_recovery_delay_in_hours;
-        }
-
-        api.drop_lock(handle)?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 //=====================================
 // Access Controller Initiate Recovery
 //=====================================
@@ -265,6 +185,7 @@ pub struct AccessControllerInitiateRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -291,6 +212,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -321,6 +243,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -360,22 +283,32 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
 
-            match access_controller.ongoing_recoveries.as_mut() {
-                Some(ongoing_recoveries) => {
-                    if !ongoing_recoveries.contains_key(&self.proposer) {
-                        ongoing_recoveries.insert(self.proposer, (self.rule_set, current_time));
-                    } else {
-                        Err(
-                            AccessControllerError::RecoveryForThisProposerAlreadyExists {
-                                proposer: self.proposer,
-                            },
-                        )?;
-                    }
-                }
+            let recoveries = match access_controller.ongoing_recoveries.as_mut() {
+                Some(ongoing_recoveries) => ongoing_recoveries,
                 None => {
-                    access_controller.ongoing_recoveries =
-                        Some([(self.proposer.clone(), (self.rule_set, current_time))].into())
+                    access_controller.ongoing_recoveries = Some(HashMap::new());
+                    access_controller
+                        .ongoing_recoveries
+                        .as_mut()
+                        .expect("Impossible Case!")
                 }
+            };
+
+            if !recoveries.contains_key(&self.proposer) {
+                recoveries.insert(
+                    self.proposer,
+                    (
+                        self.rule_set,
+                        self.timed_recovery_delay_in_hours,
+                        current_time,
+                    ),
+                );
+            } else {
+                Err(
+                    AccessControllerError::RecoveryForThisProposerAlreadyExists {
+                        proposer: self.proposer,
+                    },
+                )?;
             }
         }
 
@@ -395,6 +328,7 @@ pub struct AccessControllerQuickConfirmRecoveryExecutable {
     pub rule_set: RuleSet,
     pub proposer: Proposer,
     pub confirmor: Role,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
@@ -421,6 +355,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Primary,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -451,6 +386,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Recovery,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -481,6 +417,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmation
             rule_set: self.rule_set,
             proposer: self.proposer,
             confirmor: Role::Confirmation,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -503,7 +440,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         // Quick confirm and get new rule set
-        let new_rule_set = {
+        let (new_rule_set, timed_recovery_delay_in_hours) = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
@@ -512,14 +449,19 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 .as_ref()
                 .unwrap_or(&HashMap::new())
                 .iter()
-                .find(|(proposer, (proposed_rule_set, _))| {
-                    **proposer == self.proposer
-                        && *proposed_rule_set == self.rule_set
-                        && Role::from(self.proposer) != self.confirmor
-                })
+                .find(
+                    |(proposer, (proposed_rule_set, timed_recovery_delay_in_hours, _))| {
+                        **proposer == self.proposer
+                            && *proposed_rule_set == self.rule_set
+                            && Role::from(self.proposer) != self.confirmor
+                            && *timed_recovery_delay_in_hours == self.timed_recovery_delay_in_hours
+                    },
+                )
                 .map_or(
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
-                    |(_, (rule_set, _))| Ok(rule_set.clone()),
+                    |(_, (rule_set, timed_recovery_delay_in_hours, _))| {
+                        Ok((rule_set.clone(), *timed_recovery_delay_in_hours))
+                    },
                 )?
         };
 
@@ -540,11 +482,12 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
             api.drop_lock(handle)?;
         }
 
-        // Unlock primary
+        // Unlock Primary and set the timed recovery delay
         {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
             access_controller.is_primary_role_locked = false;
+            access_controller.timed_recovery_delay_in_hours = timed_recovery_delay_in_hours;
         }
 
         api.drop_lock(handle)?;
@@ -562,6 +505,7 @@ pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
@@ -588,6 +532,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsPrimaryInvoc
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -618,6 +563,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryAsRecoveryInvo
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -640,21 +586,31 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         // Getting the RuleSet (if exists) of the new active role
-        let new_rule_set = {
+        let (new_rule_set, timed_recovery_delay_in_hours) = {
             let substate = api.get_ref(handle)?;
             let access_controller = substate.access_controller();
 
-            let (new_rule_set, proposed_at) = access_controller
+            let (new_rule_set, timed_recovery_delay_in_hours, proposed_at) = access_controller
                 .ongoing_recoveries
                 .as_ref()
                 .unwrap_or(&HashMap::new())
                 .iter()
-                .find(|(proposer, (proposed_rule_set, _))| {
-                    **proposer == self.proposer && *proposed_rule_set == self.rule_set
-                })
+                .find(
+                    |(proposer, (proposed_rule_set, timed_recovery_delay_in_hours, _))| {
+                        **proposer == self.proposer
+                            && *proposed_rule_set == self.rule_set
+                            && *timed_recovery_delay_in_hours == self.timed_recovery_delay_in_hours
+                    },
+                )
                 .map_or(
                     Err(AccessControllerError::NoValidProposedRuleSetExists),
-                    |(_, (rule_set, proposed_at))| Ok((rule_set.clone(), proposed_at.clone())),
+                    |(_, (rule_set, timed_recovery_delay_in_hours, proposed_at))| {
+                        Ok((
+                            rule_set.clone(),
+                            *timed_recovery_delay_in_hours,
+                            proposed_at.clone(),
+                        ))
+                    },
                 )?;
             let recovery_time_has_elapsed = proposed_at
                 .add_hours(access_controller.timed_recovery_delay_in_hours as i64)
@@ -674,7 +630,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
             }
 
-            new_rule_set
+            (new_rule_set, timed_recovery_delay_in_hours)
         };
 
         // Update the access rules substate
@@ -699,6 +655,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             let mut substate = api.get_ref_mut(handle)?;
             let access_controller = substate.access_controller();
             access_controller.is_primary_role_locked = false;
+            access_controller.timed_recovery_delay_in_hours = timed_recovery_delay_in_hours;
         }
 
         api.drop_lock(handle)?;
@@ -716,6 +673,7 @@ pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
     pub proposer: Proposer,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
@@ -741,6 +699,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Primary,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -770,6 +729,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
             receiver: resolved_receiver.receiver,
             rule_set: self.rule_set,
             proposer: Proposer::Recovery,
+            timed_recovery_delay_in_hours: self.timed_recovery_delay_in_hours,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -969,12 +929,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(AccessControllerFn::CreateProof)),
-        primary_group.into(),
-    );
-    access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::UpdateTimedRecoveryDelay,
-        )),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(

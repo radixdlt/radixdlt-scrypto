@@ -19,6 +19,7 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Act
@@ -28,6 +29,7 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Assert
@@ -43,6 +45,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Act
@@ -52,6 +55,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
         rule!(require(PACKAGE_TOKEN)),
         rule!(require(PACKAGE_TOKEN)),
         rule!(require(PACKAGE_TOKEN)),
+        10,
     );
 
     // Assert
@@ -67,6 +71,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Act
@@ -75,6 +80,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Assert
@@ -90,6 +96,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
     test_runner.push_time_forward(9);
 
@@ -99,6 +106,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Assert
@@ -114,6 +122,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
     test_runner.push_time_forward(10);
 
@@ -123,6 +132,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
 
     // Assert
@@ -138,6 +148,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         rule!(require(test_runner.primary_role_badge)),
         rule!(require(RADIX_TOKEN)),
         rule!(require(RADIX_TOKEN)),
+        10,
     );
     test_runner
         .lock_primary_role(Role::Primary)
@@ -151,6 +162,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
             rule!(require(test_runner.primary_role_badge)),
             rule!(require(RADIX_TOKEN)),
             rule!(require(RADIX_TOKEN)),
+            10,
         )
         .expect_commit_success();
 
@@ -200,31 +212,6 @@ mod normal_operations_with_primary_unlocked {
     }
 
     #[test]
-    pub fn update_timed_recovery_delay() {
-        // Arrange
-        let test_vectors = [
-            (Role::Primary, None),
-            (Role::Recovery, Some(is_auth_unauthorized_error)),
-            (Role::Confirmation, Some(is_auth_unauthorized_error)),
-        ];
-
-        for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
-
-            // Act
-            let receipt = test_runner.update_timed_recovery_delay(role, 100);
-
-            // Assert
-            match error_assertion_function {
-                None => {
-                    receipt.expect_commit_success();
-                }
-                Some(function) => receipt.expect_specific_failure(function),
-            };
-        }
-    }
-
-    #[test]
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] =
@@ -239,6 +226,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -332,6 +320,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -367,6 +356,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -402,6 +392,7 @@ mod normal_operations_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -457,34 +448,6 @@ mod normal_operations_with_primary_locked {
     }
 
     #[test]
-    pub fn update_timed_recovery_delay() {
-        // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (
-                Role::Primary,
-                Some(is_operation_not_permitted_when_primary_is_locked_error),
-            ),
-            (Role::Recovery, Some(is_auth_unauthorized_error)),
-            (Role::Confirmation, Some(is_auth_unauthorized_error)),
-        ];
-
-        for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
-
-            // Act
-            let receipt = test_runner.update_timed_recovery_delay(role, 100);
-
-            // Assert
-            match error_assertion_function {
-                None => {
-                    receipt.expect_commit_success();
-                }
-                Some(function) => receipt.expect_specific_failure(function),
-            };
-        }
-    }
-
-    #[test]
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors = [
@@ -504,6 +467,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -597,6 +561,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -632,6 +597,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -667,6 +633,7 @@ mod normal_operations_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -693,6 +660,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             )
             .expect_commit_success();
         test_runner
@@ -724,34 +692,6 @@ mod recovery_mode_with_primary_unlocked {
     }
 
     #[test]
-    pub fn update_timed_recovery_delay() {
-        // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (
-                Role::Primary,
-                Some(is_operation_not_permitted_when_in_recovery_mode_error),
-            ),
-            (Role::Recovery, Some(is_auth_unauthorized_error)),
-            (Role::Confirmation, Some(is_auth_unauthorized_error)),
-        ];
-
-        for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
-
-            // Act
-            let receipt = test_runner.update_timed_recovery_delay(role, 100);
-
-            // Assert
-            match error_assertion_function {
-                None => {
-                    receipt.expect_commit_success();
-                }
-                Some(function) => receipt.expect_specific_failure(function),
-            };
-        }
-    }
-
-    #[test]
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
@@ -771,6 +711,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -864,6 +805,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -899,6 +841,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -931,6 +874,7 @@ mod recovery_mode_with_primary_unlocked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -960,6 +904,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             )
             .expect_commit_success();
         test_runner
@@ -994,34 +939,6 @@ mod recovery_mode_with_primary_locked {
     }
 
     #[test]
-    pub fn update_timed_recovery_delay() {
-        // Arrange
-        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (
-                Role::Primary,
-                Some(is_operation_not_permitted_when_primary_is_locked_error),
-            ),
-            (Role::Recovery, Some(is_auth_unauthorized_error)),
-            (Role::Confirmation, Some(is_auth_unauthorized_error)),
-        ];
-
-        for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
-
-            // Act
-            let receipt = test_runner.update_timed_recovery_delay(role, 100);
-
-            // Assert
-            match error_assertion_function {
-                None => {
-                    receipt.expect_commit_success();
-                }
-                Some(function) => receipt.expect_specific_failure(function),
-            };
-        }
-    }
-
-    #[test]
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
@@ -1044,6 +961,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -1137,6 +1055,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -1172,6 +1091,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -1204,6 +1124,7 @@ mod recovery_mode_with_primary_locked {
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_HOURS,
             );
 
             // Assert
@@ -1262,15 +1183,6 @@ fn is_operation_not_permitted_when_primary_is_locked_error(error: &RuntimeError)
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked
-        ))
-    )
-}
-
-fn is_operation_not_permitted_when_in_recovery_mode_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::OperationNotAllowedDuringRecovery
         ))
     )
 }
@@ -1357,31 +1269,13 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn update_timed_recovery_delay(
-        &mut self,
-        as_role: Role,
-        timed_recovery_delay_in_hours: u16,
-    ) -> TransactionReceipt {
-        let manifest = self
-            .manifest_builder(as_role)
-            .call_method(
-                self.access_controller_component_address,
-                "update_timed_recovery_delay",
-                scrypto_encode(&AccessControllerUpdateTimedRecoveryDelayMethodArgs {
-                    timed_recovery_delay_in_hours,
-                })
-                .unwrap(),
-            )
-            .build();
-        self.execute_manifest(manifest)
-    }
-
     pub fn initiate_recovery(
         &mut self,
         as_role: Role,
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::InitiateRecoveryAsPrimary,
@@ -1400,6 +1294,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
+                    timed_recovery_delay_in_hours,
                 })
                 .unwrap(),
             )
@@ -1414,6 +1309,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
     ) -> TransactionReceipt {
         let proposer = match proposer {
             Role::Primary => Proposer::Primary,
@@ -1439,6 +1335,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
+                    timed_recovery_delay_in_hours,
                 })
                 .unwrap(),
             )
@@ -1452,6 +1349,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::TimedConfirmRecoveryAsPrimary,
@@ -1470,6 +1368,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
+                    timed_recovery_delay_in_hours,
                 })
                 .unwrap(),
             )
@@ -1483,6 +1382,7 @@ impl AccessControllerTestRunner {
         proposed_primary_role: AccessRule,
         proposed_recovery_role: AccessRule,
         proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_hours: u16,
     ) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::CancelRecoveryAttemptAsPrimary,
@@ -1501,6 +1401,7 @@ impl AccessControllerTestRunner {
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
+                    timed_recovery_delay_in_hours,
                 })
                 .unwrap(),
             )

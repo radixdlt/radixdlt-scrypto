@@ -229,7 +229,6 @@ impl FeeTable {
                 AccessControllerFn::CreateGlobal => self.fixed_low,
 
                 AccessControllerFn::CreateProof => self.fixed_low,
-                AccessControllerFn::UpdateTimedRecoveryDelay => self.fixed_low,
 
                 AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
                 AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,

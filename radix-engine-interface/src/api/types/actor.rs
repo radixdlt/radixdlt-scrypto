@@ -767,7 +767,6 @@ pub enum AccessControllerFn {
     CreateGlobal,
 
     CreateProof,
-    UpdateTimedRecoveryDelay,
 
     InitiateRecoveryAsPrimary,
     InitiateRecoveryAsRecovery,
@@ -807,17 +806,6 @@ impl AccessControllerPackage {
                     receiver,
                 })
             }
-            AccessControllerFn::UpdateTimedRecoveryDelay => {
-                let args =
-                    scrypto_decode::<AccessControllerUpdateTimedRecoveryDelayMethodArgs>(args)
-                        .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::UpdateTimedRecoveryDelay(
-                    AccessControllerUpdateTimedRecoveryDelayInvocation {
-                        receiver,
-                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
-                    },
-                )
-            }
             AccessControllerFn::InitiateRecoveryAsPrimary => {
                 let args =
                     scrypto_decode::<AccessControllerInitiateRecoveryAsPrimaryMethodArgs>(args)
@@ -826,6 +814,7 @@ impl AccessControllerPackage {
                     AccessControllerInitiateRecoveryAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -837,6 +826,7 @@ impl AccessControllerPackage {
                     AccessControllerInitiateRecoveryAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -849,6 +839,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -863,6 +854,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -876,6 +868,7 @@ impl AccessControllerPackage {
                         receiver,
                         rule_set: args.rule_set,
                         proposer: args.proposer,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -887,6 +880,7 @@ impl AccessControllerPackage {
                     AccessControllerTimedConfirmRecoveryAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -900,6 +894,7 @@ impl AccessControllerPackage {
                     AccessControllerTimedConfirmRecoveryAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -913,6 +908,7 @@ impl AccessControllerPackage {
                     AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
@@ -925,6 +921,7 @@ impl AccessControllerPackage {
                     AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
                         receiver,
                         rule_set: args.rule_set,
+                        timed_recovery_delay_in_hours: args.timed_recovery_delay_in_hours,
                     },
                 )
             }
