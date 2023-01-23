@@ -368,13 +368,9 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
-            TokenKind::NonFungibleGlobalId => {
-                let tuple = self.parse_values_two()?;
-                Ok(Value::NonFungibleGlobalId(
-                    Box::new(tuple.0),
-                    Box::new(tuple.1),
-                ))
-            }
+            TokenKind::NonFungibleGlobalId => Ok(Value::NonFungibleGlobalId(Box::new(
+                self.parse_values_one()?,
+            ))),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -450,19 +446,6 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
-        }
-    }
-
-    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
-        let values =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        if values.len() != 2 {
-            Err(ParserError::InvalidNumberOfValues {
-                actual: values.len(),
-                expected: 2,
-            })
-        } else {
-            Ok((values[0].clone(), values[1].clone()))
         }
     }
 

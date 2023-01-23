@@ -820,14 +820,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::Number(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Number(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Number(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdType::Number,
+                NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),

@@ -16,7 +16,7 @@ impl AuthVerification {
                 let proof_resource_address = proof.resource_address();
                 proof_resource_address == non_fungible_global_id.resource_address()
                     && match proof.total_ids() {
-                        Ok(ids) => ids.contains(non_fungible_global_id.non_fungible_local_id()),
+                        Ok(ids) => ids.contains(non_fungible_global_id.local_id()),
                         Err(_) => false,
                     }
             }

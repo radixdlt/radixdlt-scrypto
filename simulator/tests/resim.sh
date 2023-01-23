@@ -21,12 +21,10 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
-non_fungible=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
-non_fungible_local_id=`echo "$non_fungible_create_receipt" | awk '/non_fungible_local_id:/ {print $NF}'`
+non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
 # The below line looks like this: U32#1,resource_address
 # You can put multiple ids into a bucket like so: resource_address:id1,id2,id3
-$resim call-method $account2 deposit "$non_fungible_resource:$non_fungible_local_id"
+$resim call-method $account2 deposit "$non_fungible_global_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs 1,$minter_badge
@@ -94,11 +92,9 @@ $resim set-current-epoch 100
 
 # Test - create mutable supply token (requires a `NonFungibleGlobalId`)
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
-non_fungible=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
-non_fungible_local_id=`echo "$non_fungible_create_receipt" | awk '/non_fungible_local_id:/ {print $NF}'`
+non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
 
-token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print $NF}'`
+token_address=`$resim new-token-mutable $non_fungible_global_id | awk '/Resource:/ {print $NF}'`
 
 # Test - mint and transfer (Mintable that requires a `NonFungibleGlobalId`)
-$resim mint 777 $token_address --proofs "$non_fungible_resource:$non_fungible_local_id"
+$resim mint 777 $token_address --proofs "$non_fungible_global_id"

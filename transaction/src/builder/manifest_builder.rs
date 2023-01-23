@@ -669,7 +669,7 @@ impl ManifestBuilder {
 
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_global_id.non_fungible_local_id().clone());
+        ids.insert(non_fungible_global_id.local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
             non_fungible_global_id.resource_address().clone(),
