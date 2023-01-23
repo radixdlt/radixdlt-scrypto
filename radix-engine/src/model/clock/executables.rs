@@ -1,5 +1,5 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
     ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
@@ -68,7 +68,7 @@ impl Executor for ClockCreateInvocation {
 
         system_api.create_node(
             underlying_node_id,
-            RENode::Clock(
+            RENodeInit::Clock(
                 CurrentTimeRoundedToMinutesSubstate {
                     current_time_rounded_to_minutes_ms: 0,
                 },
@@ -83,7 +83,7 @@ impl Executor for ClockCreateInvocation {
         )));
         system_api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
         )?;
 
         let system_address: ComponentAddress = global_node_id.into();

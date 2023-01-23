@@ -564,6 +564,9 @@ pub fn generate_instruction(
                 blobs,
             )?,
         },
+        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CreateIdentity {
+            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        },
     })
 }
 

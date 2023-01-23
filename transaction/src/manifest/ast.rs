@@ -200,6 +200,9 @@ pub enum Instruction {
         confirmation_role: Value,
         timed_recovery_delay_in_minutes: Value,
     },
+    CreateIdentity {
+        access_rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

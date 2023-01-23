@@ -201,6 +201,10 @@ pub enum BasicInstruction {
         timed_recovery_delay_in_minutes: Option<u32>,
     },
 
+    CreateIdentity {
+        access_rule: AccessRule,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

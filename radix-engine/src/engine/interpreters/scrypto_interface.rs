@@ -1,4 +1,6 @@
-use crate::engine::{BaseModule, Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
+use crate::engine::{
+    BaseModule, Kernel, KernelError, LockFlags, RENodeInit, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::MetadataSubstate;
 use crate::model::{
@@ -66,7 +68,7 @@ where
                     AccessRule::AllowAll,
                 );
 
-                let node = RENode::Component(
+                let node = RENodeInit::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
                     royalty_config,
@@ -83,7 +85,7 @@ where
             }
             ScryptoRENode::KeyValueStore => {
                 let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
-                let node = RENode::KeyValueStore(KeyValueStore::new());
+                let node = RENodeInit::KeyValueStore(KeyValueStore::new());
                 (node_id, node)
             }
         };

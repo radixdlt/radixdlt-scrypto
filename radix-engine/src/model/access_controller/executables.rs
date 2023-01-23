@@ -1,4 +1,4 @@
-use crate::engine::{deref_and_update, ApplicationError, Executor, LockFlags, RENode};
+use crate::engine::{deref_and_update, ApplicationError, Executor, LockFlags, RENodeInit};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
@@ -76,7 +76,7 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         };
 
         // Constructing the Access Controller RENode and Substates
-        let access_controller = RENode::AccessController(
+        let access_controller = RENodeInit::AccessController(
             AccessControllerSubstate {
                 controlled_asset: vault.0,
                 ongoing_recoveries: None,
@@ -96,7 +96,7 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalAccessController)?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::AccessController(node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::AccessController(node_id.into())),
         )?;
 
         Ok((global_node_id.into(), CallFrameUpdate::empty()))

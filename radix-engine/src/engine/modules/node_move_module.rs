@@ -77,6 +77,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..)
@@ -121,6 +122,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..)

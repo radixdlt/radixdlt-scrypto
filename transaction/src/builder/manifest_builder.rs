@@ -351,6 +351,11 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateIdentity { access_rule });
+        self
+    }
+
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
@@ -374,6 +379,32 @@ impl ManifestBuilder {
             component_address: validator_address,
             method_name: "unregister".to_string(),
             args: args!(),
+        });
+        self
+    }
+
+    pub fn stake_validator(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "stake".to_string(),
+            args: args!(bucket),
+        });
+        self
+    }
+
+    pub fn unstake_validator(
+        &mut self,
+        validator_address: ComponentAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unstake".to_string(),
+            args: args!(amount),
         });
         self
     }

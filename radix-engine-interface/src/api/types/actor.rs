@@ -19,6 +19,7 @@ pub enum NativePackage {
     Package,
     Metadata,
     EpochManager,
+    Identity,
     Resource,
     Clock,
     Logger,
@@ -111,6 +112,7 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
+    Identity(IdentityFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
@@ -125,6 +127,7 @@ impl NativeFn {
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
+            NativeFn::Identity(..) => NativePackage::Identity,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -298,6 +301,8 @@ pub enum EpochManagerFn {
 pub enum ValidatorFn {
     Register,
     Unregister,
+    Stake,
+    Unstake,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -367,8 +372,7 @@ impl EpochManagerPackage {
                             EpochManagerUpdateValidatorInvocation {
                                 receiver,
                                 validator_address: args.validator_address,
-                                register: args.register,
-                                key: args.key,
+                                update: args.update,
                             },
                         ))
                     }
@@ -391,6 +395,28 @@ impl EpochManagerPackage {
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
                         NativeInvocation::Validator(ValidatorInvocation::Unregister(
                             ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+
+                    ValidatorFn::Stake => {
+                        let args: ValidatorStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Stake(
+                            ValidatorStakeInvocation {
+                                receiver,
+                                stake: args.stake,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::Unstake => {
+                        let args: ValidatorUnstakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unstake(
+                            ValidatorUnstakeInvocation {
+                                receiver,
+                                amount: args.amount,
+                            },
                         ))
                     }
                 }
@@ -668,6 +694,30 @@ impl ClockPackage {
 
         Ok(invocation)
     }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum IdentityFn {
+    Create,
 }
 
 #[derive(
