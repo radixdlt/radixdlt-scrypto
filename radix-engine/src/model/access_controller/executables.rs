@@ -487,22 +487,28 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
             }
         }?;
 
-        // Update the access rules substate
-        // TODO: The following is a temporary solution and is far from perfect.
-        //       Something better is needed here that respects the mutability of rules. Perhaps
-        //       some kind of bulk update invocation to `AccessRulesChain` RENodes?
-        {
-            let node_id = self.receiver;
-            let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-            let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_rule_chain = substate.access_rules_chain();
-
-            access_rule_chain.access_rules_chain =
-                [access_rules_from_rule_set(recovery_proposal.rule_set)].into();
-
-            api.drop_lock(handle)?;
+        // Update the access rules
+        let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
+        for (group_name, access_rule) in new_access_rules.get_all_grouped_auth().iter() {
+            api.invoke(AccessRulesSetGroupAccessRuleInvocation {
+                receiver: self.receiver,
+                index: 0,
+                name: group_name.into(),
+                rule: access_rule.to_owned(),
+            })?;
+        }
+        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
+            match entry {
+                AccessRuleEntry::AccessRule(access_rule) => {
+                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: self.receiver,
+                        index: 0,
+                        key: method_key.to_owned(),
+                        rule: access_rule.to_owned(),
+                    })?;
+                }
+                AccessRuleEntry::Group(..) => {} // Already updated above
+            }
         }
 
         // Enact the recovery proposal.
@@ -657,22 +663,28 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
         }
 
-        // Update the access rules substate
-        // TODO: The following is a temporary solution and is far from perfect.
-        //       Something better is needed here that respects the mutability of rules. Perhaps
-        //       some kind of bulk update invocation to `AccessRulesChain` RENodes?
-        {
-            let node_id = self.receiver;
-            let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-            let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_rule_chain = substate.access_rules_chain();
-
-            access_rule_chain.access_rules_chain =
-                [access_rules_from_rule_set(recovery_proposal.rule_set)].into();
-
-            api.drop_lock(handle)?;
+        // Update the access rules
+        let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
+        for (group_name, access_rule) in new_access_rules.get_all_grouped_auth().iter() {
+            api.invoke(AccessRulesSetGroupAccessRuleInvocation {
+                receiver: self.receiver,
+                index: 0,
+                name: group_name.into(),
+                rule: access_rule.to_owned(),
+            })?;
+        }
+        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
+            match entry {
+                AccessRuleEntry::AccessRule(access_rule) => {
+                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: self.receiver,
+                        index: 0,
+                        key: method_key.to_owned(),
+                        rule: access_rule.to_owned(),
+                    })?;
+                }
+                AccessRuleEntry::Group(..) => {} // Already updated above
+            }
         }
 
         // Enact the recovery proposal.
@@ -1039,10 +1051,10 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role].into()),
     );
 
-    let non_fungible_global_id =
-        scrypto_encode(&PackageIdentifier::Native(NativePackage::AccessController))
-            .map(|bytes| NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(bytes)))
-            .unwrap();
+    let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        scrypto_encode(&PackageIdentifier::Native(NativePackage::AccessController)).unwrap(),
+    );
+    let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
     access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
 }
