@@ -1,7 +1,8 @@
+use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use crate::blueprints::resources::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use crate::model::{
-    GlobalAddressSubstate, KeyValueStoreEntrySubstate, PersistedSubstate, VaultSubstate,
-};
+use crate::system::global::GlobalAddressSubstate;
+use crate::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset, VaultId, VaultOffset,

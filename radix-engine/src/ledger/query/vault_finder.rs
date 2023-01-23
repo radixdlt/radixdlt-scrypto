@@ -1,5 +1,5 @@
+use crate::blueprints::resources::VaultSubstate;
 use crate::ledger::StateTreeVisitor;
-use crate::model::VaultSubstate;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::model::ResourceAddress;
 use sbor::rust::vec::Vec;

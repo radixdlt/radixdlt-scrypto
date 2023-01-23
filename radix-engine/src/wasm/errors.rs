@@ -1,8 +1,8 @@
 use radix_engine_interface::api::wasm::BufferId;
 use wasmi::HostError;
 
-use crate::fee::FeeReserveError;
-use crate::model::InvokeError;
+use crate::errors::InvokeError;
+use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.

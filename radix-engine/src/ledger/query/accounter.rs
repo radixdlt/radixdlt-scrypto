@@ -1,8 +1,8 @@
+use crate::blueprints::resources::VaultSubstate;
 use crate::ledger::{
     QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
     StateTreeVisitor,
 };
-use crate::model::VaultSubstate;
 use crate::types::hash_map::Entry;
 use crate::types::HashMap;
 use radix_engine_interface::api::types::{RENodeId, VaultId};

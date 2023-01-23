@@ -1,4 +1,4 @@
-use crate::engine::ScryptoInterpreter;
+use crate::kernel::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,

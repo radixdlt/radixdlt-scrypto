@@ -1,0 +1,100 @@
+use crate::blueprints::epoch_manager::EpochManagerError;
+use crate::blueprints::resources::BucketError;
+use crate::blueprints::resources::ProofError;
+use crate::blueprints::resources::ResourceManagerError;
+use crate::blueprints::resources::VaultError;
+use crate::blueprints::resources::WorktopError;
+use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::errors::*;
+use crate::kernel::*;
+use crate::system::node_modules::auth::AccessRulesChainError;
+use crate::system::node_modules::auth::AuthZoneError;
+use crate::system::package::PackageError;
+use crate::system::system_api::ResolverApi;
+use radix_engine_interface::api::types::RENodeId;
+
+impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
+    fn into(self) -> RuntimeError {
+        match self {
+            InvokeError::Downstream(runtime_error) => runtime_error,
+            InvokeError::Error(e) => RuntimeError::ApplicationError(e.into()),
+        }
+    }
+}
+
+impl Into<ApplicationError> for TransactionProcessorError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::TransactionProcessorError(self)
+    }
+}
+
+impl Into<ApplicationError> for PackageError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::PackageError(self)
+    }
+}
+
+impl Into<ApplicationError> for ResourceManagerError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::ResourceManagerError(self)
+    }
+}
+
+impl Into<ApplicationError> for BucketError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::BucketError(self)
+    }
+}
+
+impl Into<ApplicationError> for ProofError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::ProofError(self)
+    }
+}
+
+impl Into<ApplicationError> for AuthZoneError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::AuthZoneError(self)
+    }
+}
+
+impl Into<ApplicationError> for WorktopError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::WorktopError(self)
+    }
+}
+
+impl Into<ApplicationError> for VaultError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::VaultError(self)
+    }
+}
+
+impl Into<ApplicationError> for AccessRulesChainError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::AccessRulesChainError(self)
+    }
+}
+
+impl Into<ApplicationError> for EpochManagerError {
+    fn into(self) -> ApplicationError {
+        ApplicationError::EpochManagerError(self)
+    }
+}
+
+pub fn deref_and_update<D: ResolverApi>(
+    receiver: RENodeId,
+    call_frame_update: &mut CallFrameUpdate,
+    deref: &mut D,
+) -> Result<ResolvedReceiver, RuntimeError> {
+    // TODO: Move this logic into kernel
+    let resolved_receiver = if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+        ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
+    } else {
+        ResolvedReceiver::new(receiver)
+    };
+    let resolved_node_id = resolved_receiver.receiver;
+    call_frame_update.node_refs_to_copy.insert(resolved_node_id);
+
+    Ok(resolved_receiver)
+}

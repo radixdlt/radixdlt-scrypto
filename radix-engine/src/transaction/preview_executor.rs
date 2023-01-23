@@ -5,7 +5,7 @@ use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
-use crate::engine::ScryptoInterpreter;
+use crate::kernel::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;

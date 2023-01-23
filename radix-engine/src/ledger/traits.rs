@@ -1,5 +1,4 @@
-use crate::model::PersistedSubstate;
-use crate::types::*;
+use crate::{system::substates::PersistedSubstate, types::*};
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 
 pub trait QueryableSubstateStore {
