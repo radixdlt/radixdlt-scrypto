@@ -11,7 +11,7 @@ use radix_engine_interface::api::blueprints::identity::*;
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::NativeFn;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::EngineSubstateApi;
 
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;
@@ -38,7 +38,7 @@ impl Executor for IdentityCreateInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineSubstateApi<RuntimeError>,
     {
         let node_id = Identity::create(self.access_rule, api)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
@@ -65,7 +65,7 @@ pub struct Identity;
 impl Identity {
     pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<RENodeId, RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineSubstateApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::Identity)?;
 

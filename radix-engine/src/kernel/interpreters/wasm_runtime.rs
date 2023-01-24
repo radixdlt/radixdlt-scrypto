@@ -5,11 +5,13 @@ use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
-use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
-use radix_engine_interface::api::serialize::CallTableInvocation;
+use radix_engine_interface::api::types::CallTableInvocation;
+use radix_engine_interface::api::types::ScryptoInvocation;
+use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::{
+    EngineActorApi, EngineComponentApi, EngineInvokeApi, EngineSubstateApi, Invokable,
+};
 use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -18,7 +20,7 @@ use sbor::rust::vec::Vec;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SubstateApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: SubstateApi + EngineSubstateApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -27,7 +29,7 @@ where
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SubstateApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: SubstateApi + EngineSubstateApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -41,10 +43,10 @@ where
 impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
     Y: SubstateApi
-        + ComponentApi<RuntimeError>
-        + EngineApi<RuntimeError>
-        + InvokableModel<RuntimeError>
-        + ActorApi<RuntimeError>,
+        + EngineComponentApi<RuntimeError>
+        + EngineSubstateApi<RuntimeError>
+        + EngineInvokeApi<RuntimeError>
+        + EngineActorApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,

@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::transaction_hash::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::EngineSubstateApi;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeError {
@@ -43,7 +43,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
@@ -87,7 +87,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);

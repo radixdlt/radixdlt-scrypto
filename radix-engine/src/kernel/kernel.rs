@@ -20,13 +20,14 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::blueprints::resource::{require, Bucket};
-use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
+use radix_engine_interface::api::invoke_api::Invocation;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
+use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
+    EngineActorApi, EngineApi, EngineComponentApi, EngineInvokeApi, Invokable,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -680,12 +681,7 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>
-            + ComponentApi<RuntimeError>
-            + WasmApi<W>,
+        Y: SystemApi + EngineApi<RuntimeError> + WasmApi<W>,
         W: WasmEngine;
 }
 
@@ -698,7 +694,7 @@ pub trait ExecutableInvocation: Invocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
-impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> EngineComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -1257,7 +1253,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ActorApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> EngineActorApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -1268,7 +1264,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> InvokableModel<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> EngineInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -1276,7 +1272,14 @@ where
 {
 }
 
-// TODO: remove
+impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+}
+
 impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,

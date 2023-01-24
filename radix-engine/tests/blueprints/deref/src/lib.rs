@@ -1,4 +1,4 @@
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::EngineSubstateApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

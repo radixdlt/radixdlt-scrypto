@@ -10,11 +10,11 @@ use radix_engine_interface::api::blueprints::epoch_manager::EpochManagerCreateIn
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
-use radix_engine_interface::api::serialize::{
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::types::{
     ClockInvocation, EpochManagerInvocation, NativeInvocation, PackageInvocation,
     ResourceInvocation,
 };
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };

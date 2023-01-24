@@ -1,13 +1,3 @@
-use crate::api::serialize::CallTableInvocation;
-use crate::api::Invocation;
-use crate::data::ScryptoDecode;
-
-pub trait SerializableInvocation:
-    Into<CallTableInvocation> + Invocation<Output = Self::ScryptoOutput>
-{
-    type ScryptoOutput: ScryptoDecode;
-}
-
 pub type BufferId = u32;
 
 #[repr(C)]

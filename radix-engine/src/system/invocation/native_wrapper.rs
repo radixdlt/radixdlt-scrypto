@@ -5,16 +5,16 @@ use crate::{
     system::system_api::SystemApi,
     types::*,
 };
-use radix_engine_interface::api::InvokableModel;
+use radix_engine_interface::api::EngineInvokeApi;
 use radix_engine_interface::api::{
-    scrypto_invocation::{ScryptoInvocation, ScryptoReceiver},
-    serialize::{
+    types::{
         AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, CallTableInvocation,
         ClockInvocation, ComponentInvocation, EpochManagerInvocation, IdentityInvocation,
         LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
         ResourceInvocation, TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation,
         WorktopInvocation,
     },
+    types::{ScryptoInvocation, ScryptoReceiver},
 };
 
 pub fn resolve_method<Y: SystemApi>(
@@ -119,7 +119,7 @@ pub fn invoke_call_table<Y, E>(
     api: &mut Y,
 ) -> Result<IndexedScryptoValue, E>
 where
-    Y: InvokableModel<E>,
+    Y: EngineInvokeApi<E>,
 {
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
@@ -138,7 +138,7 @@ pub fn invoke_native_fn<Y, E>(
     api: &mut Y,
 ) -> Result<Box<dyn NativeOutput>, E>
 where
-    Y: InvokableModel<E>,
+    Y: EngineInvokeApi<E>,
 {
     match native_invocation {
         NativeInvocation::Component(component_method) => match component_method {

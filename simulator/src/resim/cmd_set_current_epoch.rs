@@ -3,7 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::{
     blueprints::epoch_manager::EpochManagerSetEpochInvocation,
     kernel_modules::auth::AuthAddresses,
-    serialize::{EpochManagerInvocation, NativeInvocation},
+    types::{EpochManagerInvocation, NativeInvocation},
 };
 
 use crate::resim::*;

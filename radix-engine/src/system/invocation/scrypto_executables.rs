@@ -3,7 +3,7 @@ use crate::errors::{ApplicationError, InterpreterError, RuntimeError, ScryptoFnR
 use crate::kernel::kernel_api::{LockFlags, ResolverApi, SubstateApi};
 use crate::kernel::*;
 use crate::types::*;
-use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
+use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::data::*;
 
 impl ExecutableInvocation for ScryptoInvocation {

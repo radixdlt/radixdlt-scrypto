@@ -8,20 +8,31 @@ use crate::api::blueprints::transaction_hash::*;
 use crate::api::component::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
+use crate::api::package::PackageAddress;
 use crate::api::package::*;
-use crate::api::scrypto_invocation::ScryptoInvocation;
 use crate::api::types::*;
 use crate::data::types::{ManifestBucket, ManifestProof};
 use crate::*;
 use radix_engine_interface::data::ReplaceManifestValuesError;
 use sbor::rust::collections::{HashMap, HashSet};
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 // TODO: Remove enum
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CallTableInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ScryptoInvocation {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub fn_name: String,
+    pub receiver: Option<ScryptoReceiver>,
+    pub args: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

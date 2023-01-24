@@ -18,7 +18,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::InvokableModel;
+use radix_engine_interface::api::EngineInvokeApi;
 
 pub struct Package;
 
@@ -68,7 +68,7 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineInvokeApi<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -215,7 +215,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

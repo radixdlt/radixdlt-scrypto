@@ -38,7 +38,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -100,7 +100,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -244,7 +244,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

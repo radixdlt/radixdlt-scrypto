@@ -2,11 +2,8 @@ use sbor::rust::fmt::Debug;
 
 use crate::api::blueprints::resource::AccessRule;
 use crate::api::component::ComponentAddress;
-use crate::api::serialize::CallTableInvocation;
-use crate::api::serialize::IdentityInvocation;
-use crate::api::serialize::NativeInvocation;
+use crate::api::invoke_api::*;
 use crate::api::types::*;
-use crate::api::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

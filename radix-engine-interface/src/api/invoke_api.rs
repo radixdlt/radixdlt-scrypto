@@ -8,10 +8,18 @@ use crate::api::component::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
 use crate::api::package::*;
-use crate::api::scrypto_invocation::ScryptoInvocation;
+use crate::api::types::*;
+use crate::data::ScryptoDecode;
+use crate::data::ScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
 use sbor::rust::string::String;
+
+pub trait SerializableInvocation:
+    Into<CallTableInvocation> + Invocation<Output = Self::ScryptoOutput>
+{
+    type ScryptoOutput: ScryptoDecode;
+}
 
 pub trait Invocation: Debug {
     type Output: Debug;
@@ -26,7 +34,21 @@ pub trait Invokable<I: Invocation, E> {
     fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
-pub trait InvokableModel<E>:
+impl Invocation for ScryptoInvocation {
+    type Output = ScryptoValue;
+}
+
+impl SerializableInvocation for ScryptoInvocation {
+    type ScryptoOutput = ScryptoValue;
+}
+
+impl Into<CallTableInvocation> for ScryptoInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Scrypto(self)
+    }
+}
+
+pub trait EngineInvokeApi<E>:
     Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>

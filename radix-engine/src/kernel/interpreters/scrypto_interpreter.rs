@@ -4,7 +4,9 @@ use crate::kernel::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
+use radix_engine_interface::api::{
+    EngineActorApi, EngineComponentApi, EngineInvokeApi, EngineSubstateApi,
+};
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
 pub struct ScryptoExecutor {
@@ -20,10 +22,10 @@ impl Executor for ScryptoExecutor {
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SubstateApi
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>
-            + ComponentApi<RuntimeError>
+            + EngineSubstateApi<RuntimeError>
+            + EngineInvokeApi<RuntimeError>
+            + EngineActorApi<RuntimeError>
+            + EngineComponentApi<RuntimeError>
             + WasmApi<W>,
         W: WasmEngine,
     {

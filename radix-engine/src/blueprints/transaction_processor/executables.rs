@@ -16,18 +16,19 @@ use radix_engine_interface::api::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::api::blueprints::resource::ResourceManagerCreateFungibleInvocation;
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::invoke_api::Invocation;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
-use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
-use radix_engine_interface::api::serialize::CallTableInvocation;
-use radix_engine_interface::api::serialize::NativeInvocation;
+use radix_engine_interface::api::types::CallTableInvocation;
+use radix_engine_interface::api::types::NativeInvocation;
+use radix_engine_interface::api::types::ScryptoInvocation;
+use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
-use radix_engine_interface::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
+use radix_engine_interface::api::{EngineComponentApi, EngineInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
@@ -275,9 +276,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + EngineApi<RuntimeError>
-            + ComponentApi<RuntimeError>
-            + InvokableModel<RuntimeError>,
+            + EngineSubstateApi<RuntimeError>
+            + EngineComponentApi<RuntimeError>
+            + EngineInvokeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
@@ -913,7 +914,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value
@@ -954,7 +955,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {
@@ -988,7 +989,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: InvokableModel<RuntimeError>,
+        Y: EngineInvokeApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

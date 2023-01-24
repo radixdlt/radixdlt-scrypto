@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::EngineSubstateApi;
 use radix_engine_interface::data::*;
 
 use radix_engine_interface::data::types::Own;

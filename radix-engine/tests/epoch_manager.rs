@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::blueprints::epoch_manager::{EpochManagerCreateInvocation, *};
 use radix_engine_interface::api::blueprints::resource::FromPublicKey;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::api::serialize::{EpochManagerInvocation, NativeInvocation};
+use radix_engine_interface::api::types::{EpochManagerInvocation, NativeInvocation};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};

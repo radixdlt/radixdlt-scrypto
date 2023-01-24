@@ -27,7 +27,7 @@ use radix_engine_interface::api::blueprints::epoch_manager::{
 };
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::api::serialize::{
+use radix_engine_interface::api::types::{
     ClockInvocation, EpochManagerInvocation, NativeInvocation,
 };
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
