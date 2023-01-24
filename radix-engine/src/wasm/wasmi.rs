@@ -100,7 +100,7 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
             Some(host_error) => *host_error
                 .downcast::<InvokeError<WasmRuntimeError>>()
                 .expect("Failed to downcast error into InvokeError<WasmRuntimeError>"),
-            None => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
+            None => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
         }
     }
 }
@@ -319,7 +319,7 @@ impl WasmInstance for WasmiInstance {
         } else {
             Err(WasmRuntimeError::InvalidExportReturn)
         }
-        .map_err(InvokeError::Error)
+        .map_err(InvokeError::SelfError)
     }
 }
 

@@ -298,7 +298,7 @@ impl ProofSubstate {
     pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, InvokeError<ProofError>> {
         self.total_locked
             .ids()
-            .map_err(|_| InvokeError::Error(ProofError::NonFungibleOperationNotAllowed))
+            .map_err(|_| InvokeError::SelfError(ProofError::NonFungibleOperationNotAllowed))
     }
 
     pub fn is_restricted(&self) -> bool {
