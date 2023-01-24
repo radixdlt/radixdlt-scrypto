@@ -2,8 +2,8 @@ use radix_engine_interface::api::wasm::Buffer;
 use radix_engine_interface::api::wasm::BufferId;
 use radix_engine_interface::api::wasm::Slice;
 use sbor::rust::sync::Arc;
-use wasmi::core::Trap;
 use wasmi::core::Value;
+use wasmi::core::{HostError, Trap};
 use wasmi::*;
 
 use super::InstrumentedCode;
@@ -67,13 +67,14 @@ fn consume_buffer(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let slice = runtime
-        .consume_buffer(buffer_id)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    write_memory(caller, memory, destination_ptr, &slice)?;
-
-    Ok(())
+    let result = runtime.consume_buffer(buffer_id);
+    match result {
+        Ok(slice) => {
+            write_memory(caller, memory, destination_ptr, &slice)?;
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
 }
 
 fn invoke_method(
@@ -91,11 +92,9 @@ fn invoke_method(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
-    let buffer = runtime
+    runtime
         .invoke_method(receiver, ident, args)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+        .map(|buffer| buffer.0)
 }
 
 fn invoke(
@@ -112,11 +111,7 @@ fn invoke(
         invocation_len,
     )?;
 
-    let buffer = runtime
-        .invoke(invocation)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+    runtime.invoke(invocation).map(|buffer| buffer.0)
 }
 
 fn create_node(
@@ -128,23 +123,13 @@ fn create_node(
 
     let node = read_memory(caller.as_context_mut(), memory, node_ptr, node_len)?;
 
-    let buffer = runtime
-        .create_node(node)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+    runtime.create_node(node).map(|buffer| buffer.0)
 }
 
-fn get_visible_nodes(
-    caller: Caller<'_, HostState>,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn get_visible_nodes(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    let buffer = runtime
-        .get_visible_nodes()
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+    runtime.get_visible_nodes().map(|buffer| buffer.0)
 }
 
 fn drop_node(
@@ -156,11 +141,7 @@ fn drop_node(
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
 
-    runtime
-        .drop_node(node_id)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(())
+    runtime.drop_node(node_id)
 }
 
 fn lock_substate(
@@ -176,11 +157,7 @@ fn lock_substate(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    let handle = runtime
-        .lock_substate(node_id, offset, mutable != 0)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(handle)
+    runtime.lock_substate(node_id, offset, mutable != 0)
 }
 
 fn read_substate(
@@ -189,11 +166,7 @@ fn read_substate(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    let buffer = runtime
-        .read_substate(handle)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+    runtime.read_substate(handle).map(|buffer| buffer.0)
 }
 
 fn write_substate(
@@ -206,11 +179,7 @@ fn write_substate(
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime
-        .write_substate(handle, data)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(())
+    runtime.write_substate(handle, data)
 }
 
 fn unlock_substate(
@@ -219,21 +188,13 @@ fn unlock_substate(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime
-        .unlock_substate(handle)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(())
+    runtime.unlock_substate(handle)
 }
 
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    let buffer = runtime
-        .get_actor()
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))?;
-
-    Ok(buffer.0)
+    runtime.get_actor().map(|buffer| buffer.0)
 }
 
 fn consume_cost_units(
@@ -241,9 +202,7 @@ fn consume_cost_units(
     cost_unit: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime
-        .consume_cost_units(cost_unit)
-        .map_err(|e| InvokeError::Error(WasmRuntimeError::InterpreterError(e.to_string())))
+    runtime.consume_cost_units(cost_unit)
 }
 // native functions ends
 
@@ -284,8 +243,7 @@ impl WasmiModule {
              buffer_id: BufferId,
              destination_ptr: u32|
              -> Result<(), Trap> {
-                consume_buffer(caller, buffer_id, destination_ptr)
-                    .map_err(|e| Trap::new(e.to_string()))
+                consume_buffer(caller, buffer_id, destination_ptr).map_err(|e| e.into())
             },
         );
 
@@ -308,7 +266,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                .map_err(|e| Trap::new(e.to_string()))
+                .map_err(|e| e.into())
             },
         );
 
@@ -318,21 +276,21 @@ impl WasmiModule {
              invocation_ptr: u32,
              invocation_len: u32|
              -> Result<u64, Trap> {
-                invoke(caller, invocation_ptr, invocation_len).map_err(|e| Trap::new(e.to_string()))
+                invoke(caller, invocation_ptr, invocation_len).map_err(|e| e.into())
             },
         );
 
         let host_create_node = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, node_ptr: u32, node_len: u32| -> Result<u64, Trap> {
-                create_node(caller, node_ptr, node_len).map_err(|e| Trap::new(e.to_string()))
+                create_node(caller, node_ptr, node_len).map_err(|e| e.into())
             },
         );
 
         let host_get_visible_nodes = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_visible_nodes(caller).map_err(|e| Trap::new(e.to_string()))
+                get_visible_nodes(caller).map_err(|e| e.into())
             },
         );
 
@@ -342,7 +300,7 @@ impl WasmiModule {
              node_id_ptr: u32,
              node_id_len: u32|
              -> Result<(), Trap> {
-                drop_node(caller, node_id_ptr, node_id_len).map_err(|e| Trap::new(e.to_string()))
+                drop_node(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
             },
         );
 
@@ -363,14 +321,14 @@ impl WasmiModule {
                     offset_len,
                     mutable,
                 )
-                .map_err(|e| Trap::new(e.to_string()))
+                .map_err(|e| e.into())
             },
         );
 
         let host_read_substate = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
-                read_substate(caller, handle).map_err(|e| Trap::new(e.to_string()))
+                read_substate(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -381,29 +339,28 @@ impl WasmiModule {
              data_ptr: u32,
              data_len: u32|
              -> Result<(), Trap> {
-                write_substate(caller, handle, data_ptr, data_len)
-                    .map_err(|e| Trap::new(e.to_string()))
+                write_substate(caller, handle, data_ptr, data_len).map_err(|e| e.into())
             },
         );
 
         let host_unlock_substate = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                unlock_substate(caller, handle).map_err(|e| Trap::new(e.to_string()))
+                unlock_substate(caller, handle).map_err(|e| e.into())
             },
         );
 
         let host_get_actor = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_actor(caller).map_err(|e| Trap::new(e.to_string()))
+                get_actor(caller).map_err(|e| e.into())
             },
         );
 
         let host_consume_cost_units = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, cost_unit: u32| -> Result<(), Trap> {
-                consume_cost_units(caller, cost_unit).map_err(|e| Trap::new(e.to_string()))
+                consume_cost_units(caller, cost_unit).map_err(|e| e.into())
             },
         );
 
@@ -486,9 +443,7 @@ fn write_memory(
 
     memory
         .write(&mut store.as_context_mut(), ptr as usize, data)
-        .or_else(|_| {
-            Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError))
-        })
+        .or_else(|_| Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError)))
 }
 
 fn read_slice(
@@ -510,6 +465,23 @@ impl WasmiInstance {
             .ok_or_else(|| {
                 InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
             })
+    }
+}
+
+impl HostError for InvokeError<WasmRuntimeError> {}
+
+impl From<Error> for InvokeError<WasmRuntimeError> {
+    fn from(err: Error) -> Self {
+        let e_str = format!("{:?}", err);
+        match err {
+            Error::Trap(trap) => {
+                let invoke_err = trap
+                    .downcast_ref::<InvokeError<WasmRuntimeError>>()
+                    .unwrap_or(&InvokeError::Error(WasmRuntimeError::InvalidExportReturn));
+                invoke_err.clone()
+            }
+            _ => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
+        }
     }
 }
 
@@ -535,18 +507,20 @@ impl WasmInstance for WasmiInstance {
             .collect();
         let mut ret = [Value::I64(0)];
 
-        func.call(self.store.as_context_mut(), &input, &mut ret).unwrap();
+        let result = func
+            .call(self.store.as_context_mut(), &input, &mut ret)
+            .map_err(|e| {
+                let err: InvokeError<WasmRuntimeError> = e.into();
+                err
+            })?;
 
         match i64::try_from(ret[0]) {
-            Ok(ret) => {
-                read_slice(
-                    self.store.as_context_mut(),
-                    self.memory,
-                    Slice::transmute_i64(ret))
-            },
-            _ => {
-                Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn))
-            }
+            Ok(ret) => read_slice(
+                self.store.as_context_mut(),
+                self.memory,
+                Slice::transmute_i64(ret),
+            ),
+            _ => Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn)),
         }
     }
 }

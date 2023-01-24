@@ -162,7 +162,7 @@ impl Into<ModuleError> for AuthError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InvokeError<E> {
     Error(E),
     Downstream(RuntimeError),
