@@ -2,12 +2,12 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelResolverApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::ResolverApi;
 use crate::kernel::*;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::invocation::native_wrapper::invoke_native_fn;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -240,7 +240,7 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -275,7 +275,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
+        Y: KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineComponentApi<RuntimeError>
             + EngineInvokeApi<RuntimeError>,
@@ -914,7 +914,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value

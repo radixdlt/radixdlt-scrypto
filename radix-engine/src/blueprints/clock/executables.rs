@@ -1,11 +1,11 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelResolverApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::ResolverApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::clock::ClockCreateInvocation;
@@ -36,7 +36,7 @@ pub struct Clock;
 impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -58,7 +58,7 @@ impl Executor for ClockCreateInvocation {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
@@ -114,7 +114,7 @@ pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -142,7 +142,7 @@ impl Executor for ClockSetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = self.0;
 
@@ -166,7 +166,7 @@ pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
     type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -193,7 +193,7 @@ impl Executor for ClockGetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = self.0;
         let precision = self.1;
@@ -223,7 +223,7 @@ pub struct ClockCompareCurrentTimeExecutable {
 impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
     type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -257,7 +257,7 @@ impl Executor for ClockCompareCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         match self.precision {
             TimePrecision::Minute => {

@@ -1,5 +1,5 @@
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{LockFlags, SubstateApi, WasmApi};
+use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
 use crate::kernel::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -21,12 +21,12 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi
+        Y: KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineInvokeApi<RuntimeError>
             + EngineActorApi<RuntimeError>
             + EngineComponentApi<RuntimeError>
-            + WasmApi<W>,
+            + KernelWasmApi<W>,
         W: WasmEngine,
     {
         let package = {

@@ -33,7 +33,7 @@ pub struct LockInfo {
 }
 
 // TODO: split out non-substate related APIs.
-pub trait SubstateApi {
+pub trait KernelSubstateApi {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
@@ -81,16 +81,19 @@ pub trait SubstateApi {
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 }
 
-pub trait WasmApi<W: WasmEngine> {
+pub trait KernelWasmApi<W: WasmEngine> {
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 }
 
 // TODO: Clean this up
-pub trait ResolverApi {
+pub trait KernelResolverApi {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }
 
 /// APIs for accessing functionalities provided by kernel.
-pub trait KernelApi<W: WasmEngine>: SubstateApi + WasmApi<W> + ResolverApi {}
+pub trait KernelApi<W: WasmEngine>:
+    KernelSubstateApi + KernelWasmApi<W> + KernelResolverApi
+{
+}

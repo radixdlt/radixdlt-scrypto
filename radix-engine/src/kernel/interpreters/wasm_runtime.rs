@@ -1,6 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::SubstateApi;
+use crate::kernel::KernelSubstateApi;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
@@ -20,7 +20,9 @@ use sbor::rust::vec::Vec;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SubstateApi + EngineSubstateApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: KernelSubstateApi
+        + EngineSubstateApi<RuntimeError>
+        + Invokable<ScryptoInvocation, RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -29,7 +31,9 @@ where
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SubstateApi + EngineSubstateApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: KernelSubstateApi
+        + EngineSubstateApi<RuntimeError>
+        + Invokable<ScryptoInvocation, RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -42,7 +46,7 @@ where
 
 impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SubstateApi
+    Y: KernelSubstateApi
         + EngineComponentApi<RuntimeError>
         + EngineSubstateApi<RuntimeError>
         + EngineInvokeApi<RuntimeError>

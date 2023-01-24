@@ -1,12 +1,12 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelResolverApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::ResolverApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
@@ -41,7 +41,7 @@ pub struct EpochManager;
 impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -70,7 +70,7 @@ impl Executor for EpochManagerCreateInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(
@@ -172,7 +172,7 @@ pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     type Exec = EpochManagerGetCurrentEpochExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -201,7 +201,7 @@ impl Executor for EpochManagerGetCurrentEpochExecutable {
         system_api: &mut Y,
     ) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -219,7 +219,7 @@ pub struct EpochManagerNextRoundExecutable {
 impl ExecutableInvocation for EpochManagerNextRoundInvocation {
     type Exec = EpochManagerNextRoundExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -251,7 +251,7 @@ impl Executor for EpochManagerNextRoundExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let mgr_handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
@@ -300,7 +300,7 @@ pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     type Exec = EpochManagerSetEpochExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -329,7 +329,7 @@ impl Executor for EpochManagerSetEpochExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -344,7 +344,7 @@ pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicK
 impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
     type Exec = EpochManagerCreateValidatorExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -374,7 +374,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -400,7 +400,7 @@ pub struct EpochManagerUpdateValidatorExecutable(RENodeId, ComponentAddress, Upd
 impl ExecutableInvocation for EpochManagerUpdateValidatorInvocation {
     type Exec = EpochManagerUpdateValidatorExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -430,7 +430,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -460,7 +460,7 @@ impl EpochManager {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
@@ -523,7 +523,7 @@ pub struct ValidatorRegisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorRegisterInvocation {
     type Exec = ValidatorRegisterExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -548,7 +548,7 @@ impl Executor for ValidatorRegisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
@@ -592,7 +592,7 @@ pub struct ValidatorUnregisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorUnregisterInvocation {
     type Exec = ValidatorUnregisterExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -616,7 +616,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
@@ -652,7 +652,7 @@ pub struct ValidatorStakeExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ValidatorStakeInvocation {
     type Exec = ValidatorStakeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -678,7 +678,7 @@ impl Executor for ValidatorStakeExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -719,7 +719,7 @@ pub struct ValidatorUnstakeExecutable(RENodeId, Decimal);
 impl ExecutableInvocation for ValidatorUnstakeInvocation {
     type Exec = ValidatorUnstakeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -745,7 +745,7 @@ impl Executor for ValidatorUnstakeExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;

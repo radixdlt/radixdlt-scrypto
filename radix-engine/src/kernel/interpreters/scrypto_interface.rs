@@ -1,7 +1,7 @@
 use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::{BaseModule, Kernel, RENodeInit, SubstateApi};
+use crate::kernel::{BaseModule, Kernel, KernelSubstateApi, RENodeInit};
 use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,

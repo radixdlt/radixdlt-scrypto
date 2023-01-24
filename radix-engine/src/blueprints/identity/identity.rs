@@ -1,10 +1,10 @@
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::ResolverApi;
+use crate::kernel::kernel_api::KernelResolverApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::identity::*;
@@ -16,7 +16,7 @@ use radix_engine_interface::api::EngineSubstateApi;
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -38,7 +38,7 @@ impl Executor for IdentityCreateInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let node_id = Identity::create(self.access_rule, api)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
@@ -65,7 +65,7 @@ pub struct Identity;
 impl Identity {
     pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<RENodeId, RuntimeError>
     where
-        Y: SystemApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::Identity)?;
 

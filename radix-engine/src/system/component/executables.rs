@@ -1,9 +1,9 @@
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{LockFlags, ResolverApi};
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelResolverApi, LockFlags};
 use crate::kernel::{deref_and_update, Executor, RENodeInit};
 use crate::kernel::{CallFrameUpdate, ExecutableInvocation, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::system_api::SystemApi;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::AccessRules;
 use radix_engine_interface::api::blueprints::resource::*;
@@ -16,7 +16,7 @@ use radix_engine_interface::{constants::*, rule};
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -38,7 +38,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -78,7 +78,7 @@ impl Executor for ComponentGlobalizeInvocation {
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -100,7 +100,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -168,7 +168,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -197,7 +197,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -216,7 +216,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
 impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -244,7 +244,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

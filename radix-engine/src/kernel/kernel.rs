@@ -3,7 +3,9 @@ use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{LockFlags, LockInfo, ResolverApi, SubstateApi, WasmApi};
+use crate::kernel::kernel_api::{
+    KernelResolverApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -15,7 +17,6 @@ use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
@@ -646,7 +647,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> WasmApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> KernelWasmApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -665,7 +666,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ResolverApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> KernelResolverApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -681,14 +682,14 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + WasmApi<W>,
+        Y: KernelSubstateApi + EngineApi<RuntimeError> + KernelWasmApi<W>,
         W: WasmEngine;
 }
 
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolverApi + SubstateApi>(
+    fn resolve<Y: KernelResolverApi + KernelSubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -758,7 +759,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> SubstateApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> KernelSubstateApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -1273,14 +1274,6 @@ where
 }
 
 impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-}
-
-impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

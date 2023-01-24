@@ -1,11 +1,11 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelResolverApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::ResolverApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::*;
@@ -33,7 +33,7 @@ pub enum ProofError {
 impl ExecutableInvocation for ProofGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -55,7 +55,7 @@ impl Executor for ProofGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -70,7 +70,7 @@ impl Executor for ProofGetAmountInvocation {
 impl ExecutableInvocation for ProofGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -92,7 +92,7 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -108,7 +108,7 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for ProofGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -130,7 +130,7 @@ impl Executor for ProofGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -150,7 +150,7 @@ impl Executor for ProofGetResourceAddressInvocation {
 impl ExecutableInvocation for ProofCloneInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: KernelResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -172,7 +172,7 @@ impl Executor for ProofCloneInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
