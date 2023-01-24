@@ -1,5 +1,5 @@
 use crate::engine::*;
-use crate::fee::{FeeReserve, RoyaltyReceiver};
+use crate::fee::{ExecutionFeeReserve, FeeReserve, RoyaltyReceiver};
 use crate::model::{CostingError, GlobalAddressSubstate};
 use radix_engine_interface::api::types::{
     ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
@@ -108,7 +108,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
             .unwrap_or(0);
         track
-            .fee_reserve
+            .fee_reserve()
             .consume_royalty(
                 RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
                 royalty,
@@ -169,7 +169,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 .get_rule(&scrypto_fn_identifier.ident)
                 .clone();
             track
-                .fee_reserve
+                .fee_reserve()
                 .consume_royalty(
                     RoyaltyReceiver::Component(component_address, node_id),
                     royalty,

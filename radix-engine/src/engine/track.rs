@@ -8,9 +8,9 @@ use sbor::rust::collections::*;
 use transaction::model::Executable;
 
 use crate::engine::*;
-use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
+use crate::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::ledger::*;
 use crate::model::RuntimeSubstate;
@@ -67,7 +67,7 @@ pub struct Track<'s, R: FeeReserve> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    pub fee_reserve: R,
+    fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
@@ -117,6 +117,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     /// Returns a copy of the substate associated with the given address, if exists
     fn load_substate(&mut self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substate_store.get_substate(substate_id)
+    }
+
+    #[inline]
+    /// During execution, we only allow access to the Execution subset of the FeeReserve
+    pub fn fee_reserve(&mut self) -> &mut impl ExecutionFeeReserve {
+        &mut self.fee_reserve
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:

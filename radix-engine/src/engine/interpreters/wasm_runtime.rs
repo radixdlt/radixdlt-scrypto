@@ -256,7 +256,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
-            .consume_execution(n, 1, "run_wasm")
+            .consume_execution(n, "run_wasm")
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
     }
 }

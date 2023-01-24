@@ -1,5 +1,5 @@
 use crate::engine::*;
-use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
+use crate::fee::{ExecutionFeeReserve, FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -30,6 +30,19 @@ impl CostingModule {
     }
 }
 
+pub fn consume_api_cost<R: FeeReserve>(
+    track: &mut Track<R>,
+    reason: &'static str,
+    costing_entry: SystemApiCostingEntry,
+) -> Result<(), ModuleError> {
+    let cost_units = track.fee_table.system_api_cost(costing_entry);
+    track
+        .fee_reserve()
+        .consume_execution(cost_units, reason)
+        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+    Ok(())
+}
+
 impl<R: FeeReserve> BaseModule<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
@@ -49,126 +62,70 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 }
 
                 if depth > 0 {
-                    track
-                        .fee_reserve
-                        .consume_execution(
-                            track
-                                .fee_table
-                                .system_api_cost(SystemApiCostingEntry::Invoke { input_size }),
-                            1,
-                            "invoke",
-                        )
-                        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                    consume_api_cost(
+                        track,
+                        "invoke",
+                        SystemApiCostingEntry::Invoke { input_size },
+                    )?;
                 }
             }
             SysCallInput::ReadOwnedNodes => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
-                        1,
-                        "read_owned_nodes",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                consume_api_cost(
+                    track,
+                    "read_owned_nodes",
+                    SystemApiCostingEntry::ReadOwnedNodes,
+                )?;
             }
             SysCallInput::DropNode { .. } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
-                        1,
-                        "drop_node",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    "drop_node",
+                    SystemApiCostingEntry::DropNode { size: 0 },
+                )?;
             }
             SysCallInput::CreateNode { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::CreateNode {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        1,
-                        "create_node",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    "create_node",
+                    SystemApiCostingEntry::CreateNode { size: 0 },
+                )?;
             }
             SysCallInput::LockSubstate { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::LockSubstate {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        1,
-                        "lock_substate",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    "lock_substate",
+                    SystemApiCostingEntry::LockSubstate { size: 0 },
+                )?;
             }
             SysCallInput::GetRef { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::ReadSubstate {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        1,
-                        "read_substate",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    "read_substate",
+                    SystemApiCostingEntry::ReadSubstate { size: 0 },
+                )?;
             }
             SysCallInput::GetRefMut { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::WriteSubstate {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        1,
-                        "write_substate",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    "write_substate",
+                    SystemApiCostingEntry::WriteSubstate { size: 0 },
+                )?;
             }
             SysCallInput::DropLock { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::DropLock),
-                        1,
-                        "drop_lock",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                consume_api_cost(track, "drop_lock", SystemApiCostingEntry::DropLock)?;
             }
             SysCallInput::ReadBlob { .. } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
-                        1,
-                        "read_blob",
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                // TODO pass the right size
+                consume_api_cost(
+                    track,
+                    "read_blob",
+                    SystemApiCostingEntry::ReadBlob { size: 0 },
+                )?;
             }
         }
 
@@ -192,13 +149,11 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
         code: &[u8],
     ) -> Result<(), ModuleError> {
+        let cost_units_per_byte = track.fee_table.wasm_instantiation_per_byte();
+        let byte_length = code.len();
         track
-            .fee_reserve
-            .consume_execution(
-                track.fee_table.wasm_instantiation_per_byte(),
-                code.len(),
-                "instantiate_wasm",
-            )
+            .fee_reserve()
+            .consume_multiplied_execution(cost_units_per_byte, byte_length, "instantiate_wasm")
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -210,8 +165,8 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         units: u32,
     ) -> Result<(), ModuleError> {
         track
-            .fee_reserve
-            .consume_execution(units, 1, "run_wasm")
+            .fee_reserve()
+            .consume_execution(units, "run_wasm")
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -225,7 +180,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         contingent: bool,
     ) -> Result<Resource, ModuleError> {
         track
-            .fee_reserve
+            .fee_reserve()
             .lock_fee(vault_id, fee, contingent)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
@@ -239,14 +194,13 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         match &actor.identifier {
-            FnIdentifier::Native(native_fn) => track
-                .fee_reserve
-                .consume_execution(
-                    track.fee_table.run_native_fn_cost(&native_fn),
-                    1,
-                    "run_native_method",
-                )
-                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
+            FnIdentifier::Native(native_fn) => {
+                let cost_units = track.fee_table.run_native_fn_cost(&native_fn);
+                track
+                    .fee_reserve()
+                    .consume_execution(cost_units, "run_native_method")
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+            }
             _ => Ok(()),
         }
     }
