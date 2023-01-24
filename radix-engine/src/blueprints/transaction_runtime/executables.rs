@@ -2,7 +2,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::ResolverApi;
-use crate::kernel::kernel_api::SystemApi;
+use crate::kernel::kernel_api::SubstateApi;
 use crate::kernel::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -43,7 +43,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SubstateApi + EngineApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
@@ -87,7 +87,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SubstateApi + EngineApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);

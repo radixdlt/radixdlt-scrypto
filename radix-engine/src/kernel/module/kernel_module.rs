@@ -132,7 +132,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         Ok(())
     }
 
-    fn on_wasm_instantiation(
+    fn emit_wasm_instantiation_event(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,

@@ -1,6 +1,6 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SubstateApi};
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
@@ -57,7 +57,7 @@ impl Executor for WorktopPutInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -111,7 +111,7 @@ impl Executor for WorktopTakeAmountInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -172,7 +172,7 @@ impl Executor for WorktopTakeAllInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -225,7 +225,7 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -283,7 +283,7 @@ impl Executor for WorktopAssertContainsInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -335,7 +335,7 @@ impl Executor for WorktopAssertContainsAmountInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -386,7 +386,7 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -436,7 +436,7 @@ impl Executor for WorktopDrainInvocation {
         api: &mut Y,
     ) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);

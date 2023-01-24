@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::fee::FeeReserveError;
-use crate::system::kernel_modules::fee::SystemApiCostingEntry;
+use crate::system::kernel_modules::fee::SubstateApiCostingEntry;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
@@ -38,7 +38,7 @@ impl CostingModule {
 pub fn consume_api_cost<R: FeeReserve>(
     track: &mut Track<R>,
     reason: &'static str,
-    costing_entry: SystemApiCostingEntry,
+    costing_entry: SubstateApiCostingEntry,
 ) -> Result<(), ModuleError> {
     let cost_units = track.fee_table.system_api_cost(costing_entry);
     track
@@ -70,7 +70,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     consume_api_cost(
                         track,
                         "invoke",
-                        SystemApiCostingEntry::Invoke { input_size },
+                        SubstateApiCostingEntry::Invoke { input_size },
                     )?;
                 }
             }
@@ -78,7 +78,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "read_owned_nodes",
-                    SystemApiCostingEntry::ReadOwnedNodes,
+                    SubstateApiCostingEntry::ReadOwnedNodes,
                 )?;
             }
             SysCallInput::DropNode { .. } => {
@@ -86,7 +86,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "drop_node",
-                    SystemApiCostingEntry::DropNode { size: 0 },
+                    SubstateApiCostingEntry::DropNode { size: 0 },
                 )?;
             }
             SysCallInput::CreateNode { .. } => {
@@ -94,7 +94,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "create_node",
-                    SystemApiCostingEntry::CreateNode { size: 0 },
+                    SubstateApiCostingEntry::CreateNode { size: 0 },
                 )?;
             }
             SysCallInput::LockSubstate { .. } => {
@@ -102,7 +102,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "lock_substate",
-                    SystemApiCostingEntry::LockSubstate { size: 0 },
+                    SubstateApiCostingEntry::LockSubstate { size: 0 },
                 )?;
             }
             SysCallInput::GetRef { .. } => {
@@ -110,7 +110,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "read_substate",
-                    SystemApiCostingEntry::ReadSubstate { size: 0 },
+                    SubstateApiCostingEntry::ReadSubstate { size: 0 },
                 )?;
             }
             SysCallInput::GetRefMut { .. } => {
@@ -118,18 +118,18 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "write_substate",
-                    SystemApiCostingEntry::WriteSubstate { size: 0 },
+                    SubstateApiCostingEntry::WriteSubstate { size: 0 },
                 )?;
             }
             SysCallInput::DropLock { .. } => {
-                consume_api_cost(track, "drop_lock", SystemApiCostingEntry::DropLock)?;
+                consume_api_cost(track, "drop_lock", SubstateApiCostingEntry::DropLock)?;
             }
             SysCallInput::ReadBlob { .. } => {
                 // TODO pass the right size
                 consume_api_cost(
                     track,
                     "read_blob",
-                    SystemApiCostingEntry::ReadBlob { size: 0 },
+                    SubstateApiCostingEntry::ReadBlob { size: 0 },
                 )?;
             }
         }
@@ -147,7 +147,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         Ok(())
     }
 
-    fn on_wasm_instantiation(
+    fn emit_wasm_instantiation_event(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

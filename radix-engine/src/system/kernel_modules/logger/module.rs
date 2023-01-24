@@ -1,5 +1,5 @@
 use crate::{
-    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::kernel_api::SystemApi,
+    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::kernel_api::SubstateApi,
     kernel::*,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
@@ -8,14 +8,14 @@ use sbor::rust::vec::Vec;
 pub struct LoggerModule;
 
 impl LoggerModule {
-    pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn initialize<Y: SubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
         api.create_node(node_id, RENodeInit::Logger(logger))?;
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: SubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         _actor: &ResolvedActor,
         api: &mut Y,

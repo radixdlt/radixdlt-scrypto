@@ -94,7 +94,7 @@ pub trait BaseModule<R: FeeReserve> {
         Ok(())
     }
 
-    fn on_wasm_instantiation(
+    fn emit_wasm_instantiation_event(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

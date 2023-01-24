@@ -2,7 +2,7 @@ use crate::blueprints::resource::ResourceOperationError;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SubstateApi};
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
@@ -53,7 +53,7 @@ impl Executor for BucketTakeInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -102,7 +102,7 @@ impl Executor for BucketCreateProofInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -152,7 +152,7 @@ impl Executor for BucketTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -201,7 +201,7 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -243,7 +243,7 @@ impl Executor for BucketGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -283,7 +283,7 @@ impl Executor for BucketPutInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -329,7 +329,7 @@ impl Executor for BucketGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);

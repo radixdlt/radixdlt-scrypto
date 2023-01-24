@@ -38,7 +38,7 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
-pub trait SystemApi {
+pub trait SubstateApi {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
@@ -88,6 +88,7 @@ pub trait SystemApi {
 
 pub trait VmApi<W: WasmEngine> {
     fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+
     fn vm(&mut self) -> &ScryptoInterpreter<W>;
 }
 

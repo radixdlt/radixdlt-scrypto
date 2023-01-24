@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::*;
 
-pub enum SystemApiCostingEntry {
+pub enum SubstateApiCostingEntry {
     /*
      * Invocation
      */
@@ -233,29 +233,29 @@ impl FeeTable {
         }
     }
 
-    pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
+    pub fn system_api_cost(&self, entry: SubstateApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke { input_size, .. } => {
+            SubstateApiCostingEntry::Invoke { input_size, .. } => {
                 self.fixed_low + (5 * input_size) as u32
             }
 
-            SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
-            SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
-            SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
+            SubstateApiCostingEntry::ReadOwnedNodes => self.fixed_low,
+            SubstateApiCostingEntry::CreateNode { .. } => self.fixed_medium,
+            SubstateApiCostingEntry::DropNode { .. } => self.fixed_medium,
 
-            SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
+            SubstateApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
-            SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
-            SystemApiCostingEntry::DropLock => self.fixed_low,
+            SubstateApiCostingEntry::LockSubstate { .. } => self.fixed_low,
+            SubstateApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            SubstateApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
+            SubstateApiCostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
+            SubstateApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
         }
     }
 }

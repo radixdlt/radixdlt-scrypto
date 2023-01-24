@@ -2,7 +2,7 @@ use crate::blueprints::clock::Clock;
 use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::SystemApi;
+use crate::kernel::kernel_api::SubstateApi;
 use crate::kernel::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
@@ -33,7 +33,7 @@ impl AuthModule {
         system_api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         if matches!(
             actor.identifier,
@@ -234,7 +234,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: SubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
         system_api: &mut Y,
@@ -290,7 +290,7 @@ impl AuthModule {
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: SystemApi + ActorApi<RuntimeError>,
+        Y: SubstateApi + ActorApi<RuntimeError>,
     {
         if matches!(
             api.fn_identifier()?,

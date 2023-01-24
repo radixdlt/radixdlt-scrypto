@@ -67,7 +67,7 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -167,7 +167,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SubstateApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -214,7 +214,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SubstateApi + InvokableModel<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

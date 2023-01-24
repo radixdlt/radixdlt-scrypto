@@ -1,5 +1,5 @@
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{LockFlags, SystemApi, VmApi};
+use crate::kernel::kernel_api::{LockFlags, SubstateApi, VmApi};
 use crate::kernel::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -19,7 +19,7 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
+        Y: SubstateApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
@@ -46,7 +46,7 @@ impl Executor for ScryptoExecutor {
         let rtn_type = fn_abi.output.clone();
 
         // Emit event
-        api.on_wasm_instantiation(package.code())?;
+        api.emit_wasm_instantiation_event(package.code())?;
         let mut instance = api
             .vm()
             .create_instance(self.package_address, &package.code);

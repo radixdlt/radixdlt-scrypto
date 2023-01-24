@@ -3,7 +3,7 @@ use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{LockFlags, LockInfo, ResolverApi, SystemApi, VmApi};
+use crate::kernel::kernel_api::{LockFlags, LockInfo, ResolverApi, SubstateApi, VmApi};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -654,7 +654,7 @@ where
         self.scrypto_interpreter
     }
 
-    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
         self.module
             .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
             .map_err(RuntimeError::ModuleError)?;
@@ -679,7 +679,7 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
+        Y: SubstateApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
@@ -691,7 +691,7 @@ pub trait Executor {
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolverApi + SystemApi>(
+    fn resolve<Y: ResolverApi + SubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -761,7 +761,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> SubstateApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
