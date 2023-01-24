@@ -1,5 +1,5 @@
-use radix_engine::engine::KernelError;
-use radix_engine::engine::RuntimeError;
+use radix_engine::errors::KernelError;
+use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::model::FromPublicKey;

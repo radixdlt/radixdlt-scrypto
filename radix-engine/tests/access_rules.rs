@@ -1,5 +1,6 @@
-use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::model::AccessRulesChainError;
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::node_modules::auth::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;

@@ -4,14 +4,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::blueprints::epoch_manager::ValidatorSetSubstate;
+use radix_engine::errors::*;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
-    ValidatorSetSubstate,
-};
 use radix_engine::state_manager::StagedSubstateStoreManager;
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
     FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt,

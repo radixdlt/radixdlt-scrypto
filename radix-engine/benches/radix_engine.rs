@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};

@@ -1,8 +1,7 @@
-use radix_engine::engine::{
-    AuthError, KernelError, ModuleError, RejectionError, ResolvedActor, ResolvedReceiver,
-    RuntimeError,
-};
-use radix_engine::model::MethodAuthorizationError;
+use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
+use radix_engine::kernel::{ResolvedActor, ResolvedReceiver};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::method_authorization::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;

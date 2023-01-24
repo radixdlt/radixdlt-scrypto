@@ -1,5 +1,4 @@
-use radix_engine::fee::u128_to_decimal;
-use radix_engine::types::*;
+use radix_engine::{system::kernel_modules::fee::u128_to_decimal, types::*};
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;

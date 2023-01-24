@@ -1,4 +1,4 @@
-use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,

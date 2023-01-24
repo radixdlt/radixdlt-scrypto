@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::errors::{KernelError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

@@ -1,6 +1,6 @@
+use crate::errors::InvokeError;
 use crate::kernel::NopWasmRuntime;
 use crate::system::kernel_modules::fee::SystemLoanFeeReserve;
-use crate::errors::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 

@@ -1,5 +1,5 @@
-use radix_engine::engine::node_move_module::NodeMoveError;
-use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::model::FromPublicKey;

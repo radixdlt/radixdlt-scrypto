@@ -1,5 +1,5 @@
-use radix_engine::engine::{ApplicationError, InterpreterError, KernelError, RuntimeError};
-use radix_engine::model::PackageError;
+use radix_engine::errors::{ApplicationError, InterpreterError, KernelError, RuntimeError};
+use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use scrypto_unit::*;

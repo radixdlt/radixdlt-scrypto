@@ -1,4 +1,4 @@
-use radix_engine::model::ResourceChange;
+use radix_engine::system::kernel_modules::trace::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;

@@ -51,8 +51,7 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::model::*;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
@@ -306,7 +305,7 @@ pub fn export_abi(
 ) -> Result<abi::BlueprintAbi, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-    radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
+    radix_engine::system::package::export_abi(&mut substate_store, package_address, blueprint_name)
         .map_err(Error::AbiExportError)
 }
 
@@ -315,6 +314,6 @@ pub fn export_abi_by_component(
 ) -> Result<abi::BlueprintAbi, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-    radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
+    radix_engine::system::package::export_abi_by_component(&mut substate_store, component_address)
         .map_err(Error::AbiExportError)
 }

@@ -1,5 +1,5 @@
-use radix_engine::engine::{ModuleError, RuntimeError};
-use radix_engine::model::CostingError;
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::node_modules::fee::CostingError;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;

@@ -1,8 +1,8 @@
-use radix_engine::engine::ApplicationError;
-use radix_engine::engine::KernelError;
-use radix_engine::engine::RejectionError;
-use radix_engine::engine::RuntimeError;
-use radix_engine::model::TransactionProcessorError;
+use radix_engine::blueprints::transaction_processor::TransactionProcessorError;
+use radix_engine::errors::ApplicationError;
+use radix_engine::errors::KernelError;
+use radix_engine::errors::RejectionError;
+use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;

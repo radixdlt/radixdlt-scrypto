@@ -1,8 +1,8 @@
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
-use radix_engine::engine::{
+use radix_engine::errors::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
-use radix_engine::model::AccessRulesChainError;
+use radix_engine::system::node_modules::auth::AccessRulesChainError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use serde::Serialize;

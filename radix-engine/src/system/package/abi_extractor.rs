@@ -5,7 +5,7 @@ use radix_engine_interface::api::types::{
 };
 
 use crate::ledger::*;
-use crate::errors::*;
+use crate::system::substates::RuntimeSubstate;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
