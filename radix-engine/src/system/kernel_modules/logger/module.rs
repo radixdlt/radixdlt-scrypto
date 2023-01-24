@@ -1,6 +1,6 @@
 use crate::{
-    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::*,
-    system::system_api::SystemApi,
+    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::kernel_api::SystemApi,
+    kernel::*,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use sbor::rust::vec::Vec;

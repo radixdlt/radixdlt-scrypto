@@ -2,11 +2,11 @@ use super::PackageInfoSubstate;
 use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 
 use crate::errors::*;
+use crate::kernel::kernel_api::*;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::system_api::*;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;

@@ -1,7 +1,7 @@
 use crate::{
     errors::{KernelError, RuntimeError},
     kernel::{ExecutionMode, RENodeInit, ResolvedActor, ResolvedReceiver},
-    system::{global::GlobalAddressSubstate, system_api::LockFlags},
+    system::global::GlobalAddressSubstate,
 };
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
@@ -9,6 +9,8 @@ use radix_engine_interface::api::types::{
     ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
     ValidatorOffset, VaultOffset, WorktopOffset,
 };
+
+use super::LockFlags;
 
 pub struct VisibilityProperties;
 

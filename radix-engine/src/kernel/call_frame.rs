@@ -1,8 +1,8 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
+use crate::kernel::kernel_api::{LockFlags, LockInfo};
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
-use crate::system::system_api::{LockFlags, LockInfo};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,

@@ -1,8 +1,8 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::SystemApi;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;

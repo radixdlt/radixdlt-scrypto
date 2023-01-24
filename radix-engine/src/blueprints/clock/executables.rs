@@ -1,11 +1,11 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::ResolverApi;
+use crate::kernel::kernel_api::SystemApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::clock::ClockCreateInvocation;

@@ -1,6 +1,6 @@
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::system_api::LockFlags;
 use crate::types::*;
 use crate::{blueprints::resource::Resource, errors::ModuleError};
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};

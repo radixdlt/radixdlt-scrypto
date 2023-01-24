@@ -1,13 +1,13 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::ResolverApi;
+use crate::kernel::kernel_api::SystemApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
 use crate::system::kernel_modules::fee::FeeReserveError;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::*;

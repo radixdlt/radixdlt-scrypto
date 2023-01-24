@@ -1,5 +1,7 @@
 use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::{KernelError, RuntimeError};
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::SystemApi;
 use crate::kernel::{BaseModule, Kernel, RENodeInit};
 use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
@@ -9,8 +11,6 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::substates::RuntimeSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::SystemApi;
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::*;

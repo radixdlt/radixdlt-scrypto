@@ -1,8 +1,8 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
 use crate::kernel::{deref_and_update, Executor, RENodeInit};
 use crate::kernel::{CallFrameUpdate, ExecutableInvocation, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::AccessRules;
 use radix_engine_interface::api::blueprints::resource::*;

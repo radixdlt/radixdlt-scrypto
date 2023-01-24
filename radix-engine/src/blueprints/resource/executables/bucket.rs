@@ -2,10 +2,10 @@ use crate::blueprints::resource::ResourceOperationError;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::resource::*;

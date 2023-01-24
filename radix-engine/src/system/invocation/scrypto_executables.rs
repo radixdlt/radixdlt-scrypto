@@ -1,7 +1,7 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError, ScryptoFnResolvingError};
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
 use crate::kernel::*;
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::data::*;

@@ -1,3 +1,5 @@
+pub mod kernel_api;
+
 mod actor;
 mod call_frame;
 mod event;
@@ -5,7 +7,6 @@ mod heap;
 mod id_allocator;
 mod interpreters;
 mod kernel;
-mod kernel_api;
 mod module;
 mod node;
 mod node_properties;

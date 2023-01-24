@@ -1,6 +1,6 @@
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
+use crate::kernel::kernel_api::{LockFlags, SystemApi, VmApi};
 use crate::kernel::*;
-use crate::system::system_api::{LockFlags, SystemApi, VmApi};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;

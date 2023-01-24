@@ -1,6 +1,6 @@
 use crate::errors::*;
+use crate::kernel::kernel_api::ResolverApi;
 use crate::kernel::*;
-use crate::system::system_api::ResolverApi;
 use radix_engine_interface::api::types::RENodeId;
 
 pub fn deref_and_update<D: ResolverApi>(

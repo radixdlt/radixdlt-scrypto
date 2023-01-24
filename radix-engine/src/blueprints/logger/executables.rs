@@ -1,8 +1,8 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::ResolverApi;
+use crate::kernel::kernel_api::SystemApi;
 use crate::kernel::*;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::logger::*;
 use radix_engine_interface::api::types::*;

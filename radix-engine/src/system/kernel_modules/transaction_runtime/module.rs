@@ -1,7 +1,7 @@
 use crate::{
     errors::RuntimeError,
+    kernel::kernel_api::SystemApi,
     kernel::{CallFrameUpdate, ResolvedActor},
-    system::system_api::SystemApi,
 };
 use radix_engine_interface::api::types::RENodeId;
 

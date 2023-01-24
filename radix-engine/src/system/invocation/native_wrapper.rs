@@ -1,7 +1,7 @@
 use crate::{
     blueprints::transaction_processor::{NativeOutput, TransactionProcessorError},
     errors::{ApplicationError, RuntimeError},
-    system::system_api::{LockFlags, SystemApi},
+    kernel::kernel_api::{LockFlags, SystemApi},
     types::*,
 };
 use radix_engine_interface::api::InvokableModel;

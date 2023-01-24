@@ -1,9 +1,9 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::{LockFlags, ResolverApi, SystemApi};
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};

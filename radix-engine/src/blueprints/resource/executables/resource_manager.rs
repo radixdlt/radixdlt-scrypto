@@ -2,15 +2,15 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::ResolverApi;
+use crate::kernel::kernel_api::SystemApi;
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
