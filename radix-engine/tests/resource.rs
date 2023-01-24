@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resources::ResourceManagerError;
+use radix_engine::blueprints::resource::ResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::blueprints::resource::FromPublicKey;

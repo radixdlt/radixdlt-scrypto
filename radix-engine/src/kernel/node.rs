@@ -1,7 +1,7 @@
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::kv_store::KeyValueStore;
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::component::*;
 use crate::system::global::GlobalAddressSubstate;

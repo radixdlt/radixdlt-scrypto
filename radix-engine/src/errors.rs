@@ -1,5 +1,5 @@
 use crate::blueprints::epoch_manager::EpochManagerError;
-use crate::blueprints::resources::{
+use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;

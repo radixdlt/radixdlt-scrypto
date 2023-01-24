@@ -1,4 +1,4 @@
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::types::*;
 use radix_engine_interface::api::blueprints::resource::*;

@@ -351,7 +351,7 @@ impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore
 
 #[cfg(test)]
 mod tests {
-    use crate::blueprints::resources::{Resource, VaultSubstate};
+    use crate::blueprints::resource::{Resource, VaultSubstate};
     use crate::kernel::ScryptoInterpreter;
     use crate::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
     use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager, StateDiff};

@@ -1,4 +1,4 @@
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;

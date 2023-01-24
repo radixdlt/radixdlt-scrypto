@@ -1,5 +1,5 @@
 use radix_engine::{
-    blueprints::resources::{BucketError, ResourceOperationError},
+    blueprints::resource::{BucketError, ResourceOperationError},
     errors::{ApplicationError, RuntimeError},
     types::*,
 };

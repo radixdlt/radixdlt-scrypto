@@ -1,5 +1,5 @@
 use super::RoyaltyReceiver;
-use crate::blueprints::resources::Resource;
+use crate::blueprints::resource::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
 use sbor::rust::collections::*;

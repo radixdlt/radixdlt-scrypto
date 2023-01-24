@@ -1,5 +1,5 @@
-use crate::blueprints::resources::LockedAmountOrIds;
-use crate::blueprints::resources::Resource;
+use crate::blueprints::resource::LockedAmountOrIds;
+use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;

@@ -1,4 +1,4 @@
-use crate::blueprints::resources::WorktopSubstate;
+use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;

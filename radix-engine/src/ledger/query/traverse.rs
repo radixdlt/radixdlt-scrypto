@@ -1,5 +1,5 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
-use crate::blueprints::resources::VaultSubstate;
+use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::substates::PersistedSubstate;

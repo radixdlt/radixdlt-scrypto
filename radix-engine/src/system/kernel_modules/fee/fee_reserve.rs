@@ -1,5 +1,5 @@
 use super::FeeSummary;
-use crate::{blueprints::resources::Resource, types::*};
+use crate::{blueprints::resource::Resource, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };

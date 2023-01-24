@@ -1,5 +1,5 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
-use crate::blueprints::resources::{NonFungibleSubstate, Resource};
+use crate::blueprints::resource::{NonFungibleSubstate, Resource};
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
 use crate::kernel::*;

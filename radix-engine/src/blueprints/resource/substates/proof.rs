@@ -1,4 +1,4 @@
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::system::kernel_modules::trace::ProofSnapshot;
 use crate::types::*;

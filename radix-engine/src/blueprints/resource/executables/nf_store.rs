@@ -1,4 +1,4 @@
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
 use crate::types::*;
 
 #[derive(Debug)]

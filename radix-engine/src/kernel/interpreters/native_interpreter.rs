@@ -1,9 +1,9 @@
 use crate::blueprints::epoch_manager::EpochManagerError;
-use crate::blueprints::resources::BucketError;
-use crate::blueprints::resources::ProofError;
-use crate::blueprints::resources::ResourceManagerError;
-use crate::blueprints::resources::VaultError;
-use crate::blueprints::resources::WorktopError;
+use crate::blueprints::resource::BucketError;
+use crate::blueprints::resource::ProofError;
+use crate::blueprints::resource::ResourceManagerError;
+use crate::blueprints::resource::VaultError;
+use crate::blueprints::resource::WorktopError;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::*;

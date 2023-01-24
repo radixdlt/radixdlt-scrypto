@@ -1,4 +1,4 @@
-use crate::blueprints::resources::Resource;
+use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::CostingModule;

@@ -1,15 +1,66 @@
-use crate::blueprints::resources::*;
+use crate::blueprints::resource::*;
+use crate::errors::InvokeError;
 use crate::types::*;
 use radix_engine_interface::api::blueprints::resource::*;
-use radix_engine_interface::api::types::BucketId;
+use sbor::rust::ops::Deref;
 
-/// A transient resource container.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultSubstate(pub Resource);
+
+impl VaultSubstate {
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+}
+
 #[derive(Debug)]
-pub struct BucketSubstate {
+pub struct VaultRuntimeSubstate {
     resource: Rc<RefCell<LockableResource>>,
 }
 
-impl BucketSubstate {
+impl VaultRuntimeSubstate {
+    pub fn clone_to_persisted(&self) -> VaultSubstate {
+        let lockable_resource = self.borrow_resource();
+        if lockable_resource.is_locked() {
+            // We keep resource containers in Rc<RefCell> for all concrete resource containers, like Bucket, Vault and Worktop.
+            // When extracting the resource within a container, there should be no locked resource.
+            // It should have failed the Rc::try_unwrap() check.
+            panic!("Attempted to convert resource container with locked resource");
+        }
+        let resource = match lockable_resource.deref() {
+            LockableResource::Fungible {
+                resource_address,
+                divisibility,
+                liquid_amount,
+                ..
+            } => Resource::Fungible {
+                resource_address: resource_address.clone(),
+                divisibility: divisibility.clone(),
+                amount: liquid_amount.clone(),
+            },
+            LockableResource::NonFungible {
+                resource_address,
+                liquid_ids,
+                id_type,
+                ..
+            } => Resource::NonFungible {
+                resource_address: resource_address.clone(),
+                ids: liquid_ids.clone(),
+                id_type: *id_type,
+            },
+        };
+
+        VaultSubstate(resource)
+    }
+
+    pub fn to_persisted(self) -> Result<VaultSubstate, ResourceOperationError> {
+        Rc::try_unwrap(self.resource)
+            .map_err(|_| ResourceOperationError::ResourceLocked)
+            .map(|c| c.into_inner())
+            .map(Into::into)
+            .map(|r| VaultSubstate(r))
+    }
+
     pub fn new(resource: Resource) -> Self {
         Self {
             resource: Rc::new(RefCell::new(resource.into())),
@@ -20,19 +71,29 @@ impl BucketSubstate {
         self.borrow_resource_mut().put(other.resource()?)
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
-        self.borrow_resource_mut().take_by_amount(amount)
+    pub fn take(&mut self, amount: Decimal) -> Result<Resource, InvokeError<VaultError>> {
+        let resource = self
+            .borrow_resource_mut()
+            .take_by_amount(amount)
+            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+        Ok(resource)
     }
 
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<Resource, ResourceOperationError> {
-        self.borrow_resource_mut().take_by_ids(ids)
+    ) -> Result<Resource, InvokeError<VaultError>> {
+        let resource = self
+            .borrow_resource_mut()
+            .take_by_ids(ids)
+            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+        Ok(resource)
     }
 
-    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<ProofSubstate, ProofError> {
-        let container_id = ResourceContainerId::Bucket(self_bucket_id);
+    pub fn create_proof(
+        &mut self,
+        container_id: ResourceContainerId,
+    ) -> Result<ProofSubstate, ProofError> {
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
@@ -40,7 +101,7 @@ impl BucketSubstate {
             ResourceType::NonFungible { .. } => self.create_proof_by_ids(
                 &self
                     .total_ids()
-                    .expect("Failed to list non-fungible IDs on non-fungible Bucket"),
+                    .expect("Failed to list non-fungible IDs of non-fungible vault"),
                 container_id,
             ),
         }
@@ -120,23 +181,11 @@ impl BucketSubstate {
         self.borrow_resource().is_empty()
     }
 
-    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
-        Rc::try_unwrap(self.resource)
-            .map_err(|_| ResourceOperationError::ResourceLocked)
-            .map(|c| c.into_inner())
-            .map(Into::into)
-    }
-
     pub fn borrow_resource(&self) -> Ref<LockableResource> {
         self.resource.borrow()
     }
 
     pub fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
         self.resource.borrow_mut()
-    }
-
-    pub fn peek_resource(&self) -> Resource {
-        let lockable_resource: &LockableResource = &self.borrow_resource();
-        lockable_resource.peek_resource()
     }
 }

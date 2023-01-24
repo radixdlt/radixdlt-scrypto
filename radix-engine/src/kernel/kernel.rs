@@ -15,7 +15,7 @@ use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
 
 use crate::blueprints::identity::Identity;
-use crate::blueprints::resources::Resource;
+use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;

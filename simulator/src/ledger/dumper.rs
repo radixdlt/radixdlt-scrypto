@@ -1,6 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resources::{
+use radix_engine::blueprints::resource::{
     NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
 };
 use radix_engine::ledger::*;

@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resources::WorktopError;
+use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::TrackError;

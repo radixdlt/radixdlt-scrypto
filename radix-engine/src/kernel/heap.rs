@@ -1,5 +1,5 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
-use crate::blueprints::resources::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
 use crate::system::kernel_modules::fee::FeeReserve;
