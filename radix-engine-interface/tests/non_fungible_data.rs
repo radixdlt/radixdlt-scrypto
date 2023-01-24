@@ -1,5 +1,5 @@
 use radix_engine_interface::abi::*;
-use radix_engine_interface::model::NonFungibleData;
+use radix_engine_interface::api::blueprints::resource::NonFungibleData;
 use radix_engine_interface::*;
 
 #[derive(NonFungibleData, Debug, Eq, PartialEq)]

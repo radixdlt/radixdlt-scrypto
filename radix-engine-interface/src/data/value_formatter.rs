@@ -2,6 +2,7 @@ use super::types::ManifestBucket;
 use super::types::ManifestExpression;
 use super::types::ManifestProof;
 use crate::address::Bech32Encoder;
+use crate::api::blueprints::resource::*;
 use crate::api::types::*;
 use crate::data::*;
 use sbor::rust::collections::HashMap;

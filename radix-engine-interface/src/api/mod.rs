@@ -1,25 +1,21 @@
-/// Data types used by Radix Engine API.
+pub mod blueprints;
+pub mod component;
+pub mod kernel_modules; // TODO: remove
+pub mod node_modules;
+pub mod package;
+pub mod scrypto_invocation;
+pub mod serialize;
+pub mod static_link;
 pub mod types;
-pub mod wasm;
 
+// re-export
+pub use static_link::{Invocation, Invokable, InvokableModel};
+
+use crate::api::scrypto_invocation::ScryptoReceiver;
 use crate::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
-use sbor::rust::format;
 use sbor::rust::vec::Vec;
 use types::*;
-
-pub trait Invocation: Debug {
-    type Output: Debug;
-
-    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
-    fn fn_identifier(&self) -> String {
-        format!("{:?}", self)
-    }
-}
-
-pub trait Invokable<I: Invocation, E> {
-    fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
-}
 
 pub trait EngineApi<E: Debug> {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
@@ -47,102 +43,4 @@ pub trait ComponentApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<IndexedScryptoValue, E>;
-}
-
-pub trait InvokableModel<E>:
-    Invokable<ScryptoInvocation, E>
-    + Invokable<EpochManagerCreateInvocation, E>
-    + Invokable<EpochManagerNextRoundInvocation, E>
-    + Invokable<EpochManagerGetCurrentEpochInvocation, E>
-    + Invokable<EpochManagerSetEpochInvocation, E>
-    + Invokable<EpochManagerUpdateValidatorInvocation, E>
-    + Invokable<ValidatorRegisterInvocation, E>
-    + Invokable<ValidatorUnregisterInvocation, E>
-    + Invokable<ValidatorStakeInvocation, E>
-    + Invokable<ValidatorUnstakeInvocation, E>
-    + Invokable<EpochManagerCreateValidatorInvocation, E>
-    + Invokable<ClockCreateInvocation, E>
-    + Invokable<ClockSetCurrentTimeInvocation, E>
-    + Invokable<ClockGetCurrentTimeInvocation, E>
-    + Invokable<ClockCompareCurrentTimeInvocation, E>
-    + Invokable<MetadataSetInvocation, E>
-    + Invokable<MetadataGetInvocation, E>
-    + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
-    + Invokable<AccessRulesSetMethodMutabilityInvocation, E>
-    + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
-    + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
-    + Invokable<AccessRulesGetLengthInvocation, E>
-    + Invokable<AuthZonePopInvocation, E>
-    + Invokable<AuthZonePushInvocation, E>
-    + Invokable<AuthZoneCreateProofInvocation, E>
-    + Invokable<AuthZoneCreateProofByAmountInvocation, E>
-    + Invokable<AuthZoneCreateProofByIdsInvocation, E>
-    + Invokable<AuthZoneClearInvocation, E>
-    + Invokable<AuthZoneDrainInvocation, E>
-    + Invokable<AuthZoneAssertAccessRuleInvocation, E>
-    + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<ComponentGlobalizeInvocation, E>
-    + Invokable<ComponentGlobalizeWithOwnerInvocation, E>
-    + Invokable<ComponentSetRoyaltyConfigInvocation, E>
-    + Invokable<ComponentClaimRoyaltyInvocation, E>
-    + Invokable<PackageSetRoyaltyConfigInvocation, E>
-    + Invokable<PackageClaimRoyaltyInvocation, E>
-    + Invokable<PackagePublishInvocation, E>
-    + Invokable<BucketTakeInvocation, E>
-    + Invokable<BucketPutInvocation, E>
-    + Invokable<BucketTakeNonFungiblesInvocation, E>
-    + Invokable<BucketGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<BucketGetAmountInvocation, E>
-    + Invokable<BucketGetResourceAddressInvocation, E>
-    + Invokable<BucketCreateProofInvocation, E>
-    + Invokable<BucketCreateProofInvocation, E>
-    + Invokable<ProofCloneInvocation, E>
-    + Invokable<ProofGetAmountInvocation, E>
-    + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<ProofGetResourceAddressInvocation, E>
-    + Invokable<ResourceManagerBucketBurnInvocation, E>
-    + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
-    + Invokable<ResourceManagerCreateFungibleInvocation, E>
-    + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
-    + Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
-    + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
-    + Invokable<ResourceManagerBurnInvocation, E>
-    + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
-    + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
-    + Invokable<ResourceManagerCreateVaultInvocation, E>
-    + Invokable<ResourceManagerCreateBucketInvocation, E>
-    + Invokable<ResourceManagerMintNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintFungibleInvocation, E>
-    + Invokable<ResourceManagerGetResourceTypeInvocation, E>
-    + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
-    + Invokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
-    + Invokable<ResourceManagerNonFungibleExistsInvocation, E>
-    + Invokable<ResourceManagerGetNonFungibleInvocation, E>
-    + Invokable<VaultTakeInvocation, E>
-    + Invokable<VaultPutInvocation, E>
-    + Invokable<VaultLockFeeInvocation, E>
-    + Invokable<VaultTakeNonFungiblesInvocation, E>
-    + Invokable<VaultGetAmountInvocation, E>
-    + Invokable<VaultGetResourceAddressInvocation, E>
-    + Invokable<VaultGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<VaultCreateProofInvocation, E>
-    + Invokable<VaultCreateProofByAmountInvocation, E>
-    + Invokable<VaultCreateProofByIdsInvocation, E>
-    + Invokable<VaultRecallInvocation, E>
-    + Invokable<VaultRecallNonFungiblesInvocation, E>
-    + Invokable<WorktopPutInvocation, E>
-    + Invokable<WorktopTakeAmountInvocation, E>
-    + Invokable<WorktopTakeAllInvocation, E>
-    + Invokable<WorktopTakeNonFungiblesInvocation, E>
-    + Invokable<WorktopAssertContainsInvocation, E>
-    + Invokable<WorktopAssertContainsAmountInvocation, E>
-    + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
-    + Invokable<WorktopDrainInvocation, E>
-    + Invokable<IdentityCreateInvocation, E>
-    + Invokable<TransactionRuntimeGetHashInvocation, E>
-    + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
-    + Invokable<LoggerLogInvocation, E>
-{
 }
