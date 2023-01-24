@@ -1,11 +1,11 @@
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::ResolverApi;
-use crate::kernel::kernel_api::SubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::clock::ClockCreateInvocation;
@@ -58,7 +58,7 @@ impl Executor for ClockCreateInvocation {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
@@ -142,7 +142,7 @@ impl Executor for ClockSetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi,
+        Y: SystemApi,
     {
         let node_id = self.0;
 
@@ -193,7 +193,7 @@ impl Executor for ClockGetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi,
+        Y: SystemApi,
     {
         let node_id = self.0;
         let precision = self.1;
@@ -257,7 +257,7 @@ impl Executor for ClockCompareCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi,
+        Y: SystemApi,
     {
         match self.precision {
             TimePrecision::Minute => {

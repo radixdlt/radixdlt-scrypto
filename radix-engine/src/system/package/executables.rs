@@ -7,6 +7,7 @@ use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
@@ -67,7 +68,7 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -167,7 +168,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi,
+        Y: SystemApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -214,7 +215,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

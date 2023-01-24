@@ -15,6 +15,7 @@ use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
@@ -679,7 +680,7 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi
+        Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
@@ -1268,6 +1269,15 @@ where
 }
 
 impl<'g, 's, W, R, M> InvokableModel<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+}
+
+// TODO: remove
+impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

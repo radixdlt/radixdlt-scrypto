@@ -4,10 +4,10 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::ResolverApi;
-use crate::kernel::kernel_api::SubstateApi;
 use crate::kernel::*;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::invocation::native_wrapper::invoke_native_fn;
+use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -274,7 +274,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
-        Y: SubstateApi
+        Y: SystemApi
             + EngineApi<RuntimeError>
             + ComponentApi<RuntimeError>
             + InvokableModel<RuntimeError>,
@@ -913,7 +913,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SubstateApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value

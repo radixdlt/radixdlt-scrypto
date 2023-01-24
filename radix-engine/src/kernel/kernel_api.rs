@@ -1,9 +1,3 @@
-// Currently under `radix-engine/interface/src/api` and `radix-engine/src/system/system_api`.
-//
-// They will gradually transition into two sets of APIs:
-// * Kernel API, for kernel modules and System
-// * System API, for clients (wasm and native blueprints)
-
 use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
@@ -97,3 +91,6 @@ pub trait WasmApi<W: WasmEngine> {
 pub trait ResolverApi {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }
+
+/// APIs for accessing functionalities provided by kernel.
+pub trait KernelApi<W: WasmEngine>: SubstateApi + WasmApi<W> + ResolverApi {}

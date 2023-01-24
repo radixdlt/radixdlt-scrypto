@@ -2,7 +2,6 @@ use crate::blueprints::clock::Clock;
 use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::kernel_api::SubstateApi;
 use crate::kernel::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{

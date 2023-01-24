@@ -1,7 +1,8 @@
 use crate::{
     blueprints::transaction_processor::{NativeOutput, TransactionProcessorError},
     errors::{ApplicationError, RuntimeError},
-    kernel::kernel_api::{LockFlags, SubstateApi},
+    kernel::kernel_api::LockFlags,
+    system::system_api::SystemApi,
     types::*,
 };
 use radix_engine_interface::api::InvokableModel;
@@ -16,7 +17,7 @@ use radix_engine_interface::api::{
     },
 };
 
-pub fn resolve_method<Y: SubstateApi>(
+pub fn resolve_method<Y: SystemApi>(
     receiver: ScryptoReceiver,
     method_name: &str,
     args: &[u8],
