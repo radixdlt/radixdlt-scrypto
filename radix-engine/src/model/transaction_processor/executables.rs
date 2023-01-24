@@ -199,7 +199,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
-            | BasicInstruction::CreateIdentity { .. } => {}
+            | BasicInstruction::CreateIdentity { .. }
+            | BasicInstruction::AssertAccessRule { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -770,6 +771,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         access_rule: access_rule.clone(),
                     })?;
 
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
+                    let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::System(invocation) => {
