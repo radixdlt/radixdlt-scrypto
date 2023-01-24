@@ -510,19 +510,6 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 rule: access_rule.clone(),
             })?;
         }
-        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
-            match entry {
-                AccessRuleEntry::AccessRule(access_rule) => {
-                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: self.receiver,
-                        index: 0,
-                        key: method_key.clone(),
-                        rule: access_rule.clone(),
-                    })?;
-                }
-                AccessRuleEntry::Group(..) => {} // Already updated above
-            }
-        }
 
         // Enact the recovery proposal.
         {
@@ -652,19 +639,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 name: group_name.into(),
                 rule: access_rule.clone(),
             })?;
-        }
-        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
-            match entry {
-                AccessRuleEntry::AccessRule(access_rule) => {
-                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: self.receiver,
-                        index: 0,
-                        key: method_key.clone(),
-                        rule: access_rule.clone(),
-                    })?;
-                }
-                AccessRuleEntry::Group(..) => {} // Already updated above
-            }
         }
 
         // Enact the recovery proposal.
@@ -985,6 +959,18 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         )),
         recovery_group.into(),
     );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::LockPrimaryRole,
+        )),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::UnlockPrimaryRole,
+        )),
+        recovery_group.into(),
+    );
 
     // Confirmation Role Rules
     let confirmation_group = "confirmation";
@@ -997,20 +983,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
             AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
         )),
         confirmation_group.into(),
-    );
-
-    // Other methods
-    access_rules.set_method_access_rule(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::LockPrimaryRole,
-        )),
-        rule_set.recovery_role.clone(),
-    );
-    access_rules.set_method_access_rule(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::UnlockPrimaryRole,
-        )),
-        rule_set.recovery_role.clone(),
     );
 
     let non_fungible_local_id = NonFungibleLocalId::Bytes(
