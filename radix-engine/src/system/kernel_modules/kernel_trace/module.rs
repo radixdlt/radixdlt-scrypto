@@ -1,14 +1,6 @@
-use crate::{
-    errors::{ModuleError, RuntimeError},
-    kernel::*,
-    system::{kernel_modules::fee::FeeReserve, system_api::SystemApi},
-};
-use radix_engine_interface::api::types::{RENodeId, RENodeType};
-use sbor::rust::vec::Vec;
+use crate::{errors::ModuleError, kernel::*, system::kernel_modules::fee::FeeReserve};
 
-use super::LoggerSubstate;
-
-pub struct LoggerModule;
+pub struct KernelTraceModule;
 
 #[macro_export]
 macro_rules! log {
@@ -18,31 +10,8 @@ macro_rules! log {
     };
 }
 
-impl LoggerModule {
-    pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
-        let logger = LoggerSubstate { logs: Vec::new() };
-        let node_id = api.allocate_node_id(RENodeType::Logger)?;
-        api.create_node(node_id, RENodeInit::Logger(logger))?;
-        Ok(())
-    }
-
-    pub fn on_call_frame_enter<Y: SystemApi>(
-        call_frame_update: &mut CallFrameUpdate,
-        _actor: &ResolvedActor,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let refed = api.get_visible_nodes()?;
-        let maybe_id = refed.into_iter().find(|e| matches!(e, RENodeId::Logger));
-        if let Some(logger_id) = maybe_id {
-            call_frame_update.node_refs_to_copy.insert(logger_id);
-        }
-
-        Ok(())
-    }
-}
-
 #[allow(unused_variables)] // for no_std
-impl<R: FeeReserve> BaseModule<R> for LoggerModule {
+impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
     fn pre_sys_call(
         &mut self,
         call_frame: &CallFrame,

@@ -1,11 +1,11 @@
-use crate::blueprints::logger::LoggerModule;
 use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::fee::CostingModule;
 use crate::system::kernel_modules::fee::FeeReserve;
+use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
-use crate::system::kernel_modules::trace::ExecutionTraceModule;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
 use sbor::rust::vec::Vec;
@@ -47,7 +47,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.pre_sys_call(call_frame, heap, track, input.clone())?;
+            KernelTraceModule.pre_sys_call(call_frame, heap, track, input.clone())?;
         }
         self.costing
             .pre_sys_call(call_frame, heap, track, input.clone())?;
@@ -67,7 +67,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.post_sys_call(call_frame, heap, track, output.clone())?;
+            KernelTraceModule.post_sys_call(call_frame, heap, track, output.clone())?;
         }
         self.costing
             .post_sys_call(call_frame, heap, track, output.clone())?;
@@ -88,7 +88,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.pre_execute_invocation(
+            KernelTraceModule.pre_execute_invocation(
                 actor,
                 call_frame_update,
                 call_frame,
@@ -120,7 +120,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.post_execute_invocation(caller, update, call_frame, heap, track)?;
+            KernelTraceModule.post_execute_invocation(caller, update, call_frame, heap, track)?;
         }
         self.costing
             .post_execute_invocation(caller, update, call_frame, heap, track)?;
@@ -140,7 +140,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         code: &[u8],
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.on_wasm_instantiation(call_frame, heap, track, code)?;
+            KernelTraceModule.on_wasm_instantiation(call_frame, heap, track, code)?;
         }
         self.costing
             .on_wasm_instantiation(call_frame, heap, track, code)?;
@@ -160,7 +160,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         units: u32,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.on_wasm_costing(call_frame, heap, track, units)?;
+            KernelTraceModule.on_wasm_costing(call_frame, heap, track, units)?;
         }
         self.costing
             .on_wasm_costing(call_frame, heap, track, units)?;
@@ -182,7 +182,8 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         contingent: bool,
     ) -> Result<Resource, ModuleError> {
         if self.trace {
-            fee = LoggerModule.on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
+            fee = KernelTraceModule
+                .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
         }
         fee = self
             .costing
