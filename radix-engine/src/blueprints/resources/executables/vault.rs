@@ -11,10 +11,11 @@ use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
-use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultError {

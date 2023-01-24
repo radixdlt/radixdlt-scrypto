@@ -7,11 +7,12 @@ use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
 use radix_engine_interface::api::InvokableModel;
-use radix_engine_interface::model::*;
 
 #[derive(Debug)]
 pub struct WorktopSubstate {

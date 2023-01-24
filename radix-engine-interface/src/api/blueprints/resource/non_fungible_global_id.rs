@@ -5,6 +5,7 @@ use crate::constants::*;
 use crate::crypto::*;
 use radix_engine_derive::*;
 use sbor::rust::fmt;
+use sbor::rust::format;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

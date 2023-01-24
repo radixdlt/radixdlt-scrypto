@@ -1,7 +1,8 @@
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 

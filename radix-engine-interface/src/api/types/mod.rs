@@ -15,4 +15,10 @@ pub use sbor::*;
 pub use strum::*;
 pub use wasm::*;
 
+pub use crate::api::blueprints::resource::{
+    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress,
+};
+pub use crate::api::component::ComponentAddress;
+pub use crate::api::package::PackageAddress;
 pub use crate::crypto::Hash;
+pub use crate::network::NetworkDefinition;

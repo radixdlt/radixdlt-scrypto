@@ -7,9 +7,11 @@ use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::identity::*;
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::NativeFn;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineApi;
-use radix_engine_interface::model::*;
 
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;

@@ -8,10 +8,11 @@ use crate::kernel::{
 use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::model::*;
 
 use super::ProofError;
 

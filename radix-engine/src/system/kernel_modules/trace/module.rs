@@ -5,11 +5,12 @@ use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::PersistedSubstate;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::ResourceType;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, RENodeId, SubstateId, SubstateOffset, VaultFn, VaultId, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 

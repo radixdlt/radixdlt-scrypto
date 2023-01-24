@@ -1,7 +1,5 @@
 use super::types::ManifestExpression;
 use crate::api::blueprints::resource::*;
-use crate::api::component::ComponentAddress;
-use crate::api::package::PackageAddress;
 use crate::api::types::*;
 use crate::data::*;
 use sbor::rust::format;

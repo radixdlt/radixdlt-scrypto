@@ -1,4 +1,4 @@
-use radix_engine_interface::api::wasm::BufferId;
+use radix_engine_interface::api::types::BufferId;
 use wasmi::HostError;
 
 use crate::errors::InvokeError;

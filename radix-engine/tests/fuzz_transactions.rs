@@ -5,7 +5,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::api::blueprints::resource::AccessRule;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;

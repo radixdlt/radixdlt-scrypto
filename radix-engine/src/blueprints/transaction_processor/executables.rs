@@ -12,6 +12,18 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::blueprints::identity::IdentityCreateInvocation;
+use radix_engine_interface::api::blueprints::resource::ResourceManagerCreateFungibleInvocation;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
+use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
+use radix_engine_interface::api::serialize::CallTableInvocation;
+use radix_engine_interface::api::serialize::NativeInvocation;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
@@ -20,7 +32,6 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
 };
-use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;

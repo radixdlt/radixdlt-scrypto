@@ -3,9 +3,10 @@ use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::system::package::{ExportError, ExtractAbiError};
-use radix_engine::types::{AddressError, ParseNonFungibleGlobalIdError};
+use radix_engine::types::AddressError;
 use radix_engine::wasm::PrepareError;
-use radix_engine_interface::node::ParseNetworkError;
+use radix_engine_interface::api::blueprints::resource::ParseNonFungibleGlobalIdError;
+use radix_engine_interface::network::ParseNetworkError;
 use sbor::*;
 use transaction::errors::*;
 

@@ -6,6 +6,7 @@ use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::transaction_hash::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineApi;
 

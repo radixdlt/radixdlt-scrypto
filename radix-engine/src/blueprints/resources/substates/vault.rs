@@ -1,6 +1,7 @@
 use crate::blueprints::resources::*;
 use crate::errors::InvokeError;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::*;
 use sbor::rust::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

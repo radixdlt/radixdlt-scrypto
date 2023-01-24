@@ -1,5 +1,5 @@
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 

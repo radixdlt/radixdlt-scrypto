@@ -13,15 +13,14 @@ use crate::system::system_api::LockFlags;
 use crate::system::system_api::SystemApi;
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
-use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRules, ResourceManagerCreateVaultInvocation, RoyaltyConfig,
-};
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;

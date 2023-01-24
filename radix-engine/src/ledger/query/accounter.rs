@@ -5,9 +5,8 @@ use crate::ledger::{
 };
 use crate::types::hash_map::Entry;
 use crate::types::HashMap;
-use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::api::types::{RENodeId, ResourceAddress, VaultId};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::ResourceAddress;
 
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,

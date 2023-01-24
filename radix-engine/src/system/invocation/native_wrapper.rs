@@ -5,6 +5,16 @@ use crate::{
     types::*,
 };
 use radix_engine_interface::api::InvokableModel;
+use radix_engine_interface::api::{
+    scrypto_invocation::{ScryptoInvocation, ScryptoReceiver},
+    serialize::{
+        AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, CallTableInvocation,
+        ClockInvocation, ComponentInvocation, EpochManagerInvocation, IdentityInvocation,
+        LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
+        ResourceInvocation, TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation,
+        WorktopInvocation,
+    },
+};
 
 pub fn resolve_method<Y: SystemApi>(
     receiver: ScryptoReceiver,

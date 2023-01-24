@@ -1,6 +1,7 @@
 pub use radix_engine_interface::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use radix_engine_interface::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use radix_engine_interface::api::types::*;
+pub use radix_engine_interface::api::types::*;
 pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::data::types::*;
@@ -10,7 +11,6 @@ pub use radix_engine_interface::data::{
 };
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
-pub use radix_engine_interface::model::*;
 pub use radix_engine_interface::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;

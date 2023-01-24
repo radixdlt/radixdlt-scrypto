@@ -4,7 +4,7 @@ use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::TrackError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::api::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;

@@ -1,8 +1,8 @@
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 pub struct Vault(pub VaultId); // native stub

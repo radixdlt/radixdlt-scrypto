@@ -3,7 +3,7 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::Kernel;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::InvokableModel;
+use radix_engine_interface::api::static_link::InvokableModel;
 
 impl<'g, 's, W, R, M> InvokableModel<RuntimeError> for Kernel<'g, 's, W, R, M>
 where

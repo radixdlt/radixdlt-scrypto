@@ -1,11 +1,11 @@
 use crate::blueprints::resources::Resource;
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::fee::CostingModule;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::system::kernel_modules::trace::ExecutionTraceModule;
-use crate::system::node_modules::fee::CostingModule;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
 use sbor::rust::vec::Vec;

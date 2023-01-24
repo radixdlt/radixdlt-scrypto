@@ -2,7 +2,7 @@ use radix_engine::blueprints::resources::LockedAmountOrIds;
 use radix_engine::kernel::TrackedEvent;
 use radix_engine::system::kernel_modules::trace::{SysCallTrace, SysCallTraceOrigin};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::api::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

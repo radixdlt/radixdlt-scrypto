@@ -15,6 +15,13 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::blueprints::resource::AccessRule::{AllowAll, DenyAll};
+use radix_engine_interface::api::blueprints::resource::VaultMethodAuthKey::{
+    Deposit, Recall, Withdraw,
+};
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
@@ -22,9 +29,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
-use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 
 /// Represents an error when accessing a bucket.

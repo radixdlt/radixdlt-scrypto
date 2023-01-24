@@ -1,6 +1,7 @@
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{BucketId, VaultId};
-use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceOperationError {

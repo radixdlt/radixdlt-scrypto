@@ -5,9 +5,11 @@ use crate::system::kernel_modules::fee::*;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_interface::api::wasm::*;
+use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
+use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
+use radix_engine_interface::api::serialize::CallTableInvocation;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel};
-use radix_engine_interface::model::ScryptoInvocation;
 use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.

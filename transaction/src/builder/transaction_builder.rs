@@ -79,7 +79,7 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;

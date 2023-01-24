@@ -1,9 +1,9 @@
 use crate::blueprints::resources::*;
 use crate::errors::InvokeError;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::NonFungibleStoreId;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerSubstate {

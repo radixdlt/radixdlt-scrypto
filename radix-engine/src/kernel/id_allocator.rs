@@ -1,12 +1,12 @@
 use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
     NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
     TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::model::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;

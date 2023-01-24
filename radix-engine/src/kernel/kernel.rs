@@ -1,4 +1,6 @@
 use native_sdk::resource::SysBucket;
+use radix_engine_interface::api::blueprints::resource::{require, Bucket};
+use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,

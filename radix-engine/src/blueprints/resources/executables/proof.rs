@@ -10,10 +10,11 @@ use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {

@@ -11,6 +11,7 @@ use crate::api::package::*;
 use crate::api::scrypto_invocation::ScryptoInvocation;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
+use sbor::rust::string::String;
 
 pub trait Invocation: Debug {
     type Output: Debug;

@@ -1,7 +1,7 @@
 use crate::blueprints::resources::*;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::BucketId;
-use radix_engine_interface::model::*;
 
 /// A transient resource container.
 #[derive(Debug)]

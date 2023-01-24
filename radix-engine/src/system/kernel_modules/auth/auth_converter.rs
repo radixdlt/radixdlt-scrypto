@@ -3,8 +3,9 @@ use super::method_authorization::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::model::*;
 
 fn soft_to_hard_decimal(
     schema: &Type,

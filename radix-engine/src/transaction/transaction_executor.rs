@@ -3,8 +3,9 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
-use crate::system::node_modules::fee::CostingError;
+use crate::system::kernel_modules::fee::{
+    CostingError, FeeReserve, FeeTable, SystemLoanFeeReserve,
+};
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;

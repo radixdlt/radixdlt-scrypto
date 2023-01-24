@@ -1,12 +1,11 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleLocalId;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::*;
 use utils::ContextualDisplay;
 
 use crate::errors::*;

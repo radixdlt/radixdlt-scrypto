@@ -8,12 +8,20 @@ use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::api::blueprints::clock::ClockGetCurrentTimeInvocation;
+use radix_engine_interface::api::blueprints::clock::ClockSetCurrentTimeInvocation;
+use radix_engine_interface::api::blueprints::clock::TimePrecision;
+use radix_engine_interface::api::blueprints::clock::*;
+use radix_engine_interface::api::blueprints::resource::require;
+use radix_engine_interface::api::blueprints::resource::AccessRuleKey;
+use radix_engine_interface::api::blueprints::resource::AccessRules;
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::EngineApi;
-use radix_engine_interface::model::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 

@@ -10,12 +10,20 @@ use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
+use radix_engine_interface::api::blueprints::epoch_manager::EpochManagerUpdateValidatorInvocation;
+use radix_engine_interface::api::blueprints::epoch_manager::UpdateValidator;
+use radix_engine_interface::api::blueprints::epoch_manager::*;
+use radix_engine_interface::api::blueprints::resource::require;
+use radix_engine_interface::api::blueprints::resource::AccessRuleKey;
+use radix_engine_interface::api::blueprints::resource::AccessRules;
+use radix_engine_interface::api::blueprints::resource::Bucket;
+use radix_engine_interface::api::blueprints::resource::FromPublicKey;
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::{EngineApi, InvokableModel};
-use radix_engine_interface::model::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
 use super::EpochManagerSubstate;
@@ -376,7 +384,8 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = EpochManager::create_validator(manager, self.1, None, false, api)?;
+        let validator_address =
+            EpochManager::create_validator(manager, self.1, None::<Bucket>, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(

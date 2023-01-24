@@ -10,9 +10,10 @@ use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::PackageInfoSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::api::blueprints::resource::ResourceType;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 

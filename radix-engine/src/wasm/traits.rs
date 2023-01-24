@@ -2,7 +2,7 @@ use super::InstrumentedCode;
 use crate::errors::InvokeError;
 use crate::wasm::errors::*;
 use radix_engine_interface::api::types::LockHandle;
-use radix_engine_interface::api::wasm::*;
+use radix_engine_interface::api::types::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 

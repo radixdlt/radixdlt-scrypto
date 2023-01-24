@@ -1,5 +1,5 @@
-use radix_engine_interface::api::wasm::Buffer;
-use radix_engine_interface::api::wasm::Slice;
+use radix_engine_interface::api::types::Buffer;
+use radix_engine_interface::api::types::Slice;
 use sbor::rust::sync::Arc;
 use wasmi::*;
 
