@@ -199,8 +199,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
-            | BasicInstruction::CreateIdentity { .. } => {}
-            BasicInstruction::AssertAccessRule { .. } => {}
+            | BasicInstruction::CreateIdentity { .. }
+            | BasicInstruction::AssertAccessRule { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
