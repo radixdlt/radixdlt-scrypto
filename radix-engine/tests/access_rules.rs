@@ -1,5 +1,5 @@
 use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::model::AccessRulesChainError;
+use radix_engine::model::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -479,6 +479,49 @@ impl MutableAccessRulesTestRunner {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
+}
+
+#[test]
+fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
+    // Arrange
+    let mut test_runner = TestRunner::new(false);
+    let manifest = ManifestBuilder::new()
+        .assert_access_rule(rule!(require(RADIX_TOKEN)))
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, [].into());
+
+    // Assert
+    receipt.expect_specific_failure(|error: &RuntimeError| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                AuthZoneError::AssertAccessRuleError(..)
+            ))
+        )
+    })
+}
+
+#[test]
+fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
+    // Arrange
+    let mut test_runner = TestRunner::new(false);
+    let (public_key, _, account_component) = test_runner.new_account(false);
+
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account(account_component, RADIX_TOKEN)
+        .assert_access_rule(rule!(require(RADIX_TOKEN)))
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 enum Call {
