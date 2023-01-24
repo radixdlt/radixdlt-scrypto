@@ -74,7 +74,10 @@ fn should_be_aborted_when_loan_repaid() {
 
     let abort_reason = receipt.expect_abortion().clone();
 
-    assert_eq!(abort_reason, AbortReason::FeeLoanRepaid);
+    assert_eq!(
+        abort_reason,
+        AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
+    );
 }
 
 #[test]
