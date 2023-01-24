@@ -1,10 +1,10 @@
 use crate::api::blueprints::clock::*;
 use crate::api::blueprints::epoch_manager::*;
 use crate::api::blueprints::identity::*;
+use crate::api::blueprints::logger::*;
 use crate::api::blueprints::resource::*;
 use crate::api::blueprints::transaction_hash::*;
 use crate::api::component::*;
-use crate::api::kernel_modules::logger::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
 use crate::api::package::*;

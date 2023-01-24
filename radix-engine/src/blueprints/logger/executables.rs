@@ -4,7 +4,7 @@ use crate::system::system_api::LockFlags;
 use crate::system::system_api::ResolverApi;
 use crate::system::system_api::SystemApi;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::kernel_modules::logger::*;
+use radix_engine_interface::api::blueprints::logger::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineApi;
 

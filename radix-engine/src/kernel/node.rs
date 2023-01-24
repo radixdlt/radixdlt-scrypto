@@ -1,11 +1,11 @@
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::kv_store::KeyValueStore;
+use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::component::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::logger::LoggerSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;

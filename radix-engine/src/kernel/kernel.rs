@@ -15,6 +15,7 @@ use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
 
 use crate::blueprints::identity::Identity;
+use crate::blueprints::logger::LoggerModule;
 use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
@@ -22,7 +23,6 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::native_wrapper::{invoke_call_table, resolve_method};
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;

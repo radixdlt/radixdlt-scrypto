@@ -8,7 +8,7 @@ use crate::system::kernel_modules::trace::ResourceChange;
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
-use radix_engine_interface::api::kernel_modules::logger::Level;
+use radix_engine_interface::api::blueprints::logger::Level;
 use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};

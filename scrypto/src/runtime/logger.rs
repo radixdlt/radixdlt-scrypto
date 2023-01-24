@@ -1,5 +1,5 @@
 use radix_engine_interface::api::{
-    kernel_modules::logger::{Level, LoggerLogInvocation},
+    blueprints::logger::{Level, LoggerLogInvocation},
     Invokable,
 };
 use sbor::rust::string::String;

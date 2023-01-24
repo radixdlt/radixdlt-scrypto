@@ -1,4 +1,5 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{NonFungibleSubstate, Resource};
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
@@ -9,7 +10,6 @@ use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::system::kernel_modules::fee::FeeSummary;
 use crate::system::kernel_modules::fee::FeeTable;
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
-use crate::system::kernel_modules::logger::LoggerSubstate;
 use crate::system::kernel_modules::trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::system::system_api::LockFlags;
@@ -19,8 +19,8 @@ use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::logger::Level;
 use radix_engine_interface::api::blueprints::resource::ResourceType;
-use radix_engine_interface::api::kernel_modules::logger::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateId,
