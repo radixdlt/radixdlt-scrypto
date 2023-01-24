@@ -1,12 +1,13 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, RENode, ResolvedActor, ResolvedReceiver, RuntimeError,
+    ExecutionMode, KernelError, LockFlags, RENodeInit, ResolvedActor, ResolvedReceiver,
+    RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
     GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
-    VaultOffset, WorktopOffset,
+    ValidatorOffset, VaultOffset, WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -61,7 +62,7 @@ impl VisibilityProperties {
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
         actor: &ResolvedActor,
-        node: &RENode,
+        node: &RENodeInit,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
@@ -73,12 +74,12 @@ impl VisibilityProperties {
                     ..
                 }),
             ) => match node {
-                RENode::Component(info, ..) => {
+                RENodeInit::Component(info, ..) => {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENode::KeyValueStore(..) => true,
-                RENode::Global(GlobalAddressSubstate::Component(..)) => true,
+                RENodeInit::KeyValueStore(..) => true,
+                RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
                 _ => false,
             },
             _ => true,
@@ -304,12 +305,20 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::Validator(ValidatorOffset::Validator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
                 | RENodeId::ResourceManager(..)
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)
+                | RENodeId::Identity(..)
                 | RENodeId::Clock(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),

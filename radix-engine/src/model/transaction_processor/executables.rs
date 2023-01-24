@@ -198,7 +198,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResource { .. }
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateIdentity { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -265,7 +266,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
+        let _worktop_id = api.create_node(node_id, RENodeInit::Worktop(WorktopSubstate::new()))?;
 
         let runtime_substate = TransactionRuntimeSubstate {
             hash: self.transaction_hash,
@@ -275,7 +276,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
         api.create_node(
             runtime_node_id,
-            RENode::TransactionRuntime(runtime_substate),
+            RENodeInit::TransactionRuntime(runtime_substate),
         )?;
 
         // TODO: defer blob hashing to post fee payments as it's computationally costly
@@ -764,8 +765,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
+                Instruction::Basic(BasicInstruction::CreateIdentity { access_rule }) => {
+                    let rtn = api.invoke(IdentityCreateInvocation {
+                        access_rule: access_rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
                 Instruction::System(invocation) => {
-                    let rtn = invoke_native_fn(invocation.clone(), api)?;
+                    let mut invocation = invocation.clone();
+                    processor.replace_ids_native(&mut invocation)?;
+                    let rtn = invoke_native_fn(invocation, api)?;
 
                     // TODO: Move buckets/proofs to worktop/authzone without serialization
                     let result = IndexedScryptoValue::from_typed(rtn.as_ref());
@@ -905,6 +915,19 @@ impl TransactionProcessor {
         }
 
         Ok(())
+    }
+
+    fn replace_ids_native(
+        &mut self,
+        invocation: &mut NativeInvocation,
+    ) -> Result<(), RuntimeError> {
+        invocation
+            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReplaceManifestValuesError(e),
+                ))
+            })
     }
 
     fn replace_manifest_values<'a, Y>(

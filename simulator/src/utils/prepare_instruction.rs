@@ -856,7 +856,6 @@ mod test {
     }
 
     #[test]
-
     pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =

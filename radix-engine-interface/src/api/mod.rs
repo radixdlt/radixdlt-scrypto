@@ -58,6 +58,8 @@ pub trait InvokableModel<E>:
     + Invokable<EpochManagerUpdateValidatorInvocation, E>
     + Invokable<ValidatorRegisterInvocation, E>
     + Invokable<ValidatorUnregisterInvocation, E>
+    + Invokable<ValidatorStakeInvocation, E>
+    + Invokable<ValidatorUnstakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
@@ -138,6 +140,7 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopAssertContainsAmountInvocation, E>
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
+    + Invokable<IdentityCreateInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
