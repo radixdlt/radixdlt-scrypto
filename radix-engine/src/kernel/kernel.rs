@@ -1,3 +1,22 @@
+use super::module::SysCallOutput;
+use crate::blueprints::identity::Identity;
+use crate::blueprints::resource::Resource;
+use crate::errors::RuntimeError;
+use crate::errors::*;
+use crate::kernel::module::BaseModule;
+use crate::kernel::*;
+use crate::system::global::GlobalAddressSubstate;
+use crate::system::invocation::native_wrapper::{invoke_call_table, resolve_method};
+use crate::system::kernel_modules::auth::auth_module::AuthModule;
+use crate::system::kernel_modules::fee::FeeReserve;
+use crate::system::kernel_modules::logger::LoggerModule;
+use crate::system::kernel_modules::node_move::NodeMoveModule;
+use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
+use crate::system::node_modules::auth::AuthZoneStackSubstate;
+use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::system_api::{LockFlags, LockInfo, ResolverApi, SystemApi, VmApi};
+use crate::types::*;
+use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::blueprints::resource::{require, Bucket};
 use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
@@ -13,25 +32,6 @@ use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
-
-use crate::blueprints::identity::Identity;
-use crate::blueprints::resource::Resource;
-use crate::errors::*;
-use crate::kernel::*;
-use crate::system::global::GlobalAddressSubstate;
-use crate::system::invocation::native_wrapper::{invoke_call_table, resolve_method};
-use crate::system::kernel_modules::auth::auth_module::AuthModule;
-use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::kernel_modules::logger::LoggerModule;
-use crate::system::kernel_modules::node_move::NodeMoveModule;
-use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
-use crate::system::node_modules::auth::AuthZoneStackSubstate;
-use crate::system::substates::{SubstateRef, SubstateRefMut};
-use crate::system::system_api::{LockFlags, LockInfo, ResolverApi, SystemApi, VmApi};
-use crate::types::*;
-use crate::wasm::*;
-
-use super::module::{BaseModule, SysCallOutput};
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -1265,4 +1265,12 @@ where
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
+}
+
+impl<'g, 's, W, R, M> InvokableModel<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
 }
