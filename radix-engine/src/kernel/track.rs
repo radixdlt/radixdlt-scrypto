@@ -7,17 +7,17 @@ use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
-use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::system::kernel_modules::fee::FeeSummary;
 use crate::system::kernel_modules::fee::FeeTable;
+use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
 use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::system::system_api::LockFlags;
-use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
+use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::blueprints::logger::Level;
 use radix_engine_interface::api::blueprints::resource::ResourceType;
@@ -70,7 +70,7 @@ pub struct Track<'s, R: FeeReserve> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    pub fee_reserve: R,
+    fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
@@ -120,6 +120,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     /// Returns a copy of the substate associated with the given address, if exists
     fn load_substate(&mut self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substate_store.get_substate(substate_id)
+    }
+
+    #[inline]
+    /// During execution, we only allow access to the Execution subset of the FeeReserve
+    pub fn fee_reserve(&mut self) -> &mut impl ExecutionFeeReserve {
+        &mut self.fee_reserve
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -473,21 +479,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         executable: &Executable,
     ) -> Result<(), FeeReserveError> {
         self.fee_reserve
-            .consume_execution(self.fee_table.tx_base_fee(), 1, "tx_base_fee", true)
+            .consume_deferred(self.fee_table.tx_base_fee(), 1, "tx_base_fee")
             .and_then(|()| {
-                self.fee_reserve.consume_execution(
+                self.fee_reserve.consume_deferred(
                     self.fee_table.tx_payload_cost_per_byte(),
                     executable.payload_size(),
                     "tx_payload_cost",
-                    true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume_execution(
+                self.fee_reserve.consume_deferred(
                     self.fee_table.tx_signature_verification_per_sig(),
                     executable.auth_zone_params().initial_proofs.len(),
                     "tx_signature_verification",
-                    true,
                 )
             })
     }
@@ -500,8 +504,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // Close fee reserve
         let mut fee_summary = self.fee_reserve.finalize();
 
-        let result = match check_for_rejection(invoke_result, &fee_summary) {
-            Ok(invoke_result) => {
+        let result = match determine_result_type(invoke_result, &fee_summary) {
+            TransactionResultType::Commit(invoke_result) => {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
@@ -510,8 +514,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 };
                 finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary)
             }
-            Err(rejection_error) => TransactionResult::Reject(RejectResult {
-                error: rejection_error,
+            TransactionResultType::Reject(rejection_error) => {
+                TransactionResult::Reject(RejectResult {
+                    error: rejection_error,
+                })
+            }
+            TransactionResultType::Abort(abort_reason) => TransactionResult::Abort(AbortResult {
+                reason: abort_reason,
             }),
         };
 
@@ -523,10 +532,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 }
 
-fn check_for_rejection(
+pub enum TransactionResultType {
+    Commit(Result<Vec<InstructionOutput>, RuntimeError>),
+    Reject(RejectionError),
+    Abort(AbortReason),
+}
+
+fn determine_result_type(
     invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
     fee_summary: &FeeSummary,
-) -> Result<Result<Vec<InstructionOutput>, RuntimeError>, RejectionError> {
+) -> TransactionResultType {
     // First - check for required rejections from explicit invoke result errors
     match &invoke_result {
         Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(err))) => {
@@ -535,21 +550,30 @@ fn check_for_rejection(
                     valid_from,
                     current_epoch,
                 } => {
-                    return Err(RejectionError::TransactionEpochNotYetValid {
-                        valid_from: *valid_from,
-                        current_epoch: *current_epoch,
-                    })
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNotYetValid {
+                            valid_from: *valid_from,
+                            current_epoch: *current_epoch,
+                        },
+                    )
                 }
                 TransactionProcessorError::TransactionEpochNoLongerValid {
                     valid_until,
                     current_epoch,
                 } => {
-                    return Err(RejectionError::TransactionEpochNoLongerValid {
-                        valid_until: *valid_until,
-                        current_epoch: *current_epoch,
-                    })
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNoLongerValid {
+                            valid_until: *valid_until,
+                            current_epoch: *current_epoch,
+                        },
+                    )
                 }
                 _ => {}
+            }
+        }
+        Err(err) => {
+            if let Some(abort_reason) = err.abortion() {
+                return TransactionResultType::Abort(abort_reason.clone());
             }
         }
         _ => {}
@@ -557,13 +581,15 @@ fn check_for_rejection(
 
     // Check for errors before loan is repaid - in which case, we also reject
     if !fee_summary.loan_fully_repaid() {
-        return Err(match invoke_result {
-            Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
-            Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
-        });
+        return match invoke_result {
+            Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
+            Err(error) => {
+                TransactionResultType::Reject(RejectionError::ErrorBeforeFeeLoanRepaid(error))
+            }
+        };
     }
 
-    return Ok(invoke_result);
+    return TransactionResultType::Commit(invoke_result);
 }
 
 /// This is just used when finalizing track into a commit

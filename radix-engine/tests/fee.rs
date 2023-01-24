@@ -2,8 +2,11 @@ use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::TrackError;
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::{
+    AbortReason, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+};
 use radix_engine::types::*;
+use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::api::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -13,6 +16,14 @@ fn run_manifest<F>(f: F) -> TransactionReceipt
 where
     F: FnOnce(ComponentAddress) -> TransactionManifest,
 {
+    let (mut test_runner, component_address) = setup_test_runner();
+
+    // Run the provided manifest
+    let manifest = f(component_address);
+    test_runner.execute_manifest(manifest, vec![])
+}
+
+fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     // Basic setup
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -35,9 +46,39 @@ where
         .entity_changes
         .new_component_addresses[0];
 
-    // Run the provided manifest
-    let manifest = f(component_address);
-    test_runner.execute_manifest(manifest, vec![])
+    (test_runner, component_address)
+}
+
+#[test]
+fn should_be_aborted_when_loan_repaid() {
+    let (mut test_runner, component_address) = setup_test_runner();
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", args!())
+        .build();
+
+    let test_transaction = TestTransaction::new(
+        manifest,
+        test_runner.next_transaction_nonce(),
+        DEFAULT_COST_UNIT_LIMIT,
+    );
+    let executable = test_transaction.get_executable(vec![]);
+
+    let receipt = test_runner.execute_transaction_with_config(
+        executable,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig::up_to_loan_repayment_with_debug(),
+    );
+
+    let abort_reason = receipt.expect_abortion().clone();
+
+    assert_eq!(
+        abort_reason,
+        AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
+    );
 }
 
 #[test]

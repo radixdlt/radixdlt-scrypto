@@ -37,7 +37,7 @@ impl ResourceManagerSubstate {
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)
         {
-            Err(InvokeError::Error(ResourceManagerError::InvalidAmount(
+            Err(InvokeError::SelfError(ResourceManagerError::InvalidAmount(
                 amount,
                 divisibility,
             )))
@@ -61,7 +61,7 @@ impl ResourceManagerSubstate {
 
             // Practically impossible to overflow the Decimal type with this limit in place.
             if amount > dec!("1000000000000000000") {
-                return Err(InvokeError::Error(
+                return Err(InvokeError::SelfError(
                     ResourceManagerError::MaxMintAmountExceeded,
                 ));
             }
@@ -70,7 +70,7 @@ impl ResourceManagerSubstate {
 
             Ok(Resource::new_fungible(self_address, divisibility, amount))
         } else {
-            Err(InvokeError::Error(
+            Err(InvokeError::SelfError(
                 ResourceManagerError::ResourceTypeDoesNotMatch,
             ))
         }

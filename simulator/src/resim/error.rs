@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::system::package::{ExportError, ExtractAbiError};
+use radix_engine::transaction::AbortReason;
 use radix_engine::types::AddressError;
 use radix_engine::wasm::PrepareError;
 use radix_engine_interface::api::blueprints::resource::ParseNonFungibleGlobalIdError;
@@ -45,6 +46,8 @@ pub enum Error {
     TransactionFailed(RuntimeError),
 
     TransactionRejected(RejectionError),
+
+    TransactionAborted(AbortReason),
 
     AbiExportError(ExportError),
 

@@ -1,8 +1,9 @@
 use radix_engine_interface::api::types::BufferId;
 use wasmi::HostError;
 
-use crate::errors::InvokeError;
+use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
 use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::transaction::AbortReason;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
@@ -117,6 +118,21 @@ pub enum WasmRuntimeError {
     InvalidOffset(DecodeError),
     /// Costing error
     CostingError(FeeReserveError),
+}
+
+impl SelfError for WasmRuntimeError {
+    fn into_runtime_error(self) -> RuntimeError {
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
+    }
+}
+
+impl CanBeAbortion for WasmRuntimeError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            WasmRuntimeError::CostingError(err) => err.abortion(),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for WasmRuntimeError {

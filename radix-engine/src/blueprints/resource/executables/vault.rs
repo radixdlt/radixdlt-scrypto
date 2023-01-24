@@ -1,6 +1,5 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
-use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
@@ -85,12 +84,7 @@ impl Executor for VaultTakeInvocation {
         let container = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault.take(self.amount).map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::VaultError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?
+            vault.take(self.amount)?
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
@@ -280,14 +274,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         let container = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault
-                .take_non_fungibles(&self.non_fungible_local_ids)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::VaultError(e))
-                    }
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?
+            vault.take_non_fungibles(&self.non_fungible_local_ids)?
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;

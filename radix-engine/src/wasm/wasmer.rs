@@ -361,7 +361,7 @@ impl From<RuntimeError> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", error);
         match error.downcast::<InvokeError<WasmRuntimeError>>() {
             Ok(e) => e,
-            _ => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
         }
     }
 }
@@ -388,7 +388,7 @@ impl WasmInstance for WasmerInstance {
             .exports
             .get_function(func_name)
             .map_err(|_| {
-                InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(func_name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(func_name.to_string()))
             })?
             .call(&input)
             .map_err(|e| {
@@ -397,9 +397,11 @@ impl WasmInstance for WasmerInstance {
             })?;
 
         if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
-            read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::Error)
+            read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
         } else {
-            Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn))
+            Err(InvokeError::SelfError(
+                WasmRuntimeError::InvalidExportReturn,
+            ))
         }
     }
 }

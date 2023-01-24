@@ -1,6 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::errors::ApplicationError;
-use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
@@ -101,12 +99,7 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
-        let ids = proof.total_ids().map_err(|e| match e {
-            InvokeError::Error(e) => {
-                RuntimeError::ApplicationError(ApplicationError::ProofError(e))
-            }
-            InvokeError::Downstream(runtime_error) => runtime_error,
-        })?;
+        let ids = proof.total_ids()?;
 
         Ok((ids, CallFrameUpdate::empty()))
     }
