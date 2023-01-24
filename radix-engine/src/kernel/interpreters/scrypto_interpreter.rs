@@ -1,5 +1,5 @@
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{LockFlags, SubstateApi, VmApi};
+use crate::kernel::kernel_api::{LockFlags, SubstateApi, WasmApi};
 use crate::kernel::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -24,7 +24,7 @@ impl Executor for ScryptoExecutor {
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
             + ComponentApi<RuntimeError>
-            + VmApi<W>,
+            + WasmApi<W>,
         W: WasmEngine,
     {
         let package = {
@@ -48,7 +48,7 @@ impl Executor for ScryptoExecutor {
         // Emit event
         api.emit_wasm_instantiation_event(package.code())?;
         let mut instance = api
-            .vm()
+            .scrypto_interpreter()
             .create_instance(self.package_address, &package.code);
 
         let output = {

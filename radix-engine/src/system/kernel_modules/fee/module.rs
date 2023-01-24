@@ -147,7 +147,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         Ok(())
     }
 
-    fn emit_wasm_instantiation_event(
+    fn on_wasm_instantiation(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

@@ -3,7 +3,7 @@ use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{LockFlags, LockInfo, ResolverApi, SubstateApi, VmApi};
+use crate::kernel::kernel_api::{LockFlags, LockInfo, ResolverApi, SubstateApi, WasmApi};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -644,13 +644,13 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> VmApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> WasmApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn vm(&mut self) -> &ScryptoInterpreter<W> {
+    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
 
@@ -684,7 +684,7 @@ pub trait Executor {
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
             + ComponentApi<RuntimeError>
-            + VmApi<W>,
+            + WasmApi<W>,
         W: WasmEngine;
 }
 

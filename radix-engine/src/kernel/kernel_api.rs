@@ -38,6 +38,7 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
+// TODO: split out non-substate related APIs.
 pub trait SubstateApi {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
@@ -86,10 +87,10 @@ pub trait SubstateApi {
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 }
 
-pub trait VmApi<W: WasmEngine> {
-    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+pub trait WasmApi<W: WasmEngine> {
+    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 
-    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 }
 
 // TODO: Clean this up
