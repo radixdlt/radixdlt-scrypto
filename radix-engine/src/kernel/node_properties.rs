@@ -7,7 +7,7 @@ use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
     GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
-    VaultOffset, WorktopOffset,
+    ValidatorOffset, VaultOffset, WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -299,6 +299,13 @@ impl SubstateProperties {
                 ))),
             },
             SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::Validator(ValidatorOffset::Validator) => match node_id {
                 RENodeId::Vault(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),

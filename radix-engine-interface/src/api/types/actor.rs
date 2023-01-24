@@ -298,6 +298,8 @@ pub enum EpochManagerFn {
 pub enum ValidatorFn {
     Register,
     Unregister,
+    Stake,
+    Unstake,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -367,8 +369,7 @@ impl EpochManagerPackage {
                             EpochManagerUpdateValidatorInvocation {
                                 receiver,
                                 validator_address: args.validator_address,
-                                register: args.register,
-                                key: args.key,
+                                update: args.update,
                             },
                         ))
                     }
@@ -391,6 +392,28 @@ impl EpochManagerPackage {
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
                         NativeInvocation::Validator(ValidatorInvocation::Unregister(
                             ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+
+                    ValidatorFn::Stake => {
+                        let args: ValidatorStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Stake(
+                            ValidatorStakeInvocation {
+                                receiver,
+                                stake: args.stake,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::Unstake => {
+                        let args: ValidatorUnstakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unstake(
+                            ValidatorUnstakeInvocation {
+                                receiver,
+                                amount: args.amount,
+                            },
                         ))
                     }
                 }

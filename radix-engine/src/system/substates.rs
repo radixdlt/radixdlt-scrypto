@@ -1070,8 +1070,10 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
+                let mut owned_nodes = HashSet::new();
                 references.insert(GlobalAddress::Component(substate.manager));
-                (references, HashSet::new())
+                owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
+                (references, owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = HashSet::new();
@@ -1268,6 +1270,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
             _ => panic!("Not epoch manager"),
+        }
+    }
+
+    pub fn validator(&mut self) -> &mut ValidatorSubstate {
+        match self {
+            SubstateRefMut::Validator(value) => *value,
+            _ => panic!("Not validator"),
         }
     }
 

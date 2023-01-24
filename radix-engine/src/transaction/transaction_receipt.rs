@@ -43,7 +43,7 @@ pub struct CommitResult {
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub application_logs: Vec<(Level, String)>,
-    pub next_epoch: Option<(BTreeSet<Validator>, u64)>,
+    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
