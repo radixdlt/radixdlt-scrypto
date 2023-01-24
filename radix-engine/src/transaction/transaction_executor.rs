@@ -1,4 +1,3 @@
-use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
 use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
@@ -6,13 +5,13 @@ use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::kernel_modules::fee::{
     CostingError, FeeReserve, FeeTable, SystemLoanFeeReserve,
 };
+use crate::system::system::System;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -187,7 +186,7 @@ where
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
-            let mut kernel = Kernel::new(
+            let mut system = System::new(
                 auth_zone_params.clone(),
                 &mut id_allocator,
                 &mut track,
@@ -195,18 +194,18 @@ where
                 &mut module,
             );
 
-            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
-                transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: match instructions {
+            let invoke_result = system.run_transaction(
+                transaction_hash.clone(),
+                Cow::Borrowed(transaction.runtime_validations()),
+                match instructions {
                     InstructionList::Basic(instructions) => {
                         Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
                     }
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
                     InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
-                blobs: Cow::Borrowed(blobs),
-            });
+                Cow::Borrowed(blobs),
+            );
 
             let events = module.collect_events();
             track.finalize(invoke_result, events)

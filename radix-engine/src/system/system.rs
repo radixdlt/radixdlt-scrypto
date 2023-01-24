@@ -1,8 +1,3 @@
-use crate::{
-    kernel::{BaseModule, IdAllocator, Kernel, ScryptoInterpreter, SubstateApi, Track},
-    wasm::WasmEngine,
-};
-
 use super::kernel_modules::fee::FeeReserve;
 use super::substates::{SubstateRef, SubstateRefMut};
 use crate::blueprints::resource::Resource;
@@ -12,8 +7,14 @@ use crate::kernel::LockFlags;
 use crate::kernel::LockInfo;
 use crate::kernel::RENodeInit;
 use crate::kernel::RENodeVisibilityOrigin;
-use radix_engine_interface::api::types::*;
-use transaction::model::AuthZoneParams;
+use crate::{
+    blueprints::transaction_processor::{InstructionOutput, TransactionProcessorRunInvocation},
+    kernel::{BaseModule, IdAllocator, Kernel, ScryptoInterpreter, SubstateApi, Track},
+    wasm::WasmEngine,
+};
+use radix_engine_interface::api::{types::*, Invokable};
+use sbor::rust::borrow::Cow;
+use transaction::model::{AuthZoneParams, Instruction, RuntimeValidationRequest};
 
 pub struct System<
     'g, // Lifetime of values outliving all frames
@@ -51,6 +52,21 @@ where
                 module,
             ),
         }
+    }
+
+    pub fn run_transaction<'a>(
+        &mut self,
+        transaction_hash: Hash,
+        runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
+        instructions: Cow<'a, [Instruction]>,
+        blobs: Cow<'a, [Vec<u8>]>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        self.kernel.invoke(TransactionProcessorRunInvocation {
+            transaction_hash,
+            runtime_validations,
+            instructions,
+            blobs,
+        })
     }
 }
 
