@@ -1,4 +1,3 @@
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
