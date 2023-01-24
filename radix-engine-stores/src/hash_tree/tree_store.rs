@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::types::{Nibble, NibblePath, NodeKey};
+pub use super::types::{Nibble, NibblePath, NodeKey};
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
 

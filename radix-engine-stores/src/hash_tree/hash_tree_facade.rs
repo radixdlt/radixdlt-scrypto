@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::io::Error;
 
-use super::types::NibblePath;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
 
 use super::tree_store::{
     ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
 };
-use super::types::{Child, InternalNode, LeafNode, Nibble, Node, NodeKey, NodeType, TreeReader};
+use super::types::{
+    Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, TreeReader,
+};
 
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {
