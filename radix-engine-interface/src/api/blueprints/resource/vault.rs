@@ -1,5 +1,5 @@
 use crate::api::blueprints::resource::*;
-use crate::api::invoke_api::*;
+use crate::api::static_invoke_api::*;
 use crate::api::types::*;
 use crate::math::*;
 use crate::*;

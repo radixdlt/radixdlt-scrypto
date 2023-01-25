@@ -1,4 +1,4 @@
-use crate::api::invoke_api::*;
+use crate::api::static_invoke_api::*;
 use crate::api::types::TransactionRuntimeId;
 use crate::api::types::*;
 use crate::*;

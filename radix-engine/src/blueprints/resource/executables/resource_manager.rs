@@ -26,7 +26,7 @@ use radix_engine_interface::api::types::{
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::EngineDerefApi;
-use radix_engine_interface::api::{EngineInvokeApi, EngineSubstateApi};
+use radix_engine_interface::api::{EngineStaticInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -64,7 +64,7 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
     fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
@@ -601,7 +601,9 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi
+            + EngineSubstateApi<RuntimeError>
+            + EngineStaticInvokeApi<RuntimeError>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -858,7 +860,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -949,7 +951,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -1288,7 +1290,9 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError> + EngineInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi
+            + EngineSubstateApi<RuntimeError>
+            + EngineStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;

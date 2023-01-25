@@ -5,7 +5,7 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::invoke_api::Invocation;
+use radix_engine_interface::api::static_invoke_api::Invocation;
 use radix_engine_interface::api::{EngineApi, EngineDerefApi, Invokable};
 use sbor::rust::fmt::Debug;
 

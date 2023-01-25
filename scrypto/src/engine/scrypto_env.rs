@@ -1,5 +1,5 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::invoke_api::SerializableInvocation;
+use radix_engine_interface::api::static_invoke_api::SerializableInvocation;
 use radix_engine_interface::api::types::CallTableInvocation;
 use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::{

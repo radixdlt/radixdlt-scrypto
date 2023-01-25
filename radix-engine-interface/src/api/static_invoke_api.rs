@@ -48,7 +48,7 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
     }
 }
 
-pub trait EngineInvokeApi<E>:
+pub trait EngineStaticInvokeApi<E>:
     Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>

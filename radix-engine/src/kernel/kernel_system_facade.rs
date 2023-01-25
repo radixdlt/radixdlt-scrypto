@@ -8,8 +8,8 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::{LockHandle, RENodeId};
 use radix_engine_interface::api::{
-    EngineActorApi, EngineApi, EngineComponentApi, EngineDerefApi, EngineInvokeApi,
-    EnginePackageApi,
+    EngineActorApi, EngineApi, EngineComponentApi, EngineDerefApi, EnginePackageApi,
+    EngineStaticInvokeApi,
 };
 use radix_engine_interface::data::*;
 
@@ -35,7 +35,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> EngineInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> EngineStaticInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

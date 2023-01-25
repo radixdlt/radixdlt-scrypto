@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::ScryptoInvocation;
 use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    EngineActorApi, EngineComponentApi, EngineInvokeApi, EngineSubstateApi, Invokable,
+    EngineActorApi, EngineComponentApi, EngineStaticInvokeApi, EngineSubstateApi, Invokable,
 };
 use sbor::rust::vec::Vec;
 
@@ -49,7 +49,7 @@ where
     Y: KernelSubstateApi
         + EngineComponentApi<RuntimeError>
         + EngineSubstateApi<RuntimeError>
-        + EngineInvokeApi<RuntimeError>
+        + EngineStaticInvokeApi<RuntimeError>
         + EngineActorApi<RuntimeError>,
 {
     fn allocate_buffer(
