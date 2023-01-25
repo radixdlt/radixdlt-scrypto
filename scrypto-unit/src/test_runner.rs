@@ -28,9 +28,8 @@ use radix_engine_interface::api::blueprints::epoch_manager::{
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
-    ClockInvocation, EpochManagerInvocation, NativeInvocation,
+    ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
 };
-use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;

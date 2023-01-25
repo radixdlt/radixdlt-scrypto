@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::*;
 
-pub enum SubstateApiCostingEntry {
+pub enum CostingEntry {
     /*
      * Invocation
      */
@@ -233,29 +233,27 @@ impl FeeTable {
         }
     }
 
-    pub fn system_api_cost(&self, entry: SubstateApiCostingEntry) -> u32 {
+    pub fn system_api_cost(&self, entry: CostingEntry) -> u32 {
         match entry {
-            SubstateApiCostingEntry::Invoke { input_size, .. } => {
-                self.fixed_low + (5 * input_size) as u32
-            }
+            CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
 
-            SubstateApiCostingEntry::ReadOwnedNodes => self.fixed_low,
-            SubstateApiCostingEntry::CreateNode { .. } => self.fixed_medium,
-            SubstateApiCostingEntry::DropNode { .. } => self.fixed_medium,
+            CostingEntry::ReadOwnedNodes => self.fixed_low,
+            CostingEntry::CreateNode { .. } => self.fixed_medium,
+            CostingEntry::DropNode { .. } => self.fixed_medium,
 
-            SubstateApiCostingEntry::BorrowSubstate { loaded, size } => {
+            CostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SubstateApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SubstateApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
-            SubstateApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
-            SubstateApiCostingEntry::DropLock => self.fixed_low,
+            CostingEntry::LockSubstate { .. } => self.fixed_low,
+            CostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            CostingEntry::WriteSubstate { .. } => self.fixed_medium,
+            CostingEntry::DropLock => self.fixed_low,
 
-            SubstateApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
+            CostingEntry::ReadBlob { size } => self.fixed_low + size,
         }
     }
 }

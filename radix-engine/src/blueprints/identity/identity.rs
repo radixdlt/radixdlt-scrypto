@@ -8,7 +8,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::identity::*;
 use radix_engine_interface::api::blueprints::resource::*;
-use radix_engine_interface::api::types::NativeFn;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::EngineSubstateApi;

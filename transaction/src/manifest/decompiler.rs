@@ -1,5 +1,4 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;

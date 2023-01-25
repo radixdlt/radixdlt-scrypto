@@ -5,8 +5,7 @@ use crate::system::invocation::native_wrapper::{invoke_call_table, resolve_metho
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::api::types::{LockHandle, RENodeId};
+use radix_engine_interface::api::types::{LockHandle, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{
     EngineActorApi, EngineApi, EngineComponentApi, EngineDerefApi, EnginePackageApi,
     EngineStaticInvokeApi,

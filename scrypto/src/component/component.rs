@@ -12,7 +12,6 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
-use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset,

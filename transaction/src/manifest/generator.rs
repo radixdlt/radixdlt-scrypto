@@ -1,5 +1,4 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
