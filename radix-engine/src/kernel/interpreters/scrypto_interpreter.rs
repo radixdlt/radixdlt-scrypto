@@ -3,8 +3,6 @@ use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
 use crate::kernel::*;
-use crate::kernel::*;
-use crate::types::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;

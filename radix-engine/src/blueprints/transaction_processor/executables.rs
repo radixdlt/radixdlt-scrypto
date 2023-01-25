@@ -6,7 +6,6 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::invocation::invoke_native::invoke_native_fn;
-use crate::system::invocation::invoke_scrypto;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::types::*;
 use crate::wasm::WasmEngine;
