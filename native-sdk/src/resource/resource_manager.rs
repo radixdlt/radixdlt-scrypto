@@ -101,7 +101,7 @@ impl ResourceManager {
         })
     }
 
-    pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
+    pub fn get_non_fungible_mutable_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
         &self,
         id: NonFungibleLocalId,
         api: &mut Y,

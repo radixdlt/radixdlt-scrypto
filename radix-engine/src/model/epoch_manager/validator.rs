@@ -304,7 +304,11 @@ impl Executor for ValidatorUnstakeExecutable {
             let total_lp_supply = lp_token_resman.total_supply(api)?;
             let lp_tokens = self.1;
             let lp_token_amount = lp_tokens.sys_amount(api)?;
-            let xrd_amount = lp_token_amount * active_stake_amount / total_lp_supply;
+            let xrd_amount = if total_lp_supply.is_zero() {
+                Decimal::zero()
+            } else {
+                lp_token_amount * active_stake_amount / total_lp_supply
+            };
 
             lp_token_resman.burn(lp_tokens, api)?;
 
@@ -375,13 +379,13 @@ impl ExecutableInvocation for ValidatorClaimXrdInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update
             .nodes_to_move
-            .push(RENodeId::Bucket(self.bucket.0));
+            .push(RENodeId::Bucket(self.unstake_nft.0));
 
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::ClaimXrd),
             resolved_receiver,
         );
-        let executor = ValidatorClaimXrdExecutable(resolved_receiver.receiver, self.bucket);
+        let executor = ValidatorClaimXrdExecutable(resolved_receiver.receiver, self.unstake_nft);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -428,7 +432,7 @@ impl Executor for ValidatorClaimXrdExecutable {
         let mut unstake_amount = Decimal::zero();
 
         for id in bucket.sys_total_ids(api)? {
-            let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
+            let data: UnstakeData = nft_resman.get_non_fungible_mutable_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),

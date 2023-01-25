@@ -299,14 +299,14 @@ pub struct ValidatorClaimXrdMethodArgs {
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorClaimXrdInvocation {
     pub receiver: ComponentAddress,
-    pub bucket: Bucket,
+    pub unstake_nft: Bucket,
 }
 
 impl Clone for ValidatorClaimXrdInvocation {
     fn clone(&self) -> Self {
         Self {
             receiver: self.receiver,
-            bucket: Bucket(self.bucket.0),
+            unstake_nft: Bucket(self.unstake_nft.0),
         }
     }
 }

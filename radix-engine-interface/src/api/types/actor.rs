@@ -424,7 +424,7 @@ impl EpochManagerPackage {
                         NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(
                             ValidatorClaimXrdInvocation {
                                 receiver,
-                                bucket: args.bucket,
+                                unstake_nft: args.bucket,
                             },
                         ))
                     }
