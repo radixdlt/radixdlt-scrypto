@@ -34,8 +34,6 @@ pub struct LockInfo {
 
 // TODO: split out non-substate related APIs.
 pub trait KernelSubstateApi {
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
-
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
@@ -82,9 +80,11 @@ pub trait KernelSubstateApi {
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
+    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
+
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 
-    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

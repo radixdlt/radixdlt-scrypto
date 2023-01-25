@@ -21,14 +21,6 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
-    }
-
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
@@ -523,6 +515,14 @@ where
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
         self.module
             .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
+            .map_err(RuntimeError::ModuleError)?;
+
+        Ok(())
+    }
+
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
+        self.module
+            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(())

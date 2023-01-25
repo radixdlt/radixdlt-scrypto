@@ -1,6 +1,7 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::KernelSubstateApi;
+use crate::kernel::KernelWasmApi;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
@@ -18,39 +19,47 @@ use sbor::rust::vec::Vec;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, Y>
+pub struct RadixEngineWasmRuntime<'y, Y, W>
 where
     Y: KernelSubstateApi
+        + KernelWasmApi<W>
         + EngineSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
+    W: WasmEngine,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
+    phantom: PhantomData<W>,
 }
 
-impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
+impl<'y, Y, W> RadixEngineWasmRuntime<'y, Y, W>
 where
     Y: KernelSubstateApi
+        + KernelWasmApi<W>
         + EngineSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
+    W: WasmEngine,
 {
     pub fn new(api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
+impl<'y, Y, W> WasmRuntime for RadixEngineWasmRuntime<'y, Y, W>
 where
     Y: KernelSubstateApi
+        + KernelWasmApi<W>
         + EngineComponentApi<RuntimeError>
         + EngineSubstateApi<RuntimeError>
         + EngineStaticInvokeApi<RuntimeError>
         + EngineActorApi<RuntimeError>,
+    W: WasmEngine,
 {
     fn allocate_buffer(
         &mut self,
