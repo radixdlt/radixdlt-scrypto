@@ -1,19 +1,17 @@
+use super::state_machine::*;
+use super::*;
 use crate::engine::{deref_and_update, ApplicationError, Executor, LockFlags, RENodeInit};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
-use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-
-use super::{AccessControllerSubstate, RecoveryProposal};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerError {
@@ -23,6 +21,8 @@ pub enum AccessControllerError {
     TimeOverflow,
     TimedRecoveryDelayHasNotElapsed,
     TimedRecoveryCanNotBePerformedWhileDisabled,
+
+    InvalidStateTransition,
 }
 
 impl From<AccessControllerError> for RuntimeError {
@@ -77,12 +77,7 @@ impl Executor for AccessControllerCreateGlobalInvocation {
 
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(
-            AccessControllerSubstate {
-                controlled_asset: vault.0,
-                ongoing_recoveries: None,
-                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
-                is_primary_role_locked: false,
-            },
+            AccessControllerSubstate::new(vault.0, self.timed_recovery_delay_in_minutes),
             AccessRulesChainSubstate {
                 access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
             },
@@ -149,28 +144,12 @@ impl Executor for AccessControllerCreateProofExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
-        let substate = api.get_ref(handle)?;
-        let access_controller = substate.access_controller();
-
-        if access_controller.is_primary_role_locked {
-            Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
-        }
-
-        // Creating a proof of the controlled asset
-        let proof = {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            Vault(access_controller.controlled_asset).sys_create_proof(api)?
-        };
-
+        let proof = transition(
+            self.receiver,
+            api,
+            AccessControllerCreateProofStateMachineInput,
+        )?;
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
-        api.drop_lock(handle)?;
 
         Ok((proof, call_frame_update))
     }
@@ -262,85 +241,15 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        {
-            // Checking if primary is locked or not - If it is, and the proposer is primary, then we
-            // error out.
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            if self.proposer == Proposer::Primary && access_controller.is_primary_role_locked {
-                Err(AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked)?
-            }
-        }
-
-        let timed_recovery_allowed_after = {
-            // Only the recovery role is allowed to perform timed recoveries. If the proposer is not
-            // Recovery, then return None
-            match self.proposer {
-                Proposer::Primary => None,
-                Proposer::Recovery => {
-                    let substate = api.get_ref(handle)?;
-                    let access_controller = substate.access_controller();
-
-                    // Calculating when timed recovery may be performed (if allowed by this access
-                    // controller)
-                    match access_controller.timed_recovery_delay_in_minutes {
-                        Some(delay_in_minutes) => {
-                            let current_time =
-                                Runtime::sys_current_time(api, TimePrecision::Minute)?;
-                            let timed_recovery_allowed_after =
-                                current_time.add_minutes(delay_in_minutes as i64).map_or(
-                                    Err(RuntimeError::from(AccessControllerError::TimeOverflow)),
-                                    |instant| Ok(instant),
-                                )?;
-                            Some(timed_recovery_allowed_after)
-                        }
-                        None => None,
-                    }
-                }
-            }
-        };
-
-        // Initiate Recovery (if this role doesn't already have an ongoing recovery)
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
-
-            let recoveries = match access_controller.ongoing_recoveries.as_mut() {
-                Some(ongoing_recoveries) => ongoing_recoveries,
-                None => {
-                    access_controller.ongoing_recoveries = Some(HashMap::new());
-                    access_controller
-                        .ongoing_recoveries
-                        .as_mut()
-                        .expect("Impossible Case!")
-                }
-            };
-
-            if !recoveries.contains_key(&self.proposer) {
-                recoveries.insert(
-                    self.proposer,
-                    super::RecoveryProposal {
-                        rule_set: self.rule_set,
-                        timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
-                        timed_recovery_allowed_after,
-                    },
-                );
-            } else {
-                Err(
-                    AccessControllerError::RecoveryForThisProposerAlreadyExists {
-                        proposer: self.proposer,
-                    },
-                )?;
-            }
-        }
-
-        api.drop_lock(handle)?;
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerInitiateRecoveryStateMachineInput {
+                proposer: self.proposer,
+                rule_set: self.rule_set,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+            },
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -462,43 +371,16 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        // The following code attempts to get the recovery proposal given the inputs of the
-        // invocation.
-        let recovery_proposal = {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            match access_controller.ongoing_recoveries.as_ref() {
-                Some(ongoing_recoveries) => ongoing_recoveries
-                    .iter()
-                    .find(
-                        |(
-                            proposer,
-                            RecoveryProposal {
-                                rule_set,
-                                timed_recovery_delay_in_minutes,
-                                ..
-                            },
-                        )| {
-                            self.proposer == **proposer
-                                && self.confirmor != self.proposer.into()
-                                && self.rule_set == *rule_set
-                                && self.timed_recovery_delay_in_minutes
-                                    == *timed_recovery_delay_in_minutes
-                        },
-                    )
-                    .map_or(
-                        Err(AccessControllerError::NoValidProposedRuleSetExists),
-                        |(_, proposal)| Ok(proposal.clone()),
-                    ),
-                None => Err(AccessControllerError::NoValidProposedRuleSetExists),
-            }
-        }?;
+        let recovery_proposal = transition_mut(
+            self.receiver,
+            api,
+            AccessControllerQuickConfirmRecoveryStateMachineInput {
+                rule_set: self.rule_set,
+                confirmor: self.confirmor,
+                proposer: self.proposer,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+            },
+        )?;
 
         // Update the access rules
         let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
@@ -510,17 +392,6 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 rule: access_rule.clone(),
             })?;
         }
-
-        // Enact the recovery proposal.
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
-            access_controller.is_primary_role_locked = false;
-            access_controller.timed_recovery_delay_in_minutes =
-                recovery_proposal.timed_recovery_delay_in_minutes;
-        }
-
-        api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -577,58 +448,14 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        // The following code attempts to get the recovery proposal given the inputs of the
-        // invocation.
-        let recovery_proposal = {
-            let substate = api.get_ref(handle)?;
-            let access_controller = substate.access_controller();
-
-            match access_controller.ongoing_recoveries.as_ref() {
-                Some(ongoing_recoveries) => ongoing_recoveries
-                    .iter()
-                    .find(
-                        |(
-                            proposer,
-                            RecoveryProposal {
-                                rule_set,
-                                timed_recovery_delay_in_minutes,
-                                ..
-                            },
-                        )| {
-                            Proposer::Recovery == **proposer
-                                && self.rule_set == *rule_set
-                                && self.timed_recovery_delay_in_minutes
-                                    == *timed_recovery_delay_in_minutes
-                        },
-                    )
-                    .map_or(
-                        Err(AccessControllerError::NoValidProposedRuleSetExists),
-                        |(_, proposal)| Ok(proposal.clone()),
-                    ),
-                None => Err(AccessControllerError::NoValidProposedRuleSetExists),
-            }
-        }?;
-
-        // Check that the timed recovery delay (if any) for the proposal has already elapsed.
-        let recovery_time_has_elapsed = match recovery_proposal.timed_recovery_allowed_after {
-            Some(instant) => Runtime::sys_compare_against_current_time(
-                api,
-                instant,
-                TimePrecision::Minute,
-                time::TimeComparisonOperator::Gte,
-            ),
-            None => Err(RuntimeError::from(
-                AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled,
-            )),
-        }?;
-        if !recovery_time_has_elapsed {
-            Err(AccessControllerError::TimedRecoveryDelayHasNotElapsed)?
-        }
+        let recovery_proposal = transition_mut(
+            self.receiver,
+            api,
+            AccessControllerTimedConfirmRecoveryStateMachineInput {
+                rule_set: self.rule_set,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+            },
+        )?;
 
         // Update the access rules
         let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
@@ -640,17 +467,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 rule: access_rule.clone(),
             })?;
         }
-
-        // Enact the recovery proposal.
-        {
-            let mut substate = api.get_ref_mut(handle)?;
-            let access_controller = substate.access_controller();
-            access_controller.is_primary_role_locked = false;
-            access_controller.timed_recovery_delay_in_minutes =
-                recovery_proposal.timed_recovery_delay_in_minutes;
-        }
-
-        api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -738,38 +554,15 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        let mut substate = api.get_ref_mut(handle)?;
-        let access_controller = substate.access_controller();
-
-        match access_controller.ongoing_recoveries.as_mut() {
-            Some(ongoing_recoveries) => {
-                let recovery_proposal = ongoing_recoveries.get(&self.proposer);
-                match recovery_proposal {
-                    Some(recovery_proposal) => {
-                        if self.rule_set == recovery_proposal.rule_set
-                            && self.timed_recovery_delay_in_minutes
-                                == recovery_proposal.timed_recovery_delay_in_minutes
-                        {
-                            ongoing_recoveries.remove_entry(&self.proposer).map_or(
-                                Err(AccessControllerError::NoValidProposedRuleSetExists),
-                                |_| Ok(()),
-                            )
-                        } else {
-                            Err(AccessControllerError::NoValidProposedRuleSetExists)
-                        }
-                    }
-                    None => Err(AccessControllerError::NoValidProposedRuleSetExists),
-                }
-            }
-            None => Err(AccessControllerError::NoValidProposedRuleSetExists),
-        }?;
-
-        api.drop_lock(handle)?;
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerCancelRecoveryAttemptStateMachineInput {
+                proposer: self.proposer,
+                rule_set: self.rule_set,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+            },
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -821,17 +614,11 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        let mut substate = api.get_ref_mut(handle)?;
-        let access_controller = substate.access_controller();
-
-        access_controller.is_primary_role_locked = true;
-
-        api.drop_lock(handle)?;
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerLockPrimaryRoleStateMachineInput,
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -883,17 +670,11 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Access Controller Substate Handle
-        let node_id = self.receiver;
-        let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        let mut substate = api.get_ref_mut(handle)?;
-        let access_controller = substate.access_controller();
-
-        access_controller.is_primary_role_locked = false;
-
-        api.drop_lock(handle)?;
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerUnlockPrimaryRoleStateMachineInput,
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -991,4 +772,60 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
     access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
+}
+
+fn transition<Y, I>(
+    node_id: RENodeId,
+    api: &mut Y,
+    input: I,
+) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
+where
+    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    AccessControllerSubstate: Transition<I>,
+{
+    let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
+    let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+    let access_controller_clone = {
+        let substate = api.get_ref(handle)?;
+        let access_controller = substate.access_controller();
+        access_controller.clone()
+    };
+
+    let rtn = access_controller_clone.transition(api, input)?;
+
+    api.drop_lock(handle)?;
+
+    Ok(rtn)
+}
+
+fn transition_mut<Y, I>(
+    node_id: RENodeId,
+    api: &mut Y,
+    input: I,
+) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
+where
+    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    AccessControllerSubstate: TransitionMut<I>,
+{
+    let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
+    let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+    let mut access_controller_clone = {
+        let substate = api.get_ref(handle)?;
+        let access_controller = substate.access_controller();
+        access_controller.clone()
+    };
+
+    let rtn = access_controller_clone.transition_mut(api, input)?;
+
+    {
+        let mut substate = api.get_ref_mut(handle)?;
+        let access_controller = substate.access_controller();
+        *access_controller = access_controller_clone
+    }
+
+    api.drop_lock(handle)?;
+
+    Ok(rtn)
 }
