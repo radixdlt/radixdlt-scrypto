@@ -1,21 +1,11 @@
-use crate::{
-    blueprints::transaction_processor::{NativeOutput, TransactionProcessorError},
-    errors::{ApplicationError, RuntimeError},
-    kernel::kernel_api::LockFlags,
-    kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
-    types::*,
+use crate::{blueprints::transaction_processor::NativeOutput, types::*};
+use radix_engine_interface::api::types::{
+    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
+    ComponentInvocation, EpochManagerInvocation, IdentityInvocation, LoggerInvocation,
+    MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
+    TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
 use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::{
-    types::{
-        AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, CallTableInvocation,
-        ClockInvocation, ComponentInvocation, EpochManagerInvocation, IdentityInvocation,
-        LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
-        ResourceInvocation, TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation,
-        WorktopInvocation,
-    },
-    types::{ScryptoInvocation, ScryptoReceiver},
-};
 
 pub fn invoke_native_fn<Y, E>(
     native_invocation: NativeInvocation,

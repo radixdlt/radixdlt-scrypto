@@ -1,7 +1,5 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::KernelSubstateApi;
 use crate::kernel::KernelWasmApi;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
@@ -9,23 +7,23 @@ use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
-    Invokable,
 };
 use sbor::rust::vec::Vec;
 
-/// A glue between system api (call frame and track abstraction) and WASM.
-///
-/// Execution is free from a costing perspective, as we assume
-/// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, Y, W>
+/// A shim between client api and WASM, with buffer capability.
+pub struct ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
+    Y: KernelWasmApi<W>
+        + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + Invokable<ScryptoInvocation, RuntimeError>,
+        + ClientSubstateApi<RuntimeError>
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
     W: WasmEngine,
 {
     api: &'y mut Y,
@@ -34,17 +32,20 @@ where
     phantom: PhantomData<W>,
 }
 
-impl<'y, Y, W> RadixEngineWasmRuntime<'y, Y, W>
+impl<'y, Y, W> ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
+    Y: KernelWasmApi<W>
+        + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + Invokable<ScryptoInvocation, RuntimeError>,
+        + ClientSubstateApi<RuntimeError>
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
     W: WasmEngine,
 {
     pub fn new(api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime {
+        ScryptoRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
@@ -53,16 +54,16 @@ where
     }
 }
 
-impl<'y, Y, W> WasmRuntime for RadixEngineWasmRuntime<'y, Y, W>
+impl<'y, Y, W> WasmRuntime for ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
-        + ClientComponentApi<RuntimeError>
+    Y: KernelWasmApi<W>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>
-        + ClientActorApi<RuntimeError>,
+        + ClientSubstateApi<RuntimeError>
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
     W: WasmEngine,
 {
     fn allocate_buffer(
@@ -142,7 +143,7 @@ where
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.drop_node(node_id)?;
+        self.api.sys_drop_node(node_id)?;
 
         Ok(())
     }

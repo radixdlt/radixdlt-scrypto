@@ -7,10 +7,10 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
 };
+use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -218,12 +218,14 @@ impl Executor for ScryptoExecutor {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + KernelWasmApi<W>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
-            + ClientActorApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
-            + KernelWasmApi<W>,
+            + ClientActorApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
         let package = {
@@ -251,7 +253,7 @@ impl Executor for ScryptoExecutor {
             .create_instance(self.package_address, &package.code);
 
         let output = {
-            let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
+            let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
             let mut input = Vec::new();
             if let Some(component_id) = self.component_id {

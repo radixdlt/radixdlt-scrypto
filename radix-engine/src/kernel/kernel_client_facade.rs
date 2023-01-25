@@ -224,13 +224,13 @@ where
         })
     }
 
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
+    fn get_code(&mut self, _package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
         todo!()
     }
 
     fn get_abi(
         &mut self,
-        package_address: PackageAddress,
+        _package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
         todo!()
     }
