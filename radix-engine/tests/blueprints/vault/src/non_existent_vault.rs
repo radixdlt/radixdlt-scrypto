@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct NonExistentVault {
         vault: Option<Vault>,
         vaults: KeyValueStore<u128, Vault>,

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct InvalidInitStoredBucket {
         bucket: Bucket,
     }
@@ -18,7 +19,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct InvalidStoredBucketInOwnedComponent {
         bucket: Option<Bucket>,
     }

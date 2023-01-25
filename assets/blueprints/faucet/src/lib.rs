@@ -1,7 +1,8 @@
 use scrypto::prelude::*;
 
 // Faucet - TestNet only
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Faucet {
         vault: Vault,
         transactions: KeyValueStore<Hash, u64>,

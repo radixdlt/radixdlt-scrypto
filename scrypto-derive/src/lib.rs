@@ -19,7 +19,8 @@ use proc_macro::TokenStream;
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// blueprint! {
+/// #[blueprint]
+/// mod blueprint {
 ///     struct Counter {
 ///         count: u32
 ///     }
@@ -39,8 +40,8 @@ use proc_macro::TokenStream;
 ///     }
 /// }
 /// ```
-#[proc_macro]
-pub fn blueprint(input: TokenStream) -> TokenStream {
+#[proc_macro_attribute]
+pub fn blueprint(_: TokenStream, input: TokenStream) -> TokenStream {
     blueprint::handle_blueprint(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()

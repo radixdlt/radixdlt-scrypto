@@ -4,7 +4,8 @@ use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct CyclicMap {
         store: KeyValueStore<u32, KeyValueStore<u32, u32>>,
     }

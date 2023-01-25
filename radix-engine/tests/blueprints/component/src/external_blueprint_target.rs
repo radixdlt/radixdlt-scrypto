@@ -11,7 +11,8 @@ pub enum ExtraEnum {
     EntryTwo,
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct ExternalBlueprintTarget {
         some_field: ExtraStruct,
     }

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Precommitted {
         store: KeyValueStore<u32, Vault>,
         deep_store: KeyValueStore<u32, KeyValueStore<u32, u32>>,

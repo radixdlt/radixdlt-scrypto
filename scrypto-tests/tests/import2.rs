@@ -72,7 +72,8 @@ import! {
     "#
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Import {}
 
     impl Import {}

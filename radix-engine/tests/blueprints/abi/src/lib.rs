@@ -2,7 +2,8 @@ use radix_engine_interface::api::wasm::*;
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct AbiComponent {}
 
     impl AbiComponent {
@@ -212,7 +213,8 @@ pub extern "C" fn AbiComponent2_abi() -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Simple {
         state: u32,
     }

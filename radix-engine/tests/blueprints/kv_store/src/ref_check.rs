@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct RefCheck {
         store: KeyValueStore<u32, Vault>,
         store_store: KeyValueStore<u32, KeyValueStore<u32, Vault>>,

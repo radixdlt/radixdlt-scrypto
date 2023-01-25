@@ -3,7 +3,8 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 use scrypto::radix_engine_interface::api::EngineApi;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct DataAccess {}
 
     impl DataAccess {

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct MultipleReads {
         map: KeyValueStore<String, String>,
     }

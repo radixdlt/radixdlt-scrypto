@@ -13,7 +13,8 @@ pub enum GlobalAddressSubstate {
     Clock(ClockId),
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Read {}
 
     impl Read {
@@ -29,7 +30,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct NodeCreate {}
 
     impl NodeCreate {

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct AuthComponent {
         some_non_fungible: NonFungibleGlobalId,
     }

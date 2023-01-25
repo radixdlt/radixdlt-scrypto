@@ -4,8 +4,6 @@ use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::*;
 
-use crate::ast;
-
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -17,7 +15,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
-    let bp = parse2::<ast::Blueprint>(input)?;
+    let bp_module = parse2::<crate::ast::BlueprintMod>(input)?;
+    let bp = bp_module.blueprint;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;

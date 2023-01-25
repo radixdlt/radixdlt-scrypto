@@ -2,27 +2,22 @@
 
 use scrypto::prelude::*;
 
-blueprint! {
-  struct Empty {
-  }
+#[blueprint]
+mod blueprint {
+    struct Empty {}
 
-  impl Empty {
-
-  }
+    impl Empty {}
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Simple {
         state: u32,
     }
 
     impl Simple {
         pub fn new() -> ComponentAddress {
-            Self {
-                state: 0
-            }
-            .instantiate()
-            .globalize()
+            Self { state: 0 }.instantiate().globalize()
         }
 
         pub fn get_state(&self) -> u32 {
@@ -33,7 +28,15 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageAddress, KeyValueStore<String, String>, Hash, Bucket, Proof, Vault) {
+        pub fn custom_types() -> (
+            Decimal,
+            PackageAddress,
+            KeyValueStore<String, String>,
+            Hash,
+            Bucket,
+            Proof,
+            Vault,
+        ) {
             todo!()
         }
     }

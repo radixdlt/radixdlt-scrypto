@@ -25,7 +25,8 @@ external_component! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct ExternalBlueprintCaller {}
 
     impl ExternalBlueprintCaller {

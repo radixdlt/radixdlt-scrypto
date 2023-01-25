@@ -22,7 +22,8 @@ In this example, we have only one blueprint in the package called `Hello`, which
 ```rust
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct Hello {
         sample_vault: Vault,
     }

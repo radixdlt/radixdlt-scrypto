@@ -2,7 +2,8 @@ use radix_engine_interface::api::Invokable;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod blueprint {
     struct ReentrantComponent {}
 
     impl ReentrantComponent {
