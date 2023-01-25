@@ -138,6 +138,7 @@ pub struct SystemLoanFeeReserve {
 
     /// Execution costs that are deferred
     execution_deferred: [u32; CostingReason::COUNT],
+    execution_deferred_total: u32,
     /// Execution cost breakdown
     execution: [u32; CostingReason::COUNT],
     /// Royalty cost breakdown
@@ -203,6 +204,7 @@ impl SystemLoanFeeReserve {
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
             execution_deferred: [0u32; CostingReason::COUNT],
+            execution_deferred_total: 0,
             execution: [0u32; CostingReason::COUNT],
             royalty: HashMap::new(),
             effective_execution_price: cost_unit_price
@@ -249,6 +251,7 @@ impl SystemLoanFeeReserve {
             self.execution[i] += self.execution_deferred[i];
             self.execution_deferred[i] = 0;
         }
+        self.execution_deferred_total = 0;
 
         // Repay owed
         if self.xrd_balance < self.xrd_owed {
@@ -271,16 +274,19 @@ impl SystemLoanFeeReserve {
         self.repay_all().ok();
     }
 
+    #[inline]
     fn execution_price(&self) -> u128 {
         self.effective_execution_price
     }
 
+    #[inline]
     fn royalty_price(&self) -> u128 {
         self.effective_royalty_price
     }
 
+    #[inline]
     fn fully_repaid(&self) -> bool {
-        self.xrd_owed <= 0 && self.execution_deferred.is_empty()
+        self.xrd_owed <= 0 && self.execution_deferred_total == 0
     }
 }
 
@@ -301,6 +307,7 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
             &mut self.execution_deferred[reason as usize],
             units_consumed,
         )?;
+        checked_assign_add(&mut self.execution_deferred_total, units_consumed)?;
 
         Ok(())
     }
