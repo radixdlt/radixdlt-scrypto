@@ -89,4 +89,4 @@ pub trait KernelWasmApi<W: WasmEngine> {
 }
 
 /// Interface of the Kernel, for Kernel modules.
-pub trait KernelApi<W: WasmEngine>: KernelSubstateApi + KernelWasmApi<W> {}
+pub trait KernelApi<W: WasmEngine>: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> {}
