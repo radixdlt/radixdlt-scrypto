@@ -487,10 +487,8 @@ mod normal_operations_with_primary_locked {
     #[test]
     pub fn initiate_recovery() {
         // Arrange
-        let test_vectors = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
-            (Role::Recovery, None),
-        ];
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] =
+            [(Role::Primary, None), (Role::Recovery, None)];
 
         for (role, error_assertion_function) in test_vectors {
             let mut test_runner = setup_environment();
@@ -958,7 +956,7 @@ mod recovery_mode_with_primary_locked {
     pub fn initiate_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (Role::Primary, None),
             (
                 Role::Recovery,
                 Some(is_recovery_for_this_role_already_exists_error),
@@ -1118,7 +1116,10 @@ mod recovery_mode_with_primary_locked {
     pub fn cancel_recovery_attempt() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_no_valid_proposed_rule_set_exists_error),
+            ),
             (Role::Recovery, None),
         ];
 
@@ -1190,15 +1191,6 @@ fn is_timed_recovery_can_not_be_performed_while_disabled_error(error: &RuntimeEr
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled { .. }
-        ))
-    )
-}
-
-fn is_operation_not_permitted_when_primary_is_locked_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::OperationNotAllowedWhenPrimaryIsLocked
         ))
     )
 }

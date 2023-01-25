@@ -113,10 +113,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
         // outside of recovery mode. Only limitation is that if the primary role is locked, then it
         // can't initiate recovery
         match self.state {
-            (ref primary_state, ref mut mode @ OperationState::Normal)
-                if input.proposer != Proposer::Primary
-                    || *primary_state != PrimaryRoleState::Locked =>
-            {
+            (_, ref mut mode @ OperationState::Normal) => {
                 // No recoveries are happening at the current moment, so transition to recovery mode
                 // and add a new entry
                 let mut ongoing_recoveries = HashMap::new();
@@ -125,13 +122,11 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
                 Ok(())
             }
             (
-                ref primary_state,
+                _,
                 OperationState::Recovery {
                     ref mut ongoing_recoveries,
                 },
-            ) if input.proposer != Proposer::Primary
-                || *primary_state != PrimaryRoleState::Locked =>
-            {
+            ) => {
                 // Only insert after checking that this proposer doesn't already have something
                 // proposed - so, don't just silently override the recovery proposal.
                 if !ongoing_recoveries.contains_key(&input.proposer) {
@@ -154,7 +149,6 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
                     ))
                 }
             }
-            _ => access_controller_runtime_error!(InvalidStateTransition),
         }
     }
 }
@@ -338,13 +332,11 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
         // primary is locked or unlocked
         match self.state {
             (
-                ref primary_state,
+                _,
                 OperationState::Recovery {
                     ref mut ongoing_recoveries,
                 },
-            ) if input.proposer != Proposer::Primary
-                || *primary_state != PrimaryRoleState::Locked =>
-            {
+            ) => {
                 // Check that the proposal information passed as input matches one of the proposals
                 let recovery_proposal = ongoing_recoveries.get(&input.proposer);
                 match recovery_proposal {
