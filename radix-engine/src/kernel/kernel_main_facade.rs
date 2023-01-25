@@ -2,7 +2,9 @@ use super::module::SysCallOutput;
 use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo};
+use crate::kernel::kernel_api::{
+    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -15,7 +17,7 @@ use radix_engine_interface::api::types::{
     VaultId,
 };
 
-impl<'g, 's, W, R, M> KernelSubstateApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -270,7 +272,14 @@ where
 
         Ok(())
     }
+}
 
+impl<'g, 's, W, R, M> KernelSubstateApi for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
     fn lock_substate(
         &mut self,
         node_id: RENodeId,

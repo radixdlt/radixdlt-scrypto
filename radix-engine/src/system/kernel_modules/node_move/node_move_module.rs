@@ -1,6 +1,6 @@
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::CallFrameUpdate;
+use crate::kernel::{CallFrameUpdate, KernelNodeApi};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::EngineActorApi;
@@ -14,7 +14,9 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule;
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelSubstateApi + EngineActorApi<RuntimeError>>(
+    fn prepare_move_downstream<
+        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
+    >(
         node_id: RENodeId,
         to: &FnIdentifier,
         api: &mut Y,
@@ -88,7 +90,7 @@ impl NodeMoveModule {
         }
     }
 
-    fn prepare_move_upstream<Y: KernelSubstateApi>(
+    fn prepare_move_upstream<Y: KernelNodeApi + KernelSubstateApi>(
         node_id: RENodeId,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -132,7 +134,9 @@ impl NodeMoveModule {
         }
     }
 
-    pub fn on_call_frame_enter<Y: KernelSubstateApi + EngineActorApi<RuntimeError>>(
+    pub fn on_call_frame_enter<
+        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
+    >(
         call_frame_update: &mut CallFrameUpdate,
         fn_identifier: &FnIdentifier,
         system_api: &mut Y,
@@ -144,7 +148,7 @@ impl NodeMoveModule {
         Ok(())
     }
 
-    pub fn on_call_frame_exit<Y: KernelSubstateApi>(
+    pub fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &CallFrameUpdate,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {

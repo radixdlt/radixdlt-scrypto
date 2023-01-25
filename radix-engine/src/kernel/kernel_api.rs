@@ -32,14 +32,13 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
-// TODO: split out non-substate related APIs.
-pub trait KernelSubstateApi {
+pub trait KernelNodeApi {
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError>;
+    ) -> Result<Resource, RuntimeError>; // TODO: move
 
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
@@ -58,7 +57,9 @@ pub trait KernelSubstateApi {
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
     fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError>;
+}
 
+pub trait KernelSubstateApi {
     /// Locks a visible substate
     fn lock_substate(
         &mut self,

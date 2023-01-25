@@ -36,7 +36,7 @@ impl Executor for LoggerLogInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let offset = SubstateOffset::Logger(LoggerOffset::Logger);
         let node_id = RENodeId::Logger;

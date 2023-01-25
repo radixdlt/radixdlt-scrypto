@@ -1,6 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{deref_and_update, Executor, RENodeInit};
 use crate::kernel::{CallFrameUpdate, ExecutableInvocation, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
@@ -38,7 +39,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -100,7 +101,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -197,7 +198,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -244,7 +245,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

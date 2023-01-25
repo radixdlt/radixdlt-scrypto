@@ -3,6 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
@@ -75,7 +76,7 @@ impl Executor for VaultTakeInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
@@ -126,7 +127,7 @@ impl Executor for VaultPutInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -173,7 +174,7 @@ impl Executor for VaultLockFeeInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -265,7 +266,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -313,7 +314,7 @@ impl Executor for VaultGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -352,7 +353,7 @@ impl Executor for VaultGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -394,7 +395,7 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -437,7 +438,7 @@ impl Executor for VaultCreateProofInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -491,7 +492,7 @@ impl Executor for VaultCreateProofByAmountInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -545,7 +546,7 @@ impl Executor for VaultCreateProofByIdsInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

@@ -43,7 +43,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
@@ -87,7 +87,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);

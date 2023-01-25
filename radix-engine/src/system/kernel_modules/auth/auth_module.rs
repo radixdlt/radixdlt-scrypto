@@ -32,7 +32,7 @@ impl AuthModule {
         system_api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         if matches!(
             actor.identifier,
@@ -233,7 +233,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: KernelSubstateApi>(
+    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
         system_api: &mut Y,
@@ -289,7 +289,7 @@ impl AuthModule {
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
     {
         if matches!(
             api.fn_identifier()?,

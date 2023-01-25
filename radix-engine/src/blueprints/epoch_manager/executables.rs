@@ -70,7 +70,8 @@ impl Executor for EpochManagerCreateInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -203,7 +204,7 @@ impl Executor for EpochManagerGetCurrentEpochExecutable {
         system_api: &mut Y,
     ) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -253,7 +254,7 @@ impl Executor for EpochManagerNextRoundExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let mgr_handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
@@ -331,7 +332,7 @@ impl Executor for EpochManagerSetEpochExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -376,7 +377,8 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -434,7 +436,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -464,7 +466,8 @@ impl EpochManager {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -554,7 +557,8 @@ impl Executor for ValidatorRegisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -624,7 +628,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
@@ -686,7 +690,8 @@ impl Executor for ValidatorStakeExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -755,7 +760,8 @@ impl Executor for ValidatorUnstakeExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {

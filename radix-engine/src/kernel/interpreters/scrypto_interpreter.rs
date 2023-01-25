@@ -21,7 +21,8 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>
             + EngineActorApi<RuntimeError>

@@ -275,7 +275,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineComponentApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
@@ -914,7 +915,8 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi
+        Y: KernelNodeApi
+            + KernelSubstateApi
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {

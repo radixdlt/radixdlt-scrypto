@@ -1,5 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::KernelSubstateApi;
 use crate::kernel::KernelWasmApi;
 use crate::system::invocation::native_wrapper::invoke_call_table;
@@ -21,7 +22,8 @@ use sbor::rust::vec::Vec;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: KernelSubstateApi
+    Y: KernelNodeApi
+        + KernelSubstateApi
         + KernelWasmApi<W>
         + EngineSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
@@ -35,7 +37,8 @@ where
 
 impl<'y, Y, W> RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: KernelSubstateApi
+    Y: KernelNodeApi
+        + KernelSubstateApi
         + KernelWasmApi<W>
         + EngineSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
@@ -53,7 +56,8 @@ where
 
 impl<'y, Y, W> WasmRuntime for RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: KernelSubstateApi
+    Y: KernelNodeApi
+        + KernelSubstateApi
         + KernelWasmApi<W>
         + EngineComponentApi<RuntimeError>
         + EngineSubstateApi<RuntimeError>

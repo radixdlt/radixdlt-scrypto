@@ -14,7 +14,7 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineApi<RuntimeError> + KernelWasmApi<W>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineApi<RuntimeError> + KernelWasmApi<W>,
         W: WasmEngine;
 }
 

@@ -58,7 +58,7 @@ impl Executor for ClockCreateInvocation {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
@@ -142,7 +142,7 @@ impl Executor for ClockSetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = self.0;
 
@@ -193,7 +193,7 @@ impl Executor for ClockGetCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = self.0;
         let precision = self.1;
@@ -257,7 +257,7 @@ impl Executor for ClockCompareCurrentTimeExecutable {
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         match self.precision {
             TimePrecision::Minute => {
