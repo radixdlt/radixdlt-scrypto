@@ -528,12 +528,12 @@ where
 
         Ok(())
     }
+}
 
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
-    }
+impl<'g, 's, W, R, M> KernelApi<W> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
 }

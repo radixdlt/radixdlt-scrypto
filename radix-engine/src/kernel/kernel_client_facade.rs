@@ -24,6 +24,7 @@ use radix_engine_interface::api::types::{
     ComponentFn, NativeFn, RENodeType, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::api::types::{LockHandle, RENodeId, ScryptoReceiver};
+use radix_engine_interface::api::ClientMeteringApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientPackageApi,
     ClientStaticInvokeApi, Invokable,
@@ -259,7 +260,22 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientMeteringApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
+        self.module
+            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
+            .map_err(RuntimeError::ModuleError)?;
+
+        Ok(())
+    }
+}
+
+impl<'g, 's, W, R, M> ClientApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

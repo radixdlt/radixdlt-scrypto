@@ -1,24 +1,23 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::KernelWasmApi;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientMeteringApi;
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
 };
 use sbor::rust::vec::Vec;
 
-/// A shim between client api and WASM, with buffer capability.
+/// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelWasmApi<W>
+    Y: ClientMeteringApi<W, RuntimeError>
         + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
@@ -34,9 +33,8 @@ where
 
 impl<'y, Y, W> ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelWasmApi<W>
+    Y: ClientMeteringApi<W, RuntimeError>
         + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
@@ -56,9 +54,8 @@ where
 
 impl<'y, Y, W> WasmRuntime for ScryptoRuntime<'y, Y, W>
 where
-    Y: KernelWasmApi<W>
+    Y: ClientMeteringApi<W, RuntimeError>
         + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>

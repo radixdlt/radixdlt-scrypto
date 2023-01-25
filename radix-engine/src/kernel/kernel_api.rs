@@ -84,8 +84,6 @@ pub trait KernelWasmApi<W: WasmEngine> {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
-
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 }
 
 /// Interface of the Kernel, for Kernel modules.
