@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::{CallFrameUpdate, KernelNodeApi};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::api::EngineActorApi;
+use radix_engine_interface::api::ClientActorApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NodeMoveError {
@@ -15,7 +15,7 @@ pub struct NodeMoveModule;
 
 impl NodeMoveModule {
     fn prepare_move_downstream<
-        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
     >(
         node_id: RENodeId,
         to: &FnIdentifier,
@@ -135,7 +135,7 @@ impl NodeMoveModule {
     }
 
     pub fn on_call_frame_enter<
-        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
     >(
         call_frame_update: &mut CallFrameUpdate,
         fn_identifier: &FnIdentifier,

@@ -4,13 +4,13 @@ use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
-use radix_engine_interface::api::EngineDerefApi;
+use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::data::*;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: EngineDerefApi<RuntimeError> + KernelSubstateApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

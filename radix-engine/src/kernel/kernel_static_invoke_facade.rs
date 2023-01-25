@@ -6,7 +6,7 @@ use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::static_invoke_api::Invocation;
-use radix_engine_interface::api::{EngineApi, EngineDerefApi, Invokable};
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, Invokable};
 use sbor::rust::fmt::Debug;
 
 pub trait Executor {
@@ -14,14 +14,14 @@ pub trait Executor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineApi<RuntimeError> + KernelWasmApi<W>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError> + KernelWasmApi<W>,
         W: WasmEngine;
 }
 
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: EngineDerefApi<RuntimeError> + KernelSubstateApi>(
+    fn resolve<Y: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;

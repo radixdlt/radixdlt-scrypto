@@ -5,7 +5,7 @@ use crate::{
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
-use radix_engine_interface::api::EngineStaticInvokeApi;
+use radix_engine_interface::api::ClientStaticInvokeApi;
 use radix_engine_interface::api::{
     types::{
         AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, CallTableInvocation,
@@ -119,7 +119,7 @@ pub fn invoke_call_table<Y, E>(
     api: &mut Y,
 ) -> Result<IndexedScryptoValue, E>
 where
-    Y: EngineStaticInvokeApi<E>,
+    Y: ClientStaticInvokeApi<E>,
 {
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
@@ -138,7 +138,7 @@ pub fn invoke_native_fn<Y, E>(
     api: &mut Y,
 ) -> Result<Box<dyn NativeOutput>, E>
 where
-    Y: EngineStaticInvokeApi<E>,
+    Y: ClientStaticInvokeApi<E>,
 {
     match native_invocation {
         NativeInvocation::Component(component_method) => match component_method {

@@ -15,7 +15,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::EngineDerefApi;
+use radix_engine_interface::api::ClientDerefApi;
 
 use super::ProofError;
 
@@ -34,7 +34,7 @@ pub enum BucketError {
 impl ExecutableInvocation for BucketTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -83,7 +83,7 @@ impl Executor for BucketTakeInvocation {
 impl ExecutableInvocation for BucketCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -133,7 +133,7 @@ impl Executor for BucketCreateProofInvocation {
 impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -182,7 +182,7 @@ impl Executor for BucketTakeNonFungiblesInvocation {
 impl ExecutableInvocation for BucketGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -224,7 +224,7 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for BucketGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -261,7 +261,7 @@ impl Executor for BucketGetAmountInvocation {
 impl ExecutableInvocation for BucketPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -310,7 +310,7 @@ impl Executor for BucketPutInvocation {
 impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

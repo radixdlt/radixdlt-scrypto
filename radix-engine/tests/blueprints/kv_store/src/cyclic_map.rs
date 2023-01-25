@@ -1,4 +1,4 @@
-use radix_engine_interface::api::EngineSubstateApi;
+use radix_engine_interface::api::ClientSubstateApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

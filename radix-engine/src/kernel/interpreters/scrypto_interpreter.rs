@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{
-    EngineActorApi, EngineComponentApi, EngineNodeApi, EngineStaticInvokeApi, EngineSubstateApi,
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
 };
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -23,11 +23,11 @@ impl Executor for ScryptoExecutor {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + EngineNodeApi<RuntimeError>
-            + EngineSubstateApi<RuntimeError>
-            + EngineStaticInvokeApi<RuntimeError>
-            + EngineActorApi<RuntimeError>
-            + EngineComponentApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>
+            + ClientActorApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
             + KernelWasmApi<W>,
         W: WasmEngine,
     {

@@ -1,1 +1,1 @@
-pub trait EnginePackageApi {}
+pub trait ClientPackageApi {}

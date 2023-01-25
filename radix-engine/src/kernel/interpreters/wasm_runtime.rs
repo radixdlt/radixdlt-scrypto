@@ -9,7 +9,7 @@ use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    EngineActorApi, EngineComponentApi, EngineNodeApi, EngineStaticInvokeApi, EngineSubstateApi,
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
     Invokable,
 };
 use sbor::rust::vec::Vec;
@@ -23,7 +23,7 @@ where
     Y: KernelNodeApi
         + KernelSubstateApi
         + KernelWasmApi<W>
-        + EngineSubstateApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
     W: WasmEngine,
 {
@@ -38,7 +38,7 @@ where
     Y: KernelNodeApi
         + KernelSubstateApi
         + KernelWasmApi<W>
-        + EngineSubstateApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>,
     W: WasmEngine,
 {
@@ -57,11 +57,11 @@ where
     Y: KernelNodeApi
         + KernelSubstateApi
         + KernelWasmApi<W>
-        + EngineComponentApi<RuntimeError>
-        + EngineNodeApi<RuntimeError>
-        + EngineSubstateApi<RuntimeError>
-        + EngineStaticInvokeApi<RuntimeError>
-        + EngineActorApi<RuntimeError>,
+        + ClientComponentApi<RuntimeError>
+        + ClientNodeApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>
+        + ClientActorApi<RuntimeError>,
     W: WasmEngine,
 {
     fn allocate_buffer(

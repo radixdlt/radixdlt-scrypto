@@ -15,8 +15,8 @@ use radix_engine_interface::api::blueprints::resource::{
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::EngineStaticInvokeApi;
-use radix_engine_interface::api::{package::*, EngineDerefApi};
+use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::{package::*, ClientDerefApi};
 
 pub struct Package;
 
@@ -47,7 +47,7 @@ impl Package {
 impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -66,7 +66,7 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -137,7 +137,7 @@ impl Executor for PackagePublishInvocation {
 impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -185,7 +185,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -213,7 +213,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

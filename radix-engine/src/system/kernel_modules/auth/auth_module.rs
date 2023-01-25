@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
-use radix_engine_interface::api::EngineActorApi;
+use radix_engine_interface::api::ClientActorApi;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -289,7 +289,7 @@ impl AuthModule {
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
     {
         if matches!(
             api.fn_identifier()?,

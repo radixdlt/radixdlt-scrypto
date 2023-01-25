@@ -13,22 +13,22 @@ pub mod substate_api;
 pub mod types;
 
 // Re-exports
-pub use actor_api::EngineActorApi;
-pub use component_api::EngineComponentApi;
-pub use deref_api::EngineDerefApi;
-pub use node_api::EngineNodeApi;
-pub use package_api::EnginePackageApi;
-pub use static_invoke_api::{EngineStaticInvokeApi, Invokable};
-pub use substate_api::EngineSubstateApi;
+pub use actor_api::ClientActorApi;
+pub use component_api::ClientComponentApi;
+pub use deref_api::ClientDerefApi;
+pub use node_api::ClientNodeApi;
+pub use package_api::ClientPackageApi;
+pub use static_invoke_api::{ClientStaticInvokeApi, Invokable};
+pub use substate_api::ClientSubstateApi;
 
 // Interface of the system, for blueprints and Node modules.
-pub trait EngineApi<E: sbor::rust::fmt::Debug>:
-    EngineActorApi<E>
-    + EngineComponentApi<E>
-    + EnginePackageApi
-    + EngineStaticInvokeApi<E>
-    + EngineNodeApi<E>
-    + EngineSubstateApi<E>
-    + EngineDerefApi<E>
+pub trait ClientApi<E: sbor::rust::fmt::Debug>:
+    ClientActorApi<E>
+    + ClientComponentApi<E>
+    + ClientPackageApi
+    + ClientStaticInvokeApi<E>
+    + ClientNodeApi<E>
+    + ClientSubstateApi<E>
+    + ClientDerefApi<E>
 {
 }

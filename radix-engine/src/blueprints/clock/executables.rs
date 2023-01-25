@@ -20,8 +20,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::EngineDerefApi;
-use radix_engine_interface::api::EngineSubstateApi;
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -36,7 +36,7 @@ pub struct Clock;
 impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -58,7 +58,7 @@ impl Executor for ClockCreateInvocation {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
@@ -114,7 +114,7 @@ pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -166,7 +166,7 @@ pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
     type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -223,7 +223,7 @@ pub struct ClockCompareCurrentTimeExecutable {
 impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
     type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

@@ -17,7 +17,7 @@ use radix_engine_interface::{constants::*, rule};
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -39,7 +39,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -79,7 +79,7 @@ impl Executor for ComponentGlobalizeInvocation {
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -101,7 +101,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -169,7 +169,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -217,7 +217,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
 impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -245,7 +245,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

@@ -20,9 +20,9 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::static_invoke_api::Invocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineDerefApi;
-use radix_engine_interface::api::EngineNodeApi;
-use radix_engine_interface::api::{EngineComponentApi, EngineStaticInvokeApi, EngineSubstateApi};
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
@@ -234,7 +234,7 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -271,10 +271,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + EngineNodeApi<RuntimeError>
-            + EngineSubstateApi<RuntimeError>
-            + EngineComponentApi<RuntimeError>
-            + EngineStaticInvokeApi<RuntimeError>,
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
@@ -912,9 +912,9 @@ impl TransactionProcessor {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + EngineNodeApi<RuntimeError>
-            + EngineSubstateApi<RuntimeError>
-            + EngineStaticInvokeApi<RuntimeError>,
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value
@@ -955,9 +955,9 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: EngineNodeApi<RuntimeError>
-            + EngineSubstateApi<RuntimeError>
-            + EngineStaticInvokeApi<RuntimeError>,
+        Y: ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {
@@ -991,7 +991,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: EngineStaticInvokeApi<RuntimeError>,
+        Y: ClientStaticInvokeApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

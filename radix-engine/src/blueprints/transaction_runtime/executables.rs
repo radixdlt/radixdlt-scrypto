@@ -7,8 +7,8 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::transaction_hash::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineDerefApi;
-use radix_engine_interface::api::EngineSubstateApi;
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientSubstateApi;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeError {
@@ -18,7 +18,7 @@ pub enum TransactionRuntimeError {
 impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -43,7 +43,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
@@ -61,7 +61,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
 impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
-    fn resolve<D: EngineDerefApi<RuntimeError>>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -87,7 +87,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + EngineSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);

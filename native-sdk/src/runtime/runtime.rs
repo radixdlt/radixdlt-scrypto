@@ -1,7 +1,7 @@
 use radix_engine_interface::api::blueprints::epoch_manager::*;
 use radix_engine_interface::api::blueprints::transaction_hash::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineNodeApi, EngineSubstateApi, Invokable};
+use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use sbor::rust::fmt::Debug;
@@ -23,8 +23,8 @@ impl Runtime {
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
-        Y: EngineNodeApi<E>
-            + EngineSubstateApi<E>
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
             + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
