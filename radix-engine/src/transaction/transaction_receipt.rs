@@ -23,6 +23,7 @@ pub struct TransactionExecution {
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
+    Abort(AbortResult),
 }
 
 impl TransactionResult {
@@ -30,6 +31,7 @@ impl TransactionResult {
         match self {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
 }
@@ -108,6 +110,16 @@ pub struct RejectResult {
     pub error: RejectionError,
 }
 
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AbortResult {
+    pub reason: AbortReason,
+}
+
+#[derive(Debug, Clone, Display, PartialEq, Eq, Encode, Decode, Categorize)]
+pub enum AbortReason {
+    ConfiguredAbortTriggeredOnFeeLoanRepayment,
+}
+
 /// Represents a transaction receipt.
 #[derive(Clone)]
 pub struct TransactionReceipt {
@@ -148,6 +160,7 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
 
@@ -155,6 +168,15 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
+            TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
+        }
+    }
+
+    pub fn expect_abortion(&self) -> &AbortReason {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
+            TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
+            TransactionResult::Abort(ref r) => &r.reason,
         }
     }
 
@@ -172,6 +194,7 @@ impl TransactionReceipt {
                     );
                 }
             }
+            TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
         }
     }
 
@@ -184,6 +207,7 @@ impl TransactionReceipt {
                 }
             },
             TransactionResult::Reject(err) => panic!("Transaction was rejected:\n{:?}", err),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
@@ -196,6 +220,7 @@ impl TransactionReceipt {
                 TransactionOutcome::Failure(err) => err,
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
@@ -216,6 +241,7 @@ impl TransactionReceipt {
                 }
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
@@ -288,6 +314,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
                 },
                 TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
+                TransactionResult::Abort(a) => format!("ABORTED: {}", a.reason).bright_red(),
             },
         )?;
 

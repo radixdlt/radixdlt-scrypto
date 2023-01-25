@@ -58,5 +58,14 @@ blueprint! {
             self.xrd.lock_fee(amount);
             info!("Balance: {}", self.xrd.amount());
         }
+
+        pub fn spin_loop(&self) {
+            let mut n: u64 = 0;
+            loop {
+                n += 1;
+                // Avoid loop being optimised away!
+                std::hint::black_box(n);
+            }
+        }
     }
 }

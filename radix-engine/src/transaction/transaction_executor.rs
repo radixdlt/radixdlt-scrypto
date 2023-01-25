@@ -37,6 +37,7 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
     pub max_sys_call_trace_depth: usize,
+    pub abort_when_loan_repaid: bool,
 }
 
 impl Default for ExecutionConfig {
@@ -51,14 +52,37 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
             max_sys_call_trace_depth: 1,
+            abort_when_loan_repaid: false,
         }
     }
 
     pub fn debug() -> Self {
         Self {
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
-            max_sys_call_trace_depth: 1,
+            ..Self::default()
+        }
+    }
+
+    pub fn with_tracing(trace: bool) -> Self {
+        if trace {
+            Self::debug()
+        } else {
+            Self::standard()
+        }
+    }
+
+    pub fn up_to_loan_repayment() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            ..Self::default()
+        }
+    }
+
+    pub fn up_to_loan_repayment_with_debug() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            trace: true,
+            ..Self::default()
         }
     }
 }
@@ -102,6 +126,7 @@ where
                 *tip_percentage,
                 *cost_unit_limit,
                 fee_reserve_config.system_loan,
+                execution_config.abort_when_loan_repaid,
             ),
             FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
         };

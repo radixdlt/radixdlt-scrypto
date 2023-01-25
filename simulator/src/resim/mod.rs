@@ -169,11 +169,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_store,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig {
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            trace,
-            max_sys_call_trace_depth: 1,
-        },
+        &ExecutionConfig::with_tracing(trace),
         &transaction.get_executable(initial_proofs),
     );
 
@@ -233,11 +229,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig {
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    trace,
-                    max_sys_call_trace_depth: 1,
-                },
+                &ExecutionConfig::with_tracing(trace),
                 &transaction.get_executable(initial_proofs),
             );
 
@@ -274,6 +266,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<Transaction
             }
         }
         TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
+        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason)),
     }
 }
 
