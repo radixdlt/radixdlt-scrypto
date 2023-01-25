@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn can_set_component_metadata() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
