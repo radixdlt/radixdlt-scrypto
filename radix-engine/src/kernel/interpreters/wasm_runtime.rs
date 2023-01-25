@@ -3,7 +3,8 @@ use crate::errors::RuntimeError;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::KernelSubstateApi;
 use crate::kernel::KernelWasmApi;
-use crate::system::invocation::native_wrapper::invoke_call_table;
+use crate::system::invocation::invoke_native::invoke_native_fn;
+use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -110,7 +111,13 @@ where
         let invocation = scrypto_decode::<CallTableInvocation>(&invocation)
             .map_err(WasmRuntimeError::InvalidInvocation)?;
 
-        let return_data = invoke_call_table(invocation, self.api)?.into_vec();
+        let return_data = match invocation {
+            CallTableInvocation::Native(native) => {
+                IndexedScryptoValue::from_typed(invoke_native_fn(native, self.api)?.as_ref())
+            }
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self.api)?,
+        }
+        .into_vec();
 
         self.allocate_buffer(return_data)
     }

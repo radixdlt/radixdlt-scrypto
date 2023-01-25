@@ -5,8 +5,9 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::system::invocation::native_wrapper::invoke_call_table;
-use crate::system::invocation::native_wrapper::invoke_native_fn;
+use crate::system::invocation::invoke_native::invoke_native_fn;
+use crate::system::invocation::invoke_scrypto;
+use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -442,8 +443,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: None,
                         args: args.to_vec(),
                     };
-                    let invocation = CallTableInvocation::Scrypto(invocation);
-                    let result = invoke_call_table(invocation, api)?;
+                    let result = invoke_scrypto_fn(invocation, api)?;
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;

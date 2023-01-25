@@ -1,14 +1,18 @@
 use crate::errors::RuntimeError;
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
-use crate::system::invocation::native_wrapper::{invoke_call_table, resolve_method};
+use crate::system::invocation::invoke_native::invoke_native_fn;
+use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
+use crate::system::invocation::resolve_function;
+use crate::system::invocation::resolve_function::resolve_function;
+use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientPackageApi,
-    ClientStaticInvokeApi,
+    ClientStaticInvokeApi, Invokable,
 };
 use radix_engine_interface::data::*;
 
@@ -42,12 +46,40 @@ where
 {
 }
 
-impl<'g, 's, W, R, M> ClientPackageApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<u8>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        // TODO: Use execution mode?
+        let invocation =
+            resolve_function(package_address, blueprint_name, function_name, args, self)?;
+        Ok(match invocation {
+            CallTableInvocation::Native(native) => {
+                IndexedScryptoValue::from_typed(invoke_native_fn(native, self)?.as_ref())
+            }
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
+        })
+    }
+
+    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
+        todo!()
+    }
+
+    fn get_abi(
+        &mut self,
+        package_address: PackageAddress,
+    ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
+        todo!()
+    }
 }
 
 impl<'g, 's, W, R, M> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
@@ -64,7 +96,12 @@ where
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        invoke_call_table(invocation, self)
+        Ok(match invocation {
+            CallTableInvocation::Native(native) => {
+                IndexedScryptoValue::from_typed(invoke_native_fn(native, self)?.as_ref())
+            }
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
+        })
     }
 }
 
