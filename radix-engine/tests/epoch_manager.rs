@@ -89,7 +89,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let genesis = create_genesis(BTreeMap::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    //TestRunner::builder().with_custom_genesis(genesis).build();
+
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
