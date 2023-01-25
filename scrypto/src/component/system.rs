@@ -2,7 +2,7 @@ use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::types::ScryptoRENode;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineSubstateApi;
+use radix_engine_interface::api::EngineNodeApi;
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;

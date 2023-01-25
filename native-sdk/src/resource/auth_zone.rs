@@ -1,7 +1,7 @@
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineSubstateApi, Invokable};
+use radix_engine_interface::api::{EngineNodeApi, EngineSubstateApi, Invokable};
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -15,7 +15,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -29,7 +29,7 @@ impl ComponentAuthZone {
 
     pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<(), E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -43,7 +43,7 @@ impl ComponentAuthZone {
 
     pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -60,7 +60,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -79,7 +79,9 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: EngineNodeApi<E>
+            + EngineSubstateApi<E>
+            + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -99,7 +101,9 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: EngineNodeApi<E>
+            + EngineSubstateApi<E>
+            + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -118,7 +122,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids

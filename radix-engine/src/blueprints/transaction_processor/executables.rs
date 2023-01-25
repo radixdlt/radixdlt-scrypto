@@ -28,6 +28,7 @@ use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
 use radix_engine_interface::api::EngineDerefApi;
+use radix_engine_interface::api::EngineNodeApi;
 use radix_engine_interface::api::{EngineComponentApi, EngineStaticInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
@@ -277,6 +278,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineComponentApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
@@ -917,6 +919,7 @@ impl TransactionProcessor {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -959,7 +962,9 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: EngineSubstateApi<RuntimeError> + EngineStaticInvokeApi<RuntimeError>,
+        Y: EngineNodeApi<RuntimeError>
+            + EngineSubstateApi<RuntimeError>
+            + EngineStaticInvokeApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {

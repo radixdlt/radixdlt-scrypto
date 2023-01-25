@@ -12,7 +12,8 @@ use radix_engine_interface::api::types::ScryptoInvocation;
 use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    EngineActorApi, EngineComponentApi, EngineStaticInvokeApi, EngineSubstateApi, Invokable,
+    EngineActorApi, EngineComponentApi, EngineNodeApi, EngineStaticInvokeApi, EngineSubstateApi,
+    Invokable,
 };
 use sbor::rust::vec::Vec;
 
@@ -60,6 +61,7 @@ where
         + KernelSubstateApi
         + KernelWasmApi<W>
         + EngineComponentApi<RuntimeError>
+        + EngineNodeApi<RuntimeError>
         + EngineSubstateApi<RuntimeError>
         + EngineStaticInvokeApi<RuntimeError>
         + EngineActorApi<RuntimeError>,

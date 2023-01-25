@@ -23,6 +23,7 @@ use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::EngineDerefApi;
+use radix_engine_interface::api::EngineNodeApi;
 use radix_engine_interface::api::{EngineStaticInvokeApi, EngineSubstateApi};
 use radix_engine_interface::rule;
 
@@ -72,6 +73,7 @@ impl Executor for EpochManagerCreateInvocation {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -379,6 +381,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -468,6 +471,7 @@ impl EpochManager {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -559,6 +563,7 @@ impl Executor for ValidatorRegisterExecutable {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -692,6 +697,7 @@ impl Executor for ValidatorStakeExecutable {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -762,6 +768,7 @@ impl Executor for ValidatorUnstakeExecutable {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {

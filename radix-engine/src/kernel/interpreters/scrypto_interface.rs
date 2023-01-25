@@ -17,14 +17,14 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::api::{EngineSubstateApi, Invokable};
+use radix_engine_interface::api::{EngineNodeApi, EngineSubstateApi, Invokable};
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R, M> EngineSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> EngineNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -105,7 +105,14 @@ where
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         self.get_visible_nodes()
     }
+}
 
+impl<'g, 's, W, R, M> EngineSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
     fn sys_lock_substate(
         &mut self,
         node_id: RENodeId,

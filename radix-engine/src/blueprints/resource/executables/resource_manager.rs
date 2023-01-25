@@ -27,6 +27,7 @@ use radix_engine_interface::api::types::{
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::EngineDerefApi;
+use radix_engine_interface::api::EngineNodeApi;
 use radix_engine_interface::api::{EngineStaticInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
@@ -604,6 +605,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {
@@ -1294,6 +1296,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + EngineNodeApi<RuntimeError>
             + EngineSubstateApi<RuntimeError>
             + EngineStaticInvokeApi<RuntimeError>,
     {

@@ -1,6 +1,8 @@
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::api::{EngineStaticInvokeApi, EngineSubstateApi, Invokable};
+use radix_engine_interface::api::{
+    EngineNodeApi, EngineStaticInvokeApi, EngineSubstateApi, Invokable,
+};
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
@@ -13,7 +15,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
     {
         let vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -30,7 +32,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
     {
         api.invoke(VaultPutInvocation {
             receiver: self.0,
@@ -44,7 +46,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + EngineStaticInvokeApi<E>,
     {
         api.invoke(VaultTakeInvocation {
             receiver: self.0,
@@ -54,7 +56,7 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
-        Y: EngineSubstateApi<E> + Invokable<VaultGetAmountInvocation, E>,
+        Y: EngineNodeApi<E> + EngineSubstateApi<E> + Invokable<VaultGetAmountInvocation, E>,
     {
         sys_calls.invoke(VaultGetAmountInvocation { receiver: self.0 })
     }

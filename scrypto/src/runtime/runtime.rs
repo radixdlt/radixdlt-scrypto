@@ -2,12 +2,12 @@ use radix_engine_interface::api::blueprints::epoch_manager::EpochManagerGetCurre
 use radix_engine_interface::api::blueprints::transaction_hash::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
 };
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
 };
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
-use radix_engine_interface::api::{EngineActorApi, EngineSubstateApi, Invokable};
+use radix_engine_interface::api::{types::*, EngineNodeApi};
+use radix_engine_interface::api::{EngineActorApi, Invokable};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use sbor::rust::borrow::ToOwned;
