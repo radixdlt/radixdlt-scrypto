@@ -1,4 +1,4 @@
-use crate::engine::{deref_and_update, Executor, RENode};
+use crate::engine::{deref_and_update, Executor, RENodeInit};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, LockFlags, ResolvedActor, ResolverApi, RuntimeError,
     SystemApi,
@@ -60,7 +60,7 @@ impl Executor for ComponentGlobalizeInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+            RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -150,7 +150,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+            RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(

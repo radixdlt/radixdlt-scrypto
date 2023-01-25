@@ -10,7 +10,6 @@ use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 
-use crate::ledger::{lookup_non_fungible_local_id_type, LedgerLookupError};
 use crate::resim::SimulatorNonFungibleGlobalId;
 
 // =======
@@ -213,10 +212,9 @@ fn parse_args<'a>(
                         Ok(scrypto_encode(&value).unwrap())
                     }
                     Type::NonFungibleLocalId => {
-                        let value = NonFungibleLocalId::try_from_combined_simple_string(arg)
-                            .map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
+                        let value = arg.parse::<NonFungibleLocalId>().map_err(|_| {
+                            BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                        })?;
                         Ok(scrypto_encode(&value).unwrap())
                     }
                     Type::NonFungibleGlobalId => {
@@ -381,12 +379,12 @@ where
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
-/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::U32`], say that
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::Integer`], say that
 /// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
 /// representation of the non-fungible resource specifier would be:
 ///
 /// ```txt
-/// resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0:12,900,181
+/// resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0:#12#,#900#,#181#
 /// ```
 ///
 /// As you can see from the example above, there was no need to specify the non-fungible id type in
@@ -445,14 +443,11 @@ fn parse_resource_specifier(
         let resource_address = bech32_decoder
             .validate_and_decode_resource_address(resource_address_string)
             .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
-        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address)
-            .map_err(ParseResourceSpecifierError::LedgerLookupError)?;
 
         // Parsing the non-fungible ids with the available id type
         let non_fungible_local_ids = tokens[1]
             .split(',')
-            .map(|s| s.trim())
-            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_local_id_type, s))
+            .map(|s| NonFungibleLocalId::from_str(s.trim()))
             .collect::<Result<BTreeSet<_>, _>>()
             .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 
@@ -472,7 +467,6 @@ enum ParseResourceSpecifierError {
     InvalidAmount(ParseDecimalError),
     InvalidResourceAddress(AddressError),
     InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
-    LedgerLookupError(LedgerLookupError),
     MoreThanOneAmountSpecified,
 }
 
@@ -492,9 +486,6 @@ pub enum BuildArgsError {
 
     /// Failed to interpret this string as a resource specifier
     InvalidResourceSpecifier(String),
-
-    /// Failed to perform a ledger lookup
-    LedgerLookupError(LedgerLookupError),
 }
 
 /// Represents an error when building a transaction.
@@ -529,7 +520,6 @@ impl From<BuildArgsError> for BuildCallWithAbiError {
 mod test {
     use super::*;
     use radix_engine_interface::abi::Type;
-    use serial_test::serial;
     use transaction::builder::ManifestBuilder;
 
     #[test]
@@ -757,7 +747,7 @@ mod test {
     #[test]
     pub fn parsing_of_string_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "String#HelloWorld";
+        let arg = "<HelloWorld>";
         let arg_type = Type::NonFungibleLocalId;
 
         // Act
@@ -770,7 +760,7 @@ mod test {
     #[test]
     pub fn parsing_of_bytes_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "Bytes#c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg = "[c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
         let arg_type = Type::NonFungibleLocalId;
 
         // Act
@@ -789,47 +779,37 @@ mod test {
     #[test]
     pub fn parsing_of_u64_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "U64#12";
+        let arg = "#12#";
         let arg_type = Type::NonFungibleLocalId;
 
         // Act
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::Number(12))
-    }
-
-    #[test]
-    pub fn parsing_of_u128_non_fungible_local_id_succeeds() {
-        // Arrange
-        let arg = "U128#12";
-        let arg_type = Type::NonFungibleLocalId;
-
-        // Act
-        let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
-
-        // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::UUID(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::Integer(12))
     }
 
     #[test]
     pub fn parsing_of_uuid_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "UUID#12";
+        let arg = "{f7223dbc-bbd6-4769-8d6f-effce550080d}";
         let arg_type = Type::NonFungibleLocalId;
 
         // Act
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::UUID(12))
+        assert_eq!(
+            parsed_arg,
+            NonFungibleLocalId::UUID(0xf7223dbc_bbd6_4769_8d6f_effce550080d)
+        )
     }
 
     #[test]
-    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
+
     pub fn parsing_of_bytes_non_fungible_global_id_succeeds() {
         // Arrange
-        let arg = "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg = "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
         let arg_type = Type::NonFungibleGlobalId;
 
         // Act
@@ -876,11 +856,10 @@ mod test {
     }
 
     #[test]
-    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
     pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
@@ -902,11 +881,11 @@ mod test {
     }
 
     #[test]
-    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
+
     pub fn parsing_of_multiple_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c,d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d,005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7";
+            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c],[d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d],[005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7]";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act

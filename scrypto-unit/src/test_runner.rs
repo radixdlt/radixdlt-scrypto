@@ -114,7 +114,7 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(BTreeSet::new(), 1u64, 1u64))
+        Self::new_with_genesis(trace, create_genesis(BTreeMap::new(), 1u64, 1u64))
     }
 
     pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
@@ -427,10 +427,10 @@ impl TestRunner {
         substate
             .validator_set
             .iter()
-            .find(|e| e.key.eq(key))
-            .cloned()
+            .find(|(_, v)| v.key.eq(key))
             .unwrap()
-            .address
+            .0
+            .clone()
     }
 
     pub fn new_allocated_account(
@@ -463,6 +463,14 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
+        let address = self.new_validator_with_pub_key(pub_key);
+        (pub_key, address)
+    }
+
+    pub fn new_validator_with_pub_key(
+        &mut self,
+        pub_key: EcdsaSecp256k1PublicKey,
+    ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
             .create_validator(pub_key)
@@ -473,7 +481,7 @@ impl TestRunner {
             .expect_commit()
             .entity_changes
             .new_component_addresses[0];
-        (pub_key, address)
+        address
     }
 
     pub fn publish_package(
@@ -820,14 +828,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::Number(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Number(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Number(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdType::Number,
+                NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),

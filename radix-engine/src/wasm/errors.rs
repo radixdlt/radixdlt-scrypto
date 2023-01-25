@@ -1,7 +1,10 @@
+use radix_engine_interface::api::wasm::BufferId;
+
+use crate::engine::{CanBeAbortion, KernelError, RuntimeError, SelfError};
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
+use crate::transaction::AbortReason;
 use crate::types::*;
-use radix_engine_interface::api::wasm::BufferId;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
@@ -115,6 +118,21 @@ pub enum WasmRuntimeError {
     InvalidOffset(DecodeError),
     /// Costing error
     CostingError(FeeReserveError),
+}
+
+impl SelfError for WasmRuntimeError {
+    fn into_runtime_error(self) -> RuntimeError {
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
+    }
+}
+
+impl CanBeAbortion for WasmRuntimeError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            WasmRuntimeError::CostingError(err) => err.abortion(),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for WasmRuntimeError {

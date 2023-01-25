@@ -192,6 +192,14 @@ pub enum Instruction {
         owner_badge: Value,
         initial_supply: Value,
     },
+
+    CreateIdentity {
+        access_rule: Value,
+    },
+
+    AssertAccessRule {
+        access_rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -347,7 +355,7 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
     Bytes(Box<Value>),
-    NonFungibleGlobalId(Box<Value>, Box<Value>),
+    NonFungibleGlobalId(Box<Value>),
 
     // ==============
     // Custom Types
@@ -407,7 +415,7 @@ impl Value {
             Value::Ok(_) => ScryptoValueKind::Enum,
             Value::Err(_) => ScryptoValueKind::Enum,
             Value::Bytes(_) => ScryptoValueKind::Array,
-            Value::NonFungibleGlobalId(_, _) => ScryptoValueKind::Tuple,
+            Value::NonFungibleGlobalId(_) => ScryptoValueKind::Tuple,
 
             // ==============
             // Custom Types

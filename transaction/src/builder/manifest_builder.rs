@@ -351,6 +351,11 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateIdentity { access_rule });
+        self
+    }
+
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
@@ -374,6 +379,32 @@ impl ManifestBuilder {
             component_address: validator_address,
             method_name: "unregister".to_string(),
             args: args!(),
+        });
+        self
+    }
+
+    pub fn stake_validator(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "stake".to_string(),
+            args: args!(bucket),
+        });
+        self
+    }
+
+    pub fn unstake_validator(
+        &mut self,
+        validator_address: ComponentAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unstake".to_string(),
+            args: args!(amount),
         });
         self
     }
@@ -664,7 +695,7 @@ impl ManifestBuilder {
 
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_global_id.non_fungible_local_id().clone());
+        ids.insert(non_fungible_global_id.local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
             non_fungible_global_id.resource_address().clone(),
@@ -861,6 +892,11 @@ impl ManifestBuilder {
             args: args!(ids.clone(), resource_address),
         })
         .0
+    }
+
+    pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::AssertAccessRule { access_rule })
+            .0
     }
 
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>

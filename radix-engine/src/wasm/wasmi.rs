@@ -423,7 +423,7 @@ fn read_memory(
     let len = len as usize;
 
     if ptr > data.len() || ptr + len > data.len() {
-        return Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError));
+        return Err(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError));
     }
     Ok(data[ptr..ptr + len].to_vec())
 }
@@ -438,12 +438,12 @@ fn write_memory(
     let mem_data = memory.data(&mut store_ctx);
 
     if ptr as usize > mem_data.len() || ptr as usize + data.len() > mem_data.len() {
-        return Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError));
+        return Err(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError));
     }
 
     memory
         .write(&mut store.as_context_mut(), ptr as usize, data)
-        .or_else(|_| Err(InvokeError::Error(WasmRuntimeError::MemoryAccessError)))
+        .or_else(|_| Err(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError)))
 }
 
 fn read_slice(
@@ -463,7 +463,7 @@ impl WasmiInstance {
             .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
             .ok_or_else(|| {
-                InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
             })
     }
 }
@@ -477,10 +477,10 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
             Error::Trap(trap) => {
                 let invoke_err = trap
                     .downcast_ref::<InvokeError<WasmRuntimeError>>()
-                    .unwrap_or(&InvokeError::Error(WasmRuntimeError::InvalidExportReturn));
+                    .unwrap_or(&InvokeError::SelfError(WasmRuntimeError::InvalidExportReturn));
                 invoke_err.clone()
             }
-            _ => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
         }
     }
 }
@@ -507,7 +507,7 @@ impl WasmInstance for WasmiInstance {
             .collect();
         let mut ret = [Value::I64(0)];
 
-        let result = func
+        let _result = func
             .call(self.store.as_context_mut(), &input, &mut ret)
             .map_err(|e| {
                 let err: InvokeError<WasmRuntimeError> = e.into();
@@ -520,7 +520,7 @@ impl WasmInstance for WasmiInstance {
                 self.memory,
                 Slice::transmute_i64(ret),
             ),
-            _ => Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn)),
+            _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidExportReturn)),
         }
     }
 }

@@ -546,6 +546,16 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateIdentity { access_rule } => {
+            f.write_str("CREATE_IDENTITY")?;
+            format_typed_value(f, context, access_rule)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::AssertAccessRule { access_rule } => {
+            f.write_str("ASSERT_ACCESS_RULE")?;
+            format_typed_value(f, context, access_rule)?;
+            f.write_str(";")?;
+        }
     }
     Ok(())
 }

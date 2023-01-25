@@ -27,18 +27,30 @@ pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
 pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
+/// A unique identifier used in the addressing of Account Component Addresses.
+pub const IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
+
+/// A unique identifier used in the addressing of a virtual Account Component Addresses.
+pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0a;
+
+/// A unique identifier used in the addressing of a virtual Account Component Addresses.
+pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
+
 /// An enum which represents the different addressable entities.
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
     Resource,
     Package,
     NormalComponent,
     AccountComponent,
-    EcdsaSecp256k1VirtualAccountComponent,
-    EddsaEd25519VirtualAccountComponent,
+    IdentityComponent,
     EpochManager,
     Validator,
     Clock,
+    EcdsaSecp256k1VirtualAccountComponent,
+    EddsaEd25519VirtualAccountComponent,
+    EcdsaSecp256k1VirtualIdentityComponent,
+    EddsaEd25519VirtualIdentityComponent,
 }
 
 impl EntityType {
@@ -52,6 +64,7 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::Identity(_) => Self::IdentityComponent,
             ComponentAddress::Clock(_) => Self::Clock,
             ComponentAddress::EpochManager(_) => Self::EpochManager,
             ComponentAddress::Validator(_) => Self::Validator,
@@ -60,6 +73,12 @@ impl EntityType {
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 Self::EddsaEd25519VirtualAccountComponent
+            }
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => {
+                Self::EcdsaSecp256k1VirtualIdentityComponent
+            }
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => {
+                Self::EddsaEd25519VirtualIdentityComponent
             }
         }
     }
@@ -70,15 +89,22 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::IdentityComponent => IDENTITY_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
+            Self::Validator => VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID,
+            Self::Clock => CLOCK_SYSTEM_ADDRESS_ENTITY_ID,
             Self::EcdsaSecp256k1VirtualAccountComponent => {
                 ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
             }
             Self::EddsaEd25519VirtualAccountComponent => {
                 EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
             }
-            Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
-            Self::Validator => VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID,
-            Self::Clock => CLOCK_SYSTEM_ADDRESS_ENTITY_ID,
+            Self::EcdsaSecp256k1VirtualIdentityComponent => {
+                ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID
+            }
+            Self::EddsaEd25519VirtualIdentityComponent => {
+                EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID
+            }
         }
     }
 }
@@ -92,15 +118,22 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
+            IDENTITY_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::IdentityComponent),
+            EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
+            VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Validator),
+            CLOCK_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Clock),
             ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => {
                 Ok(Self::EcdsaSecp256k1VirtualAccountComponent)
             }
             EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => {
                 Ok(Self::EddsaEd25519VirtualAccountComponent)
             }
-            EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
-            VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Validator),
-            CLOCK_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::Clock),
+            ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID => {
+                Ok(Self::EcdsaSecp256k1VirtualIdentityComponent)
+            }
+            EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID => {
+                Ok(Self::EddsaEd25519VirtualIdentityComponent)
+            }
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }

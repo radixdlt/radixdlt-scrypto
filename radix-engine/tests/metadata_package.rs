@@ -51,7 +51,7 @@ fn can_set_package_metadata_with_owner() {
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Integer(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(
@@ -93,7 +93,7 @@ fn can_lock_package_metadata_with_owner() {
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Integer(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(

@@ -68,14 +68,7 @@ impl Executor for ScryptoExecutor {
                     .expect("Failed to allocate buffer"),
             );
 
-            instance
-                .invoke_export(&self.export_name, input, &mut runtime)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::KernelError(KernelError::WasmRuntimeError(e))
-                    }
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?
+            instance.invoke_export(&self.export_name, input, &mut runtime)?
         };
         let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))

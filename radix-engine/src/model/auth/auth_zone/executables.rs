@@ -1,9 +1,9 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
-    convert_contextless, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
+    convert_contextless, MethodAuthorization, MethodAuthorizationError, ProofError,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -63,20 +63,12 @@ impl Executor for AuthZonePopInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone_mut()
-                .pop()
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -195,18 +187,12 @@ impl Executor for AuthZoneCreateProofInvocation {
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack
                 .cur_auth_zone()
-                .create_proof(self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+                .create_proof(self.resource_address, resource_type)?;
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -266,21 +252,17 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_amount(self.amount, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
+                self.amount,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -340,21 +322,17 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
         let proof = {
             let substate_ref = api.get_ref(auth_zone_handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_ids(&self.ids, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
+                &self.ids,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -450,7 +428,7 @@ impl Executor for AuthZoneDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let node_id = api.allocate_node_id(RENodeType::Proof)?;
-            api.create_node(node_id, RENode::Proof(proof))?;
+            api.create_node(node_id, RENodeInit::Proof(proof))?;
             let proof_id = node_id.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));

@@ -1,11 +1,9 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
-use crate::model::{
-    BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
-};
+use crate::model::{BucketSubstate, ProofError, ResourceContainerId, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
@@ -81,16 +79,11 @@ impl Executor for VaultTakeInvocation {
         let container = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault.take(self.amount).map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::VaultError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?
+            vault.take(self.amount)?
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
 
         Ok((
@@ -276,18 +269,11 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         let container = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault
-                .take_non_fungibles(&self.non_fungible_local_ids)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::VaultError(e))
-                    }
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?
+            vault.take_non_fungibles(&self.non_fungible_local_ids)?
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
 
         Ok((
@@ -465,7 +451,7 @@ impl Executor for VaultCreateProofInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -519,7 +505,7 @@ impl Executor for VaultCreateProofByAmountInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -573,7 +559,7 @@ impl Executor for VaultCreateProofByIdsInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((

@@ -193,6 +193,14 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    CreateIdentity {
+        access_rule: AccessRule,
+    },
+
+    AssertAccessRule {
+        access_rule: AccessRule,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

@@ -129,6 +129,8 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
+    CreateIdentity,
+    AssertAccessRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -141,7 +143,7 @@ pub struct Token {
 pub enum LexerError {
     UnexpectedEof,
     UnexpectedChar(char, usize),
-    InvalidNumber(String),
+    InvalidInteger(String),
     InvalidUnicode(u32),
     UnknownIdentifier(String),
 }
@@ -312,7 +314,7 @@ impl Lexer {
     ) -> Result<TokenKind, LexerError> {
         int.parse::<T>()
             .map(map)
-            .map_err(|_| LexerError::InvalidNumber(format!("{}{}", int, ty)))
+            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty)))
     }
 
     fn tokenize_string(&mut self) -> Result<Token, LexerError> {
@@ -470,6 +472,8 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
+            "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
+            "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
