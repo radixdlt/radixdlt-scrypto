@@ -110,7 +110,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let substate: AccessRulesChainSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
-                    NodeModuleId::SELF,
+                    NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)

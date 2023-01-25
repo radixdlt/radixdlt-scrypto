@@ -124,7 +124,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -175,7 +175,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -236,7 +236,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -264,7 +264,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -290,7 +290,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -336,7 +336,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules.into(),
@@ -352,7 +352,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     access_rules_substate.into(),

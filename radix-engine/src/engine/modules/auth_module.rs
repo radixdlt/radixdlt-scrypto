@@ -61,13 +61,12 @@ impl AuthModule {
                             || matches!(method, NativeFn::Clock(..))
                             || matches!(method, NativeFn::Component(..)) =>
                     {
-                        let offset = SubstateOffset::AccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        );
                         let handle = system_api.lock_substate(
                             resolved_receiver.receiver,
-                            NodeModuleId::SELF,
-                            offset,
+                            NodeModuleId::AccessRules,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
@@ -185,12 +184,10 @@ impl AuthModule {
                     state
                 };
                 {
-                    let offset =
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
                     let handle = system_api.lock_substate(
                         component_node_id,
-                        NodeModuleId::SELF,
-                        offset,
+                        NodeModuleId::AccessRules,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = system_api.get_ref(handle)?;

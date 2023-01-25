@@ -354,6 +354,7 @@ pub enum SubstateOffset {
 pub enum NodeModuleId {
     SELF,
     Metadata,
+    AccessRules,
 }
 
 /// TODO: separate space addresses?

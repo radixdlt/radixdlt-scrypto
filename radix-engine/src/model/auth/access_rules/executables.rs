@@ -107,11 +107,10 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
             }
         }
 
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
@@ -188,11 +187,10 @@ impl Executor for AccessRulesSetMethodAccessRuleInvocation {
             ));
         }
 
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
@@ -283,11 +281,10 @@ impl Executor for AccessRulesSetGroupAccessRuleInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
@@ -404,11 +401,10 @@ impl Executor for AccessRulesSetMethodMutabilityInvocation {
             ));
         }
 
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
@@ -499,11 +495,10 @@ impl Executor for AccessRulesSetGroupMutabilityInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
@@ -594,11 +589,10 @@ impl Executor for AccessRulesGetLengthInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
 
