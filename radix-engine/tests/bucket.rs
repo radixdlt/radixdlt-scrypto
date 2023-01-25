@@ -1,9 +1,10 @@
 use radix_engine::{
-    blueprints::resource::{BucketError, ResourceOperationError},
+    blueprints::resource::BucketError,
     errors::{ApplicationError, RuntimeError},
     types::*,
 };
 use radix_engine_interface::api::blueprints::resource::FromPublicKey;
+use scrypto::prelude::ResourceOperationError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;

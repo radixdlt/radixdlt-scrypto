@@ -1,11 +1,12 @@
 use super::FeeSummary;
-use crate::{
-    blueprints::resource::Resource, errors::CanBeAbortion, transaction::AbortReason, types::*,
-};
+use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::api::{
+    blueprints::resource::Resource,
+    types::{RENodeId, VaultId},
+};
 use sbor::rust::cmp::min;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.

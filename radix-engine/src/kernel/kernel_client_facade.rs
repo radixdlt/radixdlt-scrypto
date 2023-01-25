@@ -287,6 +287,24 @@ where
 
         Ok(())
     }
+
+    fn lock_fee(
+        &mut self,
+        vault_id: VaultId,
+        fee: Resource,
+        contingent: bool,
+    ) -> Result<Resource, RuntimeError> {
+        let rtn = self.module.on_lock_fee(
+            &self.current_frame,
+            &mut self.heap,
+            &mut self.track,
+            vault_id,
+            fee,
+            contingent,
+        )?;
+
+        Ok(rtn)
+    }
 }
 
 impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>

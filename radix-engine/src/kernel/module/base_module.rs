@@ -1,8 +1,9 @@
+use crate::errors::ModuleError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::types::*;
-use crate::{blueprints::resource::Resource, errors::ModuleError};
+use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
 #[derive(Clone)]

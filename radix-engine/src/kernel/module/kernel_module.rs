@@ -1,4 +1,3 @@
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
@@ -7,6 +6,7 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
+use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
 use sbor::rust::vec::Vec;
 

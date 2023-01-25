@@ -352,7 +352,7 @@ impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore
 
 #[cfg(test)]
 mod tests {
-    use crate::blueprints::resource::{Resource, VaultSubstate};
+    use crate::blueprints::resource::VaultSubstate;
     use crate::kernel::ScryptoInterpreter;
     use crate::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
     use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager, StateDiff};
@@ -364,6 +364,7 @@ mod tests {
     };
     use crate::types::rust::iter::zip;
     use crate::wasm::DefaultWasmEngine;
+    use radix_engine_interface::api::blueprints::resource::Resource;
     use radix_engine_interface::api::types::ResourceAddress;
     use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
     use radix_engine_interface::math::Decimal;

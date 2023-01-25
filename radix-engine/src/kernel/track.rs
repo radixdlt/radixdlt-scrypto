@@ -1,6 +1,6 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{NonFungibleSubstate, Resource};
+use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
@@ -20,7 +20,7 @@ use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::blueprints::logger::Level;
-use radix_engine_interface::api::blueprints::resource::ResourceType;
+use radix_engine_interface::api::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateId,

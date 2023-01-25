@@ -1,4 +1,3 @@
-use crate::blueprints::resource::ResourceOperationError;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -10,6 +9,7 @@ use crate::kernel::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::ResourceOperationError;
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{

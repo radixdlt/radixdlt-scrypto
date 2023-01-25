@@ -1,5 +1,4 @@
 use super::module::SysCallOutput;
-use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{
@@ -12,6 +11,7 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset,
     VaultId,

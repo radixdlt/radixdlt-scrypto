@@ -1,4 +1,3 @@
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::CostingEntry;
@@ -6,6 +5,7 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
 
 use super::ExecutionFeeReserve;

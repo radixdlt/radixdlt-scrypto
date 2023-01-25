@@ -1,4 +1,3 @@
-use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;

@@ -1,10 +1,10 @@
-use crate::blueprints::resource::LockedAmountOrIds;
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::PersistedSubstate;
 use crate::types::*;
+use radix_engine_interface::api::blueprints::resource::LockedAmountOrIds;
+use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::blueprints::resource::ResourceType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
