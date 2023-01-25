@@ -28,7 +28,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    EngineActorApi, EngineApi, EngineComponentApi, EngineInvokeApi, Invokable,
+    EngineActorApi, EngineApi, EngineComponentApi, EngineInvokeApi, EnginePackageApi, Invokable,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -695,24 +695,6 @@ pub trait ExecutableInvocation: Invocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
-impl<'g, 's, W, R, M> EngineComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-    fn invoke_method(
-        &mut self,
-        receiver: ScryptoReceiver,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        // TODO: Use execution mode?
-        let invocation = resolve_method(receiver, method_name, &args, self)?;
-        invoke_call_table(invocation, self)
-    }
-}
-
 impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
@@ -1271,6 +1253,32 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
+}
+
+impl<'g, 's, W, R, M> EnginePackageApi for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+}
+
+impl<'g, 's, W, R, M> EngineComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        // TODO: Use execution mode?
+        let invocation = resolve_method(receiver, method_name, &args, self)?;
+        invoke_call_table(invocation, self)
+    }
 }
 
 impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>

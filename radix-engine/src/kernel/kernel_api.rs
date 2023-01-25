@@ -92,7 +92,7 @@ pub trait KernelResolverApi {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }
 
-/// APIs for accessing functionalities provided by kernel.
+/// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine>:
     KernelSubstateApi + KernelWasmApi<W> + KernelResolverApi
 {
