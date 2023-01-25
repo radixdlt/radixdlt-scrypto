@@ -17,9 +17,8 @@ use crate::wasm::traits::*;
 type HostState = WasmiInstanceEnv;
 
 pub struct WasmiModule {
-    // (Module, Store, Instance) tuple are cached together, and never to be invoked
+    // (Store, Instance) tuple are cached together, and never to be invoked
     // Every `WasmiModule` is going to clone the store and instance, so the state is not shared
-    module: Module,
     store: Store<HostState>,
     instance: Instance,
     #[allow(dead_code)]
@@ -226,7 +225,6 @@ impl WasmiModule {
             .expect("Module has start function - did you run WasmValidator?");
 
         Self {
-            module,
             store,
             instance,
             code_size_bytes: code.len(),
