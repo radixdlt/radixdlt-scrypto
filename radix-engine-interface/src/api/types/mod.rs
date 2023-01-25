@@ -5,6 +5,7 @@ mod re_node;
 mod royalty_config;
 mod scrypto_receiver;
 mod wasm;
+mod code;
 
 pub use actor::*;
 pub use call_table_invocations::*;
@@ -18,6 +19,7 @@ pub use sbor::*;
 pub use scrypto_receiver::*;
 pub use strum::*;
 pub use wasm::*;
+pub use code::*;
 
 // Additional re-exports
 pub use crate::api::blueprints::resource::{

@@ -25,7 +25,7 @@ pub use substate_api::ClientSubstateApi;
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientComponentApi<E>
-    + ClientPackageApi
+    + ClientPackageApi<E>
     + ClientStaticInvokeApi<E>
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
