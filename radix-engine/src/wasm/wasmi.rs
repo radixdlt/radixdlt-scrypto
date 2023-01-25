@@ -44,6 +44,10 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 CALL_METHOD_FUNCTION_ID,
             )),
+            CALL_FUNCTION_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                CALL_FUNCTION_FUNCTION_ID,
+            )),
             INVOKE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
                 INVOKE_FUNCTION_ID,

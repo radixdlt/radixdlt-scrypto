@@ -108,7 +108,7 @@ where
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let package_address = scrypto_decode::<PackageAddress>(&package_address)
-            .map_err(WasmRuntimeError::InvalidReceiver)?;
+            .map_err(WasmRuntimeError::InvalidPackageAddress)?;
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
         let function_ident =

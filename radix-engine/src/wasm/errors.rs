@@ -106,6 +106,8 @@ pub enum WasmRuntimeError {
     BufferNotFound(BufferId),
     /// Invalid scrypto receiver
     InvalidReceiver(DecodeError),
+    /// Invalid package address
+    InvalidPackageAddress(DecodeError),
     /// Invalid method ident
     InvalidIdent,
     /// Invalid invocation
