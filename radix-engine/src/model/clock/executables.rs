@@ -141,7 +141,8 @@ impl Executor for ClockSetCurrentTimeExecutable {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle =
+            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_ref = system_api.get_ref_mut(handle)?;
         substate_ref
             .current_time_rounded_to_minutes()
@@ -191,7 +192,12 @@ impl Executor for ClockGetCurrentTimeExecutable {
         match precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                let handle = system_api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
@@ -252,8 +258,12 @@ impl Executor for ClockCompareCurrentTimeExecutable {
         match self.precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle =
-                    system_api.lock_substate(self.node_id, offset, LockFlags::read_only())?;
+                let handle = system_api.lock_substate(
+                    self.node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(

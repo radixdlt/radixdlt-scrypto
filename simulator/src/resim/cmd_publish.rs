@@ -64,6 +64,7 @@ impl Publish {
             let global: GlobalAddressSubstate = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Global(GlobalAddress::Package(package_address.0)),
+                    NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ))
                 .map(|s| s.substate)
@@ -71,6 +72,7 @@ impl Publish {
                 .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
                 global.node_deref(),
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
             );
 
@@ -92,6 +94,7 @@ impl Publish {
             substate_store.put_substate(
                 SubstateId(
                     global.node_deref(),
+                    NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,

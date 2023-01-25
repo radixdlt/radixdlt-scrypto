@@ -34,6 +34,7 @@ fn mut_reentrancy_should_not_be_possible() {
             RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::Component(..),
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::State)
                 ),
                 LockState::Write
@@ -103,6 +104,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
             RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::Component(..),
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::State)
                 ),
                 LockState::Read(1),

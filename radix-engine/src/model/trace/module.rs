@@ -259,6 +259,7 @@ impl ExecutionTraceModule {
             let substate_ref = heap
                 .get_substate(
                     runtime_id,
+                    NodeModuleId::SELF,
                     &SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
@@ -440,7 +441,11 @@ impl ExecutionTraceModule {
     fn read_proof(heap: &mut Heap, proof_id: &ProofId) -> Result<ProofSnapshot, ModuleError> {
         let node_id = RENodeId::Proof(proof_id.clone());
         let substate_ref = heap
-            .get_substate(node_id, &SubstateOffset::Proof(ProofOffset::Proof))
+            .get_substate(
+                node_id,
+                NodeModuleId::SELF,
+                &SubstateOffset::Proof(ProofOffset::Proof),
+            )
             .map_err(|e| {
                 ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
             })?;
@@ -453,7 +458,11 @@ impl ExecutionTraceModule {
     ) -> Result<Resource, ModuleError> {
         let node_id = RENodeId::Bucket(bucket_id.clone());
         let substate_ref = heap
-            .get_substate(node_id, &SubstateOffset::Bucket(BucketOffset::Bucket))
+            .get_substate(
+                node_id,
+                NodeModuleId::SELF,
+                &SubstateOffset::Bucket(BucketOffset::Bucket),
+            )
             .map_err(|e| {
                 ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
             })?;
@@ -472,6 +481,7 @@ impl ExecutionTraceModule {
                 RENodeId::Bucket(bucket_id) => {
                     if let Ok(bucket_substate) = heap.get_substate(
                         RENodeId::Bucket(*bucket_id),
+                        NodeModuleId::SELF,
                         &SubstateOffset::Bucket(BucketOffset::Bucket),
                     ) {
                         track.vault_ops.push((
@@ -498,6 +508,7 @@ impl ExecutionTraceModule {
                 RENodeId::Bucket(bucket_id) => {
                     if let Ok(bucket_substate) = heap.get_substate(
                         RENodeId::Bucket(*bucket_id),
+                        NodeModuleId::SELF,
                         &SubstateOffset::Bucket(BucketOffset::Bucket),
                     ) {
                         track.vault_ops.push((
@@ -609,6 +620,7 @@ impl ExecutionTraceReceipt {
         let (substate, _) = to_persist
             .get(&SubstateId(
                 RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .expect("Failed to find the vault substate");

@@ -165,7 +165,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let mut substate = api.get_ref_mut(handle)?;
         substate.package_royalty_config().royalty_config = self.royalty_config;
@@ -212,7 +212,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();

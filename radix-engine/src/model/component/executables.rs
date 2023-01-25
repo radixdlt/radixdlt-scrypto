@@ -40,6 +40,7 @@ impl Executor for ComponentGlobalizeInvocation {
         let global_node_id = {
             let handle = api.lock_substate(
                 component_node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Component(ComponentOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -102,6 +103,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         let global_node_id = {
             let handle = api.lock_substate(
                 component_node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Component(ComponentOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -198,7 +200,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = self.royalty_config;
@@ -245,7 +247,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();

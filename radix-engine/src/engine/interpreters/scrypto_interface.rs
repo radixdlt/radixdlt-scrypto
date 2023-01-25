@@ -10,7 +10,8 @@ use crate::model::{
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
+    ComponentFn, LockHandle, NativeFn, NodeModuleId, RENodeId, RENodeType, ScryptoRENode,
+    SubstateOffset,
 };
 use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -117,7 +118,7 @@ where
             LockFlags::read_only()
         };
 
-        self.lock_substate(node_id, offset, flags)
+        self.lock_substate(node_id, NodeModuleId::SELF, offset, flags)
     }
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {

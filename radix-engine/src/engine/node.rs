@@ -55,51 +55,78 @@ pub enum RENodeInit {
 }
 
 impl RENodeInit {
-    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+    pub fn to_substates(self) -> HashMap<(NodeModuleId, SubstateOffset), RuntimeSubstate> {
+        let mut substates = HashMap::<(NodeModuleId, SubstateOffset), RuntimeSubstate>::new();
         match self {
             RENodeInit::Bucket(bucket) => {
                 substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Bucket(BucketOffset::Bucket),
+                    ),
                     RuntimeSubstate::Bucket(bucket),
                 );
             }
             RENodeInit::Proof(proof) => {
                 substates.insert(
-                    SubstateOffset::Proof(ProofOffset::Proof),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Proof(ProofOffset::Proof),
+                    ),
                     RuntimeSubstate::Proof(proof),
                 );
             }
             RENodeInit::AuthZoneStack(auth_zone) => {
                 substates.insert(
-                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                    ),
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
             RENodeInit::Global(global_node) => {
                 substates.insert(
-                    SubstateOffset::Global(GlobalOffset::Global),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Global(GlobalOffset::Global),
+                    ),
                     RuntimeSubstate::Global(global_node),
                 );
             }
             RENodeInit::Vault(vault) => {
-                substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
+                substates.insert(
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::Vault),
+                    ),
+                    vault.into(),
+                );
             }
             RENodeInit::KeyValueStore(store) => {
                 for (k, v) in store.loaded_entries {
                     substates.insert(
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
+                        (
+                            NodeModuleId::SELF,
+                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
+                        ),
                         v.into(),
                     );
                 }
             }
             RENodeInit::Identity(metadata, access_rules) => {
                 substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    ),
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
             }
@@ -112,39 +139,63 @@ impl RENodeInit {
                 access_rules,
             ) => {
                 substates.insert(
-                    SubstateOffset::Component(ComponentOffset::Info),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                    ),
                     info.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Component(ComponentOffset::State),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Component(ComponentOffset::State),
+                    ),
                     state.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
+                    ),
                     royalty_config.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                    ),
                     royalty_accumulator.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    ),
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
             }
             RENodeInit::Worktop(worktop) => {
                 substates.insert(
-                    SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    ),
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
             RENodeInit::Logger(logger) => {
                 substates.insert(
-                    SubstateOffset::Logger(LoggerOffset::Logger),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Logger(LoggerOffset::Logger),
+                    ),
                     RuntimeSubstate::Logger(logger),
                 );
             }
@@ -156,23 +207,38 @@ impl RENodeInit {
                 access_rules,
             ) => {
                 substates.insert(
-                    SubstateOffset::Package(PackageOffset::Info),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Package(PackageOffset::Info),
+                    ),
                     package_info.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Package(PackageOffset::RoyaltyConfig),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Package(PackageOffset::RoyaltyConfig),
+                    ),
                     package_royalty_config.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                    ),
                     package_royalty_accumulator.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    ),
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
             }
@@ -183,37 +249,60 @@ impl RENodeInit {
                 vault_access_rules,
             ) => {
                 substates.insert(
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                    ),
                     resource_manager.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    ),
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
                 // TODO: Figure out what the right abstraction is for vault access rules
                 substates.insert(
-                    SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::VaultAccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        ),
+                    ),
                     vault_access_rules.into(),
                 );
             }
             RENodeInit::Validator(validator, access_rules) => {
                 substates.insert(
-                    SubstateOffset::Validator(ValidatorOffset::Validator),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Validator(ValidatorOffset::Validator),
+                    ),
                     validator.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
             }
             RENodeInit::NonFungibleStore(non_fungible_store) => {
                 for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
                     substates.insert(
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
+                        (
+                            NodeModuleId::SELF,
+                            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
+                        ),
                         non_fungible.into(),
                     );
                 }
@@ -225,42 +314,66 @@ impl RENodeInit {
                 access_rules,
             ) => {
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                    ),
                     epoch_manager.into(),
                 );
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                    ),
                     current_validator_set_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+                    ),
                     preparing_validator_set_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules.into(),
                 );
             }
             RENodeInit::Clock(current_time_rounded_to_minutes_substate, access_rules_substate) => {
                 substates.insert(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    ),
                     current_time_rounded_to_minutes_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    ),
                     access_rules_substate.into(),
                 );
             }
             RENodeInit::FeeReserve(fee_reserve) => {
                 substates.insert(
-                    SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+                    ),
                     fee_reserve.into(),
                 );
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {
                 substates.insert(
-                    SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
+                    (
+                        NodeModuleId::SELF,
+                        SubstateOffset::TransactionRuntime(
+                            TransactionRuntimeOffset::TransactionRuntime,
+                        ),
                     ),
                     transaction_hash.into(),
                 );

@@ -191,6 +191,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())
@@ -203,6 +204,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 underlying_node,
+                NodeModuleId::SELF,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate.to_runtime())
@@ -219,6 +221,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -232,6 +235,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -249,6 +253,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
             ))
         {
@@ -262,6 +267,7 @@ impl TestRunner {
                 .root
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -278,6 +284,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
             ))
         {
@@ -291,6 +298,7 @@ impl TestRunner {
                 .root
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -322,6 +330,7 @@ impl TestRunner {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|output| output.substate.vault().0.ids().clone())
@@ -389,6 +398,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -403,6 +413,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -415,6 +426,7 @@ impl TestRunner {
         let node_id = self.deref_component_address(EPOCH_MANAGER);
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
         let substate: ValidatorSetSubstate = self

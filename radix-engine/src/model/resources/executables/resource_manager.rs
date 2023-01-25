@@ -103,8 +103,12 @@ where
             let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                 non_fungible_local_id.clone(),
             ));
-            let non_fungible_handle =
-                api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.lock_substate(
+                nf_store_node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::MUTABLE,
+            )?;
             let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
             let non_fungible_mut = substate_mut.non_fungible();
             *non_fungible_mut = NonFungibleSubstate(Some(
@@ -760,7 +764,8 @@ impl Executor for ResourceManagerBurnExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let bucket: BucketSubstate = system_api.drop_node(RENodeId::Bucket(self.1 .0))?.into();
 
@@ -799,8 +804,12 @@ impl Executor for ResourceManagerBurnExecutable {
                 .expect("Failed to list non-fungible IDs on non-fungible Bucket")
             {
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let non_fungible_handle = system_api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::MUTABLE,
+                )?;
                 let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
@@ -854,7 +863,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
@@ -945,7 +954,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
@@ -1031,7 +1040,8 @@ impl Executor for ResourceManagerCreateVaultExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1089,7 +1099,8 @@ impl Executor for ResourceManagerCreateBucketExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1148,7 +1159,8 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let (resource, non_fungibles) = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1218,7 +1230,8 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
             let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
             let offset =
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-            let non_fungible_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let non_fungible_handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
             {
                 let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
@@ -1283,7 +1296,8 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let bucket_id = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1325,7 +1339,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
                     let non_fungible_handle =
-                        api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
                     let non_fungible = NonFungible::new(data.0, data.1);
                     let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                     let non_fungible_mut = substate_mut.non_fungible();
@@ -1390,7 +1404,8 @@ impl Executor for ResourceManagerMintFungibleExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1446,7 +1461,8 @@ impl Executor for ResourceManagerGetResourceTypeExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_type = substate_ref.resource_manager().resource_type;
@@ -1490,7 +1506,8 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(resman_handle)?;
         let total_supply = substate_ref.resource_manager().total_supply;
 
@@ -1537,7 +1554,8 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1550,7 +1568,8 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         let offset =
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1.clone()));
 
-        let non_fungible_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let non_fungible_handle =
+            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
         let non_fungible_mut = substate_mut.non_fungible();
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
@@ -1606,7 +1625,8 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1616,8 +1636,12 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
-        let non_fungible_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let non_fungible_handle = system_api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(),
+        )?;
         let substate = system_api.get_ref(non_fungible_handle)?;
         let exists = substate.non_fungible().0.is_some();
 
@@ -1660,7 +1684,8 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let resman_handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1673,8 +1698,12 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
-        let non_fungible_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let non_fungible_handle = system_api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(),
+        )?;
         let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
         let wrapper = non_fungible_ref.non_fungible();
         if let Some(non_fungible) = wrapper.0.as_ref() {

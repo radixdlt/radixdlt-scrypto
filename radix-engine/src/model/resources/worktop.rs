@@ -58,7 +58,8 @@ impl Executor for WorktopPutInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource_address = self.bucket.sys_resource_address(api)?;
 
@@ -112,7 +113,8 @@ impl Executor for WorktopTakeAmountInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
@@ -173,7 +175,8 @@ impl Executor for WorktopTakeAllInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
@@ -226,7 +229,8 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
@@ -284,7 +288,8 @@ impl Executor for WorktopAssertContainsInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -336,7 +341,8 @@ impl Executor for WorktopAssertContainsAmountInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -387,7 +393,8 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -437,7 +444,8 @@ impl Executor for WorktopDrainInvocation {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut buckets = Vec::new();
         let mut nodes_to_move = Vec::new();
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;

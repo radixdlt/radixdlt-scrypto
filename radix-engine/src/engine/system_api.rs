@@ -63,6 +63,7 @@ pub trait SystemApi {
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;

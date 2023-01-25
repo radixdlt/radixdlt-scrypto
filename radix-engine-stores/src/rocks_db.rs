@@ -30,11 +30,13 @@ impl RadixEngineDB {
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([0; 26]))),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([255; 26]))),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
@@ -44,6 +46,7 @@ impl RadixEngineDB {
             .map(|id| {
                 if let SubstateId(
                     RENodeId::Global(GlobalAddress::Package(package_address)),
+                    NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
@@ -62,11 +65,13 @@ impl RadixEngineDB {
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Component(start)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Component(end)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
@@ -76,6 +81,7 @@ impl RadixEngineDB {
             .map(|id| {
                 if let SubstateId(
                     RENodeId::Global(GlobalAddress::Component(component_address)),
+                    NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
@@ -103,11 +109,13 @@ impl RadixEngineDB {
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([0; 26]))),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([255; 26]))),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
@@ -117,6 +125,7 @@ impl RadixEngineDB {
             .map(|id| {
                 if let SubstateId(
                     RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                    NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
@@ -170,6 +179,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         let unit = scrypto_encode(&()).unwrap();
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(kv_store_id.clone()),
+            NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&unit).unwrap(),
             )),
@@ -186,6 +196,7 @@ impl QueryableSubstateStore for RadixEngineDB {
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
+                NodeModuleId::SELF,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
             ) = substate_id
             {

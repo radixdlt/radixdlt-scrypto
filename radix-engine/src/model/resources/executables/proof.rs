@@ -55,7 +55,12 @@ impl Executor for ProofGetAmountInvocation {
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle = system_api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(),
+        )?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
 
@@ -92,7 +97,12 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle = system_api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(),
+        )?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids()?;
@@ -130,7 +140,12 @@ impl Executor for ProofGetResourceAddressInvocation {
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle = system_api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(),
+        )?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
 
@@ -172,7 +187,8 @@ impl Executor for ProofCloneInvocation {
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let cloned_proof = proof.clone();

@@ -247,6 +247,7 @@ where
                 RENodeId::AuthZoneStack(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
@@ -259,6 +260,7 @@ where
                 RENodeId::Proof(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
@@ -272,6 +274,7 @@ where
                 RENodeId::Worktop => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Worktop(WorktopOffset::Worktop),
                         LockFlags::MUTABLE,
                     )?;
@@ -467,7 +470,12 @@ where
             let derefed =
                 self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::empty(),
+                    )?;
                     let substate_ref = system_api.get_ref(handle)?;
                     Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
@@ -490,6 +498,7 @@ where
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
+                            NodeModuleId::SELF,
                             SubstateOffset::Global(GlobalOffset::Global),
                             LockFlags::empty(),
                         )?;
@@ -560,14 +569,18 @@ where
                             }
 
                             let offset = SubstateOffset::Global(GlobalOffset::Global);
+
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
-                                .release_lock(SubstateId(*node_id, offset), false)
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    false,
+                                )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
@@ -578,12 +591,15 @@ where
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
-                                .release_lock(SubstateId(*node_id, offset), false)
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    false,
+                                )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame
@@ -930,6 +946,7 @@ where
                         |system_api| {
                             let handle = system_api.lock_substate(
                                 RENodeId::Component(*component),
+                                NodeModuleId::SELF,
                                 SubstateOffset::Component(ComponentOffset::Info),
                                 LockFlags::read_only(),
                             )?;
@@ -1015,6 +1032,7 @@ where
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -1069,6 +1087,7 @@ where
             &mut self.heap,
             &mut self.track,
             node_id,
+            module_id,
             offset.clone(),
             flags,
         );
@@ -1076,13 +1095,14 @@ where
         let lock_handle = match maybe_lock_handle {
             Ok(lock_handle) => lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, ref offset),
+                SubstateId(node_id, module_id, ref offset),
             )))) => {
                 if self.try_virtualize(node_id, &offset)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
                         node_id,
+                        module_id,
                         offset.clone(),
                         flags,
                     )?
@@ -1098,15 +1118,16 @@ where
                         RENodeId::Global(GlobalAddress::Package(package_address)),
                     )) => {
                         let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+                        let module_id = NodeModuleId::SELF;
                         let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(
-                                SubstateId(node_id, offset.clone()),
+                                SubstateId(node_id, module_id, offset.clone()),
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
                         self.track
-                            .release_lock(SubstateId(node_id, offset.clone()), false)
+                            .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
                             .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
@@ -1114,6 +1135,7 @@ where
                             &mut self.heap,
                             &mut self.track,
                             node_id,
+                            module_id,
                             offset.clone(),
                             flags,
                         )?

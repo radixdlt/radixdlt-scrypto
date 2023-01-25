@@ -796,6 +796,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             {
                 let handle = api.lock_substate(
                     runtime_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),

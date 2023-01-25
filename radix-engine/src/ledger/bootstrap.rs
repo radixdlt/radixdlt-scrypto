@@ -268,6 +268,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .is_none()

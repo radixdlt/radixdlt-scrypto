@@ -59,7 +59,12 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
         // Abi checks
         {
             let offset = SubstateOffset::Component(ComponentOffset::Info);
-            let handle = api.lock_substate(self.receiver, offset, LockFlags::read_only())?;
+            let handle = api.lock_substate(
+                self.receiver,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
 
             let (package_id, blueprint_name) = {
                 let substate_ref = api.get_ref(handle)?;
@@ -73,7 +78,12 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
             };
 
             let package_offset = SubstateOffset::Package(PackageOffset::Info);
-            let handle = api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
+            let handle = api.lock_substate(
+                package_id,
+                NodeModuleId::SELF,
+                package_offset,
+                LockFlags::read_only(),
+            )?;
             let substate_ref = api.get_ref(handle)?;
             let package = substate_ref.package_info();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
@@ -98,7 +108,12 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
         }
 
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let substate = substate_ref_mut.access_rules_chain();
@@ -174,7 +189,12 @@ impl Executor for AccessRulesSetMethodAccessRuleInvocation {
         }
 
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
@@ -191,7 +211,8 @@ impl Executor for AccessRulesSetMethodAccessRuleInvocation {
                 .expect("AuthZone does not exist");
 
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
 
@@ -263,7 +284,12 @@ impl Executor for AccessRulesSetGroupAccessRuleInvocation {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
@@ -280,7 +306,8 @@ impl Executor for AccessRulesSetGroupAccessRuleInvocation {
                 .expect("AuthZone does not exist");
 
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_substate = substate_ref.auth_zone_stack();
 
@@ -378,7 +405,12 @@ impl Executor for AccessRulesSetMethodMutabilityInvocation {
         }
 
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
@@ -395,7 +427,8 @@ impl Executor for AccessRulesSetMethodMutabilityInvocation {
                 .expect("AuthZone does not exist");
 
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
 
@@ -467,7 +500,12 @@ impl Executor for AccessRulesSetGroupMutabilityInvocation {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
@@ -484,7 +522,8 @@ impl Executor for AccessRulesSetGroupMutabilityInvocation {
                 .expect("AuthZone does not exist");
 
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_substate = substate_ref.auth_zone_stack();
 
@@ -556,7 +595,12 @@ impl Executor for AccessRulesGetLengthInvocation {
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.receiver,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         let substate_ref = api.get_ref(handle)?;
         let access_rules_substate = substate_ref.access_rules_chain();

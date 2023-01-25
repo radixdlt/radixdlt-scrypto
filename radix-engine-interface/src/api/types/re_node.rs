@@ -319,9 +319,6 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
-    AccessRulesChain(AccessRulesChainOffset),
-    VaultAccessRulesChain(AccessRulesChainOffset),
-    Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
@@ -335,6 +332,27 @@ pub enum SubstateOffset {
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+
+    VaultAccessRulesChain(AccessRulesChainOffset),
+    AccessRulesChain(AccessRulesChainOffset),
+    Metadata(MetadataOffset),
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
+pub enum NodeModuleId {
+    SELF,
 }
 
 /// TODO: separate space addresses?
@@ -350,4 +368,4 @@ pub enum SubstateOffset {
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub struct SubstateId(pub RENodeId, pub SubstateOffset);
+pub struct SubstateId(pub RENodeId, pub NodeModuleId, pub SubstateOffset);

@@ -42,7 +42,8 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
         let node_id = RENodeId::TransactionRuntime(self.receiver);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
@@ -86,7 +87,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
         let node_id = RENodeId::TransactionRuntime(self.receiver);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
         let tx_hash_substate = substate_mut.transaction_runtime();
 

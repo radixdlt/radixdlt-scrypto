@@ -58,7 +58,8 @@ impl Executor for AuthZonePopInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
@@ -113,11 +114,13 @@ impl Executor for AuthZonePushInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let node_id = RENodeId::Proof(self.proof.0);
         let handle = system_api.lock_substate(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
@@ -172,12 +175,18 @@ impl Executor for AuthZoneCreateProofInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_handle = api.lock_substate(
+                resource_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
@@ -239,12 +248,18 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_handle = api.lock_substate(
+                resource_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
@@ -309,12 +324,18 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_handle = api.lock_substate(
+                resource_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
@@ -374,7 +395,8 @@ impl Executor for AuthZoneClearInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
         let auth_zone_stack = substate_mut.auth_zone_stack();
         auth_zone_stack.cur_auth_zone_mut().clear();
@@ -415,7 +437,8 @@ impl Executor for AuthZoneDrainInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let proofs = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
@@ -473,7 +496,8 @@ impl Executor for AuthZoneAssertAccessRuleInvocation {
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
         let authorization = convert_contextless(&self.access_rule);

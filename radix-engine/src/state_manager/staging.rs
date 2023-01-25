@@ -363,7 +363,9 @@ mod tests {
     };
     use crate::types::rust::iter::zip;
     use crate::wasm::DefaultWasmEngine;
-    use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
+    use radix_engine_interface::api::types::{
+        NodeModuleId, RENodeId, SubstateId, SubstateOffset, VaultOffset,
+    };
     use radix_engine_interface::math::Decimal;
     use radix_engine_interface::model::ResourceAddress;
     use sbor::rust::collections::BTreeMap;
@@ -406,7 +408,8 @@ mod tests {
     fn build_dummy_substate_id(id: [u8; 36]) -> SubstateId {
         SubstateId {
             0: RENodeId::Vault(id),
-            1: SubstateOffset::Vault(VaultOffset::Vault),
+            1: NodeModuleId::SELF,
+            2: SubstateOffset::Vault(VaultOffset::Vault),
         }
     }
 
