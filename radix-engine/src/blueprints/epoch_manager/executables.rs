@@ -1,6 +1,5 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -23,6 +22,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::{EngineInvokeApi, EngineSubstateApi};
 use radix_engine_interface::rule;
 
@@ -41,7 +41,7 @@ pub struct EpochManager;
 impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -172,7 +172,7 @@ pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     type Exec = EpochManagerGetCurrentEpochExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -219,7 +219,7 @@ pub struct EpochManagerNextRoundExecutable {
 impl ExecutableInvocation for EpochManagerNextRoundInvocation {
     type Exec = EpochManagerNextRoundExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -300,7 +300,7 @@ pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     type Exec = EpochManagerSetEpochExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -344,7 +344,7 @@ pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicK
 impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
     type Exec = EpochManagerCreateValidatorExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -400,7 +400,7 @@ pub struct EpochManagerUpdateValidatorExecutable(RENodeId, ComponentAddress, Upd
 impl ExecutableInvocation for EpochManagerUpdateValidatorInvocation {
     type Exec = EpochManagerUpdateValidatorExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -523,7 +523,7 @@ pub struct ValidatorRegisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorRegisterInvocation {
     type Exec = ValidatorRegisterExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -592,7 +592,7 @@ pub struct ValidatorUnregisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorUnregisterInvocation {
     type Exec = ValidatorUnregisterExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -652,7 +652,7 @@ pub struct ValidatorStakeExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ValidatorStakeInvocation {
     type Exec = ValidatorStakeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -719,7 +719,7 @@ pub struct ValidatorUnstakeExecutable(RENodeId, Decimal);
 impl ExecutableInvocation for ValidatorUnstakeInvocation {
     type Exec = ValidatorUnstakeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

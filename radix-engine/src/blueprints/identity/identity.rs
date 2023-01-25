@@ -1,5 +1,4 @@
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -11,12 +10,13 @@ use radix_engine_interface::api::blueprints::identity::*;
 use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::NativeFn;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::EngineSubstateApi;
 
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

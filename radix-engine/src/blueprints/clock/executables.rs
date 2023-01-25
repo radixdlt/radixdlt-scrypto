@@ -1,5 +1,4 @@
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -21,6 +20,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::EngineSubstateApi;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
@@ -36,7 +36,7 @@ pub struct Clock;
 impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -114,7 +114,7 @@ pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -166,7 +166,7 @@ pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
     type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -223,7 +223,7 @@ pub struct ClockCompareCurrentTimeExecutable {
 impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
     type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

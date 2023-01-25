@@ -1,6 +1,5 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -8,6 +7,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::blueprints::transaction_hash::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::EngineSubstateApi;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -18,7 +18,7 @@ pub enum TransactionRuntimeError {
 impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -61,7 +61,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
 impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

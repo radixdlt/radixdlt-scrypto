@@ -1,6 +1,5 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{
@@ -13,6 +12,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {
@@ -33,7 +33,7 @@ pub enum ProofError {
 impl ExecutableInvocation for ProofGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -70,7 +70,7 @@ impl Executor for ProofGetAmountInvocation {
 impl ExecutableInvocation for ProofGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -108,7 +108,7 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for ProofGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -150,7 +150,7 @@ impl Executor for ProofGetResourceAddressInvocation {
 impl ExecutableInvocation for ProofCloneInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

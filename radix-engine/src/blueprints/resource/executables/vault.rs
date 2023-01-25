@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{
@@ -15,6 +14,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultError {
@@ -32,7 +32,7 @@ pub enum VaultError {
 impl ExecutableInvocation for VaultRecallInvocation {
     type Exec = VaultTakeInvocation;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -53,7 +53,7 @@ impl ExecutableInvocation for VaultRecallInvocation {
 impl ExecutableInvocation for VaultTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -101,7 +101,7 @@ impl Executor for VaultTakeInvocation {
 impl ExecutableInvocation for VaultPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -151,7 +151,7 @@ impl Executor for VaultPutInvocation {
 impl ExecutableInvocation for VaultLockFeeInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -222,7 +222,7 @@ impl Executor for VaultLockFeeInvocation {
 impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
     type Exec = VaultTakeNonFungiblesInvocation;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -243,7 +243,7 @@ impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
 impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -291,7 +291,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
 impl ExecutableInvocation for VaultGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -330,7 +330,7 @@ impl Executor for VaultGetAmountInvocation {
 impl ExecutableInvocation for VaultGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -372,7 +372,7 @@ impl Executor for VaultGetResourceAddressInvocation {
 impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -415,7 +415,7 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for VaultCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -469,7 +469,7 @@ impl Executor for VaultCreateProofInvocation {
 impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -523,7 +523,7 @@ impl Executor for VaultCreateProofByAmountInvocation {
 impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

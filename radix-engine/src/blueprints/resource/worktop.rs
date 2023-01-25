@@ -1,7 +1,7 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelResolverApi, LockFlags};
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
@@ -13,6 +13,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::EngineInvokeApi;
 
 #[derive(Debug)]
@@ -36,7 +37,7 @@ pub enum WorktopError {
 impl ExecutableInvocation for WorktopPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -85,7 +86,7 @@ impl Executor for WorktopPutInvocation {
 impl ExecutableInvocation for WorktopTakeAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -146,7 +147,7 @@ impl Executor for WorktopTakeAmountInvocation {
 impl ExecutableInvocation for WorktopTakeAllInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -199,7 +200,7 @@ impl Executor for WorktopTakeAllInvocation {
 impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -260,7 +261,7 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
 impl ExecutableInvocation for WorktopAssertContainsInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -312,7 +313,7 @@ impl Executor for WorktopAssertContainsInvocation {
 impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -363,7 +364,7 @@ impl Executor for WorktopAssertContainsAmountInvocation {
 impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -415,7 +416,7 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
 impl ExecutableInvocation for WorktopDrainInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

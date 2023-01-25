@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{
@@ -26,6 +25,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::{EngineInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
@@ -48,7 +48,7 @@ pub enum ResourceManagerError {
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -365,7 +365,7 @@ fn build_substates(
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -439,7 +439,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
 impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -500,7 +500,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -581,7 +581,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 impl ExecutableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -659,7 +659,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
 impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -738,7 +738,7 @@ pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ResourceManagerBurnInvocation {
     type Exec = ResourceManagerBurnExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -826,7 +826,7 @@ pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey
 impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type Exec = ResourceManagerUpdateVaultAuthExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -916,7 +916,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Exec = ResourceManagerLockVaultAuthExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1007,7 +1007,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
     type Exec = ResourceManagerCreateVaultExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1065,7 +1065,7 @@ impl Executor for ResourceManagerCreateVaultExecutable {
 impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
     type Exec = ResourceManagerCreateBucketExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1125,7 +1125,7 @@ pub struct ResourceManagerMintNonFungibleExecutable(
 impl ExecutableInvocation for ResourceManagerMintNonFungibleInvocation {
     type Exec = ResourceManagerMintNonFungibleExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1260,7 +1260,7 @@ pub struct ResourceManagerMintUuidNonFungibleExecutable(RENodeId, Vec<(Vec<u8>, 
 impl ExecutableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
     type Exec = ResourceManagerMintUuidNonFungibleExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1367,7 +1367,7 @@ pub struct ResourceManagerMintFungibleExecutable(RENodeId, Decimal);
 impl ExecutableInvocation for ResourceManagerMintFungibleInvocation {
     type Exec = ResourceManagerMintFungibleExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1422,7 +1422,7 @@ impl Executor for ResourceManagerMintFungibleExecutable {
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = ResourceManagerGetResourceTypeExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1466,7 +1466,7 @@ impl Executor for ResourceManagerGetResourceTypeExecutable {
 impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Exec = ResourceManagerGetTotalSupplyExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1509,7 +1509,7 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
 impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Exec = ResourceManagerUpdateNonFungibleDataExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1581,7 +1581,7 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
 impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Exec = ResourceManagerNonFungibleExistsExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1636,7 +1636,7 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
 impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     type Exec = ResourceManagerGetNonFungibleExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

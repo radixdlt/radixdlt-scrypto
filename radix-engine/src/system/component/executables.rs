@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelResolverApi, LockFlags};
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{deref_and_update, Executor, RENodeInit};
 use crate::kernel::{CallFrameUpdate, ExecutableInvocation, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
@@ -16,7 +16,7 @@ use radix_engine_interface::{constants::*, rule};
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -78,7 +78,7 @@ impl Executor for ComponentGlobalizeInvocation {
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -168,7 +168,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -216,7 +216,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
 impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

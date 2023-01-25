@@ -3,9 +3,7 @@ use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::Resource;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{
-    KernelResolverApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
-};
+use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -28,7 +26,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    EngineActorApi, EngineApi, EngineComponentApi, EngineInvokeApi, EnginePackageApi, Invokable,
+    EngineActorApi, EngineApi, EngineComponentApi, EngineDerefApi, EngineInvokeApi,
+    EnginePackageApi, Invokable,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -666,17 +665,6 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelResolverApi for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        self.node_method_deref(node_id)
-    }
-}
-
 pub trait Executor {
     type Output: Debug;
 
@@ -689,7 +677,7 @@ pub trait Executor {
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: KernelResolverApi + KernelSubstateApi>(
+    fn resolve<Y: EngineDerefApi<RuntimeError> + KernelSubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -1233,6 +1221,17 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
+    }
+}
+
+impl<'g, 's, W, R, M> EngineDerefApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
+        self.node_method_deref(node_id)
     }
 }
 

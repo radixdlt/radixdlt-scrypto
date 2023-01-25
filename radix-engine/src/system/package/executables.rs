@@ -3,7 +3,6 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::*;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -14,11 +13,11 @@ use core::fmt::Debug;
 use radix_engine_interface::api::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
 use radix_engine_interface::api::EngineInvokeApi;
+use radix_engine_interface::api::{package::*, EngineDerefApi};
 
 pub struct Package;
 
@@ -49,7 +48,7 @@ impl Package {
 impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -139,7 +138,7 @@ impl Executor for PackagePublishInvocation {
 impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -187,7 +186,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

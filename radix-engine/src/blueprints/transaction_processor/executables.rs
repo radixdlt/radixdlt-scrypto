@@ -2,7 +2,6 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelResolverApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -28,6 +27,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
+use radix_engine_interface::api::EngineDerefApi;
 use radix_engine_interface::api::{EngineComponentApi, EngineInvokeApi, EngineSubstateApi};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
@@ -240,7 +240,7 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: KernelResolverApi>(
+    fn resolve<D: EngineDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

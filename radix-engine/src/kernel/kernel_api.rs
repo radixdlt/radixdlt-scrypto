@@ -87,13 +87,5 @@ pub trait KernelWasmApi<W: WasmEngine> {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 }
 
-// TODO: Clean this up
-pub trait KernelResolverApi {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
-}
-
 /// Interface of the Kernel, for Kernel modules.
-pub trait KernelApi<W: WasmEngine>:
-    KernelSubstateApi + KernelWasmApi<W> + KernelResolverApi
-{
-}
+pub trait KernelApi<W: WasmEngine>: KernelSubstateApi + KernelWasmApi<W> {}
