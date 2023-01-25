@@ -225,15 +225,35 @@ where
         })
     }
 
-    fn get_code(&mut self, _package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        todo!()
+    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = self.get_ref(handle)?;
+        let package = substate_ref.package_info();
+        let code = package.code().to_vec();
+        self.drop_lock(handle)?;
+        Ok(PackageCode::Wasm(code))
     }
 
     fn get_abi(
         &mut self,
-        _package_address: PackageAddress,
+        package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        todo!()
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = self.get_ref(handle)?;
+        let package = substate_ref.package_info();
+        let abi = package.blueprint_abis.clone();
+        self.drop_lock(handle)?;
+        Ok(abi)
     }
 }
 
