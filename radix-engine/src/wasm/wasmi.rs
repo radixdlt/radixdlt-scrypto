@@ -214,21 +214,25 @@ macro_rules! linker_define {
 }
 
 impl WasmiModule {
-    pub fn new(code: &[u8]) -> Self {
+    pub fn new(code: &[u8]) -> Result<Self, PrepareError> {
         let engine = Engine::default();
         let module = Module::new(&engine, code).expect("Failed to parse WASM module");
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
-            .expect("Failed to instantiate WASM module - did you run WasmValidator?")
+            .map_err(|_| {
+                PrepareError::NotInstantiatable
+            })?
             .ensure_no_start(store.as_context_mut())
-            .expect("Module has start function - did you run WasmValidator?");
+            .map_err(|_| {
+                PrepareError::NotInstantiatable
+            })?;
 
-        Self {
+        Ok(Self {
             store,
             instance,
             code_size_bytes: code.len(),
-        }
+        })
     }
 
     pub fn host_funcs_set(
@@ -384,14 +388,7 @@ impl WasmiModule {
             host_consume_cost_units
         );
 
-        let pre_instance = match linker.instantiate(store.as_context_mut(), &module) {
-            Ok(result) => result,
-            Err(e) => {
-                panic!("Failed to instantiate WASM module - {}", e.to_string());
-            }
-        };
-
-        Ok(pre_instance)
+        linker.instantiate(store.as_context_mut(), &module)
     }
 
     fn instantiate(&self) -> WasmiInstance {
@@ -401,6 +398,7 @@ impl WasmiModule {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
         };
+
         WasmiInstance {
             instance,
             store,
@@ -579,7 +577,7 @@ impl WasmEngine for WasmiEngine {
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code);
+        let module = WasmiModule::new(code).unwrap();
         let instance = module.instantiate();
 
         #[cfg(not(feature = "moka"))]

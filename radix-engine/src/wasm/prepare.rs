@@ -513,9 +513,7 @@ impl WasmModule {
         let code = parity_wasm::serialize(self.module.clone())
             .map_err(|_| PrepareError::SerializationError)?;
 
-        let _wasmi_module = WasmiModule::new(&code[..]);
-
-        Ok(self)
+        WasmiModule::new(&code[..]).map(|_| self)
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
