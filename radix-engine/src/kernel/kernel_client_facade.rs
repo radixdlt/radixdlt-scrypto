@@ -260,7 +260,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientMeteringApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -275,7 +275,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

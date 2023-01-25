@@ -14,54 +14,49 @@ use radix_engine_interface::api::{
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
-pub struct ScryptoRuntime<'y, Y, W>
+pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<W, RuntimeError>
+    Y: ClientMeteringApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
         + ClientStaticInvokeApi<RuntimeError>,
-    W: WasmEngine,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
-    phantom: PhantomData<W>,
 }
 
-impl<'y, Y, W> ScryptoRuntime<'y, Y, W>
+impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<W, RuntimeError>
+    Y: ClientMeteringApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
         + ClientStaticInvokeApi<RuntimeError>,
-    W: WasmEngine,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
-            phantom: PhantomData,
         }
     }
 }
 
-impl<'y, Y, W> WasmRuntime for ScryptoRuntime<'y, Y, W>
+impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<W, RuntimeError>
+    Y: ClientMeteringApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
         + ClientStaticInvokeApi<RuntimeError>,
-    W: WasmEngine,
 {
     fn allocate_buffer(
         &mut self,

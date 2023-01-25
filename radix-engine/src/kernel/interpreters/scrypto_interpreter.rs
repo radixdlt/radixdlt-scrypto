@@ -226,7 +226,7 @@ impl Executor for ScryptoExecutor {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
-            + ClientMeteringApi<W, RuntimeError>
+            + ClientMeteringApi<RuntimeError>
             + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {

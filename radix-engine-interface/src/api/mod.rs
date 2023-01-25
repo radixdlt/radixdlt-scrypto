@@ -24,7 +24,7 @@ pub use static_invoke_api::{ClientStaticInvokeApi, Invokable};
 pub use substate_api::ClientSubstateApi;
 
 // Interface of the system, for blueprints and Node modules.
-pub trait ClientApi<W, E: sbor::rust::fmt::Debug>:
+pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientComponentApi<E>
     + ClientPackageApi<E>
@@ -32,6 +32,6 @@ pub trait ClientApi<W, E: sbor::rust::fmt::Debug>:
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
     + ClientDerefApi<E>
-    + ClientMeteringApi<W, E>
+    + ClientMeteringApi<E>
 {
 }
