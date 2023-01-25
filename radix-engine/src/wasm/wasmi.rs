@@ -198,6 +198,25 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
+            CALL_FUNCTION_FUNCTION_ID => {
+                let package_address_ptr = args.nth_checked::<u32>(0)?;
+                let package_address_len = args.nth_checked::<u32>(1)?;
+                let blueprint_ident_ptr = args.nth_checked::<u32>(2)?;
+                let blueprint_ident_len = args.nth_checked::<u32>(3)?;
+                let ident_ptr = args.nth_checked::<u32>(4)?;
+                let ident_len = args.nth_checked::<u32>(5)?;
+                let args_ptr = args.nth_checked::<u32>(6)?;
+                let args_len = args.nth_checked::<u32>(7)?;
+
+                let buffer = self.runtime.call_function(
+                    self.read_memory(package_address_ptr, package_address_len)?,
+                    self.read_memory(blueprint_ident_ptr, blueprint_ident_len)?,
+                    self.read_memory(ident_ptr, ident_len)?,
+                    self.read_memory(args_ptr, args_len)?,
+                )?;
+
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
+            }
             INVOKE_FUNCTION_ID => {
                 let invocation_ptr = args.nth_checked::<u32>(0)?;
                 let invocation_len = args.nth_checked::<u32>(1)?;

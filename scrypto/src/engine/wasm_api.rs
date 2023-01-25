@@ -48,7 +48,19 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    /// Invokes any function, either scrypto or native.
+    /// Invokes a function on a blueprint.
+    pub fn call_function(
+        package_address_ptr: *const u8,
+        package_address_len: usize,
+        blueprint_ident_ptr: *const u8,
+        blueprint_ident_len: usize,
+        function_ident_ptr: *const u8,
+        function_ident_len: usize,
+        args_ptr: *const u8,
+        args_len: usize,
+    ) -> Buffer;
+
+    /// Invokes any function or method, for both Scrypto and Native blueprints.
     pub fn invoke(invocation_ptr: *const u8, invocation_len: usize) -> Buffer;
 
     //===============

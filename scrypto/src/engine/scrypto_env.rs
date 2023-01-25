@@ -1,8 +1,8 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::static_invoke_api::SerializableInvocation;
 use radix_engine_interface::api::types::{
-    CallTableInvocation, FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver,
-    SubstateOffset,
+    CallTableInvocation, FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode,
+    ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientSubstateApi, Invokable};
@@ -19,7 +19,8 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ScryptoEnv {
-    // Slightly different from ClientComponentApi::call_method
+    // Slightly different from ClientComponentApi::call_method and ClientPackageApi::call_function, for the return type.
+    // This is to avoid duplicated encoding and decoding.
 
     pub fn call_method(
         &mut self,
@@ -35,6 +36,31 @@ impl ScryptoEnv {
                 receiver.len(),
                 method_name.as_ptr(),
                 method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        Ok(return_data)
+    }
+
+    pub fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let package_address = scrypto_encode(&package_address).unwrap();
+
+        let return_data = copy_buffer(unsafe {
+            call_function(
+                package_address.as_ptr(),
+                package_address.len(),
+                blueprint_name.as_ptr(),
+                blueprint_name.len(),
+                function_name.as_ptr(),
+                function_name.len(),
                 args.as_ptr(),
                 args.len(),
             )

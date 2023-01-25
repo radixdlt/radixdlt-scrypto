@@ -108,6 +108,27 @@ where
         self.allocate_buffer(return_data.into_vec())
     }
 
+    fn call_function(
+        &mut self,
+        package_address: Vec<u8>,
+        blueprint_ident: Vec<u8>,
+        function_ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let package_address = scrypto_decode::<PackageAddress>(&package_address)
+            .map_err(WasmRuntimeError::InvalidReceiver)?;
+        let blueprint_ident =
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+        let function_ident =
+            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+
+        let return_data =
+            self.api
+                .call_function(package_address, blueprint_ident, function_ident, args)?;
+
+        self.allocate_buffer(return_data.into_vec())
+    }
+
     fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let invocation = scrypto_decode::<CallTableInvocation>(&invocation)
             .map_err(WasmRuntimeError::InvalidInvocation)?;
@@ -233,6 +254,16 @@ impl WasmRuntime for NopWasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn call_function(
+        &mut self,
+        package_address: Vec<u8>,
+        blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
