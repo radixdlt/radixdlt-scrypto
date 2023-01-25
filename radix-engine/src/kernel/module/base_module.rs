@@ -118,9 +118,9 @@ pub trait BaseModule<R: FeeReserve> {
         _call_frame: &CallFrame,
         _eap: &mut Heap,
         _rack: &mut Track<R>,
-        _ault_id: VaultId,
+        _vault_id: VaultId,
         fee: Resource,
-        _ontingent: bool,
+        _contingent: bool,
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }

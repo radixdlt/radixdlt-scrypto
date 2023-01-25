@@ -8,6 +8,7 @@ use radix_engine_interface::api::{
     types::{RENodeId, VaultId},
 };
 use sbor::rust::cmp::min;
+use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
@@ -93,7 +94,7 @@ pub enum RoyaltyReceiver {
 }
 
 #[repr(usize)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, IntoStaticStr)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, IntoStaticStr, EnumCount, Display, FromRepr)]
 pub enum CostingReason {
     TxBaseCost,
     TxPayloadCost,
@@ -136,9 +137,9 @@ pub struct SystemLoanFeeReserve {
     check_point: u32,
 
     /// Execution costs that are deferred
-    execution_deferred: HashMap<CostingReason, u32>,
+    execution_deferred: [u32; CostingReason::COUNT],
     /// Execution cost breakdown
-    execution: HashMap<CostingReason, u32>,
+    execution: [u32; CostingReason::COUNT],
     /// Royalty cost breakdown
     royalty: HashMap<RoyaltyReceiver, u32>,
 
@@ -201,8 +202,8 @@ impl SystemLoanFeeReserve {
             cost_units_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
-            execution_deferred: HashMap::new(),
-            execution: HashMap::new(),
+            execution_deferred: [0u32; CostingReason::COUNT],
+            execution: [0u32; CostingReason::COUNT],
             royalty: HashMap::new(),
             effective_execution_price: cost_unit_price
                 + cost_unit_price * tip_percentage as u128 / 100,
@@ -238,12 +239,15 @@ impl SystemLoanFeeReserve {
     fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution costs
         let mut sum = 0;
-        for v in self.execution_deferred.values() {
+        for v in self.execution_deferred.iter() {
             checked_assign_add(&mut sum, *v)?;
         }
         self.consume(sum, self.execution_price())?;
-        for (k, v) in self.execution_deferred.drain() {
-            self.execution.entry(k).or_default().add_assign(v);
+
+        // Update internal state
+        for i in 0..CostingReason::COUNT {
+            self.execution[i] += self.execution_deferred[i];
+            self.execution_deferred[i] = 0;
         }
 
         // Repay owed
@@ -294,7 +298,7 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
         let units_consumed = checked_multiply(amount, multiplier)?;
 
         checked_assign_add(
-            self.execution_deferred.entry(reason).or_default(),
+            &mut self.execution_deferred[reason as usize],
             units_consumed,
         )?;
 
@@ -347,7 +351,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         }
 
         self.consume(cost_units, self.execution_price())?;
-        checked_assign_add(self.execution.entry(reason).or_default(), cost_units)?;
+        checked_assign_add(&mut self.execution[reason as usize], cost_units)?;
 
         if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
@@ -384,13 +388,21 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         // In case the transaction finishes before check point.
         self.attempt_to_repay_all();
 
+        let mut execution_cost_unit_breakdown = HashMap::new();
+        for i in 0..CostingReason::COUNT {
+            execution_cost_unit_breakdown.insert(
+                CostingReason::from_repr(5usize).unwrap().to_string(),
+                self.execution[i],
+            );
+        }
+
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_consumed: self.cost_units_consumed,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
             total_execution_cost_xrd: u128_to_decimal(
-                self.execution_price() * self.execution.values().sum::<u32>() as u128,
+                self.execution_price() * self.execution.iter().sum::<u32>() as u128,
             ),
             total_royalty_cost_xrd: u128_to_decimal(
                 self.royalty_price() * self.royalty.values().sum::<u32>() as u128,
@@ -398,11 +410,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             bad_debt_xrd: u128_to_decimal(self.xrd_owed),
             vault_locks: self.payments,
             vault_payments_xrd: None, // Resolved later
-            execution_cost_unit_breakdown: self
-                .execution
-                .into_iter()
-                .map(|(k, v)| (Into::<&'static str>::into(k).to_owned(), v))
-                .collect(),
+            execution_cost_unit_breakdown,
             royalty_cost_unit_breakdown: self.royalty,
         }
     }
