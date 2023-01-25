@@ -37,7 +37,7 @@ pub trait PreExecutionFeeReserve {
         &mut self,
         amount: u32,
         multiplier: usize,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError>;
 }
 
@@ -52,13 +52,13 @@ pub trait ExecutionFeeReserve {
         &mut self,
         cost_units_per_multiple: u32,
         multiplier: usize,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError>;
 
     fn consume_execution(
         &mut self,
         cost_units: u32,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError>;
 
     fn lock_fee(
@@ -92,6 +92,25 @@ pub enum RoyaltyReceiver {
     Component(ComponentAddress, RENodeId),
 }
 
+#[repr(usize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, IntoStaticStr)]
+pub enum CostingReason {
+    TxBaseCost,
+    TxPayloadCost,
+    TxSignatureVerification,
+    Invoke,
+    GetVisibleNodes,
+    DropNode,
+    CreateNode,
+    LockSubstate,
+    ReadSubstate,
+    WriteSubstate,
+    DropLock,
+    InstantiateWasm,
+    RunWasm,
+    RunNative,
+}
+
 #[derive(Debug)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
@@ -117,9 +136,9 @@ pub struct SystemLoanFeeReserve {
     check_point: u32,
 
     /// Execution costs that are deferred
-    execution_deferred: HashMap<&'static str, u32>,
+    execution_deferred: HashMap<CostingReason, u32>,
     /// Execution cost breakdown
-    execution: HashMap<&'static str, u32>,
+    execution: HashMap<CostingReason, u32>,
     /// Royalty cost breakdown
     royalty: HashMap<RoyaltyReceiver, u32>,
 
@@ -266,7 +285,7 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         amount: u32,
         multiplier: usize,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
         if amount == 0 {
             return Ok(());
@@ -306,7 +325,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         cost_units_per_multiple: u32,
         multiplier: usize,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
         if multiplier == 0 {
             return Ok(());
@@ -321,7 +340,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_execution(
         &mut self,
         cost_units: u32,
-        reason: &'static str,
+        reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
         if cost_units == 0 {
             return Ok(());
@@ -382,7 +401,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             execution_cost_unit_breakdown: self
                 .execution
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v))
+                .map(|(k, v)| (Into::<&'static str>::into(k).to_owned(), v))
                 .collect(),
             royalty_cost_unit_breakdown: self.royalty,
         }
@@ -418,7 +437,7 @@ mod tests {
     fn test_consume_and_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5, false);
         fee_reserve
-            .consume_multiplied_execution(2, 1, "test")
+            .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         let summary = fee_reserve.finalize();
@@ -434,7 +453,7 @@ mod tests {
         let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5, false);
         assert_eq!(
             Err(FeeReserveError::InsufficientBalance),
-            fee_reserve.consume_multiplied_execution(6, 1, "test")
+            fee_reserve.consume_multiplied_execution(6, 1, CostingReason::Invoke)
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -480,7 +499,7 @@ mod tests {
         let mut fee_reserve =
             SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50, false);
         fee_reserve
-            .consume_multiplied_execution(2, 1, "test")
+            .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
@@ -496,7 +515,7 @@ mod tests {
         let mut fee_reserve =
             SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50, false);
         fee_reserve
-            .consume_multiplied_execution(2, 1, "test")
+            .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve
             .consume_royalty(

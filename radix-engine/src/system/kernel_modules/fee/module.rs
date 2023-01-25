@@ -8,6 +8,7 @@ use crate::types::*;
 use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
 
+use super::CostingReason;
 use super::ExecutionFeeReserve;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
@@ -37,7 +38,7 @@ impl CostingModule {
 
 pub fn consume_api_cost<R: FeeReserve>(
     track: &mut Track<R>,
-    reason: &'static str,
+    reason: CostingReason,
     costing_entry: CostingEntry,
 ) -> Result<(), ModuleError> {
     let cost_units = track.fee_table.system_api_cost(costing_entry);
@@ -49,15 +50,15 @@ pub fn consume_api_cost<R: FeeReserve>(
 }
 
 impl<R: FeeReserve> BaseModule<R> for CostingModule {
-    fn pre_sys_call(
+    fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
-        input: SysCallInput,
+        input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke {
+            KernelApiCallInput::Invoke {
                 depth, input_size, ..
             } => {
                 if depth == self.max_depth {
@@ -67,62 +68,74 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 }
 
                 if depth > 0 {
-                    consume_api_cost(track, "invoke", CostingEntry::Invoke { input_size })?;
+                    consume_api_cost(
+                        track,
+                        CostingReason::Invoke,
+                        CostingEntry::Invoke { input_size },
+                    )?;
                 }
             }
-            SysCallInput::ReadOwnedNodes => {
-                consume_api_cost(track, "read_owned_nodes", CostingEntry::ReadOwnedNodes)?;
+            KernelApiCallInput::GetVisibleNodes => {
+                consume_api_cost(
+                    track,
+                    CostingReason::GetVisibleNodes,
+                    CostingEntry::ReadOwnedNodes,
+                )?;
             }
-            SysCallInput::DropNode { .. } => {
-                // TODO: get size of the value
-                consume_api_cost(track, "drop_node", CostingEntry::DropNode { size: 0 })?;
-            }
-            SysCallInput::CreateNode { .. } => {
-                // TODO: get size of the value
-                consume_api_cost(track, "create_node", CostingEntry::CreateNode { size: 0 })?;
-            }
-            SysCallInput::LockSubstate { .. } => {
+            KernelApiCallInput::DropNode { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(
                     track,
-                    "lock_substate",
+                    CostingReason::DropNode,
+                    CostingEntry::DropNode { size: 0 },
+                )?;
+            }
+            KernelApiCallInput::CreateNode { .. } => {
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    CostingReason::CreateNode,
+                    CostingEntry::CreateNode { size: 0 },
+                )?;
+            }
+            KernelApiCallInput::LockSubstate { .. } => {
+                // TODO: get size of the value
+                consume_api_cost(
+                    track,
+                    CostingReason::LockSubstate,
                     CostingEntry::LockSubstate { size: 0 },
                 )?;
             }
-            SysCallInput::GetRef { .. } => {
+            KernelApiCallInput::GetRef { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(
                     track,
-                    "read_substate",
+                    CostingReason::ReadSubstate,
                     CostingEntry::ReadSubstate { size: 0 },
                 )?;
             }
-            SysCallInput::GetRefMut { .. } => {
+            KernelApiCallInput::GetRefMut { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(
                     track,
-                    "write_substate",
+                    CostingReason::WriteSubstate,
                     CostingEntry::WriteSubstate { size: 0 },
                 )?;
             }
-            SysCallInput::DropLock { .. } => {
-                consume_api_cost(track, "drop_lock", CostingEntry::DropLock)?;
-            }
-            SysCallInput::ReadBlob { .. } => {
-                // TODO pass the right size
-                consume_api_cost(track, "read_blob", CostingEntry::ReadBlob { size: 0 })?;
+            KernelApiCallInput::DropLock { .. } => {
+                consume_api_cost(track, CostingReason::DropLock, CostingEntry::DropLock)?;
             }
         }
 
         Ok(())
     }
 
-    fn post_sys_call(
+    fn post_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _output: SysCallOutput,
+        _output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
@@ -138,7 +151,11 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         let byte_length = code.len();
         track
             .fee_reserve()
-            .consume_multiplied_execution(cost_units_per_byte, byte_length, "instantiate_wasm")
+            .consume_multiplied_execution(
+                cost_units_per_byte,
+                byte_length,
+                CostingReason::InstantiateWasm,
+            )
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -151,7 +168,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve()
-            .consume_execution(units, "run_wasm")
+            .consume_execution(units, CostingReason::RunWasm)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -183,7 +200,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 let cost_units = track.fee_table.run_native_fn_cost(&native_fn);
                 track
                     .fee_reserve()
-                    .consume_execution(cost_units, "run_native_method")
+                    .consume_execution(cost_units, CostingReason::RunNative)
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
             }
             _ => Ok(()),

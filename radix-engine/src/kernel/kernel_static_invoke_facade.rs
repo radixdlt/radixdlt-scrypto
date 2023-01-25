@@ -1,4 +1,4 @@
-use super::module::SysCallOutput;
+use super::module::KernelApiCallOutput;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi};
 use crate::kernel::module::BaseModule;
@@ -36,11 +36,11 @@ where
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::Invoke {
+                KernelApiCallInput::Invoke {
                     fn_identifier: invocation.fn_identifier(),
                     input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
@@ -61,11 +61,11 @@ where
         self.execution_mode = saved_mode;
 
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke { rtn: &rtn },
+                KernelApiCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
 
