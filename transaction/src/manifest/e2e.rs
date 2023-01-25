@@ -548,6 +548,25 @@ CALL_METHOD
         );
     }
 
+    #[test]
+    fn test_assert_access_rule() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/access_rule/assert_access_rule.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CALL_METHOD
+    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
+    "lock_fee"
+    Decimal("10");
+ASSERT_ACCESS_RULE
+    Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))));
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,

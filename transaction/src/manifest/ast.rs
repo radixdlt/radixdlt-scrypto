@@ -203,6 +203,10 @@ pub enum Instruction {
     CreateIdentity {
         access_rule: Value,
     },
+
+    AssertAccessRule {
+        access_rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -77,7 +77,7 @@ impl VaultRuntimeSubstate {
         let resource = self
             .borrow_resource_mut()
             .take_by_amount(amount)
-            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| InvokeError::SelfError(VaultError::ResourceOperationError(e)))?;
         Ok(resource)
     }
 
@@ -88,7 +88,7 @@ impl VaultRuntimeSubstate {
         let resource = self
             .borrow_resource_mut()
             .take_by_ids(ids)
-            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| InvokeError::SelfError(VaultError::ResourceOperationError(e)))?;
         Ok(resource)
     }
 

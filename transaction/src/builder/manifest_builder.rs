@@ -912,6 +912,11 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::AssertAccessRule { access_rule })
+            .0
+    }
+
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>
     where
         F: FnOnce(&mut Self) -> Result<&mut Self, E>,

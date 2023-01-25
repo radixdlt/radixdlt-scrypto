@@ -131,6 +131,7 @@ pub enum TokenKind {
     CreateNonFungibleResourceWithOwner,
     CreateAccessController,
     CreateIdentity,
+    AssertAccessRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -473,6 +474,7 @@ impl Lexer {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
+            "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
