@@ -272,7 +272,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             substate_store
                 .get_substate(&SubstateId(
                     global.node_deref(),
-                    NodeModuleId::SELF,
+                    NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
                 .map(|s| s.substate)
@@ -364,7 +364,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
-                NodeModuleId::SELF,
+                NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate)

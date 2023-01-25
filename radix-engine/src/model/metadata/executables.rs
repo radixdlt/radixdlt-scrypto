@@ -49,11 +49,10 @@ impl Executor for MetadataSetInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let handle = system_api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
             LockFlags::MUTABLE,
         )?;
 
@@ -106,11 +105,10 @@ impl Executor for MetadataGetInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let handle = api.lock_substate(
             self.receiver,
-            NodeModuleId::SELF,
-            offset,
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
             LockFlags::MUTABLE,
         )?;
 

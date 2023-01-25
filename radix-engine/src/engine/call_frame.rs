@@ -253,7 +253,7 @@ impl CallFrame {
             match location {
                 RENodeLocation::Store => track
                     .release_lock(
-                        SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
+                        SubstateId(node_id, module_id, offset.clone()),
                         flags.contains(LockFlags::FORCE_WRITE),
                     )
                     .map_err(KernelError::TrackError),
@@ -464,7 +464,7 @@ impl CallFrame {
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match location {
             RENodeLocation::Heap => heap.get_substate(node_id, module_id, offset)?,
-            RENodeLocation::Store => track.get_substate(node_id, offset),
+            RENodeLocation::Store => track.get_substate(node_id, module_id, offset),
         };
 
         Ok(substate_ref)
@@ -510,7 +510,7 @@ impl CallFrame {
 
         let ref_mut = match node_location {
             RENodeLocation::Heap => heap.get_substate_mut(node_id, module_id, &offset).unwrap(),
-            RENodeLocation::Store => track.get_substate_mut(node_id, &offset),
+            RENodeLocation::Store => track.get_substate_mut(node_id, module_id, &offset),
         };
 
         Ok(ref_mut)

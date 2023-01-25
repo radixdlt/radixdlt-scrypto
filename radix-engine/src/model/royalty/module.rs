@@ -95,7 +95,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                     LockFlags::read_only(),
                 )
                 .map_err(RoyaltyError::from)?;
-            let substate = track.get_substate(node_id, &offset);
+            let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
             let package_id = match substate.global_address() {
                 GlobalAddressSubstate::Package(id) => *id,
                 _ => panic!("Unexpected global address substate type"),
@@ -117,7 +117,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 LockFlags::read_only(),
             )
             .map_err(RoyaltyError::from)?;
-        let substate = track.get_substate(node_id, &offset);
+        let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
         let royalty = substate
             .package_royalty_config()
             .royalty_config
@@ -149,7 +149,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             )
             .map_err(RoyaltyError::from)?;
         let royalty_vault = track
-            .get_substate(node_id, &offset)
+            .get_substate(node_id, NodeModuleId::SELF, &offset)
             .package_royalty_accumulator()
             .royalty
             .clone();
@@ -175,7 +175,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                         LockFlags::read_only(),
                     )
                     .map_err(RoyaltyError::from)?;
-                let substate = track.get_substate(node_id, &offset);
+                let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
                 let component_id = match substate.global_address() {
                     GlobalAddressSubstate::Component(id) => *id,
                     _ => panic!("Unexpected global address substate type"),
@@ -197,7 +197,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                     LockFlags::read_only(),
                 )
                 .map_err(RoyaltyError::from)?;
-            let substate = track.get_substate(node_id, &offset);
+            let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
             let royalty = substate
                 .component_royalty_config()
                 .royalty_config
@@ -228,7 +228,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 )
                 .map_err(RoyaltyError::from)?;
             let royalty_vault = track
-                .get_substate(node_id, &offset)
+                .get_substate(node_id, NodeModuleId::SELF, &offset)
                 .component_royalty_accumulator()
                 .royalty
                 .clone();

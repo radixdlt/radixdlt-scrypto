@@ -204,7 +204,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 underlying_node,
-                NodeModuleId::SELF,
+                NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate.to_runtime())

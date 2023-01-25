@@ -250,7 +250,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    pub fn get_substate(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> SubstateRef {
+    pub fn get_substate(&mut self, node_id: RENodeId, module_id: NodeModuleId, offset: &SubstateOffset) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
             (
                 RENodeId::KeyValueStore(..),
@@ -261,7 +261,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => self.read_key_value(node_id, offset),
             _ => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
                     .loaded_substates
                     .get(&substate_id)
@@ -275,19 +275,22 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn get_substate_mut(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
-        let runtime_substate = match (node_id, offset) {
+        let runtime_substate = match (node_id, module_id, offset) {
             (
                 RENodeId::KeyValueStore(..),
+                NodeModuleId::SELF,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
             )
             | (
                 RENodeId::NonFungibleStore(..),
+                NodeModuleId::SELF,
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => self.read_key_value_mut(node_id, offset),
             _ => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
                     .loaded_substates
                     .get_mut(&substate_id)

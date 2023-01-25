@@ -117,7 +117,7 @@ impl RENodeInit {
             RENodeInit::Identity(metadata, access_rules) => {
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::Metadata,
                         SubstateOffset::Metadata(MetadataOffset::Metadata),
                     ),
                     metadata.into(),
@@ -168,7 +168,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::Metadata,
                         SubstateOffset::Metadata(MetadataOffset::Metadata),
                     ),
                     metadata.into(),
@@ -229,7 +229,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::Metadata,
                         SubstateOffset::Metadata(MetadataOffset::Metadata),
                     ),
                     metadata.into(),
@@ -257,7 +257,7 @@ impl RENodeInit {
                 );
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
+                        NodeModuleId::Metadata,
                         SubstateOffset::Metadata(MetadataOffset::Metadata),
                     ),
                     metadata.into(),
