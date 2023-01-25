@@ -166,7 +166,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn invoke_method(
+        pub fn call_method(
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
             receiver_len: u32,
@@ -182,7 +182,7 @@ impl WasmerModule {
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .invoke_method(receiver, ident, args)
+                .call_method(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -331,7 +331,7 @@ impl WasmerModule {
         let import_object = imports! {
             MODULE_ENV_NAME => {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
-                INVOKE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke_method),
+                CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 INVOKE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke),
                 CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
                 GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),

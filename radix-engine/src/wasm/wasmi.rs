@@ -40,9 +40,9 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 CONSUME_BUFFER_FUNCTION_ID,
             )),
-            INVOKE_METHOD_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+            CALL_METHOD_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
-                INVOKE_METHOD_FUNCTION_ID,
+                CALL_METHOD_FUNCTION_ID,
             )),
             INVOKE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
@@ -182,7 +182,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 Ok(None)
             }
-            INVOKE_METHOD_FUNCTION_ID => {
+            CALL_METHOD_FUNCTION_ID => {
                 let receiver_ptr = args.nth_checked::<u32>(0)?;
                 let receiver_len = args.nth_checked::<u32>(1)?;
                 let ident_ptr = args.nth_checked::<u32>(2)?;
@@ -190,7 +190,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 let args_ptr = args.nth_checked::<u32>(4)?;
                 let args_len = args.nth_checked::<u32>(5)?;
 
-                let buffer = self.runtime.invoke_method(
+                let buffer = self.runtime.call_method(
                     self.read_memory(receiver_ptr, receiver_len)?,
                     self.read_memory(ident_ptr, ident_len)?,
                     self.read_memory(args_ptr, args_len)?,

@@ -19,9 +19,9 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ScryptoEnv {
-    // Slightly different from ClientComponentApi::invoke_method
+    // Slightly different from ClientComponentApi::call_method
 
-    pub fn invoke_method(
+    pub fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
@@ -30,7 +30,7 @@ impl ScryptoEnv {
         let receiver = scrypto_encode(&receiver).unwrap();
 
         let return_data = copy_buffer(unsafe {
-            invoke_method(
+            call_method(
                 receiver.as_ptr(),
                 receiver.len(),
                 method_name.as_ptr(),

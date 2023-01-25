@@ -39,7 +39,7 @@ extern "C" {
     //===============
 
     /// Invokes a method on a component.
-    pub fn invoke_method(
+    pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
         ident_ptr: *const u8,

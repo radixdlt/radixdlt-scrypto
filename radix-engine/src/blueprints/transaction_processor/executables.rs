@@ -461,7 +461,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke_method(
+                    let result = api.call_method(
                         ScryptoReceiver::Global(*component_address),
                         method_name,
                         args.into_vec(),

@@ -74,7 +74,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv
-            .invoke_method(
+            .call_method(
                 ScryptoReceiver::Global(component_address),
                 method.as_ref(),
                 args,

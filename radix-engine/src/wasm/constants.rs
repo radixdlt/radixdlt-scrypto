@@ -1,7 +1,7 @@
 pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-pub const INVOKE_METHOD_FUNCTION_ID: usize = 1;
-pub const INVOKE_METHOD_FUNCTION_NAME: &str = "invoke_method";
+pub const CALL_METHOD_FUNCTION_ID: usize = 1;
+pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const INVOKE_FUNCTION_ID: usize = 2;
 pub const INVOKE_FUNCTION_NAME: &str = "invoke";
 pub const CREATE_NODE_FUNCTION_ID: usize = 3;

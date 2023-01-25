@@ -56,7 +56,7 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,

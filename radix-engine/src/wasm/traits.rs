@@ -15,7 +15,7 @@ pub trait WasmRuntime {
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,

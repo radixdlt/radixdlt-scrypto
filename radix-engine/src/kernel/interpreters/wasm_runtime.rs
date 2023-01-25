@@ -90,7 +90,7 @@ where
             )))
     }
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
@@ -101,7 +101,7 @@ where
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
 
-        let return_data = self.api.invoke_method(receiver, ident.as_str(), args)?;
+        let return_data = self.api.call_method(receiver, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data.into_vec())
     }
@@ -222,7 +222,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
