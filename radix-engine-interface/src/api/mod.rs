@@ -156,5 +156,6 @@ pub trait InvokableModel<E>:
     + Invokable<AccessControllerCancelRecoveryAttemptAsRecoveryInvocation, E>
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
 {
 }

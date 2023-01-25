@@ -225,6 +225,34 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
     receipt.expect_commit_success();
 }
 
+#[test]
+pub fn stop_timed_recovery_with_no_access_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(10));
+
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            test_runner.access_controller_component_address,
+            "stop_timed_recovery",
+            scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                rule_set: RuleSet {
+                    primary_role: rule!(require(RADIX_TOKEN)),
+                    recovery_role: rule!(require(RADIX_TOKEN)),
+                    confirmation_role: rule!(require(RADIX_TOKEN)),
+                },
+                timed_recovery_delay_in_minutes: Some(10),
+            })
+            .unwrap(),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(manifest);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error)
+}
+
 //=============
 // State Tests
 //=============
@@ -428,6 +456,37 @@ mod normal_operations_with_primary_unlocked {
 
             // Act
             let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn stop_timed_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (Role::Confirmation, Some(is_invalid_state_transition_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.stop_timed_recovery(
                 role,
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
@@ -649,6 +708,37 @@ mod normal_operations_with_primary_locked {
 
             // Act
             let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn stop_timed_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (Role::Confirmation, Some(is_invalid_state_transition_error)),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.stop_timed_recovery(
                 role,
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
@@ -903,6 +993,37 @@ mod recovery_mode_with_primary_unlocked {
             };
         }
     }
+
+    #[test]
+    pub fn stop_timed_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.stop_timed_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
 }
 
 mod recovery_mode_with_primary_locked {
@@ -1128,6 +1249,37 @@ mod recovery_mode_with_primary_locked {
 
             // Act
             let receipt = test_runner.cancel_recovery_attempt(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
+
+            // Assert
+            match error_assertion_function {
+                None => {
+                    receipt.expect_commit_success();
+                }
+                Some(function) => receipt.expect_specific_failure(function),
+            };
+        }
+    }
+
+    #[test]
+    pub fn stop_timed_recovery() {
+        // Arrange
+        let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
+            (Role::Primary, None),
+            (Role::Recovery, None),
+            (Role::Confirmation, None),
+        ];
+
+        for (role, error_assertion_function) in test_vectors {
+            let mut test_runner = setup_environment();
+
+            // Act
+            let receipt = test_runner.stop_timed_recovery(
                 role,
                 rule!(require(RADIX_TOKEN)),
                 rule!(require(RADIX_TOKEN)),
@@ -1441,6 +1593,33 @@ impl AccessControllerTestRunner {
                 self.access_controller_component_address,
                 "unlock_primary_role",
                 scrypto_encode(&AccessControllerUnlockPrimaryRoleMethodArgs {}).unwrap(),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn stop_timed_recovery(
+        &mut self,
+        as_role: Role,
+        proposed_primary_role: AccessRule,
+        proposed_recovery_role: AccessRule,
+        proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> TransactionReceipt {
+        let manifest = self
+            .manifest_builder(as_role)
+            .call_method(
+                self.access_controller_component_address,
+                "stop_timed_recovery",
+                scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                    rule_set: RuleSet {
+                        primary_role: proposed_primary_role,
+                        recovery_role: proposed_recovery_role,
+                        confirmation_role: proposed_confirmation_role,
+                    },
+                    timed_recovery_delay_in_minutes,
+                })
+                .unwrap(),
             )
             .build();
         self.execute_manifest(manifest)

@@ -249,6 +249,8 @@ impl FeeTable {
 
                 AccessControllerFn::LockPrimaryRole => self.fixed_low,
                 AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
+
+                AccessControllerFn::StopTimedRecovery => self.fixed_low,
             },
         }
     }

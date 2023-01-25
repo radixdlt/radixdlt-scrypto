@@ -832,6 +832,8 @@ pub enum AccessControllerFn {
 
     LockPrimaryRole,
     UnlockPrimaryRole,
+
+    StopTimedRecovery,
 }
 
 pub struct AccessControllerPackage;
@@ -971,6 +973,17 @@ impl AccessControllerPackage {
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::UnlockPrimaryRole(
                     AccessControllerUnlockPrimaryRoleInvocation { receiver },
+                )
+            }
+            AccessControllerFn::StopTimedRecovery => {
+                let args = scrypto_decode::<AccessControllerStopTimedRecoveryMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::StopTimedRecovery(
+                    AccessControllerStopTimedRecoveryInvocation {
+                        receiver,
+                        rule_set: args.rule_set,
+                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                    },
                 )
             }
         };

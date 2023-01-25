@@ -417,3 +417,66 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
         }
     }
 }
+
+pub(super) struct AccessControllerStopTimedRecoveryStateMachineInput {
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
+    for AccessControllerSubstate
+{
+    type Output = ();
+
+    fn transition_mut<Y>(
+        &mut self,
+        _api: &mut Y,
+        input: AccessControllerStopTimedRecoveryStateMachineInput,
+    ) -> Result<Self::Output, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter
+        // if primary is locked or unlocked
+        match self.state {
+            (
+                _,
+                OperationState::Recovery {
+                    ref mut ongoing_recoveries,
+                },
+            ) => {
+                let recovery_proposal = ongoing_recoveries
+                    .iter_mut()
+                    .find(
+                        |(
+                            proposer,
+                            RecoveryProposal {
+                                rule_set,
+                                timed_recovery_delay_in_minutes,
+                                ..
+                            },
+                        )| {
+                            Proposer::Recovery == **proposer
+                                && input.rule_set == *rule_set
+                                && input.timed_recovery_delay_in_minutes
+                                    == *timed_recovery_delay_in_minutes
+                        },
+                    )
+                    .map_or(
+                        access_controller_runtime_error!(NoValidProposedRuleSetExists),
+                        |(_, proposal)| Ok(proposal),
+                    )?;
+
+                // If the recovery proposal has a end time defined, then switch it to none,
+                // otherwise error out since this was not a correct OP.
+                if recovery_proposal.timed_recovery_allowed_after.is_some() {
+                    recovery_proposal.timed_recovery_allowed_after = None;
+                    Ok(())
+                } else {
+                    access_controller_runtime_error!(InvalidStateTransition)
+                }
+            }
+            _ => access_controller_runtime_error!(InvalidStateTransition),
+        }
+    }
+}

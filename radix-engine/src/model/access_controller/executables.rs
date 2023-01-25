@@ -102,7 +102,6 @@ impl Executor for AccessControllerCreateGlobalInvocation {
 // Access Controller Create Proof
 //================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCreateProofExecutable {
     pub receiver: RENodeId,
 }
@@ -159,7 +158,6 @@ impl Executor for AccessControllerCreateProofExecutable {
 // Access Controller Initiate Recovery
 //=====================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
@@ -259,7 +257,6 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
 // Access Controller Quick Confirm Recovery
 //==========================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
@@ -392,6 +389,19 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                 rule: access_rule.clone(),
             })?;
         }
+        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
+            match entry {
+                AccessRuleEntry::AccessRule(access_rule) => {
+                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: self.receiver,
+                        index: 0,
+                        key: method_key.to_owned(),
+                        rule: access_rule.to_owned(),
+                    })?;
+                }
+                AccessRuleEntry::Group(..) => {} // Already updated above
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -401,7 +411,6 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
 // Access Controller Timed Confirm Recovery
 //==========================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
@@ -467,6 +476,19 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                 rule: access_rule.clone(),
             })?;
         }
+        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
+            match entry {
+                AccessRuleEntry::AccessRule(access_rule) => {
+                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: self.receiver,
+                        index: 0,
+                        key: method_key.to_owned(),
+                        rule: access_rule.to_owned(),
+                    })?;
+                }
+                AccessRuleEntry::Group(..) => {} // Already updated above
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -476,7 +498,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
 // Access Controller Cancel Recovery Attempt
 //===========================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub rule_set: RuleSet,
@@ -572,7 +593,6 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
 // Access Controller Lock Primary Role
 //=====================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerLockPrimaryRoleExecutable {
     pub receiver: RENodeId,
 }
@@ -628,7 +648,6 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
 // Access Controller Unlock Primary Role
 //=======================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerUnlockPrimaryRoleExecutable {
     pub receiver: RENodeId,
 }
@@ -678,6 +697,80 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
 
         Ok(((), CallFrameUpdate::empty()))
     }
+}
+
+//=======================================
+// Access Controller Stop Timed Recovery
+//=======================================
+
+pub struct AccessControllerStopTimedRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+impl ExecutableInvocation for AccessControllerStopTimedRecoveryInvocation {
+    type Exec = AccessControllerStopTimedRecoveryExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::AccessController(AccessControllerFn::StopTimedRecovery),
+            resolved_receiver,
+        );
+
+        let executor = Self::Exec {
+            receiver: resolved_receiver.receiver,
+            rule_set: self.rule_set,
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for AccessControllerStopTimedRecoveryExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerStopTimedRecoveryStateMachineInput {
+                rule_set: self.rule_set,
+                timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes,
+            },
+        )?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
+    let mut rule_nodes = Vec::new();
+    for access_rule in access_rules.into_iter() {
+        match access_rule {
+            AccessRule::AllowAll => return AccessRule::AllowAll,
+            AccessRule::DenyAll => {}
+            AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
+        }
+    }
+    AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
 }
 
 //=========
@@ -764,6 +857,21 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
             AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
         )),
         confirmation_group.into(),
+    );
+
+    // Other methods
+    access_rules.set_method_access_rule(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::StopTimedRecovery,
+        )),
+        access_rule_or(
+            [
+                rule_set.primary_role,
+                rule_set.recovery_role,
+                rule_set.confirmation_role,
+            ]
+            .into(),
+        ),
     );
 
     let non_fungible_local_id = NonFungibleLocalId::Bytes(

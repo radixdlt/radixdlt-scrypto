@@ -385,3 +385,35 @@ impl Into<CallTableInvocation> for AccessControllerUnlockPrimaryRoleInvocation {
             .into()
     }
 }
+
+//=======================================
+// Access Controller Stop Timed Recovery
+//=======================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerStopTimedRecoveryMethodArgs {
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerStopTimedRecoveryInvocation {
+    pub receiver: ComponentAddress,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+impl Invocation for AccessControllerStopTimedRecoveryInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for AccessControllerStopTimedRecoveryInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for AccessControllerStopTimedRecoveryInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::AccessController(AccessControllerInvocation::StopTimedRecovery(self))
+            .into()
+    }
+}

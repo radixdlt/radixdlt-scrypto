@@ -241,6 +241,8 @@ pub enum AccessControllerInvocation {
 
     LockPrimaryRole(AccessControllerLockPrimaryRoleInvocation),
     UnlockPrimaryRole(AccessControllerUnlockPrimaryRoleInvocation),
+
+    StopTimedRecovery(AccessControllerStopTimedRecoveryInvocation),
 }
 
 impl NativeInvocation {
@@ -536,6 +538,9 @@ impl NativeInvocation {
                 )
                 | AccessControllerInvocation::UnlockPrimaryRole(
                     AccessControllerUnlockPrimaryRoleInvocation { receiver, .. },
+                )
+                | AccessControllerInvocation::StopTimedRecovery(
+                    AccessControllerStopTimedRecoveryInvocation { receiver, .. },
                 ) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
                 }
