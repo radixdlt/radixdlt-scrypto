@@ -1,4 +1,5 @@
 mod abi_extractor;
+mod account;
 mod auth;
 mod auth_converter;
 mod clock;
@@ -27,6 +28,7 @@ mod transaction_runtime;
 pub use self::scrypto::*;
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
+pub use account::*;
 pub use auth::*;
 pub use auth_converter::*;
 pub use clock::*;
