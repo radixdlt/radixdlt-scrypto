@@ -26,6 +26,7 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     Slice::new(ptr as u32, len as u32)
 }
 
+#[cfg(target_arch = "wasm32")]
 extern "C" {
     //===============
     // Buffer API
@@ -92,4 +93,70 @@ extern "C" {
 
     // Returns the current actor.
     pub fn get_actor() -> Buffer;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn invoke_method(
+    _receiver_ptr: *const u8,
+    _receive_len: usize,
+    _ident_ptr: *const u8,
+    _ident_len: usize,
+    _args_ptr: *const u8,
+    _args_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn invoke(_invocation_ptr: *const u8, _invocation_len: usize) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn create_node(_node_ptr: *const u8, _node_len: usize) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_visible_nodes() -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn drop_node(_node_id_ptr: *const u8, _node_id_len: usize) {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn lock_substate(
+    _node_id: *const u8,
+    _node_id_len: usize,
+    _offset: *const u8,
+    _offset_len: usize,
+    _mutable: bool,
+) -> u32 {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn read_substate(_handle: u32) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn unlock_substate(_handle: u32) {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_actor() -> Buffer {
+    todo!()
 }
