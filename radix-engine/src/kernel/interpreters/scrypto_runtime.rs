@@ -1,6 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::system::invocation::invoke::invoke_call_table;
+use crate::system::invocation::invoke_native::invoke_native_fn_by_identifier;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -120,11 +120,18 @@ where
         self.allocate_buffer(return_data.into_vec())
     }
 
-    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let invocation = scrypto_decode::<CallTableInvocation>(&invocation)
-            .map_err(WasmRuntimeError::InvalidInvocation)?;
+    fn call_native(
+        &mut self,
+        native_fn_identifier: Vec<u8>,
+        invocation: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let native_fn_identifier = scrypto_decode::<NativeFn>(&native_fn_identifier)
+            .map_err(WasmRuntimeError::InvalidNativeFnIdentifier)?;
 
-        let return_data = invoke_call_table(invocation, self.api)?.into_vec();
+        let return_data = scrypto_encode(
+            invoke_native_fn_by_identifier(native_fn_identifier, invocation, self.api)?.as_ref(),
+        )
+        .expect("Failed to encode native output");
 
         self.allocate_buffer(return_data)
     }
@@ -255,7 +262,11 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn call_native(
+        &mut self,
+        native_fn_identifier: Vec<u8>,
+        invocation: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

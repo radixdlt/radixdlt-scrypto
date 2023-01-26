@@ -487,7 +487,7 @@ pub enum ResourceManagerFn {
     MintFungible,
     Burn,
     UpdateVaultAuth,
-    LockAuth,
+    SetVaultAuthMutability,
     UpdateNonFungibleData,
     GetNonFungible,
     GetResourceType,
@@ -762,7 +762,7 @@ pub enum LoggerFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionRuntimeFn {
-    Get,
+    GetHash,
     GenerateUuid,
 }
 

@@ -47,7 +47,7 @@ pub enum ResourceManagerError {
     InvalidNonFungibleIdType,
 }
 
-impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
+impl ExecutableInvocation for ResourceManagerBurnBucketInvocation {
     type Exec = Self;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
@@ -61,7 +61,7 @@ impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl Executor for ResourceManagerBucketBurnInvocation {
+impl Executor for ResourceManagerBurnBucketInvocation {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -275,7 +275,9 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::LockAuth)),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::SetVaultAuthMutability,
+        )),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
@@ -933,7 +935,7 @@ impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::LockAuth),
+            NativeFn::ResourceManager(ResourceManagerFn::SetVaultAuthMutability),
             resolved_receiver,
         );
         let executor = ResourceManagerLockVaultAuthExecutable(

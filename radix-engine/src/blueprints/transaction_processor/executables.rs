@@ -655,7 +655,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
-                    let rtn = api.invoke(ResourceManagerBucketBurnInvocation { bucket })?;
+                    let rtn = api.invoke(ResourceManagerBurnBucketInvocation { bucket })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::MintFungible {

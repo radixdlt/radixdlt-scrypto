@@ -73,7 +73,16 @@ impl ScryptoEnv {
         &mut self,
         invocation: N,
     ) -> Result<N::Output, ClientApiError> {
-        let fn_identifier = scrypto_encode(&invocation.fn_identifier()).unwrap();
+        let fn_identifier = match invocation.fn_identifier() {
+            FnIdentifier::Scrypto(_) => {
+                panic!(
+                    "Please use `call_method` and `call_function` instead for Scrypto invocation"
+                )
+            }
+            FnIdentifier::Native(ident) => ident,
+        };
+
+        let fn_identifier = scrypto_encode(&fn_identifier).unwrap();
         let invocation = scrypto_encode(&invocation).unwrap();
 
         let return_data = copy_buffer(unsafe {

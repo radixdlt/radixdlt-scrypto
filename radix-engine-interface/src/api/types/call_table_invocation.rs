@@ -109,7 +109,7 @@ impl Into<CallTableInvocation> for NativeInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeInvocation {
-    Get(TransactionRuntimeGetHashInvocation),
+    GetHash(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
@@ -201,7 +201,7 @@ pub enum ResourceInvocation {
         ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
     ),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
-    BurnBucket(ResourceManagerBucketBurnInvocation),
+    BurnBucket(ResourceManagerBurnBucketInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
     MintNonFungible(ResourceManagerMintNonFungibleInvocation),
@@ -210,7 +210,7 @@ pub enum ResourceInvocation {
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
-    LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
+    SetVaultAuthMutability(ResourceManagerSetVaultAuthMutabilityInvocation),
     GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
@@ -375,7 +375,7 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::LockVaultAuth(invocation) => {
+                ResourceInvocation::SetVaultAuthMutability(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
@@ -518,7 +518,7 @@ impl NativeInvocation {
                 WorktopInvocation::TakeAmount(..) => {}
             },
             NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::Get(..) => {}
+                TransactionRuntimeInvocation::GetHash(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
         }

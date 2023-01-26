@@ -204,11 +204,11 @@ impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithInitialSuppl
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerBucketBurnInvocation {
+pub struct ResourceManagerBurnBucketInvocation {
     pub bucket: Bucket,
 }
 
-impl Clone for ResourceManagerBucketBurnInvocation {
+impl Clone for ResourceManagerBurnBucketInvocation {
     fn clone(&self) -> Self {
         Self {
             bucket: Bucket(self.bucket.0),
@@ -216,7 +216,7 @@ impl Clone for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl Invocation for ResourceManagerBucketBurnInvocation {
+impl Invocation for ResourceManagerBurnBucketInvocation {
     type Output = ();
 
     fn fn_identifier(&self) -> FnIdentifier {
@@ -224,11 +224,11 @@ impl Invocation for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl SerializableInvocation for ResourceManagerBucketBurnInvocation {
+impl SerializableInvocation for ResourceManagerBurnBucketInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for ResourceManagerBucketBurnInvocation {
+impl Into<CallTableInvocation> for ResourceManagerBurnBucketInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::ResourceManager(ResourceInvocation::BurnBucket(self)).into()
     }
@@ -306,7 +306,7 @@ impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
 
     fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::UpdateVaultAuth,
+            ResourceManagerFn::SetVaultAuthMutability,
         ))
     }
 }
@@ -317,7 +317,7 @@ impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation 
 
 impl Into<CallTableInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::LockVaultAuth(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::SetVaultAuthMutability(self)).into()
     }
 }
 

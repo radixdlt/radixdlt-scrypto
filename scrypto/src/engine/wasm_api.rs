@@ -62,8 +62,8 @@ extern "C" {
 
     /// Invokes a native function or method.
     pub fn call_native(
-        fn_identifier_ptr: *const u8,
-        fn_identifier_len: usize,
+        native_fn_identifier_ptr: *const u8,
+        native_fn_identifier_len: usize,
         invocation_ptr: *const u8,
         invocation_len: usize,
     ) -> Buffer;

@@ -26,7 +26,7 @@ impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
         Self: Sized,
     {
         let actor = ResolvedActor::method(
-            NativeFn::TransactionRuntime(TransactionRuntimeFn::Get),
+            NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash),
             ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();

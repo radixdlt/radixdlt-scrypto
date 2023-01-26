@@ -48,9 +48,9 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 CALL_FUNCTION_FUNCTION_ID,
             )),
-            INVOKE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+            CALL_NATIVE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
-                INVOKE_FUNCTION_ID,
+                CALL_NATIVE_FUNCTION_ID,
             )),
             CREATE_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
@@ -221,13 +221,16 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
-            INVOKE_FUNCTION_ID => {
-                let invocation_ptr = args.nth_checked::<u32>(0)?;
-                let invocation_len = args.nth_checked::<u32>(1)?;
+            CALL_NATIVE_FUNCTION_ID => {
+                let native_fn_identifier_ptr = args.nth_checked::<u32>(0)?;
+                let native_fn_identifier_len = args.nth_checked::<u32>(1)?;
+                let invocation_ptr = args.nth_checked::<u32>(2)?;
+                let invocation_len = args.nth_checked::<u32>(3)?;
 
-                let buffer = self
-                    .runtime
-                    .invoke(self.read_memory(invocation_ptr, invocation_len)?)?;
+                let buffer = self.runtime.call_native(
+                    self.read_memory(native_fn_identifier_ptr, native_fn_identifier_len)?,
+                    self.read_memory(invocation_ptr, invocation_len)?,
+                )?;
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }

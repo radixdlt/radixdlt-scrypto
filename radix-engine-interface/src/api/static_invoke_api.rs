@@ -66,7 +66,7 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<ProofGetAmountInvocation, E>
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
-    + Invokable<ResourceManagerBucketBurnInvocation, E>
+    + Invokable<ResourceManagerBurnBucketInvocation, E>
     + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
     + Invokable<ResourceManagerCreateFungibleInvocation, E>
     + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>

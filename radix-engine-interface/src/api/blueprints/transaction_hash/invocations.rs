@@ -12,7 +12,7 @@ impl Invocation for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 
     fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::TransactionRuntime(TransactionRuntimeFn::Get))
+        FnIdentifier::Native(NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash))
     }
 }
 
@@ -22,7 +22,7 @@ impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
 
 impl Into<CallTableInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::Get(self)).into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GetHash(self)).into()
     }
 }
 
