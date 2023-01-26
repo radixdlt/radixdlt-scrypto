@@ -33,7 +33,7 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_no_valid_proposed_rule_set_exists_error)
+    receipt.expect_specific_failure(is_proposer_and_confirmor_are_the_same_error)
 }
 
 #[test]
@@ -50,7 +50,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
 
     // Act
     let receipt = test_runner.quick_confirm_recovery(
-        Role::Recovery,
+        Role::Primary,
         Role::Recovery,
         rule!(require(PACKAGE_TOKEN)),
         rule!(require(PACKAGE_TOKEN)),
@@ -59,7 +59,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_no_valid_proposed_rule_set_exists_error)
+    receipt.expect_specific_failure(is_no_valid_recovery_proposal_exists_error)
 }
 
 #[test]
@@ -84,7 +84,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_recovery_for_this_role_already_exists_error)
+    receipt.expect_specific_failure(is_recovery_for_this_proposer_already_exists_error)
 }
 
 #[test]
@@ -162,7 +162,7 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_timed_recovery_can_not_be_performed_while_disabled_error);
+    receipt.expect_specific_failure(is_timed_recovery_delay_is_not_enabled_for_this_proposal_error);
 }
 
 #[test]
@@ -349,7 +349,10 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_locked_primary_role_error),
+            ),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -376,17 +379,17 @@ mod normal_operations_with_primary_unlocked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
         ];
 
@@ -418,7 +421,10 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -447,8 +453,14 @@ mod normal_operations_with_primary_unlocked {
     pub fn cancel_recovery_attempt() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -477,9 +489,18 @@ mod normal_operations_with_primary_unlocked {
     pub fn stop_timed_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
-            (Role::Confirmation, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Confirmation,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -522,7 +543,10 @@ mod normal_operations_with_primary_locked {
     pub fn create_proof() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_unlocked_primary_role_error),
+            ),
             (Role::Recovery, Some(is_auth_unauthorized_error)),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -576,7 +600,10 @@ mod normal_operations_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_unlocked_primary_role_error),
+            ),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -628,17 +655,17 @@ mod normal_operations_with_primary_locked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_invalid_state_transition_error),
+                Some(is_operation_requires_recovery_mode_error),
             ),
         ];
 
@@ -670,7 +697,10 @@ mod normal_operations_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -699,8 +729,14 @@ mod normal_operations_with_primary_locked {
     pub fn cancel_recovery_attempt() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -729,9 +765,18 @@ mod normal_operations_with_primary_locked {
     pub fn stop_timed_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
-            (Role::Confirmation, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
+            (
+                Role::Confirmation,
+                Some(is_operation_requires_recovery_mode_error),
+            ),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -808,7 +853,7 @@ mod recovery_mode_with_primary_unlocked {
             (Role::Primary, None),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_role_already_exists_error),
+                Some(is_recovery_for_this_proposer_already_exists_error),
             ),
         ];
 
@@ -864,7 +909,10 @@ mod recovery_mode_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_locked_primary_role_error),
+            ),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -896,12 +944,12 @@ mod recovery_mode_with_primary_unlocked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
         ];
 
@@ -967,7 +1015,7 @@ mod recovery_mode_with_primary_unlocked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1052,7 +1100,10 @@ mod recovery_mode_with_primary_locked {
     pub fn create_proof() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (Role::Primary, Some(is_invalid_state_transition_error)),
+            (
+                Role::Primary,
+                Some(is_operation_requires_unlocked_primary_role_error),
+            ),
             (Role::Recovery, Some(is_auth_unauthorized_error)),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
@@ -1080,7 +1131,7 @@ mod recovery_mode_with_primary_locked {
             (Role::Primary, None),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_role_already_exists_error),
+                Some(is_recovery_for_this_proposer_already_exists_error),
             ),
         ];
 
@@ -1111,7 +1162,10 @@ mod recovery_mode_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (Role::Recovery, Some(is_invalid_state_transition_error)),
+            (
+                Role::Recovery,
+                Some(is_operation_requires_unlocked_primary_role_error),
+            ),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -1168,12 +1222,12 @@ mod recovery_mode_with_primary_locked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
         ];
 
@@ -1239,7 +1293,7 @@ mod recovery_mode_with_primary_locked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_no_valid_proposed_rule_set_exists_error),
+                Some(is_no_valid_recovery_proposal_exists_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1311,16 +1365,34 @@ fn is_auth_unauthorized_error(error: &RuntimeError) -> bool {
     )
 }
 
-fn is_no_valid_proposed_rule_set_exists_error(error: &RuntimeError) -> bool {
+fn is_operation_requires_unlocked_primary_role_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::NoValidProposedRuleSetExists
+            AccessControllerError::OperationRequiresUnlockedPrimaryRole
         ))
     )
 }
 
-fn is_recovery_for_this_role_already_exists_error(error: &RuntimeError) -> bool {
+fn is_operation_requires_locked_primary_role_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::OperationRequiresLockedPrimaryRole
+        ))
+    )
+}
+
+fn is_operation_requires_recovery_mode_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::OperationRequiresRecoveryMode
+        ))
+    )
+}
+
+fn is_recovery_for_this_proposer_already_exists_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
@@ -1329,29 +1401,38 @@ fn is_recovery_for_this_role_already_exists_error(error: &RuntimeError) -> bool 
     )
 }
 
+fn is_proposer_and_confirmor_are_the_same_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::ProposerAndConfirmorAreTheSame
+        ))
+    )
+}
+
+fn is_no_valid_recovery_proposal_exists_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::NoValidRecoveryProposalExists
+        ))
+    )
+}
+
+fn is_timed_recovery_delay_is_not_enabled_for_this_proposal_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::TimedRecoveryDelayIsNotEnabledForThisProposal
+        ))
+    )
+}
+
 fn is_timed_recovery_delay_has_not_elapsed_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::TimedRecoveryDelayHasNotElapsed { .. }
-        ))
-    )
-}
-
-fn is_timed_recovery_can_not_be_performed_while_disabled_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::TimedRecoveryCanNotBePerformedWhileDisabled { .. }
-        ))
-    )
-}
-
-fn is_invalid_state_transition_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::InvalidStateTransition
+            AccessControllerError::TimedRecoveryDelayHasNotElapsed
         ))
     )
 }

@@ -15,14 +15,38 @@ use radix_engine_interface::{api::*, rule};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerError {
-    OperationNotAllowedWhenPrimaryIsLocked,
-    RecoveryForThisProposerAlreadyExists { proposer: Proposer },
-    NoValidProposedRuleSetExists,
-    TimeOverflow,
-    TimedRecoveryDelayHasNotElapsed,
-    TimedRecoveryCanNotBePerformedWhileDisabled,
+    /// Occurs when some action requires that the primary role is unlocked to happen.
+    OperationRequiresUnlockedPrimaryRole,
 
-    InvalidStateTransition,
+    /// Occurs when some action requires that the primary role is locked to happen.
+    OperationRequiresLockedPrimaryRole,
+
+    /// Occurs when some action requires that the access controller is in recovery mode.
+    OperationRequiresRecoveryMode,
+
+    /// Occurs when adding time to an [`Instant`] results in an overflow
+    TimeOverflow,
+
+    /// Occurs when a proposer attempts to initiate another recovery when they already have a
+    /// recovery underway.
+    RecoveryForThisProposerAlreadyExists { proposer: Proposer },
+
+    /// Occurs when performing a quick confirm recovery if the proposer and the confirmor are the
+    /// same.
+    ProposerAndConfirmorAreTheSame,
+
+    /// Occurs when searching for a recovery proposal that matches some criteria and failing to find
+    /// said recovery proposal.
+    NoValidRecoveryProposalExists,
+
+    /// Occurs when trying to perform timed recovery on a proposal which doesn't support timed
+    /// recovery. As an example, a recovery proposal initiated by R but then P disabled the timed
+    /// portion of the proposal.
+    TimedRecoveryDelayIsNotEnabledForThisProposal,
+
+    /// Occurs when trying to perform a timed confirm recovery on a recovery proposal that could
+    /// be time-confirmed but whose delay has not yet elapsed.
+    TimedRecoveryDelayHasNotElapsed,
 }
 
 impl From<AccessControllerError> for RuntimeError {
