@@ -1,6 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::system::invocation::invoke_native::invoke_native_fn_by_identifier;
+use crate::system::invocation::resolve_native::resolve_and_invoke_native_fn;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -129,7 +129,7 @@ where
             .map_err(WasmRuntimeError::InvalidNativeFnIdentifier)?;
 
         let return_data = scrypto_encode(
-            invoke_native_fn_by_identifier(native_fn_identifier, invocation, self.api)?.as_ref(),
+            resolve_and_invoke_native_fn(native_fn_identifier, invocation, self.api)?.as_ref(),
         )
         .expect("Failed to encode native output");
 
