@@ -145,5 +145,21 @@ pub trait InvokableModel<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
+    + Invokable<AccountCreateInvocation, E>
+    + Invokable<AccountNewInvocation, E>
+    + Invokable<AccountNewWithResourceInvocation, E>
+    + Invokable<AccountLockFeeInvocation, E>
+    + Invokable<AccountLockContingentFeeInvocation, E>
+    + Invokable<AccountDepositInvocation, E>
+    + Invokable<AccountDepositBatchInvocation, E>
+    + Invokable<AccountWithdrawInvocation, E>
+    + Invokable<AccountWithdrawByAmountInvocation, E>
+    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountCreateProofInvocation, E>
+    + Invokable<AccountCreateProofByAmountInvocation, E>
+    + Invokable<AccountCreateProofByIdsInvocation, E>
 {
 }
