@@ -10,14 +10,12 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
-
 pub trait TransactionValidator<T: ScryptoDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
     ) -> Result<T, TransactionValidationError> {
-        if transaction.len() > MAX_PAYLOAD_SIZE {
+        if transaction.len() > MAX_TRANSACTION_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
@@ -300,6 +298,7 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::CreateNonFungibleResource { .. } => {}
                 BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
                 BasicInstruction::CreateIdentity { .. } => {}
+                BasicInstruction::AssertAccessRule { .. } => {}
             }
         }
 

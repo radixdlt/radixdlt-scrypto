@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::blueprints::epoch_manager::ValidatorSetSubstate;
+use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
@@ -118,7 +118,7 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(BTreeMap::new(), 1u64, 1u64))
+        Self::new_with_genesis(trace, create_genesis(BTreeMap::new(), 1u64, 1u64, 1u64))
     }
 
     pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
@@ -413,6 +413,22 @@ impl TestRunner {
             .unwrap();
 
         substate.node_deref()
+    }
+
+    pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
+        let node_id = self.deref_component_address(system_address);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
+        let substate: ValidatorSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {

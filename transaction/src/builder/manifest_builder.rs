@@ -401,12 +401,25 @@ impl ManifestBuilder {
     pub fn unstake_validator(
         &mut self,
         validator_address: ComponentAddress,
-        amount: Decimal,
+        bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: "unstake".to_string(),
-            args: args!(amount),
+            args: args!(bucket),
+        });
+        self
+    }
+
+    pub fn claim_xrd(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "claim_xrd".to_string(),
+            args: args!(bucket),
         });
         self
     }
@@ -894,6 +907,11 @@ impl ManifestBuilder {
             args: args!(ids.clone(), resource_address),
         })
         .0
+    }
+
+    pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::AssertAccessRule { access_rule })
+            .0
     }
 
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>
