@@ -30,7 +30,9 @@ wasm-instrument = { version = "0.1.0" }
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
 # - Wasmer is a WASM engine with multiple backends: `singlepass` (linear time), `LLVM` and `cranelift`
-wasmi = { path = "/Users/lukaszrubaszewski/work/wasmi/wasmi.git/crates/wasmi" }
+
+# FIXME: fetch wasmi from a forker repo until issue https://github.com/paritytech/wasmi/issues/631 is not fixed
+wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_store_clone"  }
 wasmer = { version = "2.2.1", optional = true }
 wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 
