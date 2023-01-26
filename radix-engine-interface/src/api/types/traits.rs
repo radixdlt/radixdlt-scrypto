@@ -1,20 +1,17 @@
 use crate::api::types::*;
-use crate::data::ScryptoDecode;
+use crate::data::{ScryptoDecode, ScryptoEncode};
 use sbor::rust::fmt::Debug;
-use sbor::rust::format;
-use sbor::rust::string::String;
 
 pub trait Invocation: Debug {
     type Output: Debug;
 
-    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
-    fn fn_identifier(&self) -> String {
-        format!("{:?}", self)
-    }
+    fn fn_identifier(&self) -> FnIdentifier;
 }
 
+/// Represents an [`Invocation`] which can be encoded and whose output type can be decoded.
+/// In addition, it must convert into a [`CallTableInvocation`]
 pub trait SerializableInvocation:
-    Into<CallTableInvocation> + Invocation<Output = Self::ScryptoOutput>
+    Invocation<Output = Self::ScryptoOutput> + ScryptoEncode + Into<CallTableInvocation>
 {
     type ScryptoOutput: ScryptoDecode;
 }

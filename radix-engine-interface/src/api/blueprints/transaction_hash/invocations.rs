@@ -10,6 +10,10 @@ pub struct TransactionRuntimeGetHashInvocation {
 
 impl Invocation for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::TransactionRuntime(TransactionRuntimeFn::Get))
+    }
 }
 
 impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
@@ -29,6 +33,12 @@ pub struct TransactionRuntimeGenerateUuidInvocation {
 
 impl Invocation for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::TransactionRuntime(
+            TransactionRuntimeFn::GenerateUuid,
+        ))
+    }
 }
 
 impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {

@@ -35,6 +35,10 @@ pub struct LoggerLogInvocation {
 
 impl Invocation for LoggerLogInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Logger(LoggerFn::Log))
+    }
 }
 
 impl SerializableInvocation for LoggerLogInvocation {

@@ -20,6 +20,10 @@ impl Clone for WorktopPutInvocation {
 
 impl Invocation for WorktopPutInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::Put))
+    }
 }
 
 impl SerializableInvocation for WorktopPutInvocation {
@@ -40,6 +44,10 @@ pub struct WorktopTakeAmountInvocation {
 
 impl Invocation for WorktopTakeAmountInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeAmount))
+    }
 }
 
 impl SerializableInvocation for WorktopTakeAmountInvocation {
@@ -60,6 +68,10 @@ pub struct WorktopTakeNonFungiblesInvocation {
 
 impl Invocation for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeNonFungibles))
+    }
 }
 
 impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
@@ -79,6 +91,10 @@ pub struct WorktopTakeAllInvocation {
 
 impl Invocation for WorktopTakeAllInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeAll))
+    }
 }
 
 impl SerializableInvocation for WorktopTakeAllInvocation {
@@ -98,6 +114,10 @@ pub struct WorktopAssertContainsInvocation {
 
 impl Invocation for WorktopAssertContainsInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::AssertContains))
+    }
 }
 
 impl SerializableInvocation for WorktopAssertContainsInvocation {
@@ -117,6 +137,10 @@ pub struct WorktopAssertContainsAmountInvocation {
 }
 impl Invocation for WorktopAssertContainsAmountInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::AssertContainsAmount))
+    }
 }
 
 impl SerializableInvocation for WorktopAssertContainsAmountInvocation {
@@ -137,6 +161,10 @@ pub struct WorktopAssertContainsNonFungiblesInvocation {
 
 impl Invocation for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::AssertContainsNonFungibles))
+    }
 }
 
 impl SerializableInvocation for WorktopAssertContainsNonFungiblesInvocation {
@@ -154,6 +182,10 @@ pub struct WorktopDrainInvocation {}
 
 impl Invocation for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::Drain))
+    }
 }
 
 impl SerializableInvocation for WorktopDrainInvocation {

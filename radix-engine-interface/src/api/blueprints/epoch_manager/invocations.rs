@@ -33,6 +33,10 @@ impl Clone for EpochManagerCreateInvocation {
 
 impl Invocation for EpochManagerCreateInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::Create))
+    }
 }
 
 impl SerializableInvocation for EpochManagerCreateInvocation {
@@ -55,6 +59,10 @@ pub struct EpochManagerGetCurrentEpochInvocation {
 
 impl Invocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch))
+    }
 }
 
 impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
@@ -80,6 +88,10 @@ pub struct EpochManagerSetEpochInvocation {
 
 impl Invocation for EpochManagerSetEpochInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch))
+    }
 }
 
 impl SerializableInvocation for EpochManagerSetEpochInvocation {
@@ -105,6 +117,10 @@ pub struct EpochManagerNextRoundInvocation {
 
 impl Invocation for EpochManagerNextRoundInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::NextRound))
+    }
 }
 
 impl SerializableInvocation for EpochManagerNextRoundInvocation {
@@ -130,6 +146,10 @@ pub struct EpochManagerCreateValidatorInvocation {
 
 impl Invocation for EpochManagerCreateValidatorInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator))
+    }
 }
 
 impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
@@ -163,6 +183,10 @@ pub struct EpochManagerUpdateValidatorInvocation {
 
 impl Invocation for EpochManagerUpdateValidatorInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator))
+    }
 }
 
 // TODO: Should we have this or not?
@@ -186,6 +210,10 @@ pub struct ValidatorRegisterInvocation {
 
 impl Invocation for ValidatorRegisterInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Register))
+    }
 }
 
 impl SerializableInvocation for ValidatorRegisterInvocation {
@@ -208,6 +236,10 @@ pub struct ValidatorUnregisterInvocation {
 
 impl Invocation for ValidatorUnregisterInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unregister))
+    }
 }
 
 impl SerializableInvocation for ValidatorUnregisterInvocation {
@@ -242,6 +274,10 @@ impl Clone for ValidatorStakeInvocation {
 
 impl Invocation for ValidatorStakeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Stake))
+    }
 }
 
 impl SerializableInvocation for ValidatorStakeInvocation {
@@ -267,6 +303,10 @@ pub struct ValidatorUnstakeInvocation {
 
 impl Invocation for ValidatorUnstakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unstake))
+    }
 }
 
 impl SerializableInvocation for ValidatorUnstakeInvocation {

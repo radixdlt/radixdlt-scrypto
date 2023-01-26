@@ -10,6 +10,10 @@ pub struct ComponentGlobalizeInvocation {
 
 impl Invocation for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Component(ComponentFn::Globalize))
+    }
 }
 
 impl SerializableInvocation for ComponentGlobalizeInvocation {
@@ -30,6 +34,10 @@ pub struct ComponentGlobalizeWithOwnerInvocation {
 
 impl Invocation for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Component(ComponentFn::GlobalizeWithOwner))
+    }
 }
 
 impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
@@ -51,6 +59,10 @@ pub struct ComponentSetRoyaltyConfigInvocation {
 
 impl Invocation for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig))
+    }
 }
 
 impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
@@ -71,6 +83,10 @@ pub struct ComponentClaimRoyaltyInvocation {
 
 impl Invocation for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Component(ComponentFn::ClaimRoyalty))
+    }
 }
 
 impl SerializableInvocation for ComponentClaimRoyaltyInvocation {

@@ -9,7 +9,7 @@ use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, V
 #[derive(Clone)]
 pub enum KernelApiCallInput<'a> {
     Invoke {
-        fn_identifier: String,
+        fn_identifier: FnIdentifier,
         input_size: u32,
         depth: usize,
     },

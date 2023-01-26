@@ -21,7 +21,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
     ) -> Result<(), ModuleError> {
         match input {
             KernelApiCallInput::Invoke { fn_identifier, .. } => {
-                log!(call_frame, "Invoking: {}", fn_identifier);
+                log!(call_frame, "Invoking: {:?}", fn_identifier);
             }
             KernelApiCallInput::GetVisibleNodes => {
                 log!(call_frame, "Reading owned nodes");

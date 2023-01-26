@@ -17,6 +17,10 @@ pub struct ProofGetAmountInvocation {
 
 impl Invocation for ProofGetAmountInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetAmount))
+    }
 }
 
 impl SerializableInvocation for ProofGetAmountInvocation {
@@ -36,6 +40,10 @@ pub struct ProofGetNonFungibleLocalIdsInvocation {
 
 impl Invocation for ProofGetNonFungibleLocalIdsInvocation {
     type Output = BTreeSet<NonFungibleLocalId>;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetNonFungibleLocalIds))
+    }
 }
 
 impl SerializableInvocation for ProofGetNonFungibleLocalIdsInvocation {
@@ -55,6 +63,10 @@ pub struct ProofGetResourceAddressInvocation {
 
 impl Invocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetResourceAddress))
+    }
 }
 
 impl SerializableInvocation for ProofGetResourceAddressInvocation {
@@ -74,6 +86,10 @@ pub struct ProofCloneInvocation {
 
 impl Invocation for ProofCloneInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Proof(ProofFn::Clone))
+    }
 }
 
 impl SerializableInvocation for ProofCloneInvocation {

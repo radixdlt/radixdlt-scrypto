@@ -60,8 +60,13 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    /// Invokes any function or method, for both Scrypto and Native blueprints.
-    pub fn invoke(invocation_ptr: *const u8, invocation_len: usize) -> Buffer;
+    /// Invokes a native function or method.
+    pub fn call_native(
+        fn_identifier_ptr: *const u8,
+        fn_identifier_len: usize,
+        invocation_ptr: *const u8,
+        invocation_len: usize,
+    ) -> Buffer;
 
     //===============
     // Node API

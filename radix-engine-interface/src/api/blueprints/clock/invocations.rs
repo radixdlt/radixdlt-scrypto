@@ -12,6 +12,10 @@ pub struct ClockCreateInvocation {
 
 impl Invocation for ClockCreateInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::Create))
+    }
 }
 
 impl SerializableInvocation for ClockCreateInvocation {
@@ -37,6 +41,10 @@ pub struct ClockGetCurrentTimeInvocation {
 
 impl Invocation for ClockGetCurrentTimeInvocation {
     type Output = Instant;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::GetCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockGetCurrentTimeInvocation {
@@ -66,6 +74,10 @@ pub struct ClockCompareCurrentTimeInvocation {
 
 impl Invocation for ClockCompareCurrentTimeInvocation {
     type Output = bool;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::CompareCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
@@ -91,6 +103,10 @@ pub struct ClockSetCurrentTimeInvocation {
 
 impl Invocation for ClockSetCurrentTimeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::SetCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockSetCurrentTimeInvocation {

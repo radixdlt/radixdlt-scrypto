@@ -12,6 +12,10 @@ pub struct IdentityCreateInvocation {
 
 impl Invocation for IdentityCreateInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Identity(IdentityFn::Create))
+    }
 }
 
 impl SerializableInvocation for IdentityCreateInvocation {

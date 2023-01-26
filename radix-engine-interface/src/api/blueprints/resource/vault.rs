@@ -22,6 +22,10 @@ impl Clone for VaultPutInvocation {
 
 impl Invocation for VaultPutInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Put))
+    }
 }
 
 impl SerializableInvocation for VaultPutInvocation {
@@ -42,6 +46,10 @@ pub struct VaultTakeInvocation {
 
 impl Invocation for VaultTakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Take))
+    }
 }
 
 impl SerializableInvocation for VaultTakeInvocation {
@@ -62,6 +70,10 @@ pub struct VaultTakeNonFungiblesInvocation {
 
 impl Invocation for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::TakeNonFungibles))
+    }
 }
 
 impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
@@ -81,6 +93,10 @@ pub struct VaultGetAmountInvocation {
 
 impl Invocation for VaultGetAmountInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetAmount))
+    }
 }
 
 impl SerializableInvocation for VaultGetAmountInvocation {
@@ -101,6 +117,10 @@ pub struct VaultRecallInvocation {
 
 impl Invocation for VaultRecallInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall))
+    }
 }
 
 impl SerializableInvocation for VaultRecallInvocation {
@@ -121,6 +141,10 @@ pub struct VaultRecallNonFungiblesInvocation {
 
 impl Invocation for VaultRecallNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::RecallNonFungibles))
+    }
 }
 
 impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
@@ -140,6 +164,10 @@ pub struct VaultGetResourceAddressInvocation {
 
 impl Invocation for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetResourceAddress))
+    }
 }
 
 impl SerializableInvocation for VaultGetResourceAddressInvocation {
@@ -159,6 +187,10 @@ pub struct VaultGetNonFungibleLocalIdsInvocation {
 
 impl Invocation for VaultGetNonFungibleLocalIdsInvocation {
     type Output = BTreeSet<NonFungibleLocalId>;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetNonFungibleLocalIds))
+    }
 }
 
 impl SerializableInvocation for VaultGetNonFungibleLocalIdsInvocation {
@@ -178,6 +210,10 @@ pub struct VaultCreateProofInvocation {
 
 impl Invocation for VaultCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofInvocation {
@@ -198,6 +234,10 @@ pub struct VaultCreateProofByAmountInvocation {
 
 impl Invocation for VaultCreateProofByAmountInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByAmount))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofByAmountInvocation {
@@ -218,6 +258,10 @@ pub struct VaultCreateProofByIdsInvocation {
 
 impl Invocation for VaultCreateProofByIdsInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByIds))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofByIdsInvocation {
@@ -239,6 +283,10 @@ pub struct VaultLockFeeInvocation {
 
 impl Invocation for VaultLockFeeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee))
+    }
 }
 
 impl SerializableInvocation for VaultLockFeeInvocation {

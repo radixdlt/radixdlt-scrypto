@@ -17,6 +17,10 @@ pub struct BucketTakeInvocation {
 
 impl Invocation for BucketTakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::Take))
+    }
 }
 
 impl SerializableInvocation for BucketTakeInvocation {
@@ -46,6 +50,10 @@ impl Clone for BucketPutInvocation {
 
 impl Invocation for BucketPutInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::Put))
+    }
 }
 
 impl SerializableInvocation for BucketPutInvocation {
@@ -66,6 +74,10 @@ pub struct BucketTakeNonFungiblesInvocation {
 
 impl Invocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::TakeNonFungibles))
+    }
 }
 
 impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
@@ -85,6 +97,10 @@ pub struct BucketGetNonFungibleLocalIdsInvocation {
 
 impl Invocation for BucketGetNonFungibleLocalIdsInvocation {
     type Output = BTreeSet<NonFungibleLocalId>;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::GetNonFungibleLocalIds))
+    }
 }
 
 impl SerializableInvocation for BucketGetNonFungibleLocalIdsInvocation {
@@ -104,6 +120,10 @@ pub struct BucketGetAmountInvocation {
 
 impl Invocation for BucketGetAmountInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::GetAmount))
+    }
 }
 
 impl SerializableInvocation for BucketGetAmountInvocation {
@@ -123,6 +143,10 @@ pub struct BucketGetResourceAddressInvocation {
 
 impl Invocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::GetResourceAddress))
+    }
 }
 
 impl SerializableInvocation for BucketGetResourceAddressInvocation {
@@ -142,6 +166,10 @@ pub struct BucketCreateProofInvocation {
 
 impl Invocation for BucketCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Bucket(BucketFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for BucketCreateProofInvocation {

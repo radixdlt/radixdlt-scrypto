@@ -69,6 +69,12 @@ pub struct ResourceManagerCreateNonFungibleInvocation {
 
 impl Invocation for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateNonFungible,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
@@ -90,6 +96,10 @@ pub struct ResourceManagerCreateFungibleInvocation {
 
 impl Invocation for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateFungibleInvocation {
@@ -112,6 +122,12 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 
 impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateNonFungibleWithInitialSupply,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
@@ -136,6 +152,12 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
 
 impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
@@ -162,6 +184,12 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
 
 impl Invocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateFungibleWithInitialSupply,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
@@ -190,6 +218,10 @@ impl Clone for ResourceManagerBucketBurnInvocation {
 
 impl Invocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::BurnBucket))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerBucketBurnInvocation {
@@ -219,6 +251,10 @@ impl Clone for ResourceManagerBurnInvocation {
 
 impl Invocation for ResourceManagerBurnInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerBurnInvocation {
@@ -240,6 +276,12 @@ pub struct ResourceManagerUpdateVaultAuthInvocation {
 
 impl Invocation for ResourceManagerUpdateVaultAuthInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::UpdateVaultAuth,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerUpdateVaultAuthInvocation {
@@ -261,6 +303,12 @@ pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
 
 impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::UpdateVaultAuth,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
@@ -280,6 +328,10 @@ pub struct ResourceManagerCreateVaultInvocation {
 
 impl Invocation for ResourceManagerCreateVaultInvocation {
     type Output = Own;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateVault))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
@@ -299,6 +351,10 @@ pub struct ResourceManagerCreateBucketInvocation {
 
 impl Invocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateBucket))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerCreateBucketInvocation {
@@ -319,6 +375,12 @@ pub struct ResourceManagerMintNonFungibleInvocation {
 
 impl Invocation for ResourceManagerMintNonFungibleInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::MintNonFungible,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerMintNonFungibleInvocation {
@@ -339,6 +401,12 @@ pub struct ResourceManagerMintUuidNonFungibleInvocation {
 
 impl Invocation for ResourceManagerMintUuidNonFungibleInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::MintUuidNonFungible,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
@@ -359,6 +427,10 @@ pub struct ResourceManagerMintFungibleInvocation {
 
 impl Invocation for ResourceManagerMintFungibleInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::MintFungible))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerMintFungibleInvocation {
@@ -378,6 +450,12 @@ pub struct ResourceManagerGetResourceTypeInvocation {
 
 impl Invocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::GetResourceType,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerGetResourceTypeInvocation {
@@ -397,6 +475,10 @@ pub struct ResourceManagerGetTotalSupplyInvocation {
 
 impl Invocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
@@ -418,6 +500,12 @@ pub struct ResourceManagerUpdateNonFungibleDataInvocation {
 
 impl Invocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::UpdateNonFungibleData,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
@@ -438,6 +526,12 @@ pub struct ResourceManagerNonFungibleExistsInvocation {
 
 impl Invocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::NonFungibleExists,
+        ))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerNonFungibleExistsInvocation {
@@ -458,6 +552,10 @@ pub struct ResourceManagerGetNonFungibleInvocation {
 
 impl Invocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible))
+    }
 }
 
 impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {

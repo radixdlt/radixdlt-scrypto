@@ -1,7 +1,6 @@
 use crate::api::blueprints::resource::*;
 use crate::api::types::*;
 use crate::*;
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -19,8 +18,8 @@ pub struct PackagePublishInvocation {
 impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn fn_identifier(&self) -> String {
-        "Package(Publish)".to_owned()
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::Publish))
     }
 }
 
@@ -42,6 +41,10 @@ pub struct PackageSetRoyaltyConfigInvocation {
 
 impl Invocation for PackageSetRoyaltyConfigInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig))
+    }
 }
 
 impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
@@ -67,6 +70,10 @@ pub struct PackageClaimRoyaltyInvocation {
 
 impl Invocation for PackageClaimRoyaltyInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::ClaimRoyalty))
+    }
 }
 
 impl SerializableInvocation for PackageClaimRoyaltyInvocation {
