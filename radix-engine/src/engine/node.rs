@@ -155,14 +155,14 @@ impl RENodeInit {
                 substates.insert(
                     (
                         NodeModuleId::SELF,
-                        SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                     ),
                     royalty_config.into(),
                 );
                 substates.insert(
                     (
                         NodeModuleId::SELF,
-                        SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     ),
                     royalty_accumulator.into(),
                 );
@@ -216,14 +216,14 @@ impl RENodeInit {
                 substates.insert(
                     (
                         NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::RoyaltyConfig),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                     ),
                     package_royalty_config.into(),
                 );
                 substates.insert(
                     (
                         NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     ),
                     package_royalty_accumulator.into(),
                 );

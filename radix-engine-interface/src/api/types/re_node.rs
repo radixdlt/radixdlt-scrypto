@@ -204,18 +204,20 @@ pub enum MetadataOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentOffset {
-    Info,
-    State,
+pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     Info,
-    RoyaltyConfig,
-    RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -335,6 +337,7 @@ pub enum SubstateOffset {
 
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
+    Royalty(RoyaltyOffset),
 }
 
 #[derive(

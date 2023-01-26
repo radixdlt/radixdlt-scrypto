@@ -731,7 +731,7 @@ impl<'s> FinalizingTrack<'s> {
                     let substate_id = SubstateId(
                         node_id.clone(),
                         NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();
                     let royalty_vault_id = accumulator_substate
@@ -760,7 +760,7 @@ impl<'s> FinalizingTrack<'s> {
                     let substate_id = SubstateId(
                         node_id.clone(),
                         NodeModuleId::SELF,
-                        SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();
                     let royalty_vault_id = accumulator_substate

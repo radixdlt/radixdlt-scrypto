@@ -1,10 +1,7 @@
 use crate::engine::*;
 use crate::fee::{ExecutionFeeReserve, FeeReserve, RoyaltyReceiver};
 use crate::model::{CostingError, GlobalAddressSubstate};
-use radix_engine_interface::api::types::{
-    ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, PackageOffset,
-    RENodeId, SubstateId, SubstateOffset, VaultOffset,
-};
+use radix_engine_interface::api::types::{FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId, SubstateOffset, VaultOffset};
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -110,7 +107,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
         };
 
         let node_id = RENodeId::Package(package_id);
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         track
             .acquire_lock(
                 SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
@@ -141,7 +138,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
         // Pre-load accumulator and royalty vault substate to avoid additional substate loading
         // during track finalization.
         // TODO: refactor to defer substate loading to finalization.
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         track
             .acquire_lock(
                 SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
@@ -190,7 +187,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             };
 
             let node_id = RENodeId::Component(component_id);
-            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
             track
                 .acquire_lock(
                     SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
@@ -220,7 +217,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             // Pre-load accumulator and royalty vault substate to avoid additional substate loading
             // during track finalization.
             // TODO: refactor to defer substate loading to finalization.
-            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
             track
                 .acquire_lock(
                     SubstateId(node_id, NodeModuleId::SELF, offset.clone()),

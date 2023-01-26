@@ -254,7 +254,7 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 node_id,
                 NodeModuleId::SELF,
-                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             ))
         {
             let royalty_vault: Own = output
@@ -285,7 +285,7 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 node_id,
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             ))
         {
             let royalty_vault: Own = output

@@ -3,12 +3,7 @@ use crate::engine::{
     RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
-use radix_engine_interface::api::types::{
-    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
-    GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
-    ValidatorOffset, VaultOffset, WorktopOffset,
-};
+use radix_engine_interface::api::types::{AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset};
 
 pub struct VisibilityProperties;
 
@@ -241,6 +236,7 @@ impl SubstateProperties {
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
+            SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,
             SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
@@ -287,14 +283,7 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
-            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => match node_id {
                 RENodeId::Vault(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
