@@ -13,7 +13,7 @@ pub struct FeeSummary {
     /// The specified max cost units can be consumed.
     pub cost_unit_limit: u32,
     /// The total number of cost units consumed.
-    pub cost_unit_consumed: u32,
+    pub total_cost_units_consumed: u32,
     /// The total amount of XRD burned.
     pub total_execution_cost_xrd: Decimal,
     /// The total royalty.

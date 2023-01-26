@@ -379,7 +379,7 @@ mod tests {
                     cost_unit_price: Decimal::default(),
                     tip_percentage: 0,
                     cost_unit_limit: 10,
-                    cost_unit_consumed: 1,
+                    total_cost_units_consumed: 1,
                     total_execution_cost_xrd: Decimal::default(),
                     total_royalty_cost_xrd: Decimal::default(),
                     bad_debt_xrd: Decimal::default(),

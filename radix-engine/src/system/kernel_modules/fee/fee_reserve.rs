@@ -137,14 +137,14 @@ pub struct SystemLoanFeeReserve {
     payments: Vec<(VaultId, Resource, bool)>,
 
     /// The cost unit balance (from system loan)
-    loan_balance: u32,
+    remaining_loan_balance: u32,
     /// The XRD balance (from `lock_fee` payments)
-    xrd_balance: u128,
+    remaining_xrd_balance: u128,
     /// The amount of XRD owed to the system
     xrd_owed: u128,
 
     /// The amount of cost units consumed
-    cost_units_consumed: u32,
+    total_cost_units_consumed: u32,
     /// The max number of cost units that can be consumed
     cost_unit_limit: u32,
     /// At which point the system loan repayment is checked
@@ -211,10 +211,10 @@ impl SystemLoanFeeReserve {
             cost_unit_price,
             tip_percentage,
             payments: Vec::new(),
-            loan_balance: system_loan.into(),
-            xrd_balance: 0,
+            remaining_loan_balance: system_loan.into(),
+            remaining_xrd_balance: 0,
             xrd_owed: 0,
-            cost_units_consumed: 0,
+            total_cost_units_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
             execution_deferred: [0u32; CostingReason::COUNT],
@@ -228,31 +228,31 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    fn consume(&mut self, cost_units: u32, price: u128) -> Result<(), FeeReserveError> {
+    fn consume(&mut self, cost_units_to_consume: u32, price: u128) -> Result<(), FeeReserveError> {
         // Check limit
-        if checked_add(self.cost_units_consumed, cost_units)? > self.cost_unit_limit {
+        if checked_add(self.total_cost_units_consumed, cost_units_to_consume)?
+            > self.cost_unit_limit
+        {
             return Err(FeeReserveError::LimitExceeded);
         }
 
-        if self.loan_balance >= cost_units {
+        if self.remaining_loan_balance >= cost_units_to_consume {
             // Finally, apply state updates
-            self.loan_balance -= cost_units;
-            self.xrd_owed += price * cost_units as u128;
+            self.xrd_owed += price * cost_units_to_consume as u128;
+            self.remaining_loan_balance -= cost_units_to_consume;
         } else {
-            // Sort out the amount from system loan
-            let from_loan = self.loan_balance;
-
-            // Sort out the amount from locked payments
-            let from_balance = price * (cost_units - from_loan) as u128;
-            if self.xrd_balance < from_balance {
+            // Sort out the amount from balance
+            let from_balance =
+                price * (cost_units_to_consume - self.remaining_loan_balance) as u128;
+            if self.remaining_xrd_balance < from_balance {
                 return Err(FeeReserveError::InsufficientBalance);
             }
 
             // Finally, apply state updates
-            self.loan_balance -= from_loan;
-            self.xrd_owed += price * from_loan as u128;
-            self.xrd_balance -= from_balance;
-            self.cost_units_consumed += cost_units;
+            self.xrd_owed += price * self.remaining_loan_balance as u128;
+            self.remaining_loan_balance = 0;
+            self.remaining_xrd_balance -= from_balance;
+            self.total_cost_units_consumed += cost_units_to_consume;
         }
         Ok(())
     }
@@ -272,10 +272,10 @@ impl SystemLoanFeeReserve {
         self.execution_deferred_total = 0;
 
         // Repay owed
-        if self.xrd_balance < self.xrd_owed {
+        if self.remaining_xrd_balance < self.xrd_owed {
             return Err(FeeReserveError::LoanRepaymentFailed);
         } else {
-            self.xrd_balance -= self.xrd_owed;
+            self.remaining_xrd_balance -= self.xrd_owed;
             self.xrd_owed = 0;
         }
 
@@ -344,7 +344,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.consume(amount.into(), self.execution_price())?;
         checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
 
-        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
+        if self.total_cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
         Ok(())
@@ -368,17 +368,17 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
     fn consume_execution(
         &mut self,
-        cost_units: u32,
+        cost_units_to_consume: u32,
         reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
-        if cost_units == 0 {
+        if cost_units_to_consume == 0 {
             return Ok(());
         }
 
-        self.consume(cost_units, self.execution_price())?;
-        checked_assign_add(&mut self.execution[reason as usize], cost_units)?;
+        self.consume(cost_units_to_consume, self.execution_price())?;
+        checked_assign_add(&mut self.execution[reason as usize], cost_units_to_consume)?;
 
-        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
+        if self.total_cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
 
@@ -398,7 +398,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         // Update balance
         if !contingent {
             // Assumption: no overflow due to limited XRD supply
-            self.xrd_balance += decimal_to_u128(fee.amount());
+            self.remaining_xrd_balance += decimal_to_u128(fee.amount());
         }
 
         // Move resource
@@ -421,9 +421,9 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
 
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
-            cost_unit_consumed: self.cost_units_consumed,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
+            total_cost_units_consumed: self.total_cost_units_consumed,
             total_execution_cost_xrd: u128_to_decimal(
                 self.execution_price() * self.execution.iter().sum::<u32>() as u128,
             ),
@@ -473,7 +473,7 @@ mod tests {
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.cost_unit_consumed, 2);
+        assert_eq!(summary.total_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_xrd, dec!("2") + dec!("0.04"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
@@ -488,7 +488,7 @@ mod tests {
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.cost_unit_consumed, 0);
+        assert_eq!(summary.total_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
@@ -503,7 +503,7 @@ mod tests {
             .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.cost_unit_consumed, 0);
+        assert_eq!(summary.total_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
@@ -518,7 +518,7 @@ mod tests {
             .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.cost_unit_consumed, 0);
+        assert_eq!(summary.total_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
@@ -534,7 +534,7 @@ mod tests {
             .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
-        assert_eq!(summary.cost_unit_consumed, 2);
+        assert_eq!(summary.total_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.bad_debt_xrd, dec!("10.1"));
@@ -559,7 +559,7 @@ mod tests {
             .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.cost_unit_consumed, 4);
+        assert_eq!(summary.total_cost_units_consumed, 4);
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("10"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
