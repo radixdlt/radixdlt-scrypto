@@ -47,7 +47,7 @@ fn test_basic_transfer() {
         + 274 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
         + 23000, /* write_substate */
-        receipt.execution.fee_summary.cost_unit_consumed
+        receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
 
@@ -83,8 +83,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.cost_unit_consumed > 4000000
-            && receipt.execution.fee_summary.cost_unit_consumed < 5000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 4000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 5000000
     );
 }
 
