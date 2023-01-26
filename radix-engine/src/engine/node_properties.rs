@@ -4,9 +4,9 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
-    GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
+    AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
+    FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset,
+    RENodeId, ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
     ValidatorOffset, VaultOffset, WorktopOffset,
 };
 
@@ -260,6 +260,7 @@ impl SubstateProperties {
             SubstateOffset::Logger(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::TransactionRuntime(..) => false,
+            SubstateOffset::Account(..) => true,
         }
     }
 
@@ -312,6 +313,13 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::Account(AccountOffset::Account) => match node_id {
+                RENodeId::KeyValueStore(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
@@ -319,7 +327,8 @@ impl SubstateProperties {
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)
                 | RENodeId::Identity(..)
-                | RENodeId::Clock(..) => Ok(()),
+                | RENodeId::Clock(..)
+                | RENodeId::Account(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     node_id,

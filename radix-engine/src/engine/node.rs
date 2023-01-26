@@ -52,6 +52,7 @@ pub enum RENodeInit {
     ),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
+    Account(AccountSubstate, AccessRulesChainSubstate),
 }
 
 impl RENodeInit {
@@ -263,6 +264,16 @@ impl RENodeInit {
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
                     transaction_hash.into(),
+                );
+            }
+            RENodeInit::Account(account_substate, access_rules_substate) => {
+                substates.insert(
+                    SubstateOffset::Account(AccountOffset::Account),
+                    account_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules_substate.into(),
                 );
             }
         }
