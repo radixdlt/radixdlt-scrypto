@@ -1,8 +1,7 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::static_invoke_api::SerializableInvocation;
 use radix_engine_interface::api::types::{
     CallTableInvocation, FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode,
-    ScryptoReceiver, SubstateOffset,
+    ScryptoReceiver, SerializableInvocation, SubstateOffset,
 };
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientSubstateApi, Invokable};

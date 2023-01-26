@@ -2,7 +2,6 @@ use sbor::rust::fmt::Debug;
 
 use crate::api::blueprints::resource::AccessRule;
 use crate::api::component::ComponentAddress;
-use crate::api::static_invoke_api::*;
 use crate::api::types::*;
 use crate::*;
 
