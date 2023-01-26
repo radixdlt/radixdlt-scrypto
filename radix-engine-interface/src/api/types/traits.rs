@@ -8,7 +8,7 @@ pub trait Invocation: Debug {
     fn fn_identifier(&self) -> FnIdentifier;
 }
 
-/// Represents an [`Invocation`] which can be encoded and whose output type can be decoded.
+/// Represents an [`Invocation`] which can be encoded and whose output type can also be decoded.
 /// In addition, it must convert into a [`CallTableInvocation`]
 pub trait SerializableInvocation:
     Invocation<Output = Self::ScryptoOutput> + ScryptoEncode + Into<CallTableInvocation>
