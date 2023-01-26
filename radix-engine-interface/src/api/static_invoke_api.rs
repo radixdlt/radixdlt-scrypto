@@ -9,43 +9,9 @@ use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::data::ScryptoDecode;
-use crate::data::ScryptoValue;
-use sbor::rust::fmt::Debug;
-use sbor::rust::format;
-use sbor::rust::string::String;
-
-pub trait SerializableInvocation:
-    Into<CallTableInvocation> + Invocation<Output = Self::ScryptoOutput>
-{
-    type ScryptoOutput: ScryptoDecode;
-}
-
-pub trait Invocation: Debug {
-    type Output: Debug;
-
-    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
-    fn fn_identifier(&self) -> String {
-        format!("{:?}", self)
-    }
-}
 
 pub trait Invokable<I: Invocation, E> {
     fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
-}
-
-impl Invocation for ScryptoInvocation {
-    type Output = ScryptoValue;
-}
-
-impl SerializableInvocation for ScryptoInvocation {
-    type ScryptoOutput = ScryptoValue;
-}
-
-impl Into<CallTableInvocation> for ScryptoInvocation {
-    fn into(self) -> CallTableInvocation {
-        CallTableInvocation::Scrypto(self)
-    }
 }
 
 pub trait ClientStaticInvokeApi<E>:

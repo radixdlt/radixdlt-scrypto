@@ -12,6 +12,7 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::data::types::{ManifestBucket, ManifestProof};
+use crate::data::ScryptoValue;
 use crate::*;
 use radix_engine_interface::data::ReplaceManifestValuesError;
 use sbor::rust::collections::{HashMap, HashSet};
@@ -33,6 +34,20 @@ pub struct ScryptoInvocation {
     pub fn_name: String,
     pub receiver: Option<ScryptoReceiver>,
     pub args: Vec<u8>,
+}
+
+impl Invocation for ScryptoInvocation {
+    type Output = ScryptoValue;
+}
+
+impl SerializableInvocation for ScryptoInvocation {
+    type ScryptoOutput = ScryptoValue;
+}
+
+impl Into<CallTableInvocation> for ScryptoInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Scrypto(self)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
