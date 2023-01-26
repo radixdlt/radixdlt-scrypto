@@ -864,8 +864,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::InitiateRecoveryAsPrimary(
                     AccessControllerInitiateRecoveryAsPrimaryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -876,8 +878,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::InitiateRecoveryAsRecovery(
                     AccessControllerInitiateRecoveryAsRecoveryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -888,9 +892,11 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(
                     AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -903,9 +909,11 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(
                     AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -917,9 +925,11 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(
                     AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
                         receiver,
-                        rule_set: args.rule_set,
                         proposer: args.proposer,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -929,8 +939,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::TimedConfirmRecovery(
                     AccessControllerTimedConfirmRecoveryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -943,8 +955,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(
                     AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_cancel: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -956,8 +970,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(
                     AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal_to_cancel: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }
@@ -981,8 +997,10 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::StopTimedRecovery(
                     AccessControllerStopTimedRecoveryInvocation {
                         receiver,
-                        rule_set: args.rule_set,
-                        timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
                     },
                 )
             }

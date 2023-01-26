@@ -59,7 +59,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_no_valid_recovery_proposal_exists_error)
+    receipt.expect_specific_failure(is_recovery_proposal_mismatch_error)
 }
 
 #[test]
@@ -162,7 +162,7 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_timed_recovery_delay_is_not_enabled_for_this_proposal_error);
+    receipt.expect_specific_failure(is_no_timed_recoveries_found_error);
 }
 
 #[test]
@@ -379,17 +379,17 @@ mod normal_operations_with_primary_unlocked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -421,10 +421,7 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
+            (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -455,11 +452,11 @@ mod normal_operations_with_primary_unlocked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -489,18 +486,9 @@ mod normal_operations_with_primary_unlocked {
     pub fn stop_timed_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (
-                Role::Primary,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
-            (
-                Role::Confirmation,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
+            (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
+            (Role::Confirmation, Some(is_no_timed_recoveries_found_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -655,17 +643,17 @@ mod normal_operations_with_primary_locked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -697,10 +685,7 @@ mod normal_operations_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
+            (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -731,11 +716,11 @@ mod normal_operations_with_primary_locked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -765,18 +750,9 @@ mod normal_operations_with_primary_locked {
     pub fn stop_timed_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
-            (
-                Role::Primary,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
-            (
-                Role::Confirmation,
-                Some(is_operation_requires_recovery_mode_error),
-            ),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
+            (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
+            (Role::Confirmation, Some(is_no_timed_recoveries_found_error)),
         ];
 
         for (role, error_assertion_function) in test_vectors {
@@ -944,12 +920,12 @@ mod recovery_mode_with_primary_unlocked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -1015,7 +991,7 @@ mod recovery_mode_with_primary_unlocked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1222,12 +1198,12 @@ mod recovery_mode_with_primary_locked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
         ];
 
@@ -1293,7 +1269,7 @@ mod recovery_mode_with_primary_locked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_no_valid_recovery_proposal_exists_error),
+                Some(is_recovery_for_this_proposer_does_not_exist_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1383,20 +1359,29 @@ fn is_operation_requires_locked_primary_role_error(error: &RuntimeError) -> bool
     )
 }
 
-fn is_operation_requires_recovery_mode_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::OperationRequiresRecoveryMode
-        ))
-    )
-}
-
 fn is_recovery_for_this_proposer_already_exists_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::RecoveryForThisProposerAlreadyExists { .. }
+        ))
+    )
+}
+
+fn is_recovery_for_this_proposer_does_not_exist_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::RecoveryForThisProposerDoesNotExist { .. }
+        ))
+    )
+}
+
+fn is_no_timed_recoveries_found_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::NoTimedRecoveriesFound
         ))
     )
 }
@@ -1410,29 +1395,20 @@ fn is_proposer_and_confirmor_are_the_same_error(error: &RuntimeError) -> bool {
     )
 }
 
-fn is_no_valid_recovery_proposal_exists_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::NoValidRecoveryProposalExists
-        ))
-    )
-}
-
-fn is_timed_recovery_delay_is_not_enabled_for_this_proposal_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::TimedRecoveryDelayIsNotEnabledForThisProposal
-        ))
-    )
-}
-
 fn is_timed_recovery_delay_has_not_elapsed_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::TimedRecoveryDelayHasNotElapsed
+        ))
+    )
+}
+
+fn is_recovery_proposal_mismatch_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::RecoveryProposalMismatch { .. }
         ))
     )
 }

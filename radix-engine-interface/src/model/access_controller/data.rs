@@ -58,3 +58,12 @@ pub struct RuleSet {
     pub recovery_role: AccessRule,
     pub confirmation_role: AccessRule,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct RecoveryProposal {
+    /// The set of rules being proposed for the different roles.
+    pub rule_set: RuleSet,
+
+    /// The proposed delay of timed recoveries.
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}

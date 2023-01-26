@@ -1,15 +1,14 @@
 use crate::engine::{ApplicationError, RuntimeError, SystemApi};
 use crate::types::*;
-use native_sdk::{resource::Vault, runtime::Runtime};
-use radix_engine_interface::{
-    api::{EngineApi, InvokableModel},
-    model::{Proof, Proposer, Role, RuleSet, TimePrecision},
-    time::TimeComparisonOperator,
-};
+use native_sdk::resource::Vault;
+use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::{EngineApi, InvokableModel};
+use radix_engine_interface::model::{Proof, Proposer, Role, TimePrecision};
+use radix_engine_interface::time::TimeComparisonOperator;
 
 use super::{
-    AccessControllerError, AccessControllerSubstate, OperationState, PrimaryRoleState,
-    RecoveryProposal,
+    AccessControllerError, AccessControllerSubstate, PrimaryOperationState, PrimaryRoleState,
+    RecoveryOperationState, RecoveryRecoveryState,
 };
 
 /// A trait which defines the interface for an access controller transition for a given trigger or
@@ -60,16 +59,17 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // Proofs can only be created when the primary role is unlocked - regardless of whether the
         // controller is in recovery or normal operations.
         match self.state {
-            (PrimaryRoleState::Unlocked, _) => Vault(self.controlled_asset).sys_create_proof(api),
+            (PrimaryRoleState::Unlocked, _, _) => {
+                Vault(self.controlled_asset).sys_create_proof(api)
+            }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
         }
     }
 }
 
 pub(super) struct AccessControllerInitiateRecoveryStateMachineInput {
-    pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub proposal: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for AccessControllerSubstate {
@@ -83,14 +83,18 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Calculate the time when this proposal can be confirmed through a timed recovery
-        // confirmation
-        let timed_recovery_allowed_after = {
-            // Only the recovery role is allowed to perform timed recoveries. If the proposer is not
-            // Recovery, then return `None`.
-            match input.proposer {
-                Proposer::Primary => None,
-                Proposer::Recovery => match self.timed_recovery_delay_in_minutes {
+        match self.state {
+            (_, ref mut primary_operations_state @ PrimaryOperationState::Normal, _)
+                if input.proposer == Proposer::Primary =>
+            {
+                // Transition the primary operations state from normal to recovery
+                *primary_operations_state = PrimaryOperationState::Recovery(input.proposal);
+                Ok(())
+            }
+            (_, _, ref mut recovery_operations_state @ RecoveryOperationState::Normal)
+                if input.proposer == Proposer::Recovery =>
+            {
+                match self.timed_recovery_delay_in_minutes {
                     Some(delay_in_minutes) => {
                         let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
                         let timed_recovery_allowed_after = current_time
@@ -98,59 +102,37 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
                             .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
                                 Ok(instant)
                             })?;
-                        Some(timed_recovery_allowed_after)
-                    }
-                    None => None,
-                },
-            }
-        };
-        let recovery_proposal = RecoveryProposal {
-            rule_set: input.rule_set.clone(),
-            timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
-            timed_recovery_allowed_after,
-        };
 
-        // Initiate recovery can be performed regardless whether we're in recovery mode already or
-        // outside of recovery mode.
-        match self.state {
-            (_, ref mut mode @ OperationState::Normal) => {
-                // No recoveries are happening at the current moment, so transition to recovery mode
-                // and add a new entry
-                let mut ongoing_recoveries = HashMap::new();
-                ongoing_recoveries.insert(input.proposer, recovery_proposal);
-                *mode = OperationState::Recovery { ongoing_recoveries };
-                Ok(())
-            }
-            (
-                _,
-                OperationState::Recovery {
-                    ref mut ongoing_recoveries,
-                },
-            ) => {
-                // Only insert after checking that this proposer doesn't already have something
-                // proposed - so, don't just silently override the recovery proposal.
-                if !ongoing_recoveries.contains_key(&input.proposer) {
-                    ongoing_recoveries.insert(input.proposer, recovery_proposal);
-                    Ok(())
-                } else {
-                    Err(RuntimeError::ApplicationError(
-                        ApplicationError::AccessControllerError(
-                            AccessControllerError::RecoveryForThisProposerAlreadyExists {
-                                proposer: input.proposer,
-                            },
-                        ),
-                    ))
+                        *recovery_operations_state =
+                            RecoveryOperationState::Recovery(RecoveryRecoveryState::Timed {
+                                proposal: input.proposal,
+                                timed_recovery_allowed_after,
+                            });
+                        Ok(())
+                    }
+                    None => {
+                        *recovery_operations_state = RecoveryOperationState::Recovery(
+                            RecoveryRecoveryState::Untimed(input.proposal),
+                        );
+                        Ok(())
+                    }
                 }
             }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerAlreadyExists {
+                        proposer: input.proposer,
+                    },
+                ),
+            )),
         }
     }
 }
 
 pub(super) struct AccessControllerQuickConfirmRecoveryStateMachineInput {
-    pub rule_set: RuleSet,
-    pub proposer: Proposer,
     pub confirmor: Role,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub proposer: Proposer,
+    pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerQuickConfirmRecoveryStateMachineInput>
@@ -173,39 +155,49 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryStateMachineInput>
             return access_controller_runtime_error!(ProposerAndConfirmorAreTheSame);
         }
 
-        // This can be performed regardless if primary is locked or unlocked and only when in
-        // recovery mode.
         match self.state {
+            (_, PrimaryOperationState::Recovery(ref proposal), _)
+                if input.proposer == Proposer::Primary =>
+            {
+                let proposal = proposal.clone();
+
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
+
+                // Transition back to the initial state of the state machine
+                self.state = Default::default();
+                Ok(proposal)
+            }
             (
                 _,
-                OperationState::Recovery {
-                    ref mut ongoing_recoveries,
-                },
-            ) => {
-                // Attempt to find a recovery proposal that matches the given input
-                let recovery_proposal = find_recovery_proposal(
-                    &ongoing_recoveries,
-                    &input.proposer,
-                    &input.rule_set,
-                    &input.timed_recovery_delay_in_minutes,
-                )?
-                .clone();
+                _,
+                RecoveryOperationState::Recovery(
+                    RecoveryRecoveryState::Untimed(ref proposal)
+                    | RecoveryRecoveryState::Timed { ref proposal, .. },
+                ),
+            ) if input.proposer == Proposer::Recovery => {
+                let proposal = proposal.clone();
 
-                // If we have successfully found the recovery proposal, then we transition into
-                // normal operations mode with primary unlocked and return the ruleset that was
-                // found.
-                self.state = (PrimaryRoleState::Unlocked, OperationState::Normal);
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
 
-                Ok(recovery_proposal)
+                // Transition back to the initial state of the state machine
+                self.state = Default::default();
+                Ok(proposal)
             }
-            _ => access_controller_runtime_error!(OperationRequiresRecoveryMode),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerDoesNotExist {
+                        proposer: input.proposer,
+                    },
+                ),
+            )),
         }
     }
 }
 
 pub(super) struct AccessControllerTimedConfirmRecoveryStateMachineInput {
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
@@ -227,53 +219,42 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
         match self.state {
             (
                 _,
-                OperationState::Recovery {
-                    ref mut ongoing_recoveries,
-                },
+                _,
+                RecoveryOperationState::Recovery(RecoveryRecoveryState::Timed {
+                    ref proposal,
+                    ref timed_recovery_allowed_after,
+                }),
             ) => {
-                // Attempt to find the recovery proposal
-                let recovery_proposal = find_recovery_proposal(
-                    &ongoing_recoveries,
-                    &Proposer::Recovery,
-                    &input.rule_set,
-                    &input.timed_recovery_delay_in_minutes,
-                )?
-                .clone();
+                let proposal = proposal.clone();
 
-                // Check if the timed recovery delay has elapsed or not (if it's defined for this
-                // proposal)
-                let recovery_time_has_elapsed = match recovery_proposal.timed_recovery_allowed_after
-                {
-                    Some(instant) => Runtime::sys_compare_against_current_time(
-                        api,
-                        instant,
-                        TimePrecision::Minute,
-                        TimeComparisonOperator::Gte,
-                    ),
-                    None => access_controller_runtime_error!(
-                        TimedRecoveryDelayIsNotEnabledForThisProposal
-                    ),
-                }?;
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
+
+                let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
+                    api,
+                    timed_recovery_allowed_after.clone(),
+                    TimePrecision::Minute,
+                    TimeComparisonOperator::Gte,
+                )?;
 
                 // If the timed recovery delay has elapsed, then we transition into normal
                 // operations mode with primary unlocked and return the ruleset that was found.
                 if !recovery_time_has_elapsed {
                     access_controller_runtime_error!(TimedRecoveryDelayHasNotElapsed)
                 } else {
-                    self.state = (PrimaryRoleState::Unlocked, OperationState::Normal);
+                    self.state = Default::default();
 
-                    Ok(recovery_proposal)
+                    Ok(proposal)
                 }
             }
-            _ => access_controller_runtime_error!(OperationRequiresRecoveryMode),
+            _ => access_controller_runtime_error!(NoTimedRecoveriesFound),
         }
     }
 }
 
 pub(super) struct AccessControllerCancelRecoveryAttemptStateMachineInput {
-    pub rule_set: RuleSet,
     pub proposer: Proposer,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub proposal_to_cancel: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
@@ -292,32 +273,42 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
         match self.state {
-            (
-                _,
-                OperationState::Recovery {
-                    ref mut ongoing_recoveries,
-                },
-            ) => {
-                // Check that the proposal information passed as input matches one of the proposals
-                find_recovery_proposal(
-                    &ongoing_recoveries,
-                    &input.proposer,
-                    &input.rule_set,
-                    &input.timed_recovery_delay_in_minutes,
-                )?;
+            (_, PrimaryOperationState::Recovery(ref proposal), _)
+                if input.proposer == Proposer::Primary =>
+            {
+                let proposal = proposal.clone();
 
-                ongoing_recoveries.remove_entry(&input.proposer).expect(
-                    "Impossible Case! The proposal was found above and should be found again",
-                );
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_cancel)?;
 
-                // If no more recoveries remain, transition to the Regular operations mode
-                if ongoing_recoveries.is_empty() {
-                    self.state.1 = OperationState::Normal;
-                }
-
+                // Transition from the recovery state to the normal operations state
+                self.state.1 = PrimaryOperationState::Normal;
                 Ok(())
             }
-            _ => access_controller_runtime_error!(OperationRequiresRecoveryMode),
+            (
+                _,
+                _,
+                RecoveryOperationState::Recovery(
+                    RecoveryRecoveryState::Untimed(ref proposal)
+                    | RecoveryRecoveryState::Timed { ref proposal, .. },
+                ),
+            ) if input.proposer == Proposer::Recovery => {
+                let proposal = proposal.clone();
+
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_cancel)?;
+
+                // Transition from the recovery state to the normal operations state
+                self.state.2 = RecoveryOperationState::Normal;
+                Ok(())
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerDoesNotExist {
+                        proposer: input.proposer,
+                    },
+                ),
+            )),
         }
     }
 }
@@ -337,7 +328,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessC
     {
         // Primary can only be locked when it's unlocked
         match self.state {
-            (ref mut primary_state @ PrimaryRoleState::Unlocked, _) => {
+            (ref mut primary_state @ PrimaryRoleState::Unlocked, _, _) => {
                 *primary_state = PrimaryRoleState::Locked;
                 Ok(())
             }
@@ -363,7 +354,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
     {
         // Primary can only be unlocked when it's locked
         match self.state {
-            (ref mut primary_state @ PrimaryRoleState::Locked, _) => {
+            (ref mut primary_state @ PrimaryRoleState::Locked, _, _) => {
                 *primary_state = PrimaryRoleState::Unlocked;
                 Ok(())
             }
@@ -373,8 +364,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
 }
 
 pub(super) struct AccessControllerStopTimedRecoveryStateMachineInput {
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub proposal: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
@@ -395,83 +385,37 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
         match self.state {
             (
                 _,
-                OperationState::Recovery {
-                    ref mut ongoing_recoveries,
-                },
+                _,
+                RecoveryOperationState::Recovery(RecoveryRecoveryState::Timed {
+                    ref proposal, ..
+                }),
             ) => {
-                let recovery_proposal = find_recovery_proposal_mut(
-                    ongoing_recoveries,
-                    &Proposer::Recovery,
-                    &input.rule_set,
-                    &input.timed_recovery_delay_in_minutes,
-                )?;
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal)?;
 
-                // If the recovery proposal has a end time defined, then switch it to none,
-                // otherwise error out since this was not a correct OP.
-                if recovery_proposal.timed_recovery_allowed_after.is_some() {
-                    recovery_proposal.timed_recovery_allowed_after = None;
-                    Ok(())
-                } else {
-                    access_controller_runtime_error!(TimedRecoveryDelayIsNotEnabledForThisProposal)
-                }
+                // Transition from timed recovery to untimed recovery
+                self.state.2 = RecoveryOperationState::Recovery(RecoveryRecoveryState::Untimed(
+                    proposal.clone(),
+                ));
+
+                Ok(())
             }
-            _ => access_controller_runtime_error!(OperationRequiresRecoveryMode),
+            // TODO: A more descriptive error is needed here.
+            _ => access_controller_runtime_error!(NoTimedRecoveriesFound),
         }
     }
 }
 
-fn find_recovery_proposal<'a>(
-    proposals: &'a HashMap<Proposer, RecoveryProposal>,
-    proposer: &Proposer,
-    rule_set: &RuleSet,
-    timed_recovery_delay_in_minutes: &Option<u32>,
-) -> Result<&'a RecoveryProposal, AccessControllerError> {
-    proposals
-        .iter()
-        .find(
-            |(
-                item_proposer,
-                RecoveryProposal {
-                    rule_set: item_rule_set,
-                    timed_recovery_delay_in_minutes: item_timed_recovery_delay_in_minutes,
-                    ..
-                },
-            )| {
-                proposer == *item_proposer
-                    && rule_set == item_rule_set
-                    && timed_recovery_delay_in_minutes == item_timed_recovery_delay_in_minutes
-            },
-        )
-        .map_or(
-            Err(AccessControllerError::NoValidRecoveryProposalExists),
-            |(_, proposal)| Ok(proposal),
-        )
-}
-
-fn find_recovery_proposal_mut<'a>(
-    proposals: &'a mut HashMap<Proposer, RecoveryProposal>,
-    proposer: &Proposer,
-    rule_set: &RuleSet,
-    timed_recovery_delay_in_minutes: &Option<u32>,
-) -> Result<&'a mut RecoveryProposal, AccessControllerError> {
-    proposals
-        .iter_mut()
-        .find(
-            |(
-                item_proposer,
-                RecoveryProposal {
-                    rule_set: item_rule_set,
-                    timed_recovery_delay_in_minutes: item_timed_recovery_delay_in_minutes,
-                    ..
-                },
-            )| {
-                proposer == *item_proposer
-                    && rule_set == item_rule_set
-                    && timed_recovery_delay_in_minutes == item_timed_recovery_delay_in_minutes
-            },
-        )
-        .map_or(
-            Err(AccessControllerError::NoValidRecoveryProposalExists),
-            |(_, proposal)| Ok(proposal),
-        )
+fn validate_recovery_proposal(
+    expected: &RecoveryProposal,
+    actual: &RecoveryProposal,
+) -> Result<(), AccessControllerError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(AccessControllerError::RecoveryProposalMismatch {
+            expected: expected.clone(),
+            found: actual.clone(),
+        })
+    }
 }
