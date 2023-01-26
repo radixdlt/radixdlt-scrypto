@@ -426,7 +426,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         // In case the transaction finishes before check point.
         self.attempt_to_repay_all();
 
-        let mut execution_cost_unit_breakdown = HashMap::new();
+        let mut execution_cost_unit_breakdown = BTreeMap::new();
         for i in 0..CostingReason::COUNT {
             execution_cost_unit_breakdown
                 .insert(CostingReason::from_repr(i).unwrap(), self.execution[i]);
@@ -446,8 +446,13 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             bad_debt_xrd: u128_to_decimal(self.xrd_owed),
             vault_locks: self.payments,
             vault_payments_xrd: None, // Resolved later
-            execution_cost_unit_breakdown,
-            royalty_cost_unit_breakdown: self.royalty,
+            execution_cost_unit_breakdown: self
+                .execution
+                .into_iter()
+                .enumerate()
+                .map(|(i, sum)| (CostingReason::from_repr(i).unwrap(), sum))
+                .collect(),
+            royalty_cost_unit_breakdown: self.royalty.into_iter().collect(),
         }
     }
 }

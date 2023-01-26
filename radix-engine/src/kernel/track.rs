@@ -667,7 +667,7 @@ impl<'s> FinalizingTrack<'s> {
         // Revert royalty in case of failure
         if !is_success {
             fee_summary.total_royalty_cost_xrd = Decimal::ZERO;
-            fee_summary.royalty_cost_unit_breakdown = HashMap::new();
+            fee_summary.royalty_cost_unit_breakdown = BTreeMap::new();
         }
 
         // Finalize payments
