@@ -1,4 +1,5 @@
 use crate::api::types::BucketId;
+use crate::api::types::ComponentId;
 use crate::api::wasm::*;
 use crate::api::Invocation;
 use crate::math::Decimal;
@@ -17,11 +18,11 @@ pub struct AccountCreateInvocation {
 }
 
 impl Invocation for AccountCreateInvocation {
-    type Output = ();
+    type Output = ComponentId;
 }
 
 impl SerializableInvocation for AccountCreateInvocation {
-    type ScryptoOutput = ();
+    type ScryptoOutput = ComponentId;
 }
 
 impl Into<CallTableInvocation> for AccountCreateInvocation {
@@ -40,11 +41,11 @@ pub struct AccountNewInvocation {
 }
 
 impl Invocation for AccountNewInvocation {
-    type Output = ();
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for AccountNewInvocation {
-    type ScryptoOutput = ();
+    type ScryptoOutput = ComponentAddress;
 }
 
 impl Into<CallTableInvocation> for AccountNewInvocation {
@@ -64,11 +65,11 @@ pub struct AccountNewWithResourceInvocation {
 }
 
 impl Invocation for AccountNewWithResourceInvocation {
-    type Output = ();
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for AccountNewWithResourceInvocation {
-    type ScryptoOutput = ();
+    type ScryptoOutput = ComponentAddress;
 }
 
 impl Into<CallTableInvocation> for AccountNewWithResourceInvocation {

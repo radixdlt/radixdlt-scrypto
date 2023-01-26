@@ -3,6 +3,7 @@ use crate::engine::{
     SystemApi,
 };
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::types::ComponentId;
 use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::model::*;
 
@@ -25,7 +26,7 @@ impl ExecutableInvocation for AccountCreateInvocation {
 }
 
 impl Executor for AccountCreateInvocation {
-    type Output = ();
+    type Output = ComponentId;
 
     fn execute<Y, W: WasmEngine>(
         self,
@@ -57,7 +58,7 @@ impl ExecutableInvocation for AccountNewInvocation {
 }
 
 impl Executor for AccountNewInvocation {
-    type Output = ();
+    type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(
         self,
@@ -89,7 +90,7 @@ impl ExecutableInvocation for AccountNewWithResourceInvocation {
 }
 
 impl Executor for AccountNewWithResourceInvocation {
-    type Output = ();
+    type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(
         self,
