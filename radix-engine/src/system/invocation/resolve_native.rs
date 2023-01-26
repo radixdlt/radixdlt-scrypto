@@ -110,9 +110,18 @@ where
             }
         },
         NativeFn::AuthZoneStack(auth_zone_fn) => match auth_zone_fn {
-            AuthZoneStackFn::Pop | AuthZoneStackFn::Push => Err(RuntimeError::InterpreterError(
-                InterpreterError::DisallowedInvocation,
-            )),
+            AuthZoneStackFn::Pop => {
+                let invocation = scrypto_decode::<AuthZonePopInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AuthZoneStackFn::Push => {
+                let invocation = scrypto_decode::<AuthZonePushInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             AuthZoneStackFn::CreateProof => {
                 let invocation = scrypto_decode::<AuthZoneCreateProofInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -622,7 +631,7 @@ where
             }
         },
         NativeFn::TransactionProcessor(_) => Err(RuntimeError::InterpreterError(
-            InterpreterError::DisallowedInvocation,
+            InterpreterError::DisallowedInvocation(native_fn),
         )),
     }
 }
