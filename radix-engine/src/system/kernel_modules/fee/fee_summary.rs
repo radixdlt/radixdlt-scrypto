@@ -1,4 +1,4 @@
-use super::RoyaltyReceiver;
+use super::{CostingReason, RoyaltyReceiver};
 use crate::types::*;
 use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
@@ -25,7 +25,7 @@ pub struct FeeSummary {
     /// The resultant vault charges in XRD (only present on commit)
     pub vault_payments_xrd: Option<BTreeMap<VaultId, Decimal>>,
     /// The execution cost breakdown
-    pub execution_cost_unit_breakdown: HashMap<String, u32>,
+    pub execution_cost_unit_breakdown: HashMap<CostingReason, u32>,
     /// The royalty cost breakdown.
     pub royalty_cost_unit_breakdown: HashMap<RoyaltyReceiver, u32>,
 }

@@ -7,7 +7,6 @@ use radix_engine_interface::api::{
     blueprints::resource::Resource,
     types::{RENodeId, VaultId},
 };
-use sbor::rust::cmp::min;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
@@ -94,7 +93,22 @@ pub enum RoyaltyReceiver {
 }
 
 #[repr(usize)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, IntoStaticStr, EnumCount, Display, FromRepr)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    IntoStaticStr,
+    EnumCount,
+    Display,
+    FromRepr,
+)]
 pub enum CostingReason {
     TxBaseCost,
     TxPayloadCost,
@@ -220,20 +234,26 @@ impl SystemLoanFeeReserve {
             return Err(FeeReserveError::LimitExceeded);
         }
 
-        // Sort out the amount from system loan
-        let from_loan = min(self.loan_balance, cost_units);
+        if self.loan_balance >= cost_units {
+            // Finally, apply state updates
+            self.loan_balance -= cost_units;
+            self.xrd_owed += price * cost_units as u128;
+        } else {
+            // Sort out the amount from system loan
+            let from_loan = self.loan_balance;
 
-        // Sort out the amount from locked payments
-        let from_locked = price * (cost_units - from_loan) as u128;
-        if self.xrd_balance < from_locked {
-            return Err(FeeReserveError::InsufficientBalance);
+            // Sort out the amount from locked payments
+            let from_balance = price * (cost_units - from_loan) as u128;
+            if self.xrd_balance < from_balance {
+                return Err(FeeReserveError::InsufficientBalance);
+            }
+
+            // Finally, apply state updates
+            self.loan_balance -= from_loan;
+            self.xrd_owed += price * from_loan as u128;
+            self.xrd_balance -= from_balance;
+            self.cost_units_consumed += cost_units;
         }
-
-        // Finally, apply state updates
-        self.loan_balance -= from_loan;
-        self.xrd_balance -= from_locked;
-        self.xrd_owed += price * from_loan as u128;
-        self.cost_units_consumed += cost_units;
         Ok(())
     }
 
@@ -245,8 +265,6 @@ impl SystemLoanFeeReserve {
             checked_assign_add(&mut sum, *v)?;
         }
         self.consume(sum, self.execution_price())?;
-
-        // Update internal state
         for i in 0..CostingReason::COUNT {
             self.execution[i] += self.execution_deferred[i];
             self.execution_deferred[i] = 0;
@@ -286,7 +304,7 @@ impl SystemLoanFeeReserve {
 
     #[inline]
     fn fully_repaid(&self) -> bool {
-        self.xrd_owed <= 0 && self.execution_deferred_total == 0
+        self.xrd_owed == 0 && self.execution_deferred_total == 0
     }
 }
 
@@ -397,10 +415,8 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
 
         let mut execution_cost_unit_breakdown = HashMap::new();
         for i in 0..CostingReason::COUNT {
-            execution_cost_unit_breakdown.insert(
-                CostingReason::from_repr(5usize).unwrap().to_string(),
-                self.execution[i],
-            );
+            execution_cost_unit_breakdown
+                .insert(CostingReason::from_repr(5usize).unwrap(), self.execution[i]);
         }
 
         FeeSummary {
