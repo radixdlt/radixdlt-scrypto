@@ -201,7 +201,7 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
         let node_id = self.receiver;
         let handle = api.lock_substate(
             node_id,
-            NodeModuleId::SELF,
+            NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::MUTABLE,
         )?;
@@ -252,7 +252,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         let node_id = self.receiver;
         let handle = api.lock_substate(
             node_id,
-            NodeModuleId::SELF,
+            NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;

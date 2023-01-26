@@ -730,7 +730,7 @@ impl<'s> FinalizingTrack<'s> {
                 RoyaltyReceiver::Package(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
-                        NodeModuleId::SELF,
+                        NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();
@@ -759,7 +759,7 @@ impl<'s> FinalizingTrack<'s> {
                 RoyaltyReceiver::Component(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
-                        NodeModuleId::SELF,
+                        NodeModuleId::ComponentRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();

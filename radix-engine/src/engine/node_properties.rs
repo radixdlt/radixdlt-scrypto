@@ -3,7 +3,12 @@ use crate::engine::{
     RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
-use radix_engine_interface::api::types::{AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset};
+use radix_engine_interface::api::types::{
+    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
+    GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
+    ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
+    TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
+};
 
 pub struct VisibilityProperties;
 

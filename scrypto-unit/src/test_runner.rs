@@ -253,7 +253,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
-                NodeModuleId::SELF,
+                NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             ))
         {
@@ -284,7 +284,7 @@ impl TestRunner {
             .root
             .get_substate(&SubstateId(
                 node_id,
-                NodeModuleId::SELF,
+                NodeModuleId::PackageRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             ))
         {

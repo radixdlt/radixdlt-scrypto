@@ -166,7 +166,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
         let node_id = self.receiver;
         let handle = api.lock_substate(
             node_id,
-            NodeModuleId::SELF,
+            NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::MUTABLE,
         )?;
@@ -217,7 +217,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         let node_id = self.receiver;
         let handle = api.lock_substate(
             node_id,
-            NodeModuleId::SELF,
+            NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;

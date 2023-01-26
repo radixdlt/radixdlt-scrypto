@@ -357,6 +357,8 @@ pub enum NodeModuleId {
     SELF,
     Metadata,
     AccessRules,
+    ComponentRoyalty,
+    PackageRoyalty,
     VaultAccessRules,
 }
 
