@@ -60,6 +60,7 @@ pub trait InvokableModel<E>:
     + Invokable<ValidatorUnregisterInvocation, E>
     + Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
+    + Invokable<ValidatorClaimXrdInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>

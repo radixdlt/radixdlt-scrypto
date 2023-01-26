@@ -461,6 +461,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ValidatorInvocation::ClaimXrd(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
         },
         NativeInvocation::Clock(clock_method) => match clock_method {
             ClockInvocation::Create(invocation) => {
