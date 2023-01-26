@@ -3,8 +3,7 @@ use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     types::*,
 };
-use radix_engine_interface::api::blueprints::resource::FromPublicKey;
-use scrypto::prelude::ResourceOperationError;
+use radix_engine_interface::api::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
