@@ -26,9 +26,10 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
+    num_unstake_epochs: u64,
 ) -> SystemTransaction {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -181,8 +182,8 @@ pub fn create_genesis(
 
     {
         let mut validators = BTreeMap::new();
-        for (key, amount) in validator_set {
-            let bucket = id_allocator.new_bucket_id().unwrap();
+        for (key, (amount, account_address)) in validator_set_and_stake_owners {
+            let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
             instructions.push(
                 BasicInstruction::TakeFromWorktopByAmount {
                     resource_address: RADIX_TOKEN,
@@ -190,7 +191,7 @@ pub fn create_genesis(
                 }
                 .into(),
             );
-            validators.insert(key, Bucket(bucket.0));
+            validators.insert(key, (bucket, account_address));
         }
 
         let component_address = EPOCH_MANAGER.raw();
@@ -201,6 +202,7 @@ pub fn create_genesis(
                 validator_set: validators,
                 initial_epoch,
                 rounds_per_epoch,
+                num_unstake_epochs,
             }),
         )));
     }
@@ -251,15 +253,17 @@ where
         BTreeMap::new(),
         1u64,
         1u64,
+        1u64,
     )
 }
 
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
+    num_unstake_epochs: u64,
 ) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -272,7 +276,12 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
+        let genesis_transaction = create_genesis(
+            validator_set,
+            initial_epoch,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        );
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -295,6 +304,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
+    use transaction::signing::EcdsaSecp256k1PrivateKey;
 
     use super::*;
 
@@ -303,8 +313,13 @@ mod tests {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let mut initial_validator_set = BTreeMap::new();
-        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]), Decimal::one());
-        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
+        let public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
+        initial_validator_set.insert(
+            EcdsaSecp256k1PublicKey([0; 33]),
+            (Decimal::one(), account_address),
+        );
+        let genesis_transaction = create_genesis(initial_validator_set, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
