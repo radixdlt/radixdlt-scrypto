@@ -304,6 +304,7 @@ pub enum ValidatorFn {
     Unregister,
     Stake,
     Unstake,
+    ClaimXrd,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -416,7 +417,18 @@ impl EpochManagerPackage {
                         NativeInvocation::Validator(ValidatorInvocation::Unstake(
                             ValidatorUnstakeInvocation {
                                 receiver,
-                                amount: args.amount,
+                                lp_tokens: args.lp_tokens,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::ClaimXrd => {
+                        let args: ValidatorClaimXrdMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(
+                            ValidatorClaimXrdInvocation {
+                                receiver,
+                                unstake_nft: args.bucket,
                             },
                         ))
                     }

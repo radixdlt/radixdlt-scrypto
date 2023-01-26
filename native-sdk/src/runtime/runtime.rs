@@ -26,7 +26,7 @@ impl Runtime {
         Y: EngineApi<E> + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let visible_node_ids = api.sys_get_visible_nodes().unwrap();
+        let visible_node_ids = api.sys_get_visible_nodes()?;
         let node_id = visible_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))

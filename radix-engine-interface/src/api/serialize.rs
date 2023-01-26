@@ -52,7 +52,7 @@ impl NativeInvocation {
     ) -> Result<(), ReplaceManifestValuesError> {
         match self {
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, bucket) in &mut invocation.validator_set {
+                for (_, (bucket, _)) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
                         .remove(&ManifestBucket(bucket.0))
                         .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
@@ -144,6 +144,7 @@ pub enum ValidatorInvocation {
     Unregister(ValidatorUnregisterInvocation),
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
+    ClaimXrd(ValidatorClaimXrdInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -398,7 +399,11 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerInvocation::Create(..) => {}
+                EpochManagerInvocation::Create(invocation) => {
+                    for (_key, (_bucket, account_address)) in &invocation.validator_set {
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                    }
+                }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -442,6 +447,11 @@ impl NativeInvocation {
                     )));
                 }
                 ValidatorInvocation::Unstake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::ClaimXrd(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
                     )));

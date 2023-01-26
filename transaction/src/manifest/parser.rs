@@ -248,6 +248,9 @@ impl Parser {
             TokenKind::CreateIdentity => Instruction::CreateIdentity {
                 access_rule: self.parse_value()?,
             },
+            TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
+                access_rule: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

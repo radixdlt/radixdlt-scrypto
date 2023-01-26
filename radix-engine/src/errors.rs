@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::EpochManagerError;
+use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
 };
@@ -308,6 +308,8 @@ pub enum ApplicationError {
     PackageError(PackageError),
 
     EpochManagerError(EpochManagerError),
+
+    ValidatorError(ValidatorError),
 
     ResourceManagerError(ResourceManagerError),
 
