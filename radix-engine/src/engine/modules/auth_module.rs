@@ -99,13 +99,12 @@ impl AuthModule {
                             resource_address
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let offset = SubstateOffset::VaultAccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        );
                         let handle = system_api.lock_substate(
                             node_id,
-                            NodeModuleId::SELF,
-                            offset,
+                            NodeModuleId::VaultAccessRules,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
                             LockFlags::read_only(),
                         )?;
 

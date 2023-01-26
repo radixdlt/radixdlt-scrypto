@@ -250,7 +250,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    pub fn get_substate(&mut self, node_id: RENodeId, module_id: NodeModuleId, offset: &SubstateOffset) -> SubstateRef {
+    pub fn get_substate(
+        &mut self,
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: &SubstateOffset,
+    ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
             (
                 RENodeId::KeyValueStore(..),

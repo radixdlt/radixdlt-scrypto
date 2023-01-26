@@ -139,9 +139,6 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
-                SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
-                    flags == LockFlags::read_only()
-                }
                 _ => false,
             },
             (ExecutionMode::Resolver, offset) => match offset {
@@ -245,7 +242,6 @@ impl SubstateProperties {
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,
-            SubstateOffset::VaultAccessRulesChain(..) => true,
             SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,

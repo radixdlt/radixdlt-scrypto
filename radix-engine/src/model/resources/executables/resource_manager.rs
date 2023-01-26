@@ -861,9 +861,12 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
-        let offset =
-            SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.0,
+            NodeModuleId::VaultAccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            LockFlags::MUTABLE,
+        )?;
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
@@ -952,9 +955,12 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
-        let offset =
-            SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.0,
+            NodeModuleId::VaultAccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            LockFlags::MUTABLE,
+        )?;
 
         // TODO: Figure out how to move this access check into more appropriate place
         {

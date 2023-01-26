@@ -272,10 +272,8 @@ impl RENodeInit {
                 // TODO: Figure out what the right abstraction is for vault access rules
                 substates.insert(
                     (
-                        NodeModuleId::SELF,
-                        SubstateOffset::VaultAccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        ),
+                        NodeModuleId::VaultAccessRules,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     ),
                     vault_access_rules.into(),
                 );

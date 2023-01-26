@@ -333,7 +333,6 @@ pub enum SubstateOffset {
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
 
-    VaultAccessRulesChain(AccessRulesChainOffset),
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
 }
@@ -355,6 +354,7 @@ pub enum NodeModuleId {
     SELF,
     Metadata,
     AccessRules,
+    VaultAccessRules,
 }
 
 /// TODO: separate space addresses?
