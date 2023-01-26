@@ -4,6 +4,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientNodeApi, Invokable};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 /// Represents the auth zone, which is used by system for checking
@@ -16,11 +17,7 @@ pub struct ComponentAuthZone {}
 impl ComponentAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let mut env = ScryptoEnv;
-        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
-        let node_id = owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist");
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
 
         let proof: Proof = proof.into();
 
@@ -33,11 +30,7 @@ impl ComponentAuthZone {
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
-        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
-        let node_id = owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist");
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZonePopInvocation {
             receiver: node_id.into(),
         })
@@ -46,11 +39,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
-        let node_id = owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist");
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofInvocation {
             receiver: node_id.into(),
             resource_address,
@@ -60,11 +49,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
-        let node_id = owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist");
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByAmountInvocation {
             receiver: node_id.into(),
             amount,
@@ -78,16 +63,33 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
-        let node_id = owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist");
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByIdsInvocation {
             receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,
         })
         .unwrap()
+    }
+
+    pub fn assert_access_rule(access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
+        env.invoke(AuthZoneAssertAccessRuleInvocation {
+            receiver: node_id.into(),
+            access_rule,
+        })
+        .unwrap()
+    }
+
+    fn auth_zone_node_id<Y, E>(api: &mut Y) -> Option<RENodeId>
+    where
+        Y: ClientNodeApi<E>,
+        E: Debug,
+    {
+        let owned_node_ids = api.sys_get_visible_nodes().unwrap();
+        owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
     }
 }

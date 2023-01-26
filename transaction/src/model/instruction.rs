@@ -200,6 +200,10 @@ pub enum BasicInstruction {
         access_rule: AccessRule,
     },
 
+    AssertAccessRule {
+        access_rule: AccessRule,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

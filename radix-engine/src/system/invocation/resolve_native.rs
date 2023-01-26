@@ -520,6 +520,12 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ValidatorFn::ClaimXrd => {
+                let invocation = scrypto_decode::<ValidatorClaimXrdInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
         },
         NativeFn::Clock(clock_fn) => match clock_fn {
             ClockFn::Create => {

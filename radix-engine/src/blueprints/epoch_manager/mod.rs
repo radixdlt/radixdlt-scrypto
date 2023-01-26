@@ -1,5 +1,5 @@
-mod executables;
-mod substates;
+mod epoch_manager;
+mod validator;
 
-pub use executables::*;
-pub use substates::*;
+pub use epoch_manager::*;
+pub use validator::*;
