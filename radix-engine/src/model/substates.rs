@@ -709,6 +709,16 @@ impl Into<EpochManagerSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSubstate {
+        if let RuntimeSubstate::Validator(validator) = self {
+            validator
+        } else {
+            panic!("Not a validator");
+        }
+    }
+}
+
 impl Into<GlobalAddressSubstate> for RuntimeSubstate {
     fn into(self) -> GlobalAddressSubstate {
         if let RuntimeSubstate::Global(substate) = self {
@@ -1047,7 +1057,10 @@ impl<'a> SubstateRef<'a> {
                 let mut references = HashSet::new();
                 let mut owned_nodes = HashSet::new();
                 references.insert(GlobalAddress::Component(substate.manager));
-                owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
+                references.insert(GlobalAddress::Resource(substate.unstake_nft));
+                references.insert(GlobalAddress::Resource(substate.liquidity_token));
+                owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
+                owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
