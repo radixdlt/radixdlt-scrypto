@@ -429,7 +429,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         let mut execution_cost_unit_breakdown = HashMap::new();
         for i in 0..CostingReason::COUNT {
             execution_cost_unit_breakdown
-                .insert(CostingReason::from_repr(5usize).unwrap(), self.execution[i]);
+                .insert(CostingReason::from_repr(i).unwrap(), self.execution[i]);
         }
 
         FeeSummary {
