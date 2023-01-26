@@ -426,12 +426,6 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         // In case the transaction finishes before check point.
         self.attempt_to_repay_all();
 
-        let mut execution_cost_unit_breakdown = BTreeMap::new();
-        for i in 0..CostingReason::COUNT {
-            execution_cost_unit_breakdown
-                .insert(CostingReason::from_repr(i).unwrap(), self.execution[i]);
-        }
-
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
