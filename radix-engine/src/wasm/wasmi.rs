@@ -44,9 +44,6 @@ impl WasmiInstanceEnv {
 
 macro_rules! grab_runtime {
     ($caller: expr) => {{
-        // FIXME
-        //let ptr = $env.runtime_ptr.lock().expect("Runtime ptr unavailable");
-        //let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
         let runtime: &mut Box<dyn WasmRuntime> =
             unsafe { &mut *($caller.data().runtime_ptr as *mut _) };
 
@@ -489,10 +486,6 @@ impl WasmInstance for WasmiInstance {
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
-            // set up runtime pointer
-            //let mut guard = self.store
-            //    data_mut().runtime_ptr.lock().expect("Runtime ptr unavailable");
-            //*guard = runtime as *mut _ as usize;
             self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
         }
 
