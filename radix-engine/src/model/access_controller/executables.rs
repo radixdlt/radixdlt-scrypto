@@ -395,8 +395,8 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
                     api.invoke(AccessRulesSetMethodAccessRuleInvocation {
                         receiver: self.receiver,
                         index: 0,
-                        key: method_key.to_owned(),
-                        rule: access_rule.to_owned(),
+                        key: method_key.clone(),
+                        rule: access_rule.clone(),
                     })?;
                 }
                 AccessRuleEntry::Group(..) => {} // Already updated above
@@ -482,8 +482,8 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
                     api.invoke(AccessRulesSetMethodAccessRuleInvocation {
                         receiver: self.receiver,
                         index: 0,
-                        key: method_key.to_owned(),
-                        rule: access_rule.to_owned(),
+                        key: method_key.clone(),
+                        rule: access_rule.clone(),
                     })?;
                 }
                 AccessRuleEntry::Group(..) => {} // Already updated above
