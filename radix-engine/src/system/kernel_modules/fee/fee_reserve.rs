@@ -236,10 +236,23 @@ impl SystemLoanFeeReserve {
             return Err(FeeReserveError::LimitExceeded);
         }
 
+        /* To achieve the best performance, we may need to tweak the order of the three branches based on SYSTEM_LOAN_AMOUNT */
+
         if self.remaining_loan_balance >= cost_units_to_consume {
             // Finally, apply state updates
             self.xrd_owed += price * cost_units_to_consume as u128;
             self.remaining_loan_balance -= cost_units_to_consume;
+            self.total_cost_units_consumed += cost_units_to_consume;
+        } else if self.remaining_loan_balance == 0 {
+            // Sort out the amount from balance
+            let from_balance = price * cost_units_to_consume as u128;
+            if self.remaining_xrd_balance < from_balance {
+                return Err(FeeReserveError::InsufficientBalance);
+            }
+
+            // Finally, apply state updates
+            self.remaining_xrd_balance -= from_balance;
+            self.total_cost_units_consumed += cost_units_to_consume;
         } else {
             // Sort out the amount from balance
             let from_balance =
