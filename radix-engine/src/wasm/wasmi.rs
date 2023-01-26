@@ -16,9 +16,13 @@ use crate::wasm::traits::*;
 
 type HostState = WasmiInstanceEnv;
 
+/// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined) and Store,
+/// which keeps user data.
+/// "Template" (Store, Instance) tuple are cached together, and never to be invoked.
+/// Upon instantiation Instance and Store are cloned, so the state is not shared between instances.
+/// It is correctly `Send + Sync` - which is good, because this is the thing which is cached in the
+/// ScryptoInterpreter caches.
 pub struct WasmiModule {
-    // (Store, Instance) tuple are cached together, and never to be invoked
-    // Every `WasmiModule` is going to clone the store and instance, so the state is not shared
     store: Store<HostState>,
     instance: Instance,
     #[allow(dead_code)]
@@ -31,6 +35,16 @@ pub struct WasmiInstance {
     memory: Memory,
 }
 
+/// WasmiInstanceEnv stores masked runtime pointer to a `Box<dyn WasmRuntime>`.
+/// We mask it for below reasons:
+/// - Store must be `Send + Sync`
+///   - According to the `wasmi` documentation
+///     At the moment `&'a mut System API` which is wrapped into `RadixEngineWasmRuntime` and boxed
+///     is not `Sync`
+///     (the same reason as in alternative `wasmer` implementation)
+///   - Store also shall be `Send + Sync` because of `WasmiModule`, which is cached.
+/// - WasmiInstanceEnv must be clonable (it is a user data for the Store, which is cloned when
+///   WasmiModule is instantiated)
 #[derive(Clone)]
 pub struct WasmiInstanceEnv {
     runtime_ptr: usize,
@@ -217,13 +231,9 @@ impl WasmiModule {
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
-            .map_err(|_| {
-                PrepareError::NotInstantiatable
-            })?
+            .map_err(|_| PrepareError::NotInstantiatable)?
             .ensure_no_start(store.as_context_mut())
-            .map_err(|_| {
-                PrepareError::NotInstantiatable
-            })?;
+            .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(Self {
             store,
@@ -470,7 +480,9 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
             Error::Trap(trap) => {
                 let invoke_err = trap
                     .downcast_ref::<InvokeError<WasmRuntimeError>>()
-                    .unwrap_or(&InvokeError::SelfError(WasmRuntimeError::InvalidExportReturn));
+                    .unwrap_or(&InvokeError::SelfError(
+                        WasmRuntimeError::InvalidExportReturn,
+                    ));
                 invoke_err.clone()
             }
             _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
@@ -486,6 +498,7 @@ impl WasmInstance for WasmiInstance {
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
+            // set up runtime pointer
             self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
         }
 
@@ -509,7 +522,9 @@ impl WasmInstance for WasmiInstance {
                 self.memory,
                 Slice::transmute_i64(ret),
             ),
-            _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidExportReturn)),
+            _ => Err(InvokeError::SelfError(
+                WasmRuntimeError::InvalidExportReturn,
+            )),
         }
     }
 }
