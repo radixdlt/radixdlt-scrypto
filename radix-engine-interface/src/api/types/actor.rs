@@ -959,34 +959,17 @@ impl AccessControllerPackage {
                 )
             }
             AccessControllerFn::CancelRecoveryAttemptAsPrimary => {
-                let args =
-                    scrypto_decode::<AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs>(
-                        args,
-                    )
+                scrypto_decode::<AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(
-                    AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-                        receiver,
-                        proposal_to_cancel: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
+                    AccessControllerCancelRecoveryAttemptAsPrimaryInvocation { receiver },
                 )
             }
             AccessControllerFn::CancelRecoveryAttemptAsRecovery => {
-                let args = scrypto_decode::<
-                    AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs,
-                >(args)
-                .map_err(ResolveError::DecodeError)?;
+                scrypto_decode::<AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
                 AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(
-                    AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-                        receiver,
-                        proposal_to_cancel: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
+                    AccessControllerCancelRecoveryAttemptAsRecoveryInvocation { receiver },
                 )
             }
             AccessControllerFn::LockPrimaryRole => {

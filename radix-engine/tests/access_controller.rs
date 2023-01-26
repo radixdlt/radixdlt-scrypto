@@ -464,13 +464,7 @@ mod normal_operations_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(
-                role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_MINUTES,
-            );
+            let receipt = test_runner.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -728,13 +722,7 @@ mod normal_operations_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(
-                role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_MINUTES,
-            );
+            let receipt = test_runner.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -1000,13 +988,7 @@ mod recovery_mode_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(
-                role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_MINUTES,
-            );
+            let receipt = test_runner.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -1278,13 +1260,7 @@ mod recovery_mode_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(
-                role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                TIMED_RECOVERY_DELAY_IN_MINUTES,
-            );
+            let receipt = test_runner.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -1598,14 +1574,7 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn cancel_recovery_attempt(
-        &mut self,
-        as_role: Role,
-        proposed_primary_role: AccessRule,
-        proposed_recovery_role: AccessRule,
-        proposed_confirmation_role: AccessRule,
-        timed_recovery_delay_in_minutes: Option<u32>,
-    ) -> TransactionReceipt {
+    pub fn cancel_recovery_attempt(&mut self, as_role: Role) -> TransactionReceipt {
         let method_name = match as_role {
             Role::Primary => AccessControllerFn::CancelRecoveryAttemptAsPrimary,
             Role::Recovery => AccessControllerFn::CancelRecoveryAttemptAsRecovery,
@@ -1617,15 +1586,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 &method_name.to_string(),
-                scrypto_encode(&AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs {
-                    rule_set: RuleSet {
-                        primary_role: proposed_primary_role,
-                        recovery_role: proposed_recovery_role,
-                        confirmation_role: proposed_confirmation_role,
-                    },
-                    timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                scrypto_encode(&AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)

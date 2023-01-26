@@ -36,7 +36,7 @@ impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
 //================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateProofMethodArgs {}
+pub struct AccessControllerCreateProofMethodArgs;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCreateProofInvocation {
@@ -264,15 +264,11 @@ impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocatio
 //======================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs {
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
-}
+pub struct AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
     pub receiver: ComponentAddress,
-    pub proposal_to_cancel: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
@@ -297,15 +293,11 @@ impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsPrimar
 //=======================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs {
-    pub rule_set: RuleSet,
-    pub timed_recovery_delay_in_minutes: Option<u32>,
-}
+pub struct AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
     pub receiver: ComponentAddress,
-    pub proposal_to_cancel: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
@@ -330,7 +322,7 @@ impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptAsRecove
 //=====================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerLockPrimaryRoleMethodArgs {}
+pub struct AccessControllerLockPrimaryRoleMethodArgs;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerLockPrimaryRoleInvocation {
@@ -356,7 +348,7 @@ impl Into<CallTableInvocation> for AccessControllerLockPrimaryRoleInvocation {
 //=======================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerUnlockPrimaryRoleMethodArgs {}
+pub struct AccessControllerUnlockPrimaryRoleMethodArgs;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerUnlockPrimaryRoleInvocation {

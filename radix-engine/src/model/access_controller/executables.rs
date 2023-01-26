@@ -514,7 +514,6 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
 pub struct AccessControllerCancelRecoveryAttemptExecutable {
     pub receiver: RENodeId,
     pub proposer: Proposer,
-    pub proposal_to_cancel: RecoveryProposal,
 }
 
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
@@ -539,7 +538,6 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             proposer: Proposer::Primary,
-            proposal_to_cancel: self.proposal_to_cancel,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -568,7 +566,6 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
             proposer: Proposer::Recovery,
-            proposal_to_cancel: self.proposal_to_cancel,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -590,7 +587,6 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
             api,
             AccessControllerCancelRecoveryAttemptStateMachineInput {
                 proposer: self.proposer,
-                proposal_to_cancel: self.proposal_to_cancel,
             },
         )?;
 

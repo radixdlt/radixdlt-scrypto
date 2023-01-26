@@ -254,7 +254,6 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
 
 pub(super) struct AccessControllerCancelRecoveryAttemptStateMachineInput {
     pub proposer: Proposer,
-    pub proposal_to_cancel: RecoveryProposal,
 }
 
 impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
@@ -273,14 +272,7 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
         match self.state {
-            (_, PrimaryOperationState::Recovery(ref proposal), _)
-                if input.proposer == Proposer::Primary =>
-            {
-                let proposal = proposal.clone();
-
-                // Ensure that the caller has passed in the expected proposal
-                validate_recovery_proposal(&proposal, &input.proposal_to_cancel)?;
-
+            (_, PrimaryOperationState::Recovery(..), _) if input.proposer == Proposer::Primary => {
                 // Transition from the recovery state to the normal operations state
                 self.state.1 = PrimaryOperationState::Normal;
                 Ok(())
@@ -289,15 +281,9 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
                 _,
                 _,
                 RecoveryOperationState::Recovery(
-                    RecoveryRecoveryState::Untimed(ref proposal)
-                    | RecoveryRecoveryState::Timed { ref proposal, .. },
+                    RecoveryRecoveryState::Untimed(..) | RecoveryRecoveryState::Timed { .. },
                 ),
             ) if input.proposer == Proposer::Recovery => {
-                let proposal = proposal.clone();
-
-                // Ensure that the caller has passed in the expected proposal
-                validate_recovery_proposal(&proposal, &input.proposal_to_cancel)?;
-
                 // Transition from the recovery state to the normal operations state
                 self.state.2 = RecoveryOperationState::Normal;
                 Ok(())
