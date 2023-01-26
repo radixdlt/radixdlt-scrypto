@@ -11,16 +11,17 @@ use sbor::rust::fmt::Debug;
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
     pub component_address: [u8; 26], // TODO: Clean this up
-    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
+    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Bucket, ComponentAddress)>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
 }
 
 impl Clone for EpochManagerCreateInvocation {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
-        for (key, bucket) in &self.validator_set {
-            validator_set.insert(key.clone(), Bucket(bucket.0));
+        for (key, (bucket, account_address)) in &self.validator_set {
+            validator_set.insert(key.clone(), (Bucket(bucket.0), account_address.clone()));
         }
 
         Self {
@@ -28,6 +29,7 @@ impl Clone for EpochManagerCreateInvocation {
             validator_set,
             initial_epoch: self.initial_epoch,
             rounds_per_epoch: self.rounds_per_epoch,
+            num_unstake_epochs: self.num_unstake_epochs,
         }
     }
 }
@@ -242,11 +244,11 @@ impl Clone for ValidatorStakeInvocation {
 }
 
 impl Invocation for ValidatorStakeInvocation {
-    type Output = ();
+    type Output = Bucket;
 }
 
 impl SerializableInvocation for ValidatorStakeInvocation {
-    type ScryptoOutput = ();
+    type ScryptoOutput = Bucket;
 }
 
 impl Into<CallTableInvocation> for ValidatorStakeInvocation {
@@ -255,15 +257,24 @@ impl Into<CallTableInvocation> for ValidatorStakeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnstakeMethodArgs {
-    pub amount: Decimal,
+    pub lp_tokens: Bucket,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnstakeInvocation {
     pub receiver: ComponentAddress,
-    pub amount: Decimal,
+    pub lp_tokens: Bucket,
+}
+
+impl Clone for ValidatorUnstakeInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            lp_tokens: Bucket(self.lp_tokens.0),
+        }
+    }
 }
 
 impl Invocation for ValidatorUnstakeInvocation {
@@ -277,5 +288,39 @@ impl SerializableInvocation for ValidatorUnstakeInvocation {
 impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorClaimXrdMethodArgs {
+    pub bucket: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorClaimXrdInvocation {
+    pub receiver: ComponentAddress,
+    pub unstake_nft: Bucket,
+}
+
+impl Clone for ValidatorClaimXrdInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            unstake_nft: Bucket(self.unstake_nft.0),
+        }
+    }
+}
+
+impl Invocation for ValidatorClaimXrdInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ValidatorClaimXrdInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
     }
 }
