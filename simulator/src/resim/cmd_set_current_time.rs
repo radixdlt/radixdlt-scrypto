@@ -25,7 +25,10 @@ impl SetCurrentTime {
         ))];
 
         let blobs = vec![];
-        let initial_proofs = vec![AuthAddresses::system_role()];
+        let initial_proofs = vec![
+            AuthAddresses::system_role(),
+            AuthAddresses::validator_role(),
+        ];
         handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)
             .map(|_| ())
     }
