@@ -18,9 +18,6 @@ pub enum AccessControllerError {
     /// Occurs when some action requires that the primary role is unlocked to happen.
     OperationRequiresUnlockedPrimaryRole,
 
-    /// Occurs when some action requires that the primary role is locked to happen.
-    OperationRequiresLockedPrimaryRole,
-
     /// Occurs when adding time to an [`Instant`] results in an overflow
     TimeOverflow,
 

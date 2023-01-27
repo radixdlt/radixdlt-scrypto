@@ -401,10 +401,7 @@ mod normal_operations_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_locked_primary_role_error),
-            ),
+            (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -634,10 +631,7 @@ mod normal_operations_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_unlocked_primary_role_error),
-            ),
+            (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -925,10 +919,7 @@ mod recovery_mode_with_primary_unlocked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_locked_primary_role_error),
-            ),
+            (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -1172,10 +1163,7 @@ mod recovery_mode_with_primary_locked {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 3] = [
             (Role::Primary, Some(is_auth_unauthorized_error)),
-            (
-                Role::Recovery,
-                Some(is_operation_requires_unlocked_primary_role_error),
-            ),
+            (Role::Recovery, None),
             (Role::Confirmation, Some(is_auth_unauthorized_error)),
         ];
 
@@ -1374,15 +1362,6 @@ fn is_operation_requires_unlocked_primary_role_error(error: &RuntimeError) -> bo
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::OperationRequiresUnlockedPrimaryRole
-        ))
-    )
-}
-
-fn is_operation_requires_locked_primary_role_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::OperationRequiresLockedPrimaryRole
         ))
     )
 }

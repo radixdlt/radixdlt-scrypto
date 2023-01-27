@@ -454,7 +454,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessC
                 *primary_state = PrimaryRoleState::Locked;
                 Ok(())
             }
-            _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
+            _ => Ok(()),
         }
     }
 }
@@ -480,7 +480,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
                 *primary_state = PrimaryRoleState::Unlocked;
                 Ok(())
             }
-            _ => access_controller_runtime_error!(OperationRequiresLockedPrimaryRole),
+            _ => Ok(()),
         }
     }
 }
