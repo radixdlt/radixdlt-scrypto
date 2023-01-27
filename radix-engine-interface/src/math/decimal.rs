@@ -539,13 +539,16 @@ impl fmt::Display for ParseDecimalError {
     }
 }
 
-impl From<PreciseDecimal> for Decimal {
-    fn from(val: PreciseDecimal) -> Self {
-        Self(
-            (val.0 / BnumI512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
-                .try_into()
-                .expect("Overflow"),
-        )
+impl TryFrom<PreciseDecimal> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(val: PreciseDecimal) -> Result<Self, Self::Error> {
+        let val_i512 = val.0 / BnumI512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE);
+        let result = BnumI256::try_from(val_i512);
+        match result {
+            Ok(val_i256) => Ok(Self(val_i256)),
+            Err(_) => Err(ParseDecimalError::Overflow),
+        }
     }
 }
 
