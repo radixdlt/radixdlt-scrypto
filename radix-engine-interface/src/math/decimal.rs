@@ -568,7 +568,6 @@ from_integer!(BnumU256, BnumU512);
 mod tests {
     use super::*;
     use crate::dec;
-    use crate::pdec;
     use paste::paste;
     use sbor::rust::vec;
 
