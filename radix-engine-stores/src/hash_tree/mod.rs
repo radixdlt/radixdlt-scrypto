@@ -4,6 +4,7 @@ use crate::hash_tree::types::Version;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
+use sbor::rust::vec::Vec;
 
 pub mod hash_tree_facade;
 pub mod tree_store;

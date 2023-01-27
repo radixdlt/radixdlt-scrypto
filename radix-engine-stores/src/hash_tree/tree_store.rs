@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_interface::api::types::SubstateId;
