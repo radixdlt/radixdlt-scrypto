@@ -1,6 +1,8 @@
 use crate::time::constants::*;
 use crate::time::Instant;
 use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::ToString;
 use sbor::*;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
@@ -409,11 +411,30 @@ impl From<UtcDateTime> for Instant {
     }
 }
 
+impl ToString for UtcDateTime {
+    /// A string representation of this date time using ISO-8601 representation.
+    fn to_string(&self) -> String {
+        format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            self.year, self.month, self.day_of_month, self.hour, self.minute, self.second,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Instant, UtcDateTime};
     use crate::time::utc_date_time::MAX_SUPPORTED_TIMESTAMP;
     use radix_engine_interface::time::utc_date_time::MIN_SUPPORTED_TIMESTAMP;
+
+    #[test]
+    pub fn test_to_string() {
+        let instant = Instant {
+            seconds_since_unix_epoch: 1674821845,
+        };
+        let date_time = UtcDateTime::from_instant(&instant).unwrap();
+        assert_eq!(date_time.to_string(), "2023-01-27T12:17:25Z");
+    }
 
     #[test]
     pub fn test_instant_date_time_conversions() {
