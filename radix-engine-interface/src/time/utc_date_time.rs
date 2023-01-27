@@ -4,6 +4,7 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Display;
 use sbor::rust::num::ParseIntError;
 use sbor::rust::str::FromStr;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
