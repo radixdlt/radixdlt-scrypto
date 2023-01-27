@@ -14,6 +14,7 @@ mod cmd_publish;
 mod cmd_reset;
 mod cmd_run;
 mod cmd_set_current_epoch;
+mod cmd_set_current_time;
 mod cmd_set_default_account;
 mod cmd_show;
 mod cmd_show_configs;
@@ -38,6 +39,7 @@ pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_run::*;
 pub use cmd_set_current_epoch::*;
+pub use cmd_set_current_time::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
 pub use cmd_show_configs::*;
@@ -110,6 +112,7 @@ pub enum Command {
     Reset(Reset),
     Run(Run),
     SetCurrentEpoch(SetCurrentEpoch),
+    SetCurrentTime(SetCurrentTime),
     SetDefaultAccount(SetDefaultAccount),
     ShowConfigs(ShowConfigs),
     ShowLedger(ShowLedger),
@@ -138,6 +141,7 @@ pub fn run() -> Result<(), Error> {
         Command::Reset(cmd) => cmd.run(&mut out),
         Command::Run(cmd) => cmd.run(&mut out),
         Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
+        Command::SetCurrentTime(cmd) => cmd.run(&mut out),
         Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
         Command::ShowConfigs(cmd) => cmd.run(&mut out),
         Command::ShowLedger(cmd) => cmd.run(&mut out),
