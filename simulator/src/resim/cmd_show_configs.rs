@@ -14,19 +14,31 @@ impl ShowConfigs {
         writeln!(
             out,
             "{}: {}",
-            "Default Account".green().bold(),
+            "Account Address".green().bold(),
             match configs.default_account {
-                Some((component, str)) => format!(
-                    "({}, {})",
-                    component.display(&Bech32Encoder::for_simulator()),
-                    str
-                ),
+                Some((component, _)) =>
+                    format!("{}", component.display(&Bech32Encoder::for_simulator()),),
                 None => "None".to_owned(),
             }
         )
         .map_err(Error::IOError)?;
-        writeln!(out, "{}: {}", "Current Nonce".green().bold(), configs.nonce)
-            .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Account Private Key".green().bold(),
+            match configs.default_account {
+                Some((_, sk)) => sk,
+                None => "None".to_owned(),
+            }
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Next Transaction Nonce".green().bold(),
+            configs.nonce
+        )
+        .map_err(Error::IOError)?;
         Ok(())
     }
 }
