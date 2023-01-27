@@ -25,6 +25,7 @@ pub enum NativePackage {
     Logger,
     TransactionRuntime,
     TransactionProcessor,
+    Account,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -115,6 +116,7 @@ pub enum NativeFn {
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
+    Account(AccountFn),
 }
 
 impl NativeFn {
@@ -135,6 +137,7 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+            NativeFn::Account(..) => NativePackage::Account,
         }
     }
 }
