@@ -74,11 +74,11 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
 }
 
 impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type Output = u32;
+    type Output = ();
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type ScryptoOutput = u32;
+    type ScryptoOutput = ();
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -107,11 +107,11 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
 }
 
 impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type Output = u32;
+    type Output = ();
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type ScryptoOutput = u32;
+    type ScryptoOutput = ();
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInvocation {
@@ -129,13 +129,14 @@ impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInv
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
-    pub nonce: u32,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     pub receiver: ComponentAddress,
-    pub nonce: u32,
+    pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
@@ -163,13 +164,14 @@ impl Into<CallTableInvocation>
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalMethodArgs {
-    pub nonce: u32,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     pub receiver: ComponentAddress,
-    pub nonce: u32,
+    pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
@@ -197,13 +199,14 @@ impl Into<CallTableInvocation>
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
-    pub nonce: u32,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
-    pub nonce: u32,
+    pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
@@ -338,13 +341,14 @@ impl Into<CallTableInvocation> for AccessControllerUnlockPrimaryRoleInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerStopTimedRecoveryMethodArgs {
-    pub nonce: u32,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerStopTimedRecoveryInvocation {
     pub receiver: ComponentAddress,
-    pub nonce: u32,
+    pub proposal: RecoveryProposal,
 }
 
 impl Invocation for AccessControllerStopTimedRecoveryInvocation {

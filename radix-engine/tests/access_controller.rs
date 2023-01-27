@@ -23,7 +23,14 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     );
 
     // Act
-    let receipt = test_runner.quick_confirm_recovery(Role::Recovery, Role::Recovery, 0);
+    let receipt = test_runner.quick_confirm_recovery(
+        Role::Recovery,
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error)
@@ -42,10 +49,17 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     );
 
     // Act
-    let receipt = test_runner.quick_confirm_recovery(Role::Primary, Role::Recovery, 12);
+    let receipt = test_runner.quick_confirm_recovery(
+        Role::Primary,
+        Role::Recovery,
+        rule!(require(PACKAGE_TOKEN)),
+        rule!(require(PACKAGE_TOKEN)),
+        rule!(require(PACKAGE_TOKEN)),
+        Some(10),
+    );
 
     // Assert
-    receipt.expect_specific_failure(is_no_recovery_exists_for_proposer_error)
+    receipt.expect_specific_failure(is_recovery_proposal_mismatch_error)
 }
 
 #[test]
@@ -87,7 +101,13 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     test_runner.push_time_forward(9);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(Role::Recovery, 0);
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_timed_recovery_delay_has_not_elapsed_error);
@@ -107,7 +127,13 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     test_runner.push_time_forward(10);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(Role::Recovery, 0);
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -127,7 +153,13 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     test_runner.push_time_forward(10);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(Role::Recovery, 0);
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Recovery,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_no_timed_recoveries_found_error);
@@ -147,7 +179,13 @@ pub fn timed_confirm_recovery_with_non_recovery_role_fails() {
     test_runner.push_time_forward(10);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(Role::Primary, 0);
+    let receipt = test_runner.timed_confirm_recovery(
+        Role::Primary,
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(RADIX_TOKEN)),
+        Some(10),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -171,7 +209,13 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
     test_runner.push_time_forward(10);
 
     test_runner
-        .timed_confirm_recovery(Role::Recovery, 0)
+        .timed_confirm_recovery(
+            Role::Recovery,
+            rule!(require(test_runner.primary_role_badge)),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+            Some(10),
+        )
         .expect_commit_success();
 
     // Act
@@ -190,7 +234,15 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs { nonce: 0 }).unwrap(),
+            scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                rule_set: RuleSet {
+                    primary_role: rule!(require(RADIX_TOKEN)),
+                    recovery_role: rule!(require(RADIX_TOKEN)),
+                    confirmation_role: rule!(require(RADIX_TOKEN)),
+                },
+                timed_recovery_delay_in_minutes: Some(10),
+            })
+            .unwrap(),
         )
         .build();
 
@@ -234,7 +286,14 @@ pub fn quick_confirm_semantics_are_correct() {
             .expect_commit_success();
 
         // Act
-        let receipt = test_runner.quick_confirm_recovery(role, proposer.into(), 0);
+        let receipt = test_runner.quick_confirm_recovery(
+            role,
+            proposer.into(),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+            Some(10),
+        );
 
         // Assert
         match error_assertion_function {
@@ -387,7 +446,14 @@ mod normal_operations_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(role, proposer, 0);
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -411,7 +477,13 @@ mod normal_operations_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(role, 0);
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -466,7 +538,13 @@ mod normal_operations_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(role, 0);
+            let receipt = test_runner.stop_timed_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -623,7 +701,14 @@ mod normal_operations_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(role, proposer, 0);
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -647,7 +732,13 @@ mod normal_operations_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(role, 0);
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -702,7 +793,13 @@ mod normal_operations_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(role, 0);
+            let receipt = test_runner.stop_timed_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -867,7 +964,14 @@ mod recovery_mode_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(role, proposer, 0);
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -894,7 +998,13 @@ mod recovery_mode_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(role, 0);
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -946,7 +1056,13 @@ mod recovery_mode_with_primary_unlocked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(role, 0);
+            let receipt = test_runner.stop_timed_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -1117,7 +1233,14 @@ mod recovery_mode_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(role, proposer, 0);
+            let receipt = test_runner.quick_confirm_recovery(
+                role,
+                proposer,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -1144,7 +1267,13 @@ mod recovery_mode_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(role, 0);
+            let receipt = test_runner.timed_confirm_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -1196,7 +1325,13 @@ mod recovery_mode_with_primary_locked {
             let mut test_runner = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(role, 0);
+            let receipt = test_runner.stop_timed_recovery(
+                role,
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                TIMED_RECOVERY_DELAY_IN_MINUTES,
+            );
 
             // Assert
             match error_assertion_function {
@@ -1262,7 +1397,16 @@ fn is_timed_recovery_delay_has_not_elapsed_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::TimedRecoveryDelayHasNotElapsed { .. }
+            AccessControllerError::TimedRecoveryDelayHasNotElapsed
+        ))
+    )
+}
+
+fn is_recovery_proposal_mismatch_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+            AccessControllerError::RecoveryProposalMismatch { .. }
         ))
     )
 }
@@ -1386,7 +1530,10 @@ impl AccessControllerTestRunner {
         &mut self,
         as_role: Role,
         proposer: Role,
-        nonce: u32,
+        proposed_primary_role: AccessRule,
+        proposed_recovery_role: AccessRule,
+        proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let proposer = match proposer {
             Role::Primary => Proposer::Primary,
@@ -1405,7 +1552,14 @@ impl AccessControllerTestRunner {
                 self.access_controller_component_address,
                 &method_name.to_string(),
                 scrypto_encode(
-                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs { nonce },
+                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
+                        rule_set: RuleSet {
+                            primary_role: proposed_primary_role,
+                            recovery_role: proposed_recovery_role,
+                            confirmation_role: proposed_confirmation_role,
+                        },
+                        timed_recovery_delay_in_minutes,
+                    },
                 )
                 .unwrap(),
             )
@@ -1413,7 +1567,14 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn timed_confirm_recovery(&mut self, as_role: Role, nonce: u32) -> TransactionReceipt {
+    pub fn timed_confirm_recovery(
+        &mut self,
+        as_role: Role,
+        proposed_primary_role: AccessRule,
+        proposed_recovery_role: AccessRule,
+        proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> TransactionReceipt {
         let method_name = AccessControllerFn::TimedConfirmRecovery;
 
         let manifest = self
@@ -1421,8 +1582,15 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 &method_name.to_string(),
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs { nonce: nonce })
-                    .unwrap(),
+                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
+                    rule_set: RuleSet {
+                        primary_role: proposed_primary_role,
+                        recovery_role: proposed_recovery_role,
+                        confirmation_role: proposed_confirmation_role,
+                    },
+                    timed_recovery_delay_in_minutes,
+                })
+                .unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1471,14 +1639,28 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn stop_timed_recovery(&mut self, as_role: Role, nonce: u32) -> TransactionReceipt {
+    pub fn stop_timed_recovery(
+        &mut self,
+        as_role: Role,
+        proposed_primary_role: AccessRule,
+        proposed_recovery_role: AccessRule,
+        proposed_confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> TransactionReceipt {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs { nonce: nonce })
-                    .unwrap(),
+                scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                    rule_set: RuleSet {
+                        primary_role: proposed_primary_role,
+                        recovery_role: proposed_recovery_role,
+                        confirmation_role: proposed_confirmation_role,
+                    },
+                    timed_recovery_delay_in_minutes,
+                })
+                .unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
