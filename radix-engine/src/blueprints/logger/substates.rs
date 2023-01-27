@@ -1,4 +1,4 @@
-use radix_engine_interface::api::blueprints::logger::Level;
+use radix_engine_interface::blueprints::logger::Level;
 
 use crate::types::*;
 

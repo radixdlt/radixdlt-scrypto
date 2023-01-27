@@ -3,10 +3,10 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::logger::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::logger::*;
 
 impl ExecutableInvocation for LoggerLogInvocation {
     type Exec = Self;

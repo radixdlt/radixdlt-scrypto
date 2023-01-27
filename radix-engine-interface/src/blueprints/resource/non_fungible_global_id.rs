@@ -1,6 +1,6 @@
 use crate::address::*;
-use crate::api::blueprints::resource::ResourceAddress;
-use crate::api::blueprints::resource::*;
+use crate::blueprints::resource::ResourceAddress;
+use crate::blueprints::resource::*;
 use crate::constants::*;
 use crate::crypto::*;
 use radix_engine_derive::*;

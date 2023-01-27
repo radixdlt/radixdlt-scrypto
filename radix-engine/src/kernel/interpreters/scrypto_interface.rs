@@ -12,12 +12,12 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::substates::RuntimeSubstate;
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use sbor::rust::string::ToString;

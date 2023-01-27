@@ -1,14 +1,13 @@
 use crate::abi::*;
-use crate::api::blueprints::resource::*;
 use crate::api::static_invoke_api::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeInvocation {

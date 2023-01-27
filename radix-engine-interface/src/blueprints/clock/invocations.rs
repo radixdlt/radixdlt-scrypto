@@ -1,7 +1,7 @@
-use crate::api::blueprints::clock::TimePrecision;
 use crate::api::component::ComponentAddress;
 use crate::api::static_invoke_api::*;
 use crate::api::types::*;
+use crate::blueprints::clock::TimePrecision;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 use sbor::rust::fmt::Debug;

@@ -1,6 +1,6 @@
 use crate::sys_env_native_fn;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;

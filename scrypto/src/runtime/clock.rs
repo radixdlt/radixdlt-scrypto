@@ -1,7 +1,7 @@
-use radix_engine_interface::api::blueprints::clock::{
+use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::clock::{
     ClockCompareCurrentTimeInvocation, ClockGetCurrentTimeInvocation, TimePrecision,
 };
-use radix_engine_interface::api::Invokable;
 use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;

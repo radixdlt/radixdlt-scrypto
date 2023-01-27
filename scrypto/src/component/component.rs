@@ -3,7 +3,6 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_derive::LegacyDescribe;
-use radix_engine_interface::api::blueprints::resource::{AccessRules, Bucket};
 use radix_engine_interface::api::component::{
     ComponentClaimRoyaltyInvocation, ComponentGlobalizeInvocation,
     ComponentGlobalizeWithOwnerInvocation, ComponentSetRoyaltyConfigInvocation,
@@ -17,6 +16,7 @@ use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };

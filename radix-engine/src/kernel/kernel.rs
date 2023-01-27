@@ -14,13 +14,13 @@ use crate::system::node_modules::auth::AuthZoneStackSubstate; // TODO: possible 
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::blueprints::resource::{require, Bucket};
 use radix_engine_interface::api::types::ScryptoInvocation;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
 use radix_engine_interface::api::Invokable; // TODO: possible clean-up
+use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;

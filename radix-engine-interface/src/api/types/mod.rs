@@ -20,10 +20,8 @@ pub use strum::*;
 pub use wasm::*;
 
 // Additional re-exports
-pub use crate::api::blueprints::resource::{
-    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress,
-};
 pub use crate::api::component::ComponentAddress;
 pub use crate::api::package::PackageAddress;
+pub use crate::blueprints::resource::{NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress};
 pub use crate::crypto::Hash;
 pub use crate::network::NetworkDefinition;

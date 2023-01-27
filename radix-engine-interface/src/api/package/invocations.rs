@@ -1,6 +1,6 @@
-use crate::api::blueprints::resource::*;
 use crate::api::static_invoke_api::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;

@@ -8,12 +8,12 @@ use crate::kernel::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {
