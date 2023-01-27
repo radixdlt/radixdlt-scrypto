@@ -542,6 +542,16 @@ pub fn generate_instruction(
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CreateAccount {
+            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateAccountWithResource {
+            withdraw_rule,
+            bucket,
+        } => BasicInstruction::CreateAccountWithResource {
+            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
+            bucket: generate_typed_value(bucket, resolver, bech32_decoder, blobs)?,
+        },
     })
 }
 

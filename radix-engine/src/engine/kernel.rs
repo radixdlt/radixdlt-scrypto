@@ -1,7 +1,7 @@
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
-    RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
+    AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
+    SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::api::{
     ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
@@ -122,10 +122,6 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
@@ -140,20 +136,9 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
-        let result = self.invoke(ScryptoInvocation {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: "Account".to_string(),
-            fn_name: "create".to_string(),
-            receiver: None,
-            args: args!(access_rule),
+        let component_id = self.invoke(AccountCreateInvocation {
+            withdraw_rule: access_rule,
         })?;
-        let component_id = IndexedScryptoValue::from_value(result)
-            .owned_node_ids()
-            .expect("No duplicates expected")
-            .into_iter()
-            .next()
-            .unwrap()
-            .into();
 
         // TODO: Use system_api to globalize component when create_node is refactored
         // TODO: to allow for address selection
@@ -919,49 +904,7 @@ where
                 RENodeId::Global(GlobalAddress::Component(..)),
                 RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
             ) => {}
-            (
-                RENodeId::Global(address),
-                RENodeInit::Global(GlobalAddressSubstate::Component(component)),
-            ) => {
-                // TODO: Get rid of this logic
-                let (package_address, blueprint_name) = self
-                    .execute_in_mode::<_, _, RuntimeError>(
-                        ExecutionMode::Globalize,
-                        |system_api| {
-                            let handle = system_api.lock_substate(
-                                RENodeId::Component(*component),
-                                SubstateOffset::Component(ComponentOffset::Info),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = system_api.get_ref(handle)?;
-                            let info = substate_ref.component_info();
-                            let package_blueprint =
-                                (info.package_address, info.blueprint_name.clone());
-                            system_api.drop_lock(handle)?;
-                            Ok(package_blueprint)
-                        },
-                    )?;
-
-                match address {
-                    GlobalAddress::Component(ComponentAddress::Account(..)) => {
-                        if !(package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT))
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    GlobalAddress::Component(ComponentAddress::Normal(..)) => {
-                        if package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT)
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                    }
-                }
-            }
+            (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}

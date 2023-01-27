@@ -181,7 +181,6 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
             actor,

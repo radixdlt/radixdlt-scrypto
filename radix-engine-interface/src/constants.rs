@@ -20,10 +20,6 @@ pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
-/// The address of the account package.
-pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
-pub const ACCOUNT_BLUEPRINT: &str = "Account";
-
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,

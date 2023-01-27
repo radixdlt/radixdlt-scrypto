@@ -200,6 +200,15 @@ pub enum Instruction {
     AssertAccessRule {
         access_rule: Value,
     },
+
+    CreateAccount {
+        withdraw_rule: Value,
+    },
+
+    CreateAccountWithResource {
+        withdraw_rule: Value,
+        bucket: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

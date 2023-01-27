@@ -156,23 +156,6 @@ pub fn create_genesis(
     }
 
     {
-        let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
-        let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let package_address = ACCOUNT_PACKAGE.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::Publish(PackagePublishInvocation {
-                package_address: Some(package_address),
-                code: account_code, // TODO: Use blob here instead?
-                abi: account_abi,   // TODO: Use blob here instead?
-                royalty_config: BTreeMap::new(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }),
-        )));
-    }
-
-    {
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         instructions.push(Instruction::System(NativeInvocation::Clock(

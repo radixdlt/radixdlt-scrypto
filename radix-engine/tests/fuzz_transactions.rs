@@ -61,30 +61,15 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
-                            ACCOUNT_PACKAGE,
-                            ACCOUNT_BLUEPRINT,
-                            "new_with_resource",
-                            args!(AccessRule::AllowAll, bucket_id),
-                        )
+                        builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
                     });
                 }
                 1 => {
-                    builder.call_function(
-                        ACCOUNT_PACKAGE,
-                        ACCOUNT_BLUEPRINT,
-                        "new",
-                        args!(AccessRule::AllowAll),
-                    );
+                    builder.new_account(&AccessRule::AllowAll);
                 }
                 2 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
-                            ACCOUNT_PACKAGE,
-                            ACCOUNT_BLUEPRINT,
-                            "new_with_resource",
-                            args!(AccessRule::AllowAll, bucket_id),
-                        )
+                        builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
                     });
                 }
                 3 => {

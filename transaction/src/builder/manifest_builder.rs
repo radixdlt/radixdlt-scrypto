@@ -721,12 +721,9 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new".to_string(),
-            args: args!(withdraw_auth.clone()),
+    pub fn new_account(&mut self, withdraw_auth: &AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccount {
+            withdraw_rule: withdraw_auth.clone(),
         })
         .0
     }
@@ -737,11 +734,9 @@ impl ManifestBuilder {
         withdraw_auth: &AccessRule,
         bucket_id: ManifestBucket,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new_with_resource".to_string(),
-            args: args!(withdraw_auth.clone(), bucket_id),
+        self.add_instruction(BasicInstruction::CreateAccountWithResource {
+            withdraw_rule: withdraw_auth.clone(),
+            bucket: bucket_id,
         })
         .0
     }

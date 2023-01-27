@@ -200,7 +200,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateIdentity { .. }
-            | BasicInstruction::AssertAccessRule { .. } => {}
+            | BasicInstruction::AssertAccessRule { .. }
+            | BasicInstruction::CreateAccount { .. }
+            | BasicInstruction::CreateAccountWithResource { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -240,7 +242,6 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         let actor =
             ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
@@ -775,6 +776,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
+                    let rtn = api.invoke(AccountNewInvocation {
+                        withdraw_rule: withdraw_rule.clone(),
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateAccountWithResource {
+                    withdraw_rule,
+                    bucket,
+                }) => {
+                    let bucket = processor.get_bucket(bucket)?;
+                    let rtn = api.invoke(AccountNewWithResourceInvocation {
+                        withdraw_rule: withdraw_rule.clone(),
+                        bucket: bucket.0,
+                    })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::System(invocation) => {

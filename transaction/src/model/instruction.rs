@@ -201,6 +201,15 @@ pub enum BasicInstruction {
         access_rule: AccessRule,
     },
 
+    CreateAccount {
+        withdraw_rule: AccessRule,
+    },
+
+    CreateAccountWithResource {
+        withdraw_rule: AccessRule,
+        bucket: ManifestBucket,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

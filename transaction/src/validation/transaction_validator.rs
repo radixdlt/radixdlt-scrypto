@@ -285,6 +285,11 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                BasicInstruction::CreateAccountWithResource { bucket, .. } => {
+                    id_validator
+                        .drop_bucket(bucket)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
@@ -301,6 +306,7 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
                 BasicInstruction::CreateIdentity { .. } => {}
                 BasicInstruction::AssertAccessRule { .. } => {}
+                BasicInstruction::CreateAccount { .. } => {}
             }
         }
 

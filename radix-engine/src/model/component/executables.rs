@@ -7,7 +7,7 @@ use crate::model::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::{constants::*, rule};
+use radix_engine_interface::rule;
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
@@ -36,26 +36,7 @@ impl Executor for ComponentGlobalizeInvocation {
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
-        let component_node_id = RENodeId::Component(self.component_id);
-        let global_node_id = {
-            let handle = api.lock_substate(
-                component_node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let node_id = if substate_ref
-                .component_info()
-                .package_address
-                .eq(&ACCOUNT_PACKAGE)
-            {
-                api.allocate_node_id(RENodeType::GlobalAccount)?
-            } else {
-                api.allocate_node_id(RENodeType::GlobalComponent)?
-            };
-            api.drop_lock(handle)?;
-            node_id
-        };
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
         api.create_node(
@@ -99,25 +80,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
-        let global_node_id = {
-            let handle = api.lock_substate(
-                component_node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let node_id = if substate_ref
-                .component_info()
-                .package_address
-                .eq(&ACCOUNT_PACKAGE)
-            {
-                api.allocate_node_id(RENodeType::GlobalAccount)?
-            } else {
-                api.allocate_node_id(RENodeType::GlobalComponent)?
-            };
-            api.drop_lock(handle)?;
-            node_id
-        };
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
         // Add protection for metadata/royalties

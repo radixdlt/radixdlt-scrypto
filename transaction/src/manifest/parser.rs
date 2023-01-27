@@ -251,6 +251,13 @@ impl Parser {
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,
             },
+            TokenKind::CreateAccount => Instruction::CreateAccount {
+                withdraw_rule: self.parse_value()?,
+            },
+            TokenKind::CreateAccountWithResource => Instruction::CreateAccountWithResource {
+                withdraw_rule: self.parse_value()?,
+                bucket: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

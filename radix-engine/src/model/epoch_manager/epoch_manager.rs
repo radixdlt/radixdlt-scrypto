@@ -73,7 +73,6 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         for (bucket, account_address) in self.validator_set.values() {
             call_frame_update
@@ -84,12 +83,6 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
 
         Ok((actor, call_frame_update, self))
     }
-}
-
-// TODO: Cleanup once native accounts implemented
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccountDepositInput {
-    bucket: Bucket,
 }
 
 impl Executor for EpochManagerCreateInvocation {
@@ -128,12 +121,9 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(ScryptoInvocation {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_string(),
-                fn_name: "deposit".to_string(),
-                receiver: Some(ScryptoReceiver::Global(account_address)),
-                args: args!(lp_bucket),
+            api.invoke(AccountDepositInvocation {
+                receiver: account_address,
+                bucket: lp_bucket.0,
             })?;
         }
 
