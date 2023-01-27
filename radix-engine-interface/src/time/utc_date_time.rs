@@ -438,7 +438,7 @@ impl std::error::Error for ParseUtcDateTimeError {}
 impl fmt::Display for ParseUtcDateTimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ParseUtcDateTimeError::InvalidFormat => write!(f, "Invalid format. Must be in ISO-8601 representation, such as '2011-12-03T10:15:30Z'."),
+            ParseUtcDateTimeError::InvalidFormat => write!(f, "Invalid date time format. Must be in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'."),
             ParseUtcDateTimeError::DateTimeError(e) => e.fmt(f)
         }
     }
