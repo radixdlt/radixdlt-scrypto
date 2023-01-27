@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
-    RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    RENodeInit, RENodeModuleInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
@@ -78,6 +78,7 @@ where
     api.create_node(
         nf_store_node_id,
         RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
@@ -120,7 +121,11 @@ where
         let ids = entries.into_keys().collect();
         let container = Resource::new_non_fungible(resource_address, ids, id_type);
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
         let bucket_id = node_id.into();
         Bucket(bucket_id)
     };
@@ -154,7 +159,11 @@ where
         resource_manager.total_supply = initial_supply;
         let container = Resource::new_fungible(resource_address, divisibility, initial_supply);
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
         let bucket_id = node_id.into();
         Bucket(bucket_id)
     };
@@ -396,6 +405,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         api.create_node(
             nf_store_node_id,
             RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+            BTreeMap::new(),
         )?;
         let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
         let resource_manager_substate = ResourceManagerSubstate::new(
@@ -405,24 +415,35 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
             Some(nf_store_id),
             resource_address,
         );
-        let (substate, vault_substate) = build_substates(self.access_rules);
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::VaultAccessRules,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENodeInit::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let update =
@@ -466,24 +487,35 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
             None,
             resource_address,
         );
-        let (substate, vault_substate) = build_substates(self.access_rules);
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::VaultAccessRules,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENodeInit::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let update =
@@ -537,25 +569,36 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
                 self.entries,
                 api,
             )?;
-        let (substate, vault_substate) = build_substates(self.access_rules);
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::VaultAccessRules,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENodeInit::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -615,25 +658,36 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
                 entries,
                 api,
             )?;
-        let (substate, vault_substate) = build_substates(self.access_rules);
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::VaultAccessRules,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENodeInit::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -692,25 +746,36 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                 self.initial_supply,
                 api,
             )?;
-        let (substate, vault_substate) = build_substates(self.access_rules);
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::VaultAccessRules,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
-            RENodeInit::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let mut nodes_to_move = vec![];
@@ -1060,6 +1125,7 @@ impl Executor for ResourceManagerCreateVaultExecutable {
         api.create_node(
             node_id,
             RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
+            BTreeMap::new(),
         )?;
         let vault_id = node_id.into();
 
@@ -1116,7 +1182,11 @@ impl Executor for ResourceManagerCreateBucketExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(container)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
         let bucket_id = node_id.into();
 
         Ok((
@@ -1220,7 +1290,11 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(resource)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(resource)),
+            BTreeMap::new(),
+        )?;
         let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
@@ -1362,6 +1436,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
                     ids,
                     id_type,
                 ))),
+                BTreeMap::new(),
             )?;
             let bucket_id: BucketId = node_id.into();
             bucket_id
@@ -1422,7 +1497,11 @@ impl Executor for ResourceManagerMintFungibleExecutable {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(node_id, RENodeInit::Bucket(BucketSubstate::new(resource)))?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(resource)),
+            BTreeMap::new(),
+        )?;
         let bucket_id = node_id.into();
 
         Ok((

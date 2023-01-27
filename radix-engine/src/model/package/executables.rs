@@ -97,18 +97,23 @@ impl Executor for PackagePublishInvocation {
         // - `royalty::set_royalty_config`
         // - `royalty::claim_royalty`
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::PackageRoyalty,
+            RENodeModuleInit::PackageRoyalty(package_royalty_config, package_royalty_accumulator),
+        );
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules),
+        );
+
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Package(
-                package,
-                package_royalty_config,
-                package_royalty_accumulator,
-                metadata_substate,
-                access_rules,
-            ),
-        )?;
+        api.create_node(node_id, RENodeInit::Package(package), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -121,6 +126,7 @@ impl Executor for PackagePublishInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            BTreeMap::new(),
         )?;
 
         let package_address: PackageAddress = global_node_id.into();

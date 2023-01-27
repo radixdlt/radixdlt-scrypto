@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
-    RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    RENodeInit, RENodeModuleInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -122,16 +122,22 @@ impl Executor for EpochManagerCreateInvocation {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            }),
+        );
+
         api.create_node(
             underlying_node_id,
             RENodeInit::EpochManager(
                 epoch_manager,
                 current_validator_set,
                 preparing_validator_set,
-                AccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                },
             ),
+            node_modules,
         )?;
 
         api.create_node(
@@ -139,6 +145,7 @@ impl Executor for EpochManagerCreateInvocation {
             RENodeInit::Global(GlobalAddressSubstate::EpochManager(
                 underlying_node_id.into(),
             )),
+            BTreeMap::new(),
         )?;
 
         let component_address: ComponentAddress = global_node_id.into();
@@ -492,22 +499,26 @@ impl EpochManager {
             stake_vault.sys_put(bucket, api)?;
         }
 
-        let node = RENodeInit::Validator(
-            ValidatorSubstate {
-                manager,
-                key,
-                address,
-                stake_vault_id: stake_vault.0,
-                is_registered,
-            },
-            AccessRulesChainSubstate {
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
-            },
+            }),
         );
-        api.create_node(node_id, node)?;
+
+        let node = RENodeInit::Validator(ValidatorSubstate {
+            manager,
+            key,
+            address,
+            stake_vault_id: stake_vault.0,
+            is_registered,
+        });
+        api.create_node(node_id, node, node_modules)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            BTreeMap::new(),
         )?;
 
         Ok(global_node_id.into())

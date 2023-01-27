@@ -8,6 +8,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::{constants::*, rule};
+use sbor::rust::collections::BTreeMap;
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
@@ -62,6 +63,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
+            BTreeMap::new(),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -153,6 +155,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
+            BTreeMap::new(),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(

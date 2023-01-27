@@ -86,7 +86,11 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
                 let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(node_id, RENodeInit::AuthZoneStack(auth_zone))?;
+                api.create_node(
+                    node_id,
+                    RENodeInit::AuthZoneStack(auth_zone),
+                    BTreeMap::new(),
+                )?;
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
@@ -162,6 +166,7 @@ where
         self.current_frame.create_node(
             node_id,
             RENodeInit::Global(global_substate),
+            BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
             true,
@@ -184,6 +189,7 @@ where
         self.current_frame.create_node(
             node_id,
             RENodeInit::Global(global_substate),
+            BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
             true,
@@ -883,7 +889,12 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError> {
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        re_node: RENodeInit,
+        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,
@@ -1009,6 +1020,7 @@ where
         self.current_frame.create_node(
             node_id,
             re_node,
+            module_init,
             &mut self.heap,
             &mut self.track,
             push_to_store,

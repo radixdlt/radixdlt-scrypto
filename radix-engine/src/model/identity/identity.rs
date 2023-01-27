@@ -1,6 +1,6 @@
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolverApi,
-    RuntimeError, SystemApi,
+    CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, RENodeModuleInit, ResolvedActor,
+    ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate, MetadataSubstate};
 use crate::types::*;
@@ -41,6 +41,7 @@ impl Executor for IdentityCreateInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Identity(node_id.into())),
+            BTreeMap::new(),
         )?;
 
         let identity_address: ComponentAddress = global_node_id.into();
@@ -77,17 +78,21 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        api.create_node(
-            underlying_node_id,
-            RENodeInit::Identity(
-                MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                },
-                AccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                },
-            ),
-        )?;
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate {
+                metadata: BTreeMap::new(),
+            }),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            }),
+        );
+
+        api.create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
 
         Ok(underlying_node_id)
     }

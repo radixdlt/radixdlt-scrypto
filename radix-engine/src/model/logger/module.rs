@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::LoggerSubstate;
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
@@ -18,7 +19,7 @@ impl LoggerModule {
     pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
-        api.create_node(node_id, RENodeInit::Logger(logger))?;
+        api.create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
         Ok(())
     }
 

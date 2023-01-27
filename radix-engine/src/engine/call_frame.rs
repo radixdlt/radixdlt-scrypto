@@ -387,13 +387,23 @@ impl CallFrame {
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
+        node_modules: BTreeMap<NodeModuleId, RENodeModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s, R>,
         push_to_store: bool,
     ) -> Result<(), RuntimeError> {
-        let substates = re_node.to_substates();
+        let mut substates = BTreeMap::new();
+        let self_substates = re_node.to_substates();
+        for (offset, substate) in self_substates {
+            substates.insert((NodeModuleId::SELF, offset), substate);
+        }
+        for (node_module_id, module_init) in node_modules {
+            for (offset, substate) in module_init.to_substates() {
+                substates.insert((node_module_id, offset), substate);
+            }
+        }
 
-        for ((module_id, offset), substate) in &substates {
+        for ((_module_id, offset), substate) in &substates {
             let substate_ref = substate.to_ref();
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {

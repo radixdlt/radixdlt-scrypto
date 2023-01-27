@@ -267,7 +267,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(node_id, RENodeInit::Worktop(WorktopSubstate::new()))?;
+        let _worktop_id = api.create_node(
+            node_id,
+            RENodeInit::Worktop(WorktopSubstate::new()),
+            BTreeMap::new(),
+        )?;
 
         let runtime_substate = TransactionRuntimeSubstate {
             hash: self.transaction_hash,
@@ -278,6 +282,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api.create_node(
             runtime_node_id,
             RENodeInit::TransactionRuntime(runtime_substate),
+            BTreeMap::new(),
         )?;
 
         // TODO: defer blob hashing to post fee payments as it's computationally costly

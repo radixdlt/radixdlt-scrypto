@@ -194,7 +194,7 @@ impl Executor for ProofCloneInvocation {
         let cloned_proof = proof.clone();
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(cloned_proof))?;
+        api.create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((

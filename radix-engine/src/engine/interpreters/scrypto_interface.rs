@@ -1,5 +1,6 @@
 use crate::engine::{
-    BaseModule, Kernel, KernelError, LockFlags, RENodeInit, RuntimeError, SystemApi,
+    BaseModule, Kernel, KernelError, LockFlags, RENodeInit, RENodeModuleInit, RuntimeError,
+    SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::MetadataSubstate;
@@ -30,7 +31,7 @@ where
     M: BaseModule<R>,
 {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
-        let (node_id, node) = match node {
+        let (node_id, node, node_modules) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
 
@@ -72,26 +73,36 @@ where
                 let node = RENodeInit::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    royalty_config,
-                    royalty_accumulator,
-                    MetadataSubstate {
-                        metadata: BTreeMap::new(),
-                    },
-                    AccessRulesChainSubstate {
-                        access_rules_chain: vec![access_rules],
-                    },
                 );
 
-                (node_id, node)
+                let mut node_modules = BTreeMap::new();
+                node_modules.insert(
+                    NodeModuleId::ComponentRoyalty,
+                    RENodeModuleInit::ComponentRoyalty(royalty_config, royalty_accumulator),
+                );
+                node_modules.insert(
+                    NodeModuleId::Metadata,
+                    RENodeModuleInit::Metadata(MetadataSubstate {
+                        metadata: BTreeMap::new(),
+                    }),
+                );
+                node_modules.insert(
+                    NodeModuleId::AccessRules,
+                    RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                        access_rules_chain: vec![access_rules],
+                    }),
+                );
+
+                (node_id, node, node_modules)
             }
             ScryptoRENode::KeyValueStore => {
                 let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-                (node_id, node)
+                (node_id, node, BTreeMap::new())
             }
         };
 
-        self.create_node(node_id, node)?;
+        self.create_node(node_id, node, node_modules)?;
 
         Ok(node_id)
     }

@@ -8,6 +8,7 @@ use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::types::{
     BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
+use sbor::rust::collections::BTreeMap;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -131,7 +132,7 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct HeapRENode {
-    pub substates: HashMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
+    pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
 impl Into<BucketSubstate> for HeapRENode {
