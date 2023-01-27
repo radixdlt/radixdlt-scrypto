@@ -567,10 +567,10 @@ from_integer!(BnumU256, BnumU512);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use paste::paste;
     use crate::dec;
-    use sbor::rust::vec;
     use crate::pdec;
+    use paste::paste;
+    use sbor::rust::vec;
 
     #[test]
     fn test_format_decimal() {
