@@ -15,6 +15,7 @@ use crate::data::*;
 
 use crate::math::bnum_integer::*;
 use crate::math::rounding_mode::*;
+use crate::math::PreciseDecimal;
 use crate::scrypto_type;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
@@ -538,6 +539,16 @@ impl fmt::Display for ParseDecimalError {
     }
 }
 
+impl From<PreciseDecimal> for Decimal {
+    fn from(val: PreciseDecimal) -> Self {
+        Self(
+            (val.0 / BnumI512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
+                .try_into()
+                .expect("Overflow"),
+        )
+    }
+}
+
 macro_rules! from_integer {
     ($($t:ident),*) => {
         $(
@@ -556,8 +567,10 @@ from_integer!(BnumU256, BnumU512);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use paste::paste;
     use crate::dec;
     use sbor::rust::vec;
+    use crate::pdec;
 
     #[test]
     fn test_format_decimal() {
@@ -1075,6 +1088,59 @@ mod tests {
     fn test_from_str_failure_decimal() {
         let dec = Decimal::from_str("non_decimal_value");
         assert_eq!(dec, Err(ParseDecimalError::InvalidDigit));
+    }
+
+    macro_rules! test_from_into_precise_decimal_decimal {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_into_precise_decimal_decimal_ $suffix>]() {
+                    let pdec = PreciseDecimal::from($from);
+                    let dec = Decimal::from(pdec);
+                    assert_eq!(dec.to_string(), $expected);
+
+                    let dec = Decimal::try_from(pdec).unwrap();
+                    assert_eq!(dec.to_string(), $expected);
+
+                    let dec: Decimal = pdec.into();
+                    assert_eq!(dec.to_string(), $expected);
+
+                    let dec: Decimal = pdec.try_into().unwrap();
+                    assert_eq!(dec.to_string(), $expected);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_into_precise_decimal_decimal! {
+        ("12345678.1234567890123456789012345678901234567890123456789012345678901234", "12345678.123456789012345678", 1),
+        ("0.0000000000000000000000000008901234567890123456789012345678901234", "0", 2),
+        ("-0.0000000000000000000000000008901234567890123456789012345678901234", "0", 3),
+        ("5", "5", 4),
+        ("12345678.1", "12345678.1", 5)
+    }
+
+    macro_rules! test_from_precise_decimal_decimal_overflow {
+        ($(($from:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_from_precise_decimal_decimal_overflow_ $suffix>]() {
+                    let _dec = Decimal::from($from);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_precise_decimal_decimal_overflow! {
+        (PreciseDecimal::MAX, 1),
+        (PreciseDecimal::MIN, 2),
+        (PreciseDecimal::from(Decimal::MAX) + 1, 3),
+        (PreciseDecimal::from(Decimal::MIN) - 1, 4)
     }
 
     #[test]

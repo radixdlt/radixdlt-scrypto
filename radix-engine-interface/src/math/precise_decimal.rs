@@ -597,6 +597,7 @@ mod tests {
     use crate::dec;
     use crate::math::precise_decimal::RoundingMode;
     use crate::pdec;
+    use paste::paste;
     use sbor::rust::vec;
 
     #[test]
@@ -1144,11 +1145,36 @@ mod tests {
         assert_eq!(pdec, Err(ParsePreciseDecimalError::InvalidDigit));
     }
 
-    #[test]
-    fn test_from_decimal_precise_decimal() {
-        let dec = dec!(5);
-        let pdec = PreciseDecimal::from(dec);
-        assert_eq!(pdec.to_string(), "5");
+    macro_rules! test_from_into_decimal_precise_decimal {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_into_decimal_precise_decimal_ $suffix>]() {
+                    let dec = dec!($from);
+                    let pdec = PreciseDecimal::from(dec);
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec = PreciseDecimal::try_from(dec).unwrap();
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec: PreciseDecimal = dec.into();
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec: PreciseDecimal = dec.try_into().unwrap();
+                    assert_eq!(pdec.to_string(), $expected);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_into_decimal_precise_decimal! {
+        ("12345678.123456789012345678", "12345678.123456789012345678", 1),
+        ("0.000000000000000001", "0.000000000000000001", 2),
+        ("-0.000000000000000001", "-0.000000000000000001", 3),
+        ("5", "5", 4),
+        ("12345678.1", "12345678.1", 5)
     }
 
     #[test]
