@@ -81,9 +81,12 @@
 
 use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
-use std::collections::hash_map::HashMap;
-use std::io::{Error, ErrorKind};
-use std::{fmt, iter::FromIterator};
+use sbor::rust::collections::hash_map::HashMap;
+use sbor::rust::ops::Range;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
+use sbor::rust::{fmt, iter::FromIterator};
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/types/src/proof/definition.rs#L182
 /// A more detailed version of `SparseMerkleProof` with the only difference that all the leaf
@@ -286,7 +289,7 @@ pub const SPARSE_MERKLE_PLACEHOLDER_HASH: Hash = Hash([0u8; Hash::LENGTH]);
 pub struct HashBitIterator<'a> {
     /// The reference to the bytes that represent the `Hash`.
     hash_bytes: &'a [u8],
-    pos: std::ops::Range<usize>,
+    pos: Range<usize>,
     // invariant hash_bytes.len() == Hash::LENGTH;
     // invariant pos.end == hash_bytes.len() * 8;
 }
@@ -538,7 +541,7 @@ pub trait Peekable: Iterator {
 /// BitIterator iterates a nibble path by bit.
 pub struct BitIterator<'a> {
     nibble_path: &'a NibblePath,
-    pos: std::ops::Range<usize>,
+    pos: Range<usize>,
 }
 
 impl<'a> Peekable for BitIterator<'a> {
@@ -576,7 +579,7 @@ pub struct NibbleIterator<'a> {
 
     /// The current index, `pos.start`, will bump by 1 after calling `next()` until `pos.start ==
     /// pos.end`.
-    pos: std::ops::Range<usize>,
+    pos: Range<usize>,
 
     /// The start index of the iterator. At the beginning, `pos.start == start`. [start, pos.end)
     /// defines the range of `nibble_path` this iterator iterates over. `nibble_path` refers to
@@ -881,7 +884,7 @@ impl InternalNode {
         width: u8,
         (existence_bitmap, leaf_bitmap): (u16, u16),
         (tree_reader, node_key): (&R, &NodeKey),
-    ) -> Result<NodeInProof, Error> {
+    ) -> Result<NodeInProof, StorageError> {
         // Given a bit [start, 1 << nibble_height], return the value of that range.
         let (range_existence_bitmap, range_leaf_bitmap) =
             Self::range_bitmaps(start, width, (existence_bitmap, leaf_bitmap));
@@ -950,7 +953,7 @@ impl InternalNode {
         node_key: &NodeKey,
         n: Nibble,
         reader: Option<&R>,
-    ) -> Result<(Option<NodeKey>, Vec<NodeInProof>), Error> {
+    ) -> Result<(Option<NodeKey>, Vec<NodeInProof>), StorageError> {
         let mut siblings = vec![];
         let (existence_bitmap, leaf_bitmap) = self.generate_bitmaps();
 
@@ -1147,11 +1150,26 @@ impl<K: Clone> Node<K> {
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/lib.rs#L129
 pub trait TreeReader<K> {
     /// Gets node given a node key. Returns error if the node does not exist.
-    fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>, Error> {
+    fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>, StorageError> {
         self.get_node_option(node_key)?
-            .ok_or_else(|| Error::new(ErrorKind::NotFound, format!("inexistent node {}", node_key)))
+            .ok_or_else(|| StorageError::NotFound(node_key.clone()))
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>, Error>;
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>, StorageError>;
+}
+
+// INITIAL-MODIFICATION: we propagate usage of our own error enum (instead of `std::io::ErrorKind`
+// used by Aptos) to allow for no-std build.
+/// Error originating from underlying storage failure / inconsistency.
+#[derive(Debug)]
+pub enum StorageError {
+    /// A node expected to exist (according to JMT logic) was not actually found in the storage.
+    NotFound(NodeKey),
+
+    /// Nodes read from the storage are violating some JMT property (e.g. form a cycle).
+    InconsistentState,
+
+    /// An unexpected I/O error, with a detail message.
+    UnexpectedIoError(String),
 }

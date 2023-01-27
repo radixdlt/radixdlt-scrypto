@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_max_call_depth_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
@@ -32,7 +32,7 @@ fn test_max_call_depth_success() {
 #[test]
 fn test_max_call_depth_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
