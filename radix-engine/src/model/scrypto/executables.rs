@@ -43,7 +43,8 @@ impl ExecutableInvocation for ScryptoInvocation {
                     ComponentAddress::Normal(..)
                     | ComponentAddress::Account(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                    | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
+                    | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                    | ComponentAddress::AccessController(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
                     ComponentAddress::Clock(..)

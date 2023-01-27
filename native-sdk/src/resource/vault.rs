@@ -58,4 +58,12 @@ impl Vault {
     {
         sys_calls.invoke(VaultGetAmountInvocation { receiver: self.0 })
     }
+
+    pub fn sys_create_proof<Y, E>(&self, sys_calls: &mut Y) -> Result<Proof, E>
+    where
+        E: Debug + ScryptoDecode,
+        Y: EngineApi<E> + Invokable<VaultCreateProofInvocation, E>,
+    {
+        sys_calls.invoke(VaultCreateProofInvocation { receiver: self.0 })
+    }
 }

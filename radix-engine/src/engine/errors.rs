@@ -316,6 +316,8 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+
+    AccessControllerError(AccessControllerError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

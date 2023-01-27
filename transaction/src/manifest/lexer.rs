@@ -129,6 +129,7 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
+    CreateAccessController,
     CreateIdentity,
     AssertAccessRule,
 }

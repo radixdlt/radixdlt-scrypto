@@ -59,7 +59,8 @@ impl AuthModule {
                             || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Clock(..))
-                            || matches!(method, NativeFn::Component(..)) =>
+                            || matches!(method, NativeFn::Component(..))
+                            || matches!(method, NativeFn::AccessController(..)) =>
                     {
                         let offset = SubstateOffset::AccessRulesChain(
                             AccessRulesChainOffset::AccessRulesChain,
@@ -241,6 +242,7 @@ impl AuthModule {
         if !matches!(
             actor.identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
+                | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
@@ -286,7 +288,8 @@ impl AuthModule {
     {
         if matches!(
             api.fn_identifier()?,
-            FnIdentifier::Native(NativeFn::AuthZoneStack(..)),
+            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
+                | FnIdentifier::Native(NativeFn::AccessRulesChain(..)),
         ) {
             return Ok(());
         }

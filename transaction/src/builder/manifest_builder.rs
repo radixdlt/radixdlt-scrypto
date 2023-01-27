@@ -907,6 +907,24 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn create_access_controller(
+        &mut self,
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
+        })
+        .0
+    }
+
     pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
         self.add_instruction(BasicInstruction::AssertAccessRule { access_rule })
             .0
