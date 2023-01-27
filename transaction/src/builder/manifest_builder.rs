@@ -399,12 +399,25 @@ impl ManifestBuilder {
     pub fn unstake_validator(
         &mut self,
         validator_address: ComponentAddress,
-        amount: Decimal,
+        bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: "unstake".to_string(),
-            args: args!(amount),
+            args: args!(bucket),
+        });
+        self
+    }
+
+    pub fn claim_xrd(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "claim_xrd".to_string(),
+            args: args!(bucket),
         });
         self
     }
