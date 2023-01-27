@@ -23,6 +23,7 @@ pub use radix_engine_interface::math::integer::{
 };
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::model::*;
+pub use radix_engine_interface::time::{Instant, UtcDateTime};
 pub use radix_engine_interface::{access_and_or, access_rule_node, dec, i, pdec, rule};
 
 pub use sbor::rust::borrow::ToOwned;
