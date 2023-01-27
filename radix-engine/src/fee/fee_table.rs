@@ -65,14 +65,14 @@ pub struct FeeTable {
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_base_fee: 10_000,
-            tx_payload_cost_per_byte: 1,
-            tx_signature_verification_per_sig: 3750,
-            tx_blob_price_per_byte: 1,
+            tx_base_fee: 100_000,
+            tx_payload_cost_per_byte: 10,
+            tx_signature_verification_per_sig: 37500,
+            tx_blob_price_per_byte: 10,
             wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
-            fixed_low: 100,
-            fixed_medium: 500,
-            fixed_high: 1000,
+            fixed_low: 1000,
+            fixed_medium: 5000,
+            fixed_high: 10000,
         }
     }
 
