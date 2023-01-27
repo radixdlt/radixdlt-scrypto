@@ -904,10 +904,7 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
                     AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
                         receiver,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
+                        nonce: args.nonce,
                     },
                 )
             }
@@ -919,10 +916,7 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
                     AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
                         receiver,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
+                        nonce: args.nonce,
                     },
                 )
             }
@@ -932,10 +926,7 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::TimedConfirmRecovery(
                     AccessControllerTimedConfirmRecoveryInvocation {
                         receiver,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
+                        nonce: args.nonce,
                     },
                 )
             }
@@ -975,10 +966,7 @@ impl AccessControllerPackage {
                 AccessControllerInvocation::StopTimedRecovery(
                     AccessControllerStopTimedRecoveryInvocation {
                         receiver,
-                        proposal: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
+                        nonce: args.nonce,
                     },
                 )
             }

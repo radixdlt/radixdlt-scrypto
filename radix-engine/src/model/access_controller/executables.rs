@@ -34,13 +34,7 @@ pub enum AccessControllerError {
 
     /// Occurs when trying to perform a timed confirm recovery on a recovery proposal that could
     /// be time-confirmed but whose delay has not yet elapsed.
-    TimedRecoveryDelayHasNotElapsed,
-
-    /// Occurs when the expected recovery proposal doesn't match that which was found
-    RecoveryProposalMismatch {
-        expected: RecoveryProposal,
-        found: RecoveryProposal,
-    },
+    TimedRecoveryDelayHasNotElapsed { nonce: u32 },
 }
 
 impl From<AccessControllerError> for RuntimeError {
@@ -212,7 +206,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
 }
 
 impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
-    type Output = ();
+    type Output = u32;
 
     fn execute<Y, W: WasmEngine>(
         self,
@@ -221,7 +215,7 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        transition_mut(
+        let nonce = transition_mut(
             self.receiver,
             api,
             AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
@@ -229,7 +223,7 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
             },
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok((nonce, CallFrameUpdate::empty()))
     }
 }
 
@@ -269,7 +263,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
 }
 
 impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
-    type Output = ();
+    type Output = u32;
 
     fn execute<Y, W: WasmEngine>(
         self,
@@ -278,7 +272,7 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        transition_mut(
+        let nonce = transition_mut(
             self.receiver,
             api,
             AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
@@ -286,7 +280,7 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
             },
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok((nonce, CallFrameUpdate::empty()))
     }
 }
 
@@ -296,7 +290,7 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
 
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
-    pub proposal_to_confirm: RecoveryProposal,
+    pub nonce: u32,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
@@ -320,7 +314,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryPro
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposal_to_confirm: self.proposal_to_confirm,
+            nonce: self.nonce,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -341,7 +335,7 @@ impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecuta
             self.receiver,
             api,
             AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput {
-                proposal_to_confirm: self.proposal_to_confirm,
+                nonce: self.nonce,
             },
         )?;
 
@@ -357,7 +351,7 @@ impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecuta
 
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
-    pub proposal_to_confirm: RecoveryProposal,
+    pub nonce: u32,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
@@ -383,7 +377,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryPr
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposal_to_confirm: self.proposal_to_confirm,
+            nonce: self.nonce,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -404,7 +398,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecut
             self.receiver,
             api,
             AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput {
-                proposal_to_confirm: self.proposal_to_confirm,
+                nonce: self.nonce,
             },
         )?;
 
@@ -424,7 +418,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecut
 
 pub struct AccessControllerTimedConfirmRecoveryExecutable {
     pub receiver: RENodeId,
-    pub proposal_to_confirm: RecoveryProposal,
+    pub nonce: u32,
 }
 
 impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
@@ -449,7 +443,7 @@ impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposal_to_confirm: self.proposal_to_confirm,
+            nonce: self.nonce,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -469,9 +463,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         let recovery_proposal = transition_mut(
             self.receiver,
             api,
-            AccessControllerTimedConfirmRecoveryStateMachineInput {
-                proposal_to_confirm: self.proposal_to_confirm,
-            },
+            AccessControllerTimedConfirmRecoveryStateMachineInput { nonce: self.nonce },
         )?;
 
         // Update the access rules
@@ -707,7 +699,7 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
 
 pub struct AccessControllerStopTimedRecoveryExecutable {
     pub receiver: RENodeId,
-    pub proposal: RecoveryProposal,
+    pub nonce: u32,
 }
 
 impl ExecutableInvocation for AccessControllerStopTimedRecoveryInvocation {
@@ -731,7 +723,7 @@ impl ExecutableInvocation for AccessControllerStopTimedRecoveryInvocation {
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposal: self.proposal,
+            nonce: self.nonce,
         };
 
         Ok((actor, call_frame_update, executor))
@@ -751,9 +743,7 @@ impl Executor for AccessControllerStopTimedRecoveryExecutable {
         transition_mut(
             self.receiver,
             api,
-            AccessControllerStopTimedRecoveryStateMachineInput {
-                proposal: self.proposal,
-            },
+            AccessControllerStopTimedRecoveryStateMachineInput { nonce: self.nonce },
         )?;
 
         Ok(((), CallFrameUpdate::empty()))

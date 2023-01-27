@@ -11,6 +11,9 @@ pub struct AccessControllerSubstate {
     /// recovery can not be performed through this access controller.
     pub timed_recovery_delay_in_minutes: Option<u32>,
 
+    /// The next nonce to use for recovery proposals created on this access controller
+    pub next_nonce: u32,
+
     /// The states of the Access Controller.
     pub state: (
         PrimaryRoleState,
@@ -25,7 +28,14 @@ impl AccessControllerSubstate {
             controlled_asset,
             timed_recovery_delay_in_minutes,
             state: Default::default(),
+            next_nonce: 0,
         }
+    }
+
+    pub fn next_nonce(&mut self) -> u32 {
+        let nonce = self.next_nonce;
+        self.next_nonce += 1;
+        nonce
     }
 }
 
@@ -40,14 +50,14 @@ pub enum PrimaryRoleState {
 pub enum PrimaryOperationState {
     #[default]
     Normal,
-    Recovery(RecoveryProposal),
+    Recovery(RecoveryProposal, u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Default)]
 pub enum RecoveryOperationState {
     #[default]
     Normal,
-    Recovery(RecoveryRecoveryState),
+    Recovery(RecoveryRecoveryState, u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
