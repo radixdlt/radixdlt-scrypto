@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::PackageAddress;
-use std::collections::HashSet;
+use sbor::rust::collections::HashSet;
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {

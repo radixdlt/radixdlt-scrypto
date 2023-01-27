@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_component_royalty() {
     // Basic setup
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -54,7 +54,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

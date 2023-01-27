@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-use std::io::Error;
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 
+use crate::hash_tree::types::StorageError;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
 
@@ -103,7 +104,10 @@ impl Node<SubstateId> {
 }
 
 impl<R: ReadableTreeStore> TreeReader<SubstateId> for R {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<SubstateId>>, Error> {
+    fn get_node_option(
+        &self,
+        node_key: &NodeKey,
+    ) -> Result<Option<Node<SubstateId>>, StorageError> {
         Ok(self
             .get_node(node_key)
             .map(|tree_node| Node::from(node_key, &tree_node)))

@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_external_bridges() {
     // ARRANGE
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Part 1 - Upload the target and caller packages
     // Note - we put them in separate packages so that we test that the package call is to an external package
