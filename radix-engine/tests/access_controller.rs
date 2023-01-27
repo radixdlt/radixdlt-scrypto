@@ -1284,7 +1284,7 @@ struct AccessControllerTestRunner {
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunner::new(false);
+        let mut test_runner = TestRunner::builder().build();
 
         // Creating a new account - this is where the badges will be held
         let (public_key, _, account_component) = test_runner.new_account(false);
