@@ -833,14 +833,13 @@ pub enum AccessControllerFn {
     InitiateRecoveryAsPrimary,
     InitiateRecoveryAsRecovery,
 
-    QuickConfirmRecoveryAsPrimary,
-    QuickConfirmRecoveryAsRecovery,
-    QuickConfirmRecoveryAsConfirmation,
+    QuickConfirmPrimaryRoleRecoveryProposal,
+    QuickConfirmRecoveryRoleRecoveryProposal,
 
     TimedConfirmRecovery,
 
-    CancelRecoveryAttemptAsPrimary,
-    CancelRecoveryAttemptAsRecovery,
+    CancelPrimaryRoleRecoveryProposal,
+    CancelRecoveryRoleRecoveryProposal,
 
     LockPrimaryRole,
     UnlockPrimaryRole,
@@ -897,47 +896,29 @@ impl AccessControllerPackage {
                     },
                 )
             }
-            AccessControllerFn::QuickConfirmRecoveryAsPrimary => {
-                let args =
-                    scrypto_decode::<AccessControllerQuickConfirmRecoveryAsPrimaryMethodArgs>(args)
-                        .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(
-                    AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
-                        receiver,
-                        proposer: args.proposer,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
-            AccessControllerFn::QuickConfirmRecoveryAsRecovery => {
-                let args =
-                    scrypto_decode::<AccessControllerQuickConfirmRecoveryAsRecoveryMethodArgs>(
-                        args,
-                    )
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(
-                    AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-                        receiver,
-                        proposer: args.proposer,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
-            AccessControllerFn::QuickConfirmRecoveryAsConfirmation => {
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => {
                 let args = scrypto_decode::<
-                    AccessControllerQuickConfirmRecoveryAsConfirmationMethodArgs,
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs,
                 >(args)
                 .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(
-                    AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
+                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
                         receiver,
-                        proposer: args.proposer,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => {
+                let args = scrypto_decode::<
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalMethodArgs,
+                >(args)
+                .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
+                        receiver,
                         proposal_to_confirm: RecoveryProposal {
                             rule_set: args.rule_set,
                             timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
@@ -958,18 +939,20 @@ impl AccessControllerPackage {
                     },
                 )
             }
-            AccessControllerFn::CancelRecoveryAttemptAsPrimary => {
-                scrypto_decode::<AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs>(args)
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal => {
+                scrypto_decode::<AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(
-                    AccessControllerCancelRecoveryAttemptAsPrimaryInvocation { receiver },
+                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
+                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation { receiver },
                 )
             }
-            AccessControllerFn::CancelRecoveryAttemptAsRecovery => {
-                scrypto_decode::<AccessControllerCancelRecoveryAttemptAsRecoveryMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(
-                    AccessControllerCancelRecoveryAttemptAsRecoveryInvocation { receiver },
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal => {
+                scrypto_decode::<AccessControllerCancelRecoveryRoleRecoveryProposalMethodArgs>(
+                    args,
+                )
+                .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(
+                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation { receiver },
                 )
             }
             AccessControllerFn::LockPrimaryRole => {

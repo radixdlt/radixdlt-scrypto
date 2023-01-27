@@ -229,16 +229,19 @@ pub enum AccessControllerInvocation {
     InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
     InitiateRecoveryAsRecovery(AccessControllerInitiateRecoveryAsRecoveryInvocation),
 
-    QuickConfirmRecoveryAsPrimary(AccessControllerQuickConfirmRecoveryAsPrimaryInvocation),
-    QuickConfirmRecoveryAsRecovery(AccessControllerQuickConfirmRecoveryAsRecoveryInvocation),
-    QuickConfirmRecoveryAsConfirmation(
-        AccessControllerQuickConfirmRecoveryAsConfirmationInvocation,
+    QuickConfirmPrimaryRoleRecoveryProposal(
+        AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation,
+    ),
+    QuickConfirmRecoveryRoleRecoveryProposal(
+        AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation,
     ),
 
     TimedConfirmRecovery(AccessControllerTimedConfirmRecoveryInvocation),
 
-    CancelRecoveryAttemptAsPrimary(AccessControllerCancelRecoveryAttemptAsPrimaryInvocation),
-    CancelRecoveryAttemptAsRecovery(AccessControllerCancelRecoveryAttemptAsRecoveryInvocation),
+    CancelPrimaryRoleRecoveryProposal(AccessControllerCancelPrimaryRoleRecoveryProposalInvocation),
+    CancelRecoveryRoleRecoveryProposal(
+        AccessControllerCancelRecoveryRoleRecoveryProposalInvocation,
+    ),
 
     LockPrimaryRole(AccessControllerLockPrimaryRoleInvocation),
     UnlockPrimaryRole(AccessControllerUnlockPrimaryRoleInvocation),
@@ -523,25 +526,30 @@ impl NativeInvocation {
                 | AccessControllerInvocation::InitiateRecoveryAsRecovery(
                     AccessControllerInitiateRecoveryAsRecoveryInvocation { receiver, .. },
                 )
-                | AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(
-                    AccessControllerQuickConfirmRecoveryAsPrimaryInvocation { receiver, .. },
+                | AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
+                        receiver,
+                        ..
+                    },
                 )
-                | AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(
-                    AccessControllerQuickConfirmRecoveryAsRecoveryInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(
-                    AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-                        receiver, ..
+                | AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
+                        receiver,
+                        ..
                     },
                 )
                 | AccessControllerInvocation::TimedConfirmRecovery(
                     AccessControllerTimedConfirmRecoveryInvocation { receiver, .. },
                 )
-                | AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(
-                    AccessControllerCancelRecoveryAttemptAsPrimaryInvocation { receiver, .. },
+                | AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
+                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
+                        receiver, ..
+                    },
                 )
-                | AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(
-                    AccessControllerCancelRecoveryAttemptAsRecoveryInvocation { receiver, .. },
+                | AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(
+                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
+                        receiver, ..
+                    },
                 )
                 | AccessControllerInvocation::LockPrimaryRole(
                     AccessControllerLockPrimaryRoleInvocation { receiver, .. },

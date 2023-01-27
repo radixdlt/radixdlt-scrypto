@@ -33,7 +33,7 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_proposer_and_confirmor_are_the_same_error)
+    receipt.expect_specific_failure(is_auth_unauthorized_error)
 }
 
 #[test]
@@ -84,7 +84,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     );
 
     // Assert
-    receipt.expect_specific_failure(is_recovery_for_this_proposer_already_exists_error)
+    receipt.expect_specific_failure(is_recovery_already_exists_for_proposer_error)
 }
 
 #[test]
@@ -260,7 +260,7 @@ pub fn quick_confirm_semantics_are_correct() {
         (
             Proposer::Primary,
             Role::Primary,
-            Some(is_proposer_and_confirmor_are_the_same_error),
+            Some(is_auth_unauthorized_error),
         ),
         (Proposer::Primary, Role::Recovery, None),
         (Proposer::Primary, Role::Confirmation, None),
@@ -268,7 +268,7 @@ pub fn quick_confirm_semantics_are_correct() {
         (
             Proposer::Recovery,
             Role::Recovery,
-            Some(is_proposer_and_confirmor_are_the_same_error),
+            Some(is_auth_unauthorized_error),
         ),
         (Proposer::Recovery, Role::Confirmation, None),
     ];
@@ -428,17 +428,17 @@ mod normal_operations_with_primary_unlocked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -501,11 +501,11 @@ mod normal_operations_with_primary_unlocked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -683,17 +683,17 @@ mod normal_operations_with_primary_locked {
             (
                 Role::Primary,  // As role
                 Role::Recovery, // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -756,11 +756,11 @@ mod normal_operations_with_primary_locked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -863,7 +863,7 @@ mod recovery_mode_with_primary_unlocked {
             (Role::Primary, None),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_proposer_already_exists_error),
+                Some(is_recovery_already_exists_for_proposer_error),
             ),
         ];
 
@@ -951,12 +951,12 @@ mod recovery_mode_with_primary_unlocked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -1022,7 +1022,7 @@ mod recovery_mode_with_primary_unlocked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1132,7 +1132,7 @@ mod recovery_mode_with_primary_locked {
             (Role::Primary, None),
             (
                 Role::Recovery,
-                Some(is_recovery_for_this_proposer_already_exists_error),
+                Some(is_recovery_already_exists_for_proposer_error),
             ),
         ];
 
@@ -1220,12 +1220,12 @@ mod recovery_mode_with_primary_locked {
             (
                 Role::Recovery, // As role
                 Role::Primary,  // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (
                 Role::Confirmation, // As role
                 Role::Primary,      // Proposer
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
         ];
 
@@ -1291,7 +1291,7 @@ mod recovery_mode_with_primary_locked {
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
             (
                 Role::Primary,
-                Some(is_recovery_for_this_proposer_does_not_exist_error),
+                Some(is_no_recovery_exists_for_proposer_error),
             ),
             (Role::Recovery, None),
         ];
@@ -1366,20 +1366,20 @@ fn is_operation_requires_unlocked_primary_role_error(error: &RuntimeError) -> bo
     )
 }
 
-fn is_recovery_for_this_proposer_already_exists_error(error: &RuntimeError) -> bool {
+fn is_recovery_already_exists_for_proposer_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::RecoveryForThisProposerAlreadyExists { .. }
+            AccessControllerError::RecoveryAlreadyExistsForProposer { .. }
         ))
     )
 }
 
-fn is_recovery_for_this_proposer_does_not_exist_error(error: &RuntimeError) -> bool {
+fn is_no_recovery_exists_for_proposer_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::RecoveryForThisProposerDoesNotExist { .. }
+            AccessControllerError::NoRecoveryExistsForProposer { .. }
         ))
     )
 }
@@ -1389,15 +1389,6 @@ fn is_no_timed_recoveries_found_error(error: &RuntimeError) -> bool {
         error,
         RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
             AccessControllerError::NoTimedRecoveriesFound
-        ))
-    )
-}
-
-fn is_proposer_and_confirmor_are_the_same_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
-            AccessControllerError::ProposerAndConfirmorAreTheSame
         ))
     )
 }
@@ -1550,10 +1541,9 @@ impl AccessControllerTestRunner {
             Role::Confirmation => panic!("Confirmation is not a valid proposer"),
         };
 
-        let method_name = match as_role {
-            Role::Primary => AccessControllerFn::QuickConfirmRecoveryAsPrimary,
-            Role::Recovery => AccessControllerFn::QuickConfirmRecoveryAsRecovery,
-            Role::Confirmation => AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
+        let method_name = match proposer {
+            Proposer::Primary => AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+            Proposer::Recovery => AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal,
         };
 
         let manifest = self
@@ -1561,15 +1551,16 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 &method_name.to_string(),
-                scrypto_encode(&AccessControllerQuickConfirmRecoveryAsPrimaryMethodArgs {
-                    proposer,
-                    rule_set: RuleSet {
-                        primary_role: proposed_primary_role,
-                        recovery_role: proposed_recovery_role,
-                        confirmation_role: proposed_confirmation_role,
+                scrypto_encode(
+                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
+                        rule_set: RuleSet {
+                            primary_role: proposed_primary_role,
+                            recovery_role: proposed_recovery_role,
+                            confirmation_role: proposed_confirmation_role,
+                        },
+                        timed_recovery_delay_in_minutes,
                     },
-                    timed_recovery_delay_in_minutes,
-                })
+                )
                 .unwrap(),
             )
             .build();
@@ -1607,8 +1598,8 @@ impl AccessControllerTestRunner {
 
     pub fn cancel_recovery_attempt(&mut self, as_role: Role) -> TransactionReceipt {
         let method_name = match as_role {
-            Role::Primary => AccessControllerFn::CancelRecoveryAttemptAsPrimary,
-            Role::Recovery => AccessControllerFn::CancelRecoveryAttemptAsRecovery,
+            Role::Primary => AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
+            Role::Recovery => AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
             Role::Confirmation => panic!("No method for the given role"),
         };
 
@@ -1617,7 +1608,8 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 &method_name.to_string(),
-                scrypto_encode(&AccessControllerCancelRecoveryAttemptAsPrimaryMethodArgs).unwrap(),
+                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs)
+                    .unwrap(),
             )
             .build();
         self.execute_manifest(manifest)

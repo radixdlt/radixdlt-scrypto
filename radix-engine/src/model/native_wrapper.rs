@@ -557,15 +557,11 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::QuickConfirmRecoveryAsPrimary(invocation) => {
+            AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::QuickConfirmRecoveryAsRecovery(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::QuickConfirmRecoveryAsConfirmation(invocation) => {
+            AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -573,11 +569,11 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::CancelRecoveryAttemptAsPrimary(invocation) => {
+            AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::CancelRecoveryAttemptAsRecovery(invocation) => {
+            AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

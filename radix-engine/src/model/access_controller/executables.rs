@@ -23,18 +23,14 @@ pub enum AccessControllerError {
 
     /// Occurs when a proposer attempts to initiate another recovery when they already have a
     /// recovery underway.
-    RecoveryForThisProposerAlreadyExists { proposer: Proposer },
+    RecoveryAlreadyExistsForProposer { proposer: Proposer },
 
     /// Occurs when no recovery can be found for a given proposer.
-    RecoveryForThisProposerDoesNotExist { proposer: Proposer },
+    NoRecoveryExistsForProposer { proposer: Proposer },
 
     /// Occurs when there is no timed recoveries on the controller - typically because it isn't in
     /// the state that allows for it.
     NoTimedRecoveriesFound,
-
-    /// Occurs when performing a quick confirm recovery if the proposer and the confirmor are the
-    /// same.
-    ProposerAndConfirmorAreTheSame,
 
     /// Occurs when trying to perform a timed confirm recovery on a recovery proposal that could
     /// be time-confirmed but whose delay has not yet elapsed.
@@ -298,14 +294,13 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
 // Access Controller Quick Confirm Recovery
 //==========================================
 
-pub struct AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
+pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
-    pub proposer: Proposer,
     pub proposal_to_confirm: RecoveryProposal,
 }
 
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsPrimaryExecutable;
+impl ExecutableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
+    type Exec = AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -319,13 +314,12 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: self.proposer,
             proposal_to_confirm: self.proposal_to_confirm,
         };
 
@@ -333,7 +327,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
     }
 }
 
-impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
+impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -346,8 +340,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
         let recovery_proposal = transition_mut(
             self.receiver,
             api,
-            AccessControllerQuickConfirmRecoveryAsPrimaryStateMachineInput {
-                proposer: self.proposer,
+            AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: self.proposal_to_confirm,
             },
         )?;
@@ -362,14 +355,13 @@ impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
     }
 }
 
-pub struct AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
+pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
-    pub proposer: Proposer,
     pub proposal_to_confirm: RecoveryProposal,
 }
 
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsRecoveryExecutable;
+impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
+    type Exec = AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -383,13 +375,14 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsRecovery),
+            NativeFn::AccessController(
+                AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal,
+            ),
             resolved_receiver,
         );
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: self.proposer,
             proposal_to_confirm: self.proposal_to_confirm,
         };
 
@@ -397,7 +390,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
     }
 }
 
-impl Executor for AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
+impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -410,72 +403,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
         let recovery_proposal = transition_mut(
             self.receiver,
             api,
-            AccessControllerQuickConfirmRecoveryAsRecoveryStateMachineInput {
-                proposer: self.proposer,
-                proposal_to_confirm: self.proposal_to_confirm,
-            },
-        )?;
-
-        update_access_rules(
-            api,
-            self.receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
-        )?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-pub struct AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
-    pub receiver: RENodeId,
-    pub proposer: Proposer,
-    pub proposal_to_confirm: RecoveryProposal,
-}
-
-impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryAsConfirmationExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::QuickConfirmRecoveryAsConfirmation),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            proposer: self.proposer,
-            proposal_to_confirm: self.proposal_to_confirm,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        let recovery_proposal = transition_mut(
-            self.receiver,
-            api,
-            AccessControllerQuickConfirmRecoveryAsConfirmationStateMachineInput {
-                proposer: self.proposer,
+            AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: self.proposal_to_confirm,
             },
         )?;
@@ -561,12 +489,12 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
 // Access Controller Cancel Recovery Attempt
 //===========================================
 
-pub struct AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
+pub struct AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
 }
 
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptAsPrimaryExecutable;
+impl ExecutableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
+    type Exec = AccessControllerCancelPrimaryRoleRecoveryProposalExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -580,7 +508,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsPrimary),
+            NativeFn::AccessController(AccessControllerFn::CancelPrimaryRoleRecoveryProposal),
             resolved_receiver,
         );
 
@@ -592,7 +520,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
     }
 }
 
-impl Executor for AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
+impl Executor for AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -605,19 +533,19 @@ impl Executor for AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
         transition_mut(
             self.receiver,
             api,
-            AccessControllerCancelRecoveryAttemptAsPrimaryStateMachineInput,
+            AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
         )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-pub struct AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
+pub struct AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
     pub receiver: RENodeId,
 }
 
-impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptAsRecoveryExecutable;
+impl ExecutableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
+    type Exec = AccessControllerCancelRecoveryRoleRecoveryProposalExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -631,7 +559,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttemptAsRecovery),
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryRoleRecoveryProposal),
             resolved_receiver,
         );
 
@@ -643,7 +571,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
     }
 }
 
-impl Executor for AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
+impl Executor for AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -656,7 +584,7 @@ impl Executor for AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
         transition_mut(
             self.receiver,
             api,
-            AccessControllerCancelRecoveryAttemptAsRecoveryStateMachineInput,
+            AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
         )?;
 
         Ok(((), CallFrameUpdate::empty()))
@@ -866,13 +794,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     );
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::QuickConfirmRecoveryAsPrimary,
-        )),
-        primary_group.into(),
-    );
-    access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelRecoveryAttemptAsPrimary,
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
         )),
         primary_group.into(),
     );
@@ -888,19 +810,13 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     );
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::QuickConfirmRecoveryAsRecovery,
-        )),
-        recovery_group.into(),
-    );
-    access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
             AccessControllerFn::TimedConfirmRecovery,
         )),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelRecoveryAttemptAsRecovery,
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
         )),
         recovery_group.into(),
     );
@@ -923,12 +839,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         confirmation_group.into(),
         rule_set.confirmation_role.clone(),
     );
-    access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::QuickConfirmRecoveryAsConfirmation,
-        )),
-        confirmation_group.into(),
-    );
 
     // Other methods
     access_rules.set_method_access_rule(
@@ -937,12 +847,24 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         )),
         access_rule_or(
             [
-                rule_set.primary_role,
-                rule_set.recovery_role,
-                rule_set.confirmation_role,
+                rule_set.primary_role.clone(),
+                rule_set.recovery_role.clone(),
+                rule_set.confirmation_role.clone(),
             ]
             .into(),
         ),
+    );
+    access_rules.set_method_access_rule(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+        )),
+        access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
+    );
+    access_rules.set_method_access_rule(
+        AccessRuleKey::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal,
+        )),
+        access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
     let non_fungible_local_id = NonFungibleLocalId::Bytes(
