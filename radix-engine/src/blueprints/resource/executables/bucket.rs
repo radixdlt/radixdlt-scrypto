@@ -9,15 +9,9 @@ use crate::kernel::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::ResourceOperationError;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
-};
 use radix_engine_interface::api::ClientDerefApi;
-
-use super::ProofError;
+use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketError {

@@ -1,8 +1,8 @@
-use radix_engine_interface::api::blueprints::resource::AccessRules;
 use radix_engine_interface::api::component::ComponentSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::ScryptoDecode;
 use sbor::rust::fmt::Debug;
 

@@ -9,13 +9,13 @@ use crate::kernel::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
 pub struct WorktopSubstate {

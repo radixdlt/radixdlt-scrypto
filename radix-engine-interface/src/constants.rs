@@ -1,7 +1,7 @@
 use crate::address;
-use crate::api::blueprints::resource::ResourceAddress;
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
+use crate::blueprints::resource::ResourceAddress;
 use crate::construct_address;
 
 /// The XRD resource address.

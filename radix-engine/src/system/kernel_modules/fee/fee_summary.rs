@@ -1,7 +1,7 @@
 use super::RoyaltyReceiver;
 use crate::types::*;
-use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

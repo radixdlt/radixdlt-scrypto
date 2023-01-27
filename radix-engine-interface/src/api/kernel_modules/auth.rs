@@ -1,4 +1,4 @@
-use crate::api::blueprints::resource::*;
+use crate::blueprints::resource::*;
 use crate::constants::SYSTEM_TOKEN;
 use crate::crypto::PublicKey;
 use sbor::rust::vec::Vec;

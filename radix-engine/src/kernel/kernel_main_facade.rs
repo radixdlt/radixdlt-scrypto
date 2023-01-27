@@ -11,11 +11,11 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset,
     VaultId,
 };
+use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where

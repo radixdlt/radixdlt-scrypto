@@ -1,9 +1,9 @@
 use sbor::value_kind::*;
 use sbor::*;
 
-use crate::api::blueprints::resource::*;
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
+use crate::blueprints::resource::*;
 use crate::crypto::*;
 use crate::data::types::*;
 use crate::data::*;

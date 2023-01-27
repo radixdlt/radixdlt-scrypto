@@ -6,8 +6,8 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
-use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::vec::Vec;
 
 use super::BaseModule;

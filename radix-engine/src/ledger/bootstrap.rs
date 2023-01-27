@@ -5,9 +5,6 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::clock::ClockCreateInvocation;
-use radix_engine_interface::api::blueprints::epoch_manager::EpochManagerCreateInvocation;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
@@ -18,6 +15,9 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
+use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};

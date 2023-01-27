@@ -11,9 +11,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::blueprints::identity::IdentityCreateInvocation;
-use radix_engine_interface::api::blueprints::resource::ResourceManagerCreateFungibleInvocation;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
@@ -22,6 +19,9 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
+use radix_engine_interface::blueprints::resource::ResourceManagerCreateFungibleInvocation;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,

@@ -1,7 +1,7 @@
 use radix_engine::kernel::TrackedEvent;
 use radix_engine::system::kernel_modules::execution_trace::{SysCallTrace, SysCallTraceOrigin};
 use radix_engine::types::*;
-use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

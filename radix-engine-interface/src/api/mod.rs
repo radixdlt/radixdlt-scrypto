@@ -1,5 +1,4 @@
 pub mod actor_api;
-pub mod blueprints;
 pub mod component;
 pub mod component_api;
 pub mod deref_api;
