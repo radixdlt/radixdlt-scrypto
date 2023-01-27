@@ -44,8 +44,7 @@ pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
     // TODO: replace with whatever hash algorithm we eventually agrees on
     // The point here is to have a single "main" hashing function in the code base
 
-//    crate::crypto::sha256(data)
-    crate::crypto::sha256_twice(data)
+    Hash(blake3::hash(data.as_ref()).as_bytes().clone())
 }
 
 //========
