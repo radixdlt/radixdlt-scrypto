@@ -183,14 +183,13 @@ impl Executor for AccessControllerCreateProofExecutable {
 // Access Controller Initiate Recovery
 //=====================================
 
-pub struct AccessControllerInitiateRecoveryExecutable {
+pub struct AccessControllerInitiateRecoveryAsPrimaryExecutable {
     pub receiver: RENodeId,
-    pub proposer: Proposer,
     pub proposal: RecoveryProposal,
 }
 
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerInitiateRecoveryExecutable;
+    type Exec = AccessControllerInitiateRecoveryAsPrimaryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -212,7 +211,6 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: Proposer::Primary,
             proposal: self.proposal,
         };
 
@@ -220,8 +218,35 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocatio
     }
 }
 
+impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
+                proposal: self.proposal,
+            },
+        )?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct AccessControllerInitiateRecoveryAsRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub proposal: RecoveryProposal,
+}
+
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerInitiateRecoveryExecutable;
+    type Exec = AccessControllerInitiateRecoveryAsRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -243,7 +268,6 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: Proposer::Recovery,
             proposal: self.proposal,
         };
 
@@ -251,7 +275,7 @@ impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocati
     }
 }
 
-impl Executor for AccessControllerInitiateRecoveryExecutable {
+impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -264,8 +288,7 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
         transition_mut(
             self.receiver,
             api,
-            AccessControllerInitiateRecoveryStateMachineInput {
-                proposer: self.proposer,
+            AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
                 proposal: self.proposal,
             },
         )?;
@@ -278,15 +301,14 @@ impl Executor for AccessControllerInitiateRecoveryExecutable {
 // Access Controller Quick Confirm Recovery
 //==========================================
 
-pub struct AccessControllerQuickConfirmRecoveryExecutable {
+pub struct AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
     pub receiver: RENodeId,
-    pub confirmor: Role,
     pub proposer: Proposer,
     pub proposal_to_confirm: RecoveryProposal,
 }
 
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
+    type Exec = AccessControllerQuickConfirmRecoveryAsPrimaryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -306,7 +328,6 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            confirmor: Role::Primary,
             proposer: self.proposer,
             proposal_to_confirm: self.proposal_to_confirm,
         };
@@ -315,8 +336,43 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsPrimaryInvoc
     }
 }
 
+impl Executor for AccessControllerQuickConfirmRecoveryAsPrimaryExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let recovery_proposal = transition_mut(
+            self.receiver,
+            api,
+            AccessControllerQuickConfirmRecoveryAsPrimaryStateMachineInput {
+                proposer: self.proposer,
+                proposal_to_confirm: self.proposal_to_confirm,
+            },
+        )?;
+
+        update_access_rules(
+            api,
+            self.receiver,
+            access_rules_from_rule_set(recovery_proposal.rule_set),
+        )?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
+    pub receiver: RENodeId,
+    pub proposer: Proposer,
+    pub proposal_to_confirm: RecoveryProposal,
+}
+
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
+    type Exec = AccessControllerQuickConfirmRecoveryAsRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -336,7 +392,6 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            confirmor: Role::Recovery,
             proposer: self.proposer,
             proposal_to_confirm: self.proposal_to_confirm,
         };
@@ -345,8 +400,43 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsRecoveryInvo
     }
 }
 
+impl Executor for AccessControllerQuickConfirmRecoveryAsRecoveryExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let recovery_proposal = transition_mut(
+            self.receiver,
+            api,
+            AccessControllerQuickConfirmRecoveryAsRecoveryStateMachineInput {
+                proposer: self.proposer,
+                proposal_to_confirm: self.proposal_to_confirm,
+            },
+        )?;
+
+        update_access_rules(
+            api,
+            self.receiver,
+            access_rules_from_rule_set(recovery_proposal.rule_set),
+        )?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
+    pub receiver: RENodeId,
+    pub proposer: Proposer,
+    pub proposal_to_confirm: RecoveryProposal,
+}
+
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmationInvocation {
-    type Exec = AccessControllerQuickConfirmRecoveryExecutable;
+    type Exec = AccessControllerQuickConfirmRecoveryAsConfirmationExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -366,7 +456,6 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmation
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            confirmor: Role::Confirmation,
             proposer: self.proposer,
             proposal_to_confirm: self.proposal_to_confirm,
         };
@@ -375,7 +464,7 @@ impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryAsConfirmation
     }
 }
 
-impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
+impl Executor for AccessControllerQuickConfirmRecoveryAsConfirmationExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -388,36 +477,17 @@ impl Executor for AccessControllerQuickConfirmRecoveryExecutable {
         let recovery_proposal = transition_mut(
             self.receiver,
             api,
-            AccessControllerQuickConfirmRecoveryStateMachineInput {
-                confirmor: self.confirmor,
+            AccessControllerQuickConfirmRecoveryAsConfirmationStateMachineInput {
                 proposer: self.proposer,
                 proposal_to_confirm: self.proposal_to_confirm,
             },
         )?;
 
-        // Update the access rules
-        let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
-        for (group_name, access_rule) in new_access_rules.get_all_grouped_auth().iter() {
-            api.invoke(AccessRulesSetGroupAccessRuleInvocation {
-                receiver: self.receiver,
-                index: 0,
-                name: group_name.into(),
-                rule: access_rule.clone(),
-            })?;
-        }
-        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
-            match entry {
-                AccessRuleEntry::AccessRule(access_rule) => {
-                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: self.receiver,
-                        index: 0,
-                        key: method_key.clone(),
-                        rule: access_rule.clone(),
-                    })?;
-                }
-                AccessRuleEntry::Group(..) => {} // Already updated above
-            }
-        }
+        update_access_rules(
+            api,
+            self.receiver,
+            access_rules_from_rule_set(recovery_proposal.rule_set),
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -480,28 +550,11 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         )?;
 
         // Update the access rules
-        let new_access_rules = access_rules_from_rule_set(recovery_proposal.rule_set);
-        for (group_name, access_rule) in new_access_rules.get_all_grouped_auth().iter() {
-            api.invoke(AccessRulesSetGroupAccessRuleInvocation {
-                receiver: self.receiver,
-                index: 0,
-                name: group_name.into(),
-                rule: access_rule.clone(),
-            })?;
-        }
-        for (method_key, entry) in new_access_rules.get_all_method_auth().iter() {
-            match entry {
-                AccessRuleEntry::AccessRule(access_rule) => {
-                    api.invoke(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: self.receiver,
-                        index: 0,
-                        key: method_key.clone(),
-                        rule: access_rule.clone(),
-                    })?;
-                }
-                AccessRuleEntry::Group(..) => {} // Already updated above
-            }
-        }
+        update_access_rules(
+            api,
+            self.receiver,
+            access_rules_from_rule_set(recovery_proposal.rule_set),
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -511,13 +564,12 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
 // Access Controller Cancel Recovery Attempt
 //===========================================
 
-pub struct AccessControllerCancelRecoveryAttemptExecutable {
+pub struct AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
     pub receiver: RENodeId,
-    pub proposer: Proposer,
 }
 
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptExecutable;
+    type Exec = AccessControllerCancelRecoveryAttemptAsPrimaryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -537,15 +589,38 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsPrimaryInvo
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: Proposer::Primary,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
+impl Executor for AccessControllerCancelRecoveryAttemptAsPrimaryExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        transition_mut(
+            self.receiver,
+            api,
+            AccessControllerCancelRecoveryAttemptAsPrimaryStateMachineInput,
+        )?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
+    pub receiver: RENodeId,
+}
+
 impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInvocation {
-    type Exec = AccessControllerCancelRecoveryAttemptExecutable;
+    type Exec = AccessControllerCancelRecoveryAttemptAsRecoveryExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -565,14 +640,13 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptAsRecoveryInv
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
-            proposer: Proposer::Recovery,
         };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
+impl Executor for AccessControllerCancelRecoveryAttemptAsRecoveryExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(
@@ -585,9 +659,7 @@ impl Executor for AccessControllerCancelRecoveryAttemptExecutable {
         transition_mut(
             self.receiver,
             api,
-            AccessControllerCancelRecoveryAttemptStateMachineInput {
-                proposer: self.proposer,
-            },
+            AccessControllerCancelRecoveryAttemptAsRecoveryStateMachineInput,
         )?;
 
         Ok(((), CallFrameUpdate::empty()))
@@ -938,4 +1010,36 @@ where
     api.drop_lock(handle)?;
 
     Ok(rtn)
+}
+
+fn update_access_rules<Y>(
+    api: &mut Y,
+    receiver: RENodeId,
+    access_rules: AccessRules,
+) -> Result<(), RuntimeError>
+where
+    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+{
+    for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
+        api.invoke(AccessRulesSetGroupAccessRuleInvocation {
+            receiver: receiver,
+            index: 0,
+            name: group_name.into(),
+            rule: access_rule.clone(),
+        })?;
+    }
+    for (method_key, entry) in access_rules.get_all_method_auth().iter() {
+        match entry {
+            AccessRuleEntry::AccessRule(access_rule) => {
+                api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                    receiver: receiver,
+                    index: 0,
+                    key: method_key.clone(),
+                    rule: access_rule.clone(),
+                })?;
+            }
+            AccessRuleEntry::Group(..) => {} // Already updated above
+        }
+    }
+    Ok(())
 }

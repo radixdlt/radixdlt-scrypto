@@ -253,6 +253,58 @@ pub fn stop_timed_recovery_with_no_access_fails() {
     receipt.expect_specific_failure(is_auth_unauthorized_error)
 }
 
+#[test]
+pub fn quick_confirm_semantics_are_correct() {
+    // Arrange
+    let test_vectors = [
+        (
+            Proposer::Primary,
+            Role::Primary,
+            Some(is_proposer_and_confirmor_are_the_same_error),
+        ),
+        (Proposer::Primary, Role::Recovery, None),
+        (Proposer::Primary, Role::Confirmation, None),
+        (Proposer::Recovery, Role::Primary, None),
+        (
+            Proposer::Recovery,
+            Role::Recovery,
+            Some(is_proposer_and_confirmor_are_the_same_error),
+        ),
+        (Proposer::Recovery, Role::Confirmation, None),
+    ];
+
+    for (proposer, role, error_assertion_function) in test_vectors {
+        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+        test_runner
+            .initiate_recovery(
+                proposer.into(),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                rule!(require(RADIX_TOKEN)),
+                Some(10),
+            )
+            .expect_commit_success();
+
+        // Act
+        let receipt = test_runner.quick_confirm_recovery(
+            role,
+            proposer.into(),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+            rule!(require(RADIX_TOKEN)),
+            Some(10),
+        );
+
+        // Assert
+        match error_assertion_function {
+            None => {
+                receipt.expect_commit_success();
+            }
+            Some(function) => receipt.expect_specific_failure(function),
+        };
+    }
+}
+
 //=============
 // State Tests
 //=============

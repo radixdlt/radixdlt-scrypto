@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::resource::Vault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{EngineApi, InvokableModel};
-use radix_engine_interface::model::{Proof, Proposer, Role, TimePrecision};
+use radix_engine_interface::model::{Proof, Proposer, TimePrecision};
 use radix_engine_interface::time::TimeComparisonOperator;
 
 use super::{
@@ -67,33 +67,59 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
     }
 }
 
-pub(super) struct AccessControllerInitiateRecoveryStateMachineInput {
-    pub proposer: Proposer,
+pub(super) struct AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
     pub proposal: RecoveryProposal,
 }
 
-impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for AccessControllerSubstate {
+impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
+    for AccessControllerSubstate
+{
     type Output = ();
 
     fn transition_mut<Y>(
         &mut self,
-        api: &mut Y,
-        input: AccessControllerInitiateRecoveryStateMachineInput,
+        _api: &mut Y,
+        input: AccessControllerInitiateRecoveryAsPrimaryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         match self.state {
-            (_, ref mut primary_operations_state @ PrimaryOperationState::Normal, _)
-                if input.proposer == Proposer::Primary =>
-            {
+            (_, ref mut primary_operations_state @ PrimaryOperationState::Normal, _) => {
                 // Transition the primary operations state from normal to recovery
                 *primary_operations_state = PrimaryOperationState::Recovery(input.proposal);
                 Ok(())
             }
-            (_, _, ref mut recovery_operations_state @ RecoveryOperationState::Normal)
-                if input.proposer == Proposer::Recovery =>
-            {
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerAlreadyExists {
+                        proposer: Proposer::Primary,
+                    },
+                ),
+            )),
+        }
+    }
+}
+
+pub(super) struct AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
+    pub proposal: RecoveryProposal,
+}
+
+impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
+    for AccessControllerSubstate
+{
+    type Output = ();
+
+    fn transition_mut<Y>(
+        &mut self,
+        api: &mut Y,
+        input: AccessControllerInitiateRecoveryAsRecoveryStateMachineInput,
+    ) -> Result<Self::Output, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        match self.state {
+            (_, _, ref mut recovery_operations_state @ RecoveryOperationState::Normal) => {
                 match self.timed_recovery_delay_in_minutes {
                     Some(delay_in_minutes) => {
                         let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
@@ -121,6 +147,56 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
                     AccessControllerError::RecoveryForThisProposerAlreadyExists {
+                        proposer: Proposer::Recovery,
+                    },
+                ),
+            )),
+        }
+    }
+}
+
+pub(super) struct AccessControllerQuickConfirmRecoveryAsPrimaryStateMachineInput {
+    pub proposer: Proposer,
+    pub proposal_to_confirm: RecoveryProposal,
+}
+
+impl TransitionMut<AccessControllerQuickConfirmRecoveryAsPrimaryStateMachineInput>
+    for AccessControllerSubstate
+{
+    type Output = RecoveryProposal;
+
+    fn transition_mut<Y>(
+        &mut self,
+        _api: &mut Y,
+        input: AccessControllerQuickConfirmRecoveryAsPrimaryStateMachineInput,
+    ) -> Result<Self::Output, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        match self.state {
+            (
+                _,
+                _,
+                RecoveryOperationState::Recovery(
+                    RecoveryRecoveryState::Untimed(ref proposal)
+                    | RecoveryRecoveryState::Timed { ref proposal, .. },
+                ),
+            ) if input.proposer == Proposer::Recovery => {
+                let proposal = proposal.clone();
+
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
+
+                // Transition back to the initial state of the state machine
+                self.state = Default::default();
+                Ok(proposal)
+            }
+            (_, PrimaryOperationState::Recovery(..), _) if input.proposer == Proposer::Primary => {
+                access_controller_runtime_error!(ProposerAndConfirmorAreTheSame)
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerDoesNotExist {
                         proposer: input.proposer,
                     },
                 ),
@@ -129,13 +205,12 @@ impl TransitionMut<AccessControllerInitiateRecoveryStateMachineInput> for Access
     }
 }
 
-pub(super) struct AccessControllerQuickConfirmRecoveryStateMachineInput {
-    pub confirmor: Role,
+pub(super) struct AccessControllerQuickConfirmRecoveryAsRecoveryStateMachineInput {
     pub proposer: Proposer,
     pub proposal_to_confirm: RecoveryProposal,
 }
 
-impl TransitionMut<AccessControllerQuickConfirmRecoveryStateMachineInput>
+impl TransitionMut<AccessControllerQuickConfirmRecoveryAsRecoveryStateMachineInput>
     for AccessControllerSubstate
 {
     type Output = RecoveryProposal;
@@ -143,18 +218,58 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryStateMachineInput>
     fn transition_mut<Y>(
         &mut self,
         _api: &mut Y,
-        input: AccessControllerQuickConfirmRecoveryStateMachineInput,
+        input: AccessControllerQuickConfirmRecoveryAsRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // This transition can not be performed when the confirmor and the proposer are the same.
-        // As in, Role X can't perform a quick confirm on a recovery initiate by Role X, it has to
-        // be different.
-        if input.confirmor == input.proposer.into() {
-            return access_controller_runtime_error!(ProposerAndConfirmorAreTheSame);
-        }
+        match self.state {
+            (_, PrimaryOperationState::Recovery(ref proposal), _)
+                if input.proposer == Proposer::Primary =>
+            {
+                let proposal = proposal.clone();
 
+                // Ensure that the caller has passed in the expected proposal
+                validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
+
+                // Transition back to the initial state of the state machine
+                self.state = Default::default();
+                Ok(proposal)
+            }
+            (_, _, RecoveryOperationState::Recovery(..))
+                if input.proposer == Proposer::Recovery =>
+            {
+                access_controller_runtime_error!(ProposerAndConfirmorAreTheSame)
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerDoesNotExist {
+                        proposer: input.proposer,
+                    },
+                ),
+            )),
+        }
+    }
+}
+
+pub(super) struct AccessControllerQuickConfirmRecoveryAsConfirmationStateMachineInput {
+    pub proposer: Proposer,
+    pub proposal_to_confirm: RecoveryProposal,
+}
+
+impl TransitionMut<AccessControllerQuickConfirmRecoveryAsConfirmationStateMachineInput>
+    for AccessControllerSubstate
+{
+    type Output = RecoveryProposal;
+
+    fn transition_mut<Y>(
+        &mut self,
+        _api: &mut Y,
+        input: AccessControllerQuickConfirmRecoveryAsConfirmationStateMachineInput,
+    ) -> Result<Self::Output, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
         match self.state {
             (_, PrimaryOperationState::Recovery(ref proposal), _)
                 if input.proposer == Proposer::Primary =>
@@ -252,11 +367,9 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
     }
 }
 
-pub(super) struct AccessControllerCancelRecoveryAttemptStateMachineInput {
-    pub proposer: Proposer,
-}
+pub(super) struct AccessControllerCancelRecoveryAttemptAsPrimaryStateMachineInput;
 
-impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
+impl TransitionMut<AccessControllerCancelRecoveryAttemptAsPrimaryStateMachineInput>
     for AccessControllerSubstate
 {
     type Output = ();
@@ -264,7 +377,7 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
     fn transition_mut<Y>(
         &mut self,
         _api: &mut Y,
-        input: AccessControllerCancelRecoveryAttemptStateMachineInput,
+        _input: AccessControllerCancelRecoveryAttemptAsPrimaryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
@@ -272,18 +385,41 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
         match self.state {
-            (_, PrimaryOperationState::Recovery(..), _) if input.proposer == Proposer::Primary => {
+            (_, PrimaryOperationState::Recovery(..), _) => {
                 // Transition from the recovery state to the normal operations state
                 self.state.1 = PrimaryOperationState::Normal;
                 Ok(())
             }
-            (
-                _,
-                _,
-                RecoveryOperationState::Recovery(
-                    RecoveryRecoveryState::Untimed(..) | RecoveryRecoveryState::Timed { .. },
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessControllerError(
+                    AccessControllerError::RecoveryForThisProposerDoesNotExist {
+                        proposer: Proposer::Primary,
+                    },
                 ),
-            ) if input.proposer == Proposer::Recovery => {
+            )),
+        }
+    }
+}
+
+pub(super) struct AccessControllerCancelRecoveryAttemptAsRecoveryStateMachineInput;
+
+impl TransitionMut<AccessControllerCancelRecoveryAttemptAsRecoveryStateMachineInput>
+    for AccessControllerSubstate
+{
+    type Output = ();
+
+    fn transition_mut<Y>(
+        &mut self,
+        _api: &mut Y,
+        _input: AccessControllerCancelRecoveryAttemptAsRecoveryStateMachineInput,
+    ) -> Result<Self::Output, RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
+        // primary is locked or unlocked
+        match self.state {
+            (_, _, RecoveryOperationState::Recovery(..)) => {
                 // Transition from the recovery state to the normal operations state
                 self.state.2 = RecoveryOperationState::Normal;
                 Ok(())
@@ -291,7 +427,7 @@ impl TransitionMut<AccessControllerCancelRecoveryAttemptStateMachineInput>
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
                     AccessControllerError::RecoveryForThisProposerDoesNotExist {
-                        proposer: input.proposer,
+                        proposer: Proposer::Recovery,
                     },
                 ),
             )),
