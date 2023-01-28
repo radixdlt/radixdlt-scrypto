@@ -5,13 +5,6 @@ use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
-// TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ScryptoRENode {
-    Component(PackageAddress, String, Vec<u8>),
-    KeyValueStore,
-}
-
 // TODO: Remove when better type system implemented
 #[derive(
     Debug,
