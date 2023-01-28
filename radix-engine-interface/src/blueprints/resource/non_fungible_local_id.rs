@@ -1,5 +1,5 @@
 use crate::abi::*;
-use crate::api::blueprints::resource::NonFungibleIdType;
+use crate::blueprints::resource::NonFungibleIdType;
 use crate::data::*;
 use crate::*;
 use sbor::rust::fmt;

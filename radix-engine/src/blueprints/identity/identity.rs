@@ -6,11 +6,11 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::identity::*;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::resource::*;
 
 impl ExecutableInvocation for IdentityCreateInvocation {
     type Exec = Self;

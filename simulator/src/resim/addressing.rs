@@ -1,5 +1,5 @@
 use radix_engine_interface::{
-    api::blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
+    blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
     rule,
 };
 use sbor::rust::fmt;

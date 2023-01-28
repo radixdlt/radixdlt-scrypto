@@ -1,7 +1,7 @@
-use crate::api::blueprints::resource::*;
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::types::*;
 use crate::data::*;
 use radix_engine_derive::*;

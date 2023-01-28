@@ -3,7 +3,6 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
-use sbor::*;
 
 /// Represents the level of a log message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, LegacyDescribe)]

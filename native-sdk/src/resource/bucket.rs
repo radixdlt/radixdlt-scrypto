@@ -1,5 +1,5 @@
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;

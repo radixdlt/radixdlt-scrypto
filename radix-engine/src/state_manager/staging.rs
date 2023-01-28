@@ -364,9 +364,9 @@ mod tests {
     };
     use crate::types::rust::iter::zip;
     use crate::wasm::DefaultWasmEngine;
-    use radix_engine_interface::api::blueprints::resource::Resource;
     use radix_engine_interface::api::types::ResourceAddress;
     use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
+    use radix_engine_interface::blueprints::resource::Resource;
     use radix_engine_interface::math::Decimal;
     use sbor::rust::collections::BTreeMap;
     use sbor::rust::vec::Vec;

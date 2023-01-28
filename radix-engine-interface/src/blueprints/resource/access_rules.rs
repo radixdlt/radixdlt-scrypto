@@ -1,6 +1,6 @@
-use crate::api::blueprints::resource::*;
 use crate::api::types::MetadataFn;
 use crate::api::types::PackageFn;
+use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
 use radix_engine_interface::api::types::NativeFn;

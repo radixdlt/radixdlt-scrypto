@@ -1,4 +1,4 @@
-use radix_engine_interface::{api::blueprints::clock::TimePrecision, time::UtcDateTime};
+use radix_engine_interface::{blueprints::clock::TimePrecision, time::UtcDateTime};
 use scrypto_unit::*;
 
 #[test]

@@ -1,8 +1,8 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::blueprints::resource::AccessRule;
 use crate::api::component::ComponentAddress;
 use crate::api::types::*;
+use crate::blueprints::resource::AccessRule;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

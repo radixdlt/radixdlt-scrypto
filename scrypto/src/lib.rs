@@ -33,10 +33,10 @@ pub mod math {
     pub use radix_engine_interface::math::*;
 }
 pub mod model {
-    pub use radix_engine_interface::api::blueprints::resource::*;
     pub use radix_engine_interface::api::component::ComponentAddress;
     pub use radix_engine_interface::api::package::PackageAddress;
     pub use radix_engine_interface::api::types::RoyaltyConfig;
+    pub use radix_engine_interface::blueprints::resource::*;
 }
 /// Scrypto crypto library
 pub mod crypto {

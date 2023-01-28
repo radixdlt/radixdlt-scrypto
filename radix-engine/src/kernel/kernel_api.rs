@@ -4,8 +4,8 @@ use crate::system::substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
-use radix_engine_interface::api::blueprints::resource::Resource;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::blueprints::resource::Resource;
 
 bitflags! {
     #[derive(Encode, Decode, Categorize)]

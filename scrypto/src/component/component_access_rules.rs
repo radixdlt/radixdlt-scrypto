@@ -1,7 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::LegacyDescribe;
 use radix_engine_derive::*;
-use radix_engine_interface::api::blueprints::resource::{AccessRule, AccessRuleKey};
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation,
 };
@@ -9,6 +8,7 @@ use radix_engine_interface::api::types::{
     ComponentAddress, ComponentId, GlobalAddress, RENodeId, ToString,
 };
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleKey};
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?

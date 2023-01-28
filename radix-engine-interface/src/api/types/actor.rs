@@ -1,6 +1,6 @@
-use crate::api::blueprints::clock::*;
-use crate::api::blueprints::epoch_manager::*;
 use crate::api::types::*;
+use crate::blueprints::clock::*;
+use crate::blueprints::epoch_manager::*;
 use crate::data::scrypto_decode;
 use crate::*;
 use sbor::rust::str::FromStr;

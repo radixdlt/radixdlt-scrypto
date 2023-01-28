@@ -3,10 +3,8 @@ use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::{
-    blueprints::resource::Resource,
-    types::{RENodeId, VaultId},
-};
+use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::blueprints::resource::Resource;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
@@ -147,8 +145,6 @@ pub struct SystemLoanFeeReserve {
     total_cost_units_consumed: u32,
     /// The max number of cost units that can be consumed
     cost_unit_limit: u32,
-    /// At which point the system loan repayment is checked
-    check_point: u32,
 
     /// Execution costs that are deferred
     execution_deferred: [u32; CostingReason::COUNT],
@@ -216,7 +212,6 @@ impl SystemLoanFeeReserve {
             xrd_owed: 0,
             total_cost_units_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
-            check_point: system_loan.into(),
             execution_deferred: [0u32; CostingReason::COUNT],
             execution_deferred_total: 0,
             execution: [0u32; CostingReason::COUNT],
@@ -357,7 +352,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.consume(amount.into(), self.execution_price())?;
         checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
 
-        if self.total_cost_units_consumed >= self.check_point && !self.fully_repaid() {
+        if self.remaining_loan_balance == 0 && !self.fully_repaid() {
             self.repay_all()?;
         }
         Ok(())
@@ -391,7 +386,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.consume(cost_units_to_consume, self.execution_price())?;
         checked_assign_add(&mut self.execution[reason as usize], cost_units_to_consume)?;
 
-        if self.total_cost_units_consumed >= self.check_point && !self.fully_repaid() {
+        if self.remaining_loan_balance == 0 && !self.fully_repaid() {
             self.repay_all()?;
         }
 

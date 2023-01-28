@@ -1,6 +1,6 @@
-use crate::api::blueprints::resource::*;
 use crate::api::component::ComponentAddress;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;

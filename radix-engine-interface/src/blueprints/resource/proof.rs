@@ -1,6 +1,6 @@
 use crate::abi::*;
-use crate::api::blueprints::resource::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
@@ -8,7 +8,6 @@ use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetAmountInvocation {

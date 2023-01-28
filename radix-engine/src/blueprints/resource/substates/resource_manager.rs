@@ -1,8 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::types::*;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::NonFungibleStoreId;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
