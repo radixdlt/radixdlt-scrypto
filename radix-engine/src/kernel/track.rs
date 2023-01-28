@@ -12,7 +12,9 @@ use crate::system::kernel_modules::fee::FeeTable;
 use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
 use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
-use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{
+    PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
+};
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;

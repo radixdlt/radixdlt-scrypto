@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::kernel::ScryptoInterpreter;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
 use radix_engine_interface::{api::types::RENodeId, data::ScryptoDecode};

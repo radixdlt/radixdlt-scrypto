@@ -3,7 +3,7 @@ use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubs
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::types::{
     BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,

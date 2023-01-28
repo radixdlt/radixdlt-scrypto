@@ -9,8 +9,8 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::node_substates::*;
 use crate::system::package::*;
-use crate::system::substates::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,

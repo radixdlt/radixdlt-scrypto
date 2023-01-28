@@ -6,9 +6,10 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;

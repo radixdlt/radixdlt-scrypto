@@ -7,6 +7,7 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
+use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};

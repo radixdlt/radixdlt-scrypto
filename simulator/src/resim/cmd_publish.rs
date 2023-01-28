@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::package::PackageInfoSubstate;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use std::ffi::OsStr;

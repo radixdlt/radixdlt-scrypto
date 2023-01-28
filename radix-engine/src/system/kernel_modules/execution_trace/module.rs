@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::PersistedSubstate;
+use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;

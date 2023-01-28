@@ -1,6 +1,6 @@
 use crate::{
     errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, RENodeInit, ResolvedActor, ResolvedReceiver},
+    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
     system::global::GlobalAddressSubstate,
 };
 use radix_engine_interface::api::types::{
@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::{
     ValidatorOffset, VaultOffset, WorktopOffset,
 };
 
-use super::LockFlags;
+use super::node::RENodeInit;
 
 pub struct VisibilityProperties;
 

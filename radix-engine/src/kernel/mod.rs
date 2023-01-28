@@ -11,8 +11,6 @@ mod kernel_client_facade;
 mod kernel_main_facade;
 mod kernel_static_invoke_facade; // statically linked
 mod module;
-mod node;
-mod node_properties;
 mod track;
 
 pub use actor::*;
@@ -27,6 +25,4 @@ pub use kernel_client_facade::*;
 pub use kernel_main_facade::*;
 pub use kernel_static_invoke_facade::*;
 pub use module::*;
-pub use node::*;
-pub use node_properties::*;
 pub use track::*;

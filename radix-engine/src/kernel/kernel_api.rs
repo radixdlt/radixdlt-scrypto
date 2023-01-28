@@ -1,6 +1,7 @@
 use crate::errors::*;
 use crate::kernel::*;
-use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::node::RENodeInit;
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;

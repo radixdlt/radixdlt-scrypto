@@ -1,7 +1,7 @@
 use crate::kernel::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
-use crate::system::substates::PersistedSubstate;
+use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{

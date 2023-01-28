@@ -8,7 +8,9 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::node::RENodeInit;
+use crate::system::node_properties::VisibilityProperties;
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{

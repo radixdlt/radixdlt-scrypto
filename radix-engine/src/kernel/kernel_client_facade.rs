@@ -3,7 +3,7 @@ use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::BaseModule;
-use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi, RENodeInit};
+use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
 use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
@@ -13,9 +13,10 @@ use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::kernel_modules::fee::FeeReserve;
+use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::substates::RuntimeSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;

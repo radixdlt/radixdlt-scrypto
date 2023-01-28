@@ -10,6 +10,7 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
+use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AuthZoneStackSubstate; // TODO: possible clean-up
 use crate::types::*;
 use crate::wasm::WasmEngine;

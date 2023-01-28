@@ -1,12 +1,12 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
-use radix_engine_interface::api::blueprints::{
-    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
-};
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::{
+    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
+};
 
 pub fn resolve_and_invoke_native_fn<Y>(
     native_fn: NativeFn,
