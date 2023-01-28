@@ -6,7 +6,6 @@ use transaction::builder::ManifestBuilder;
 fn no_visible_component_nodes_on_deref_lock() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/deref");
 
     // Act
@@ -16,7 +15,7 @@ fn no_visible_component_nodes_on_deref_lock() {
             package,
             "Deref",
             "verify_no_visible_component_nodes_on_deref_lock",
-            args!(account),
+            args!(FAUCET_COMPONENT),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -29,7 +28,6 @@ fn no_visible_component_nodes_on_deref_lock() {
 fn no_visible_component_nodes_after_deref_lock_drop() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/deref");
 
     // Act
@@ -39,7 +37,7 @@ fn no_visible_component_nodes_after_deref_lock_drop() {
             package,
             "Deref",
             "verify_no_visible_component_nodes_after_deref_lock_drop",
-            args!(account),
+            args!(FAUCET_COMPONENT),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

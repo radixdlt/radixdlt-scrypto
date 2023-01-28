@@ -533,41 +533,46 @@ impl ExecutionTraceReceipt {
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {
+        // TODO: Might want to change the key from being a ComponentId to being an enum to
+        //       accommodate for accounts
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let Some(resolved_receiver) = actor.receiver {
-                if let RENodeId::Component(component_id) = resolved_receiver.receiver {
-                    match vault_op {
-                        VaultOp::Create(_) => todo!("Not supported yet!"),
-                        VaultOp::Put(amount) => {
-                            *vault_changes
-                                .entry(component_id)
-                                .or_default()
-                                .entry(vault_id)
-                                .or_default() += amount;
-                        }
-                        VaultOp::Take(amount) => {
-                            *vault_changes
-                                .entry(component_id)
-                                .or_default()
-                                .entry(vault_id)
-                                .or_default() -= amount;
-                        }
-                        VaultOp::LockFee => {
-                            *vault_changes
-                                .entry(component_id)
-                                .or_default()
-                                .entry(vault_id)
-                                .or_default() -= 0;
+                match resolved_receiver.receiver {
+                    RENodeId::Component(component_id) | RENodeId::Account(component_id) => {
+                        match vault_op {
+                            VaultOp::Create(_) => todo!("Not supported yet!"),
+                            VaultOp::Put(amount) => {
+                                *vault_changes
+                                    .entry(component_id)
+                                    .or_default()
+                                    .entry(vault_id)
+                                    .or_default() += amount;
+                            }
+                            VaultOp::Take(amount) => {
+                                *vault_changes
+                                    .entry(component_id)
+                                    .or_default()
+                                    .entry(vault_id)
+                                    .or_default() -= amount;
+                            }
+                            VaultOp::LockFee => {
+                                *vault_changes
+                                    .entry(component_id)
+                                    .or_default()
+                                    .entry(vault_id)
+                                    .or_default() -= 0;
 
-                            // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
-                            // polluting the `vault_locked_by` index.
-                            if !vault_locked_by.contains_key(&vault_id) {
-                                vault_locked_by.insert(vault_id, component_id);
+                                // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
+                                // polluting the `vault_locked_by` index.
+                                if !vault_locked_by.contains_key(&vault_id) {
+                                    vault_locked_by.insert(vault_id, component_id);
+                                }
                             }
                         }
-                    };
+                    }
+                    _ => {}
                 }
             }
         }
