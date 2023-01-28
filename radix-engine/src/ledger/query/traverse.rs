@@ -3,8 +3,8 @@ use crate::model::{
     GlobalAddressSubstate, KeyValueStoreEntrySubstate, PersistedSubstate, VaultSubstate,
 };
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, VaultId, VaultOffset,
+    AccountOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId,
+    SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -110,6 +110,21 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Component(..) => {
                 let substate_id =
                     SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
+                let output_value = self
+                    .substate_store
+                    .get_substate(&substate_id)
+                    .expect("Broken Node Store");
+                let runtime_substate = output_value.substate.to_runtime();
+                let substate_ref = runtime_substate.to_ref();
+                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                for child_node_id in owned_nodes {
+                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        .expect("Broken Node Store");
+                }
+            }
+            RENodeId::Account(..) => {
+                let substate_id =
+                    SubstateId(node_id, SubstateOffset::Account(AccountOffset::Account));
                 let output_value = self
                     .substate_store
                     .get_substate(&substate_id)

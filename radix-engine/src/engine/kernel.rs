@@ -136,13 +136,53 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
-        let component_id = self.invoke(AccountCreateInvocation {
-            withdraw_rule: access_rule,
-        })?;
+        let component_id = {
+            let kv_store_id = {
+                let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+                let node = RENodeInit::KeyValueStore(KeyValueStore::new());
+                self.create_node(node_id, node)?;
+                node_id
+            };
+
+            let access_rules = {
+                let mut access_rules = AccessRules::new();
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Balance)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::DepositBatch)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.default(access_rule.clone(), access_rule)
+            };
+
+            let node_id = {
+                let account_substate = AccountSubstate {
+                    vaults: Own::KeyValueStore(kv_store_id.into()),
+                };
+                let access_rules_substate = AccessRulesChainSubstate {
+                    access_rules_chain: vec![access_rules],
+                };
+
+                let node_id = self.allocate_node_id(RENodeType::Account)?;
+                let node = RENodeInit::Account(account_substate, access_rules_substate);
+                self.create_node(node_id, node)?;
+                node_id
+            };
+            node_id
+        };
 
         // TODO: Use system_api to globalize component when create_node is refactored
         // TODO: to allow for address selection
-        let global_substate = GlobalAddressSubstate::Component(component_id);
+        let global_substate = GlobalAddressSubstate::Account(component_id.into());
 
         self.current_frame.create_node(
             node_id,
@@ -904,6 +944,10 @@ where
                 RENodeId::Global(GlobalAddress::Component(..)),
                 RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
             ) => {}
+            (
+                RENodeId::Global(GlobalAddress::Component(..)),
+                RENodeInit::Global(GlobalAddressSubstate::Account(..)),
+            ) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
@@ -921,6 +965,7 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

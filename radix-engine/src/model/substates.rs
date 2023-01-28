@@ -1002,6 +1002,20 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        match self {
+            SubstateRef::KeyValueStoreEntry(value) => *value,
+            _ => panic!("Not a key value store entry"),
+        }
+    }
+
+    pub fn account(&self) -> &AccountSubstate {
+        match self {
+            SubstateRef::Account(value) => *value,
+            _ => panic!("Not an account"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
@@ -1027,6 +1041,9 @@ impl<'a> SubstateRef<'a> {
                     }
                     GlobalAddressSubstate::Validator(validator_id) => {
                         owned_nodes.insert(RENodeId::Validator(*validator_id))
+                    }
+                    GlobalAddressSubstate::Account(account_id) => {
+                        owned_nodes.insert(RENodeId::Account(*account_id))
                     }
                 };
 
@@ -1130,7 +1147,9 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Account(substate) => {
                 let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::KeyValueStore(substate.vaults));
+                owned_nodes.insert(RENodeId::KeyValueStore(
+                    substate.vaults.key_value_store_id(),
+                ));
                 (HashSet::new(), owned_nodes)
             }
             _ => (HashSet::new(), HashSet::new()),

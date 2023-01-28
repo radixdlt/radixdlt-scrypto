@@ -94,6 +94,7 @@ impl IdAllocator {
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
             RENodeType::Identity => self.new_component_id().map(|id| RENodeId::Identity(id)),
+            RENodeType::Account => self.new_component_id().map(|id| RENodeId::Account(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Package(address))),

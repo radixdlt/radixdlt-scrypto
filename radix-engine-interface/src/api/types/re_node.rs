@@ -48,6 +48,7 @@ pub enum RENodeType {
     Identity,
     TransactionRuntime,
     Logger,
+    Account,
 }
 
 #[derive(

@@ -238,6 +238,8 @@ impl FeeTable {
                 AccountFn::New => self.fixed_low,
                 AccountFn::NewWithResource => self.fixed_low,
 
+                AccountFn::Balance => self.fixed_low,
+
                 AccountFn::LockFee => self.fixed_low,
                 AccountFn::LockContingentFee => self.fixed_low,
 

@@ -148,6 +148,7 @@ pub trait InvokableModel<E>:
     + Invokable<AccountCreateInvocation, E>
     + Invokable<AccountNewInvocation, E>
     + Invokable<AccountNewWithResourceInvocation, E>
+    + Invokable<AccountBalanceInvocation, E>
     + Invokable<AccountLockFeeInvocation, E>
     + Invokable<AccountLockContingentFeeInvocation, E>
     + Invokable<AccountDepositInvocation, E>

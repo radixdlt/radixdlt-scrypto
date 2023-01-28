@@ -1,7 +1,8 @@
 use crate::types::*;
-use radix_engine_interface::api::types::KeyValueStoreId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccountSubstate {
-    pub vaults: KeyValueStoreId,
+    /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault
+    /// containing that resource.
+    pub vaults: Own,
 }

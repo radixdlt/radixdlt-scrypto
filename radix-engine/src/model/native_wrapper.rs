@@ -555,6 +555,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            AccountInvocation::Balance(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             AccountInvocation::LockContingentFee(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
