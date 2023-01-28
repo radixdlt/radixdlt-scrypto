@@ -6,12 +6,12 @@ use crate::kernel::{deref_and_update, Executor, RENodeInit};
 use crate::kernel::{CallFrameUpdate, ExecutableInvocation, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::AccessRules;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{constants::*, rule};
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {

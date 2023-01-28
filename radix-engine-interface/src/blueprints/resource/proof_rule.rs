@@ -1,5 +1,5 @@
-use crate::api::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
-use crate::api::blueprints::resource::*;
+use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
+use crate::blueprints::resource::*;
 use crate::data::SchemaPath;
 use crate::math::Decimal;
 use crate::*;

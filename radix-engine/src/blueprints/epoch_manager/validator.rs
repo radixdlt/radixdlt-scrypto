@@ -6,12 +6,12 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
-use radix_engine_interface::api::blueprints::epoch_manager::*;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

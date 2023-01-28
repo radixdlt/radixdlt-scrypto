@@ -19,17 +19,17 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::blueprints::clock::{
-    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
-};
-use radix_engine_interface::api::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
-};
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
     ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
 };
+use radix_engine_interface::blueprints::clock::{
+    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
+};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;

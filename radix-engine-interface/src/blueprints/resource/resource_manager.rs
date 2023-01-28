@@ -1,6 +1,6 @@
 use crate::address::*;
-use crate::api::blueprints::resource::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
@@ -9,7 +9,6 @@ use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto_abi::*;
 use utils::{copy_u8_array, ContextualDisplay};
 

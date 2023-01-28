@@ -1,6 +1,6 @@
 use super::types::ManifestExpression;
-use crate::api::blueprints::resource::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::*;
 use sbor::rust::format;
 use sbor::rust::vec;

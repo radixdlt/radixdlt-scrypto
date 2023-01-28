@@ -3,10 +3,8 @@ use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::{
-    blueprints::resource::Resource,
-    types::{RENodeId, VaultId},
-};
+use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::blueprints::resource::Resource;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.

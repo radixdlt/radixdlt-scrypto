@@ -1,6 +1,6 @@
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use sbor::rust::fmt::Debug;
 

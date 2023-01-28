@@ -1,5 +1,5 @@
-use crate::api::blueprints::resource::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 
 pub trait ClientMeteringApi<E> {
     fn lock_fee(
