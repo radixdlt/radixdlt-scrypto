@@ -12,7 +12,9 @@ use sbor::rust::vec::Vec;
 // Account Create
 //================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountCreateInvocation {
     pub withdraw_rule: AccessRule,
 }
@@ -35,7 +37,9 @@ impl Into<CallTableInvocation> for AccountCreateInvocation {
 // Account New
 //=============
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountNewInvocation {
     pub withdraw_rule: AccessRule,
 }
@@ -58,7 +62,9 @@ impl Into<CallTableInvocation> for AccountNewInvocation {
 // Account New With Resource
 //===========================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountNewWithResourceInvocation {
     pub withdraw_rule: AccessRule,
     pub bucket: BucketId,
@@ -82,12 +88,14 @@ impl Into<CallTableInvocation> for AccountNewWithResourceInvocation {
 // Account Balance
 //=================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountBalanceMethodArgs {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountBalanceInvocation {
     pub receiver: ComponentAddress,
     pub resource_address: ResourceAddress,
@@ -111,12 +119,14 @@ impl Into<CallTableInvocation> for AccountBalanceInvocation {
 // Account Lock Fee
 //==================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeMethodArgs {
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountLockFeeInvocation {
     pub receiver: ComponentAddress,
     pub amount: Decimal,
@@ -140,12 +150,14 @@ impl Into<CallTableInvocation> for AccountLockFeeInvocation {
 // Account Lock Contingent Fee
 //=============================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockContingentFeeMethodArgs {
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountLockContingentFeeInvocation {
     pub receiver: ComponentAddress,
     pub amount: Decimal,
@@ -169,12 +181,14 @@ impl Into<CallTableInvocation> for AccountLockContingentFeeInvocation {
 // Account Deposit
 //=================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountDepositMethodArgs {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountDepositInvocation {
     pub receiver: ComponentAddress,
     pub bucket: BucketId,
@@ -198,12 +212,14 @@ impl Into<CallTableInvocation> for AccountDepositInvocation {
 // Account Deposit Batch
 //=======================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountDepositBatchMethodArgs {
     pub buckets: Vec<Bucket>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountDepositBatchInvocation {
     pub receiver: ComponentAddress,
     pub buckets: Vec<BucketId>,
@@ -227,12 +243,14 @@ impl Into<CallTableInvocation> for AccountDepositBatchInvocation {
 // Account Withdraw
 //==================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountWithdrawMethodArgs {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountWithdrawInvocation {
     pub receiver: ComponentAddress,
     pub resource_address: ResourceAddress,
@@ -256,13 +274,15 @@ impl Into<CallTableInvocation> for AccountWithdrawInvocation {
 // Account Withdraw By Amount
 //============================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountWithdrawByAmountMethodArgs {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountWithdrawByAmountInvocation {
     pub receiver: ComponentAddress,
     pub amount: Decimal,
@@ -287,13 +307,15 @@ impl Into<CallTableInvocation> for AccountWithdrawByAmountInvocation {
 // Account Withdraw By Ids
 //=========================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountWithdrawByIdsMethodArgs {
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountWithdrawByIdsInvocation {
     pub receiver: ComponentAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
@@ -318,13 +340,15 @@ impl Into<CallTableInvocation> for AccountWithdrawByIdsInvocation {
 // Account Withdraw And Lock
 //===========================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawMethodArgs {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountLockFeeAndWithdrawInvocation {
     pub receiver: ComponentAddress,
     pub amount_to_lock: Decimal,
@@ -349,14 +373,16 @@ impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawInvocation {
 // Account Withdraw By Amount And Lock
 //=====================================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawByAmountMethodArgs {
     pub amount_to_lock: Decimal,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountLockFeeAndWithdrawByAmountInvocation {
     pub receiver: ComponentAddress,
     pub amount_to_lock: Decimal,
@@ -382,14 +408,16 @@ impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByAmountInvocation {
 // Account Withdraw By Ids And Lock
 //==================================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawByIdsMethodArgs {
     pub amount_to_lock: Decimal,
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountLockFeeAndWithdrawByIdsInvocation {
     pub receiver: ComponentAddress,
     pub amount_to_lock: Decimal,
@@ -415,12 +443,14 @@ impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByIdsInvocation {
 // Account Create Proof
 //======================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountCreateProofMethodArgs {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountCreateProofInvocation {
     pub receiver: ComponentAddress,
     pub resource_address: ResourceAddress,
@@ -444,13 +474,15 @@ impl Into<CallTableInvocation> for AccountCreateProofInvocation {
 // Account Create Proof By Amount
 //================================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountCreateProofByAmountMethodArgs {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountCreateProofByAmountInvocation {
     pub receiver: ComponentAddress,
     pub amount: Decimal,
@@ -475,13 +507,15 @@ impl Into<CallTableInvocation> for AccountCreateProofByAmountInvocation {
 // Account Create Proof By Ids
 //=============================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountCreateProofByIdsMethodArgs {
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccountCreateProofByIdsInvocation {
     pub receiver: ComponentAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
