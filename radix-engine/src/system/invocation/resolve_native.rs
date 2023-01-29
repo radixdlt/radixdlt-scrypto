@@ -4,6 +4,7 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::kv_store::*;
 use radix_engine_interface::blueprints::{
     clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
 };
@@ -632,6 +633,26 @@ where
                 let invocation =
                     scrypto_decode::<TransactionRuntimeGenerateUuidInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeFn::KeyValueStore(kv_store_fn) => match kv_store_fn {
+            KeyValueStoreFn::Create => {
+                let invocation = scrypto_decode::<KeyValueStoreCreateInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            KeyValueStoreFn::Get => {
+                let invocation = scrypto_decode::<KeyValueStoreGetInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            KeyValueStoreFn::Insert => {
+                let invocation = scrypto_decode::<KeyValueStoreInsertInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

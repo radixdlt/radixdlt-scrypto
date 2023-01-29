@@ -7,6 +7,7 @@ use crate::api::types::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
+use crate::blueprints::kv_store::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::TransactionRuntimeGenerateUuidInvocation;
@@ -71,6 +72,7 @@ pub enum NativeInvocation {
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
+    KeyValueStore(KeyValueStoreInvocation),
     Bucket(BucketInvocation),
     Vault(VaultInvocation),
     Proof(ProofInvocation),
@@ -219,6 +221,13 @@ pub enum ResourceInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum KeyValueStoreInvocation {
+    Create(KeyValueStoreCreateInvocation),
+    Get(KeyValueStoreGetInvocation),
+    Insert(KeyValueStoreInsertInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketInvocation {
     Take(BucketTakeInvocation),
     TakeNonFungibles(BucketTakeNonFungiblesInvocation),
@@ -357,6 +366,15 @@ impl NativeInvocation {
                 }
                 MetadataInvocation::Get(invocation) => {
                     refs.insert(invocation.receiver);
+                }
+            },
+            NativeInvocation::KeyValueStore(kv_store_method) => match kv_store_method {
+                KeyValueStoreInvocation::Create(_) => {}
+                KeyValueStoreInvocation::Get(invocation) => {
+                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
+                }
+                KeyValueStoreInvocation::Insert(invocation) => {
+                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {

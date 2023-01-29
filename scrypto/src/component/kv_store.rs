@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::data::*;

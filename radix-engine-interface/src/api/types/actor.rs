@@ -21,6 +21,7 @@ pub enum NativePackage {
     EpochManager,
     Identity,
     Resource,
+    KeyValueStore,
     Clock,
     Logger,
     TransactionRuntime,
@@ -106,6 +107,7 @@ pub enum NativeFn {
     Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
+    KeyValueStore(KeyValueStoreFn),
     Bucket(BucketFn),
     Vault(VaultFn),
     Proof(ProofFn),
@@ -126,6 +128,7 @@ impl NativeFn {
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::Identity(..) => NativePackage::Identity,
+            NativeFn::KeyValueStore(..) => NativePackage::KeyValueStore,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -508,6 +511,32 @@ pub enum ResourceManagerFn {
     CreateBucket,
     CreateVault,
     BurnBucket,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum KeyValueStoreFn {
+    Create,
+    Get,
+    Insert,
 }
 
 #[derive(

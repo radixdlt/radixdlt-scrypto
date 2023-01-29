@@ -234,7 +234,7 @@ where
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Package(..), RENodeInit::Package(..)) => {}
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}

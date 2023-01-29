@@ -231,6 +231,11 @@ impl FeeTable {
                     TransactionProcessorFn::Run => self.fixed_high,
                 }
             }
+            NativeFn::KeyValueStore(kv_store_fn) => match kv_store_fn {
+                KeyValueStoreFn::Create => self.fixed_high,
+                KeyValueStoreFn::Get => self.fixed_low,
+                KeyValueStoreFn::Insert => self.fixed_medium,
+            },
         }
     }
 

@@ -964,6 +964,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        match self {
+            SubstateRef::KeyValueStoreEntry(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         match self {
             SubstateRef::ResourceManager(value) => *value,

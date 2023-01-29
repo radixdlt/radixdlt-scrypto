@@ -6,6 +6,7 @@ use crate::api::types::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
+use crate::blueprints::kv_store::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::*;
@@ -110,5 +111,8 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
+    + Invokable<KeyValueStoreCreateInvocation, E>
+    + Invokable<KeyValueStoreGetInvocation, E>
+    + Invokable<KeyValueStoreInsertInvocation, E>
 {
 }

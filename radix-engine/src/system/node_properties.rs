@@ -80,7 +80,7 @@ impl VisibilityProperties {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENodeInit::KeyValueStore(..) => true,
+                RENodeInit::KeyValueStore => true,
                 RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
                 _ => false,
             },
