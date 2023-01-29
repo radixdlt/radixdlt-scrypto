@@ -11,11 +11,11 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,

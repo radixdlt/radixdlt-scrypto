@@ -123,7 +123,7 @@ pub enum WasmRuntimeError {
     /// Invalid initial app states
     InvalidAppStates(DecodeError),
     /// Invalid access rules
-    InvalidAccessRules(DecodeError),
+    InvalidAccessRulesChain(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata

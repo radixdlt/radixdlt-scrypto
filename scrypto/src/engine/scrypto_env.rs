@@ -1,14 +1,14 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::types::{
-    FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode, ScryptoReceiver,
-    SerializableInvocation, SubstateOffset,
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::{
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    Invokable,
 };
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::{ClientActorApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 #[derive(Debug, Categorize, Encode, Decode)]
 pub enum ClientApiError {
@@ -17,10 +17,28 @@ pub enum ClientApiError {
 
 pub struct ScryptoEnv;
 
-impl ScryptoEnv {
+impl ClientComponentApi<ClientApiError> for ScryptoEnv {
+    fn instantiate_component(
+        &mut self,
+        blueprint_ident: &str,
+        app_states: BTreeMap<u8, Vec<u8>>,
+        access_rules_chain: Vec<AccessRules>,
+        royalty_config: RoyaltyConfig,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<ComponentId, ClientApiError> {
+        todo!()
+    }
+
+    fn globalize_component(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<ComponentAddress, ClientApiError> {
+        todo!()
+    }
+
     // Slightly different from ClientComponentApi::call_method, for the return type.
     // This is to avoid duplicated encoding and decoding.
-    pub fn call_method(
+    fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
@@ -41,10 +59,23 @@ impl ScryptoEnv {
 
         Ok(return_data)
     }
+}
+
+impl ClientPackageApi<ClientApiError> for ScryptoEnv {
+    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
+        todo!()
+    }
+
+    fn get_abi(
+        &mut self,
+        package_address: PackageAddress,
+    ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
+        todo!()
+    }
 
     // Slightly different from ClientPackageApi::call_function, for the return type.
     // This is to avoid duplicated encoding and decoding.
-    pub fn call_function(
+    fn call_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
@@ -69,6 +100,19 @@ impl ScryptoEnv {
         Ok(return_data)
     }
 
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: BTreeMap<String, scrypto_abi::BlueprintAbi>,
+        access_rules_chain: Vec<AccessRules>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<PackageAddress, ClientApiError> {
+        todo!()
+    }
+}
+
+impl ScryptoEnv {
     pub fn call_native<N: SerializableInvocation>(
         &mut self,
         invocation: N,
@@ -105,14 +149,6 @@ impl<N: SerializableInvocation> Invokable<N, ClientApiError> for ScryptoEnv {
 }
 
 impl ClientNodeApi<ClientApiError> for ScryptoEnv {
-    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, ClientApiError> {
-        let node = scrypto_encode(&node).unwrap();
-
-        let node_id = copy_buffer(unsafe { create_node(node.as_ptr(), node.len()) });
-
-        scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
-    }
-
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 

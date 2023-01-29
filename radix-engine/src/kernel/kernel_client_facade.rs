@@ -32,7 +32,6 @@ use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
-use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
@@ -146,7 +145,7 @@ where
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        access_rules: AccessRules,
+        access_rules_chain: Vec<AccessRules>,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
@@ -169,9 +168,7 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates (TODO: set up auth in client space)
-        let auth_substate = AccessRulesChainSubstate {
-            access_rules_chain: vec![access_rules],
-        };
+        let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
         let node = RENodeInit::Package(
             PackageInfoSubstate {
@@ -192,18 +189,24 @@ where
     fn call_function(
         &mut self,
         package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
+        blueprint_name: &str,
+        function_name: &str,
         args: Vec<u8>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
-        let invocation =
-            resolve_function(package_address, blueprint_name, function_name, args, self)?;
+        let invocation = resolve_function(
+            package_address,
+            blueprint_name.to_string(),
+            function_name.to_string(),
+            args,
+            self,
+        )?;
         Ok(match invocation {
             CallTableInvocation::Native(native) => {
-                IndexedScryptoValue::from_typed(invoke_native_fn(native, self)?.as_ref())
+                scrypto_encode(invoke_native_fn(native, self)?.as_ref())
+                    .expect("Failed to encode native response")
             }
-            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?.to_vec(),
         })
     }
 
@@ -249,7 +252,7 @@ where
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules: AccessRules,
+        access_rules_chain: Vec<AccessRules>,
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, RuntimeError> {
@@ -272,9 +275,7 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates (TODO: set up auth in client space)
-        let auth_substate = AccessRulesChainSubstate {
-            access_rules_chain: vec![access_rules],
-        };
+        let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -320,14 +321,15 @@ where
         receiver: ScryptoReceiver,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
         Ok(match invocation {
             CallTableInvocation::Native(native) => {
-                IndexedScryptoValue::from_typed(invoke_native_fn(native, self)?.as_ref())
+                scrypto_encode(invoke_native_fn(native, self)?.as_ref())
+                    .expect("Failed to encode native response")
             }
-            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?.into_vec(),
         })
     }
 }

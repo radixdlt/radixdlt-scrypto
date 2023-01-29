@@ -96,7 +96,7 @@ where
 
         let return_data = self.api.call_method(receiver, ident.as_str(), args)?;
 
-        self.allocate_buffer(return_data.into_vec())
+        self.allocate_buffer(return_data)
     }
 
     fn call_function(
@@ -115,9 +115,9 @@ where
 
         let return_data =
             self.api
-                .call_function(package_address, blueprint_ident, function_ident, args)?;
+                .call_function(package_address, &blueprint_ident, &function_ident, args)?;
 
-        self.allocate_buffer(return_data.into_vec())
+        self.allocate_buffer(return_data)
     }
 
     fn call_native(
@@ -140,22 +140,26 @@ where
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules: Vec<u8>,
+        access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi)
             .map_err(WasmRuntimeError::InvalidPackageAbi)?;
-        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRules)?;
+        let access_rules_chain = scrypto_decode::<Vec<AccessRules>>(&access_rules_chain)
+            .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let package_address =
-            self.api
-                .instantiate_package(code, abi, access_rules, royalty_config, metadata)?;
+        let package_address = self.api.instantiate_package(
+            code,
+            abi,
+            access_rules_chain,
+            royalty_config,
+            metadata,
+        )?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 
@@ -166,7 +170,7 @@ where
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        access_rules: Vec<u8>,
+        access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -174,8 +178,8 @@ where
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
         let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
-        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRules)?;
+        let access_rules_chain = scrypto_decode::<Vec<AccessRules>>(&access_rules_chain)
+            .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<RoyaltyConfig>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
@@ -184,7 +188,7 @@ where
         let component_id = self.api.instantiate_component(
             blueprint_ident.as_ref(),
             app_states,
-            access_rules,
+            access_rules_chain,
             royalty_config,
             metadata,
         )?;
@@ -337,7 +341,7 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules: Vec<u8>,
+        access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -348,7 +352,7 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        access_rules: Vec<u8>,
+        access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

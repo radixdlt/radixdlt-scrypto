@@ -1,7 +1,6 @@
 use crate::abi::BlueprintAbi;
 use crate::api::types::*;
 use crate::blueprints::resource::AccessRules;
-use crate::data::IndexedScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -10,7 +9,7 @@ pub trait ClientPackageApi<E> {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        access_rules: AccessRules,
+        access_rules_chain: Vec<AccessRules>,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, E>;
@@ -18,10 +17,10 @@ pub trait ClientPackageApi<E> {
     fn call_function(
         &mut self,
         package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
+        blueprint_name: &str,
+        function_name: &str,
         args: Vec<u8>,
-    ) -> Result<IndexedScryptoValue, E>;
+    ) -> Result<Vec<u8>, E>;
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, E>;
 

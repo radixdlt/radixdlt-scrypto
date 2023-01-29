@@ -466,11 +466,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         method_name,
                         args.into_vec(),
                     )?;
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result_indexed,
+                        api,
                     )?;
 
-                    InstructionOutput::Scrypto(result)
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::PublishPackage {
                     code,
