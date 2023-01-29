@@ -19,7 +19,7 @@ use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::*;
+use sbor::rust::vec::Vec;
 
 use super::AccountSubstate;
 
@@ -82,7 +82,7 @@ impl Executor for AccountCreateInvocation {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
             let access_rules_substate = AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
+                access_rules_chain: [access_rules].into(),
             };
 
             let node_id = api.allocate_node_id(RENodeType::Account)?;
@@ -143,7 +143,7 @@ impl Executor for AccountNewInvocation {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
             let access_rules_substate = AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
+                access_rules_chain: [access_rules].into(),
             };
 
             let node_id = api.allocate_node_id(RENodeType::Account)?;
@@ -241,7 +241,7 @@ impl Executor for AccountNewWithResourceInvocation {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
             let access_rules_substate = AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
+                access_rules_chain: [access_rules].into(),
             };
 
             let node_id = api.allocate_node_id(RENodeType::Account)?;

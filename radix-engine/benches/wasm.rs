@@ -9,7 +9,7 @@ use radix_engine::wasm::WasmValidator;
 use sbor::rust::sync::Arc;
 
 fn bench_wasm_validation(c: &mut Criterion) {
-    let code = include_bytes!("../../assets/account.wasm");
+    let code = include_bytes!("../../assets/faucet.wasm");
     let abi = extract_abi(code).unwrap();
 
     c.bench_function("WASM validation", |b| {
@@ -19,7 +19,7 @@ fn bench_wasm_validation(c: &mut Criterion) {
 
 fn bench_wasm_instantiation(c: &mut Criterion) {
     let package_address = PackageAddress::Normal([0u8; 26]);
-    let code = include_bytes!("../../assets/account.wasm").to_vec();
+    let code = include_bytes!("../../assets/faucet.wasm").to_vec();
     let pretend_instrumented_code = InstrumentedCode {
         metered_code_key: (package_address, WasmMeteringConfig::V0),
         code: Arc::new(code),
@@ -34,7 +34,7 @@ fn bench_wasm_instantiation(c: &mut Criterion) {
 
 fn bench_wasm_instantiation_pre_loaded(c: &mut Criterion) {
     let package_address = PackageAddress::Normal([0u8; 26]);
-    let code = include_bytes!("../../assets/account.wasm").to_vec();
+    let code = include_bytes!("../../assets/faucet.wasm").to_vec();
     let pretend_instrumented_code = InstrumentedCode {
         metered_code_key: (package_address, WasmMeteringConfig::V0),
         code: Arc::new(code),
