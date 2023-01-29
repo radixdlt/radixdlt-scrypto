@@ -127,12 +127,12 @@ impl ExecutableInvocation for KeyValueStoreLockInvocation {
 }
 
 impl Executor for KeyValueStoreLockExecutable {
-    type Output = LockHandle;
+    type Output = Option<(LockHandle, Vec<u8>)>;
 
     fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
-    ) -> Result<(LockHandle, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Option<(LockHandle, Vec<u8>)>, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
@@ -150,7 +150,16 @@ impl Executor for KeyValueStoreLockExecutable {
                 LockFlags::read_only()
             },
         )?;
-        Ok((handle, CallFrameUpdate::empty()))
+        let substate_ref = api.get_ref(handle)?;
+        let result = match substate_ref.kv_store_entry().0.clone() {
+            Some(v) => Some((handle, v)),
+            None => {
+                api.drop_lock(handle)?;
+                None
+            }
+        };
+
+        Ok((result, CallFrameUpdate::empty()))
     }
 }
 

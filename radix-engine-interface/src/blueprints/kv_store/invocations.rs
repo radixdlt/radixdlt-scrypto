@@ -62,8 +62,11 @@ impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
 }
 
 //=======================================================================
-// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> LockHandle
+// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> Option<(LockHandle, Vec<u8>)>
 //=======================================================================
+
+// FIXME: This interface is probably wrong, as clients may want to lock the entry regardless existence.
+// Didn't change it now so to maintain client compatibility
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreLockInvocation {
@@ -73,7 +76,7 @@ pub struct KeyValueStoreLockInvocation {
 }
 
 impl Invocation for KeyValueStoreLockInvocation {
-    type Output = LockHandle;
+    type Output = Option<(LockHandle, Vec<u8>)>;
 
     fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Lock))
@@ -81,7 +84,7 @@ impl Invocation for KeyValueStoreLockInvocation {
 }
 
 impl SerializableInvocation for KeyValueStoreLockInvocation {
-    type ScryptoOutput = LockHandle;
+    type ScryptoOutput = Option<(LockHandle, Vec<u8>)>;
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreLockInvocation {
