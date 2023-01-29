@@ -1,3 +1,4 @@
+mod access_controller;
 mod account;
 mod auth;
 mod clock;
@@ -13,6 +14,7 @@ mod scrypto;
 mod serialize;
 mod transaction_hash;
 
+pub use access_controller::*;
 pub use account::*;
 pub use auth::*;
 pub use clock::*;

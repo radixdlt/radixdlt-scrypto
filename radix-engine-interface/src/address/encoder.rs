@@ -75,6 +75,7 @@ impl Bech32Encoder {
             | ComponentAddress::Validator(data)
             | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
             | ComponentAddress::EddsaEd25519VirtualAccount(data)
+            | ComponentAddress::AccessController(data)
             | ComponentAddress::EcdsaSecp256k1VirtualIdentity(data)
             | ComponentAddress::EddsaEd25519VirtualIdentity(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)

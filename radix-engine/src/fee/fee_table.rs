@@ -258,6 +258,27 @@ impl FeeTable {
                 AccountFn::CreateProofByAmount => self.fixed_low,
                 AccountFn::CreateProofByIds => self.fixed_low,
             },
+            NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
+                AccessControllerFn::CreateGlobal => self.fixed_low,
+
+                AccessControllerFn::CreateProof => self.fixed_low,
+
+                AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
+                AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,
+
+                AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => self.fixed_low,
+                AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => self.fixed_low,
+
+                AccessControllerFn::TimedConfirmRecovery => self.fixed_low,
+
+                AccessControllerFn::CancelPrimaryRoleRecoveryProposal => self.fixed_low,
+                AccessControllerFn::CancelRecoveryRoleRecoveryProposal => self.fixed_low,
+
+                AccessControllerFn::LockPrimaryRole => self.fixed_low,
+                AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
+
+                AccessControllerFn::StopTimedRecovery => self.fixed_low,
+            },
         }
     }
 

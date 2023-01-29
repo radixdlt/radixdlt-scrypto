@@ -948,6 +948,10 @@ where
                 RENodeId::Global(GlobalAddress::Component(..)),
                 RENodeInit::Global(GlobalAddressSubstate::Account(..)),
             ) => {}
+            (
+                RENodeId::Global(GlobalAddress::Component(..)),
+                RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
+            ) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
@@ -966,6 +970,7 @@ where
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::Account(..), RENodeInit::Account(..)) => {}
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

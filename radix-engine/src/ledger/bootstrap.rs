@@ -5,9 +5,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::types::{
-    GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
@@ -255,7 +253,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .is_none()
     {

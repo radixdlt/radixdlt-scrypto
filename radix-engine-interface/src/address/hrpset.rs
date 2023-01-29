@@ -35,6 +35,7 @@ impl HrpSet {
             EntityType::EddsaEd25519VirtualAccountComponent => &self.account_component,
             EntityType::EcdsaSecp256k1VirtualIdentityComponent => &self.identity_component,
             EntityType::EddsaEd25519VirtualIdentityComponent => &self.identity_component,
+            EntityType::AccessControllerComponent => &self.normal_component,
         }
     }
 }

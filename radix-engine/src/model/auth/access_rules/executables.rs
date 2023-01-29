@@ -119,7 +119,10 @@ impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
         match resolved_receiver.receiver {
-            RENodeId::Component(..) | RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            RENodeId::Component(..)
+            | RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::AccessController(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
@@ -234,7 +237,10 @@ impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
         match resolved_receiver.receiver {
-            RENodeId::Component(..) | RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            RENodeId::Component(..)
+            | RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::AccessController(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,

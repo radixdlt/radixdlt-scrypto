@@ -318,6 +318,8 @@ pub enum ApplicationError {
     AuthZoneError(AuthZoneError),
 
     AccountError(AccountError),
+
+    AccessControllerError(AccessControllerError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

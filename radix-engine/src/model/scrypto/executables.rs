@@ -51,7 +51,8 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::EddsaEd25519VirtualIdentity(..)
                     | ComponentAddress::Account(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                    | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
+                    | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                    | ComponentAddress::AccessController(..) => {
                         return Err(RuntimeError::InterpreterError(
                             InterpreterError::InvalidInvocation,
                         ));
