@@ -19,6 +19,7 @@ use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::*;
 
 use super::AccountSubstate;
 
