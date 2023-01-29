@@ -567,6 +567,25 @@ ASSERT_ACCESS_RULE
         );
     }
 
+    #[test]
+    fn test_create_access_controller() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/access_controller/create.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_ACCESS_CONTROLLER
+    Bucket(1u32)
+    Enum(0u8)
+    Enum(0u8)
+    Enum(0u8)
+    Enum(1u8, 1u32);
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,

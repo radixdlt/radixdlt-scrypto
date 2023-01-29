@@ -559,6 +559,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, recovery_role)?;
             format_typed_value(f, context, confirmation_role)?;
             format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
+            f.write_str(";")?;
         }
         BasicInstruction::CreateIdentity { access_rule } => {
             f.write_str("CREATE_IDENTITY")?;
