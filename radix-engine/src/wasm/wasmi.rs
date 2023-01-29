@@ -52,9 +52,17 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 CALL_NATIVE_FUNCTION_ID,
             )),
-            CREATE_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+            INSTANTIATE_PACKAGE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
-                CREATE_NODE_FUNCTION_ID,
+                INSTANTIATE_PACKAGE_FUNCTION_ID,
+            )),
+            INSTANTIATE_COMPONENT_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                INSTANTIATE_COMPONENT_FUNCTION_ID,
+            )),
+            GLOBALIZE_COMPONENT_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                GLOBALIZE_COMPONENT_FUNCTION_ID,
             )),
             GET_VISIBLE_NODES_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
@@ -234,13 +242,57 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }
-            CREATE_NODE_FUNCTION_ID => {
-                let node_ptr = args.nth_checked::<u32>(0)?;
-                let node_len = args.nth_checked::<u32>(1)?;
+            INSTANTIATE_PACKAGE_FUNCTION_ID => {
+                let code_ptr = args.nth_checked::<u32>(0)?;
+                let code_len = args.nth_checked::<u32>(1)?;
+                let abi_ptr = args.nth_checked::<u32>(2)?;
+                let abi_len = args.nth_checked::<u32>(3)?;
+                let access_rules_ptr = args.nth_checked::<u32>(4)?;
+                let access_rules_len = args.nth_checked::<u32>(5)?;
+                let royalty_config_ptr = args.nth_checked::<u32>(6)?;
+                let royalty_config_len = args.nth_checked::<u32>(7)?;
+                let metadata_ptr = args.nth_checked::<u32>(8)?;
+                let metadata_len = args.nth_checked::<u32>(9)?;
+
+                let buffer = self.runtime.instantiate_package(
+                    self.read_memory(code_ptr, code_len)?,
+                    self.read_memory(abi_ptr, abi_len)?,
+                    self.read_memory(access_rules_ptr, access_rules_len)?,
+                    self.read_memory(royalty_config_ptr, royalty_config_len)?,
+                    self.read_memory(metadata_ptr, metadata_len)?,
+                )?;
+
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
+            }
+            INSTANTIATE_COMPONENT_FUNCTION_ID => {
+                let blueprint_ident_ptr = args.nth_checked::<u32>(0)?;
+                let blueprint_ident_len = args.nth_checked::<u32>(1)?;
+                let app_states_ptr = args.nth_checked::<u32>(2)?;
+                let app_states_len = args.nth_checked::<u32>(3)?;
+                let access_rules_ptr = args.nth_checked::<u32>(4)?;
+                let access_rules_len = args.nth_checked::<u32>(5)?;
+                let royalty_config_ptr = args.nth_checked::<u32>(6)?;
+                let royalty_config_len = args.nth_checked::<u32>(7)?;
+                let metadata_ptr = args.nth_checked::<u32>(8)?;
+                let metadata_len = args.nth_checked::<u32>(9)?;
+
+                let buffer = self.runtime.instantiate_component(
+                    self.read_memory(blueprint_ident_ptr, blueprint_ident_len)?,
+                    self.read_memory(app_states_ptr, app_states_len)?,
+                    self.read_memory(access_rules_ptr, access_rules_len)?,
+                    self.read_memory(royalty_config_ptr, royalty_config_len)?,
+                    self.read_memory(metadata_ptr, metadata_len)?,
+                )?;
+
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
+            }
+            GLOBALIZE_COMPONENT_FUNCTION_ID => {
+                let component_id_ptr = args.nth_checked::<u32>(0)?;
+                let component_id_len = args.nth_checked::<u32>(1)?;
 
                 let buffer = self
                     .runtime
-                    .create_node(self.read_memory(node_ptr, node_len)?)?;
+                    .globalize_component(self.read_memory(component_id_ptr, component_id_len)?)?;
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }

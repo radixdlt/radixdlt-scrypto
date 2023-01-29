@@ -36,7 +36,28 @@ pub trait WasmRuntime {
         invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn instantiate_component(
+        &mut self,
+        blueprint_ident: Vec<u8>,
+        app_states: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn globalize_component(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
