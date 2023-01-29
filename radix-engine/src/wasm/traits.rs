@@ -60,7 +60,7 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

@@ -102,7 +102,7 @@ extern "C" {
     pub fn write_substate(handle: u32, data_ptr: *const u8, data_len: usize);
 
     // Releases a lock
-    pub fn unlock_substate(handle: u32);
+    pub fn drop_lock(handle: u32);
 
     //===============
     // Actor API
@@ -188,7 +188,7 @@ pub unsafe fn read_substate(_handle: u32) -> Buffer {
 pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn unlock_substate(_handle: u32) {
+pub unsafe fn drop_lock(_handle: u32) {
     todo!()
 }
 

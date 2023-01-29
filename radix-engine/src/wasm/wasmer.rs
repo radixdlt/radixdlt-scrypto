@@ -325,11 +325,11 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn drop_lock(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .unlock_substate(handle)
+                .drop_lock(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -372,7 +372,7 @@ impl WasmerModule {
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                UNLOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), unlock_substate),
+                DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }

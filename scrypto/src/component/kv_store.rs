@@ -46,7 +46,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let lock_handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
             .unwrap();
-        let raw_bytes = env.sys_read(lock_handle).unwrap();
+        let raw_bytes = env.sys_read_substate(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
@@ -65,7 +65,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let lock_handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
-        let raw_bytes = env.sys_read(lock_handle).unwrap();
+        let raw_bytes = env.sys_read_substate(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
@@ -87,7 +87,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value).unwrap()));
-        env.sys_write(lock_handle, scrypto_encode(&substate).unwrap())
+        env.sys_write_substate(lock_handle, scrypto_encode(&substate).unwrap())
             .unwrap();
         env.sys_drop_lock(lock_handle).unwrap();
     }

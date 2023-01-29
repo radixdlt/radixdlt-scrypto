@@ -76,9 +76,9 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 WRITE_SUBSTATE_FUNCTION_ID,
             )),
-            UNLOCK_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+            DROP_LOCK_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
-                UNLOCK_SUBSTATE_FUNCTION_ID,
+                DROP_LOCK_FUNCTION_ID,
             )),
             GET_ACTOR_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
@@ -290,10 +290,10 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 
                 Ok(None)
             }
-            UNLOCK_SUBSTATE_FUNCTION_ID => {
+            DROP_LOCK_FUNCTION_ID => {
                 let handle = args.nth_checked::<u32>(0)?;
 
-                self.runtime.unlock_substate(handle)?;
+                self.runtime.drop_lock(handle)?;
 
                 Ok(None)
             }

@@ -72,12 +72,16 @@ where
         self.lock_substate(node_id, offset, flags)
     }
 
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.get_ref(lock_handle)
             .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
     }
 
-    fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+    fn sys_write_substate(
+        &mut self,
+        lock_handle: LockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         let offset = self.get_lock_info(lock_handle)?.offset;
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
         let mut substate_mut = self.get_ref_mut(lock_handle)?;

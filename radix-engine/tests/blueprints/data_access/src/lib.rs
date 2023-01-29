@@ -15,7 +15,7 @@ blueprint! {
                     false,
                 )
                 .unwrap();
-            ScryptoEnv.sys_read(lock_handle).unwrap();
+            ScryptoEnv.sys_read_substate(lock_handle).unwrap();
         }
 
         pub fn create_component_and_write_state() {
@@ -28,7 +28,7 @@ blueprint! {
                 )
                 .unwrap();
             ScryptoEnv
-                .sys_write(lock_handle, scrypto_encode(&()).unwrap())
+                .sys_write_substate(lock_handle, scrypto_encode(&()).unwrap())
                 .unwrap();
         }
 
@@ -41,7 +41,7 @@ blueprint! {
                     false,
                 )
                 .unwrap();
-            ScryptoEnv.sys_read(lock_handle).unwrap();
+            ScryptoEnv.sys_read_substate(lock_handle).unwrap();
         }
 
         pub fn create_component_and_write_info() -> () {
@@ -54,7 +54,7 @@ blueprint! {
                 )
                 .unwrap();
             ScryptoEnv
-                .sys_write(lock_handle, scrypto_encode(&()).unwrap())
+                .sys_write_substate(lock_handle, scrypto_encode(&()).unwrap())
                 .unwrap();
         }
     }

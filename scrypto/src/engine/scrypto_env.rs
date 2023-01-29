@@ -151,13 +151,13 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
+    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { read_substate(lock_handle) });
 
         Ok(substate)
     }
 
-    fn sys_write(
+    fn sys_write_substate(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
@@ -168,7 +168,7 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
-        unsafe { unlock_substate(lock_handle) };
+        unsafe { drop_lock(lock_handle) };
 
         Ok(())
     }

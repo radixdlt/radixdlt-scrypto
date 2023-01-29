@@ -36,7 +36,7 @@ blueprint! {
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv
-                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -61,7 +61,7 @@ blueprint! {
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv
-                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store }.instantiate().globalize()

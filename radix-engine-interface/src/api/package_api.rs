@@ -5,7 +5,7 @@ use crate::data::IndexedScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
-pub trait ClientPackageApi<E> { 
+pub trait ClientPackageApi<E> {
     fn instantiate_package(
         &mut self,
         code: Vec<u8>,

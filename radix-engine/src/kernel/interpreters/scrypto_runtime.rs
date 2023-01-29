@@ -181,7 +181,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let substate = self.api.sys_read(handle)?;
+        let substate = self.api.sys_read_substate(handle)?;
 
         self.allocate_buffer(substate)
     }
@@ -191,12 +191,12 @@ where
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.sys_write(handle, data)?;
+        self.api.sys_write_substate(handle, data)?;
 
         Ok(())
     }
 
-    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.sys_drop_lock(handle)?;
 
         Ok(())
@@ -303,7 +303,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn unlock_substate(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_lock(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

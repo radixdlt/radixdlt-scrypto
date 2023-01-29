@@ -78,7 +78,7 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
 
-        env.sys_write(self.lock_handle, substate).unwrap();
+        env.sys_write_substate(self.lock_handle, substate).unwrap();
         env.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
@@ -118,7 +118,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> DataPointer<V> {
         let lock_handle = env
             .sys_lock_substate(self.node_id, self.offset.clone(), false)
             .unwrap();
-        let raw_substate = env.sys_read(lock_handle).unwrap();
+        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_substate).unwrap();
@@ -150,7 +150,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> DataPointer<V> {
         let lock_handle = env
             .sys_lock_substate(self.node_id, self.offset.clone(), true)
             .unwrap();
-        let raw_substate = env.sys_read(lock_handle).unwrap();
+        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
 
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
