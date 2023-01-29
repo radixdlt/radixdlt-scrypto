@@ -118,6 +118,18 @@ pub enum WasmRuntimeError {
     InvalidNodeId(DecodeError),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
+    /// Invalid package abi
+    InvalidPackageAbi(DecodeError),
+    /// Invalid initial app states
+    InvalidAppStates(DecodeError),
+    /// Invalid access rules
+    InvalidAccessRules(DecodeError),
+    /// Invalid royalty config
+    InvalidRoyaltyConfig(DecodeError),
+    /// Invalid metadata
+    InvalidMetadata(DecodeError),
+    /// Invalid component id
+    InvalidComponentId(DecodeError),
     /// Costing error
     CostingError(FeeReserveError),
 }

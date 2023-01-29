@@ -5,11 +5,11 @@ use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientMeteringApi;
-use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
+    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientPackageApi,
+    ClientStaticInvokeApi, ClientSubstateApi,
 };
+use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
@@ -136,13 +136,76 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node = scrypto_decode::<ScryptoRENode>(&node).map_err(WasmRuntimeError::InvalidNode)?;
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi)
+            .map_err(WasmRuntimeError::InvalidPackageAbi)?;
+        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
+            .map_err(WasmRuntimeError::InvalidAccessRules)?;
+        let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
+            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
+        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
+            .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let node_id = self.api.sys_create_node(node)?;
-        let node_id_encoded = scrypto_encode(&node_id).expect("Failed to encode node id");
+        let package_address =
+            self.api
+                .instantiate_package(code, abi, access_rules, royalty_config, metadata)?;
+        let package_address_encoded =
+            scrypto_encode(&package_address).expect("Failed to encode package address");
 
-        self.allocate_buffer(node_id_encoded)
+        self.allocate_buffer(package_address_encoded)
+    }
+
+    fn instantiate_component(
+        &mut self,
+        blueprint_ident: Vec<u8>,
+        app_states: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let blueprint_ident =
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+        let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
+            .map_err(WasmRuntimeError::InvalidAppStates)?;
+        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
+            .map_err(WasmRuntimeError::InvalidAccessRules)?;
+        let royalty_config = scrypto_decode::<RoyaltyConfig>(&royalty_config)
+            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
+        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
+            .map_err(WasmRuntimeError::InvalidMetadata)?;
+
+        let component_id = self.api.instantiate_component(
+            blueprint_ident.as_ref(),
+            app_states,
+            access_rules,
+            royalty_config,
+            metadata,
+        )?;
+        let component_id_encoded =
+            scrypto_encode(&component_id).expect("Failed to encode component id");
+
+        self.allocate_buffer(component_id_encoded)
+    }
+
+    fn globalize_component(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let component_id = scrypto_decode::<ComponentId>(&component_id)
+            .map_err(WasmRuntimeError::InvalidComponentId)?;
+
+        let component_address = self.api.globalize_component(component_id)?;
+        let component_address_encoded =
+            scrypto_encode(&component_address).expect("Failed to encode component id");
+
+        self.allocate_buffer(component_address_encoded)
     }
 
     fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -270,7 +333,32 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn instantiate_component(
+        &mut self,
+        blueprint_ident: Vec<u8>,
+        app_states: Vec<u8>,
+        access_rules: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn globalize_component(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
