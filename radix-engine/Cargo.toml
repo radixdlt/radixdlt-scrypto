@@ -60,7 +60,7 @@ harness = false
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "wasmer"]
+default = ["std"]
 std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka", "scrypto/std", "scrypto-unit/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown", "scrypto/alloc", "scrypto-unit/alloc"]
 

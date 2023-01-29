@@ -7,6 +7,7 @@ use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
 };
+use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::invocation::resolve_function::resolve_function;
@@ -277,7 +278,7 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = match self.current_frame.actor.identifier {
+        let package_address = match self.current_frame.actor.identifier.clone() {
             FnIdentifier::Scrypto(s) => s.package_address,
             FnIdentifier::Native(_) => todo!(),
         };
@@ -304,7 +305,14 @@ where
         &mut self,
         component_id: ComponentId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        todo!()
+        let node_id = self.allocate_node_id(RENodeType::GlobalComponent)?;
+
+        self.create_node(
+            node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Component(component_id)),
+        )?;
+
+        Ok(node_id.into())
     }
 
     fn call_method(
