@@ -1,4 +1,3 @@
-use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
@@ -8,6 +7,7 @@ use scrypto_unit::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};
 use transaction::builder::ManifestBuilder;
+use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
     let actual = to_value(&actual).unwrap();

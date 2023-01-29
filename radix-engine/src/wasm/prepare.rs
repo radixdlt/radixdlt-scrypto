@@ -598,7 +598,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use scrypto::abi;
+    use radix_engine_interface::abi;
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -756,17 +756,17 @@ mod tests {
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {
-                structure: scrypto::abi::Type::Tuple {
+                structure: abi::Type::Tuple {
                     element_types: vec![],
                 },
                 fns: vec![abi::Fn {
                     ident: "f".to_string(),
                     mutability: Option::None,
-                    input: scrypto::abi::Type::Struct {
+                    input: abi::Type::Struct {
                         name: "Any".to_string(),
-                        fields: scrypto::abi::Fields::Named { named: vec![] },
+                        fields: Fields::Named { named: vec![] },
                     },
-                    output: scrypto::abi::Type::Tuple {
+                    output: abi::Type::Tuple {
                         element_types: vec![],
                     },
                     export_name: "Test_f".to_string(),
