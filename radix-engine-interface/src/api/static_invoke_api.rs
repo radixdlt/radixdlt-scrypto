@@ -113,6 +113,7 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<LoggerLogInvocation, E>
     + Invokable<KeyValueStoreCreateInvocation, E>
     + Invokable<KeyValueStoreGetInvocation, E>
+    + Invokable<KeyValueStoreLockInvocation, E>
     + Invokable<KeyValueStoreInsertInvocation, E>
 {
 }

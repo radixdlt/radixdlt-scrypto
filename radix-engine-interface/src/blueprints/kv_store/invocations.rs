@@ -3,6 +3,10 @@ use crate::data::types::Own;
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+//==================================================
+//  KeyValueStore::create() -> Own<KeyValueStore>
+//==================================================
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreCreateInvocation {}
 
@@ -29,6 +33,10 @@ pub struct KeyValueStoreGetMethodArgs {
     pub key: Vec<u8>,
 }
 
+//=====================================================
+// KeyValueStore::get(&self, key: Vec<u8>) -> Vec<u8>
+//=====================================================
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreGetInvocation {
     pub receiver: KeyValueStoreId,
@@ -52,6 +60,39 @@ impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
         NativeInvocation::KeyValueStore(KeyValueStoreInvocation::Get(self)).into()
     }
 }
+
+//=======================================================================
+// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> LockHandle
+//=======================================================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct KeyValueStoreLockInvocation {
+    pub receiver: KeyValueStoreId,
+    pub key: Vec<u8>,
+    pub mutable: bool,
+}
+
+impl Invocation for KeyValueStoreLockInvocation {
+    type Output = LockHandle;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Lock))
+    }
+}
+
+impl SerializableInvocation for KeyValueStoreLockInvocation {
+    type ScryptoOutput = LockHandle;
+}
+
+impl Into<CallTableInvocation> for KeyValueStoreLockInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::KeyValueStore(KeyValueStoreInvocation::Lock(self)).into()
+    }
+}
+
+//=============================================================
+// KeyValueStore::insert(&self, key: Vec<u8>, value: Vec<u8>)
+//=============================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreInsertMethodArgs {

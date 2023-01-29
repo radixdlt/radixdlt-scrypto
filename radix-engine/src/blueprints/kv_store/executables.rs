@@ -53,52 +53,6 @@ impl Executor for KeyValueStoreCreateInvocation {
     }
 }
 
-pub struct KeyValueStoreInsertExecutable(RENodeId, Vec<u8>, Vec<u8>);
-
-impl ExecutableInvocation for KeyValueStoreInsertInvocation {
-    type Exec = KeyValueStoreInsertExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
-
-        let actor = ResolvedActor::method(
-            NativeFn::KeyValueStore(KeyValueStoreFn::Insert),
-            resolved_receiver,
-        );
-        let executor =
-            KeyValueStoreInsertExecutable(resolved_receiver.receiver, self.key, self.value);
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for KeyValueStoreInsertExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = self.0;
-        let key = self.1;
-        let value = self.2;
-
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-        let mut substate_ref = api.get_ref_mut(handle)?;
-        *substate_ref.kv_store_entry() = KeyValueStoreEntrySubstate(Some(value));
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 pub struct KeyValueStoreGetExecutable(RENodeId, Vec<u8>);
 
 impl ExecutableInvocation for KeyValueStoreGetInvocation {
@@ -143,5 +97,105 @@ impl Executor for KeyValueStoreGetExecutable {
         let substate = substate_ref.kv_store_entry();
         let value = substate.0.clone();
         Ok((value, CallFrameUpdate::empty()))
+    }
+}
+
+pub struct KeyValueStoreLockExecutable(RENodeId, Vec<u8>, bool);
+
+impl ExecutableInvocation for KeyValueStoreLockInvocation {
+    type Exec = KeyValueStoreLockExecutable;
+
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
+
+        let actor = ResolvedActor::method(
+            NativeFn::KeyValueStore(KeyValueStoreFn::Get),
+            resolved_receiver,
+        );
+        let executor =
+            KeyValueStoreLockExecutable(resolved_receiver.receiver, self.key, self.mutable);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for KeyValueStoreLockExecutable {
+    type Output = LockHandle;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(LockHandle, CallFrameUpdate), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let node_id = self.0;
+        let key = self.1;
+        let mutable = self.2;
+
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
+        let handle = api.lock_substate(
+            node_id,
+            offset,
+            if mutable {
+                LockFlags::MUTABLE
+            } else {
+                LockFlags::read_only()
+            },
+        )?;
+        Ok((handle, CallFrameUpdate::empty()))
+    }
+}
+
+pub struct KeyValueStoreInsertExecutable(RENodeId, Vec<u8>, Vec<u8>);
+
+impl ExecutableInvocation for KeyValueStoreInsertInvocation {
+    type Exec = KeyValueStoreInsertExecutable;
+
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
+
+        let actor = ResolvedActor::method(
+            NativeFn::KeyValueStore(KeyValueStoreFn::Insert),
+            resolved_receiver,
+        );
+        let executor =
+            KeyValueStoreInsertExecutable(resolved_receiver.receiver, self.key, self.value);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for KeyValueStoreInsertExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let node_id = self.0;
+        let key = self.1;
+        let value = self.2;
+
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = api.get_ref_mut(handle)?;
+        *substate_ref.kv_store_entry() = KeyValueStoreEntrySubstate(Some(value));
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }

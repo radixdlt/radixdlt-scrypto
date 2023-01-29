@@ -536,6 +536,7 @@ pub enum ResourceManagerFn {
 pub enum KeyValueStoreFn {
     Create,
     Get,
+    Lock,
     Insert,
 }
 

@@ -1,7 +1,8 @@
-use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
+use radix_engine_interface::api::types::{KeyValueStoreOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::{ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::kv_store::{
+    KeyValueStoreCreateInvocation, KeyValueStoreGetInvocation,
 };
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::data::*;
 
 use radix_engine_interface::data::types::Own;
@@ -16,7 +17,7 @@ use crate::runtime::{DataRef, DataRefMut};
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
-    pub id: KeyValueStoreId,
+    pub own: Own,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
@@ -29,10 +30,10 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
-        let id = env.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
+        let own = env.invoke(KeyValueStoreCreateInvocation {}).unwrap();
 
         Self {
-            id: id.into(),
+            own,
             key: PhantomData,
             value: PhantomData,
         }
@@ -118,7 +119,7 @@ impl<
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::KeyValueStore(self.id).encode_body(encoder)
+        self.own.encode_body(encoder)
     }
 }
 
@@ -135,7 +136,7 @@ impl<
         let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::KeyValueStore(kv_store_id) => Ok(Self {
-                id: kv_store_id,
+                own: o,
                 key: PhantomData,
                 value: PhantomData,
             }),

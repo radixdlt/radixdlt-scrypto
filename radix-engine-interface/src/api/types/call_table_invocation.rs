@@ -224,6 +224,7 @@ pub enum ResourceInvocation {
 pub enum KeyValueStoreInvocation {
     Create(KeyValueStoreCreateInvocation),
     Get(KeyValueStoreGetInvocation),
+    Lock(KeyValueStoreLockInvocation),
     Insert(KeyValueStoreInsertInvocation),
 }
 
@@ -371,6 +372,9 @@ impl NativeInvocation {
             NativeInvocation::KeyValueStore(kv_store_method) => match kv_store_method {
                 KeyValueStoreInvocation::Create(_) => {}
                 KeyValueStoreInvocation::Get(invocation) => {
+                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
+                }
+                KeyValueStoreInvocation::Lock(invocation) => {
                     refs.insert(RENodeId::KeyValueStore(invocation.receiver));
                 }
                 KeyValueStoreInvocation::Insert(invocation) => {

@@ -430,6 +430,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            KeyValueStoreInvocation::Lock(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             KeyValueStoreInvocation::Insert(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
