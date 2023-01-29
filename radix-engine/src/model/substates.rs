@@ -479,6 +479,30 @@ impl RuntimeSubstate {
             panic!("Not a validator set");
         }
     }
+
+    pub fn account(&self) -> &AccountSubstate {
+        if let RuntimeSubstate::Account(account) = self {
+            account
+        } else {
+            panic!("Not an account");
+        }
+    }
+
+    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+        if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
+            access_rules_chain
+        } else {
+            panic!("Not an access rules chain");
+        }
+    }
+
+    pub fn access_controller(&self) -> &AccessControllerSubstate {
+        if let RuntimeSubstate::AccessController(access_controller) = self {
+            access_controller
+        } else {
+            panic!("Not an access controller");
+        }
+    }
 }
 
 impl Into<RuntimeSubstate> for AccessRulesChainSubstate {
