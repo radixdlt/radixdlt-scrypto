@@ -1,4 +1,3 @@
-use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
@@ -17,6 +16,9 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
+use crate::system::package::PackageInfoSubstate;
+use crate::system::package::PackageRoyaltyAccumulatorSubstate;
+use crate::system::package::PackageRoyaltyConfigSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
@@ -38,73 +40,6 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
-        let (node_id, node) = match node {
-            ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                let node_id = self.allocate_node_id(RENodeType::Component)?;
-
-                // Create a royalty vault
-                let royalty_vault_id = self
-                    .invoke(ResourceManagerCreateVaultInvocation {
-                        receiver: RADIX_TOKEN,
-                    })?
-                    .vault_id();
-
-                // Royalty initialization done here
-                let royalty_config = ComponentRoyaltyConfigSubstate {
-                    royalty_config: RoyaltyConfig::default(),
-                };
-                let royalty_accumulator = ComponentRoyaltyAccumulatorSubstate {
-                    royalty: Own::Vault(royalty_vault_id.into()),
-                };
-
-                // TODO: Remove Royalties from Node's access rule chain, possibly implement this
-                // TODO: via associated nodes rather than inheritance?
-                let mut access_rules =
-                    AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-                access_rules.set_group_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
-                    "royalty".to_string(),
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_group_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
-                    "royalty".to_string(),
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_group_access_rule_and_mutability(
-                    "royalty".to_string(),
-                    AccessRule::AllowAll,
-                    AccessRule::AllowAll,
-                );
-
-                let node = RENodeInit::Component(
-                    ComponentInfoSubstate::new(package_address, blueprint_name),
-                    ComponentStateSubstate::new(state),
-                    royalty_config,
-                    royalty_accumulator,
-                    MetadataSubstate {
-                        metadata: BTreeMap::new(),
-                    },
-                    AccessRulesChainSubstate {
-                        access_rules_chain: vec![access_rules],
-                    },
-                );
-
-                (node_id, node)
-            }
-            ScryptoRENode::KeyValueStore => {
-                let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
-                let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-                (node_id, node)
-            }
-        };
-
-        self.create_node(node_id, node)?;
-
-        Ok(node_id)
-    }
-
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.drop_node(node_id)?;
         Ok(())
@@ -202,6 +137,53 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        access_rules: AccessRules,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<PackageAddress, RuntimeError> {
+        let node_id = self.allocate_node_id(RENodeType::Package)?;
+
+        // Create a royalty vault
+        let royalty_vault_id = self
+            .invoke(ResourceManagerCreateVaultInvocation {
+                receiver: RADIX_TOKEN,
+            })?
+            .vault_id();
+
+        // Create royalty substates
+        let royalty_config_substate = PackageRoyaltyConfigSubstate { royalty_config };
+        let royalty_accumulator_substate = PackageRoyaltyAccumulatorSubstate {
+            royalty: Own::Vault(royalty_vault_id.into()),
+        };
+
+        // Create metadata substates
+        let metadata_substate = MetadataSubstate { metadata };
+
+        // Create auth substates (TODO: set up auth in client space)
+        let auth_substate = AccessRulesChainSubstate {
+            access_rules_chain: vec![access_rules],
+        };
+
+        let node = RENodeInit::Package(
+            PackageInfoSubstate {
+                code,
+                blueprint_abis: abi,
+            },
+            royalty_config_substate,
+            royalty_accumulator_substate,
+            metadata_substate,
+            auth_substate,
+        );
+
+        self.create_node(node_id, node)?;
+
+        Ok(node_id.into())
+    }
+
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -258,6 +240,69 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn instantiate_component(
+        &mut self,
+        blueprint_ident: &str,
+        app_states: BTreeMap<u8, Vec<u8>>,
+        access_rules: AccessRules,
+        royalty_config: RoyaltyConfig,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<ComponentId, RuntimeError> {
+        let node_id = self.allocate_node_id(RENodeType::Component)?;
+
+        // Create a royalty vault
+        let royalty_vault_id = self
+            .invoke(ResourceManagerCreateVaultInvocation {
+                receiver: RADIX_TOKEN,
+            })?
+            .vault_id();
+
+        // Create royalty substates
+        let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
+        let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
+            royalty: Own::Vault(royalty_vault_id.into()),
+        };
+
+        // Create metadata substates
+        let metadata_substate = MetadataSubstate { metadata };
+
+        // Create auth substates (TODO: set up auth in client space)
+        let auth_substate = AccessRulesChainSubstate {
+            access_rules_chain: vec![access_rules],
+        };
+
+        // Create component RENode
+        // FIXME: support native blueprints
+        let package_address = match self.current_frame.actor.identifier {
+            FnIdentifier::Scrypto(s) => s.package_address,
+            FnIdentifier::Native(_) => todo!(),
+        };
+        let blueprint_ident = blueprint_ident.to_string();
+        // FIXME: generalize app substates;
+        // FIXME: remove unwrap;
+        // FIXME: support native blueprints
+        let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
+        let node = RENodeInit::Component(
+            ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
+            ComponentStateSubstate::new(abi_enforced_app_substate),
+            royalty_config_substate,
+            royalty_accumulator_substate,
+            metadata_substate,
+            auth_substate,
+        );
+
+        self.create_node(node_id, node)?;
+
+        Ok(node_id.into())
+    }
+
+    fn globalize_component(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<ComponentAddress, RuntimeError> {
+        todo!()
+    }
+
     fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
