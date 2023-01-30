@@ -3,6 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -592,6 +593,14 @@ impl ValidatorCreator {
     fn build_access_rules(key: EcdsaSecp256k1PublicKey) -> AccessRules {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            rule!(allow_all),
+        );
+        access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
             rule!(require(NonFungibleGlobalId::from_public_key(&key))),
         );
@@ -641,6 +650,12 @@ impl ValidatorCreator {
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate {
+                metadata: BTreeMap::new(),
+            }),
+        );
+        node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(key)],
@@ -688,6 +703,12 @@ impl ValidatorCreator {
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
         let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate {
+                metadata: BTreeMap::new(),
+            }),
+        );
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
