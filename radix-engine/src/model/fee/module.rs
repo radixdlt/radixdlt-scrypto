@@ -164,18 +164,12 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
         units: u32,
     ) -> Result<(), ModuleError> {
-        // We add a little to make up for billing overhead, and then multiply by a large enough factor
-        // to ensure spin loops end within a fraction of a second.
+        // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
         // These values will be tweaked, alongside the whole fee table.
-        let amount_to_consume = units
-            .checked_add(20)
-            .and_then(|a| a.checked_mul(20))
-            .ok_or(ModuleError::CostingError(CostingError::FeeReserveError(
-                FeeReserveError::Overflow,
-            )))?;
+        let multiplier = 5;
         track
             .fee_reserve()
-            .consume_execution(amount_to_consume, "run_wasm")
+            .consume_multiplied_execution(units, multiplier, "run_wasm")
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 

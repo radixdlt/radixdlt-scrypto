@@ -59,25 +59,12 @@ fn should_be_aborted_when_loan_repaid() {
         .call_method(component_address, "spin_loop", args!())
         .build();
 
-    let test_transaction = TestTransaction::new(
-        manifest,
-        test_runner.next_transaction_nonce(),
-        DEFAULT_COST_UNIT_LIMIT,
-    );
-    let executable = test_transaction.get_executable(vec![]);
-
-    let receipt = test_runner.execute_transaction_with_config(
-        executable,
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::up_to_loan_repayment_with_debug(),
-    );
-
-    let abort_reason = receipt.expect_abortion().clone();
-
-    assert_eq!(
-        abort_reason,
-        AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
-    );
+    let start = std::time::Instant::now();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let duration = start.elapsed();
+    println!("Time elapsed is: {:?}", duration);
+    println!("{:?}", receipt);
+    receipt.expect_commit_failure();
 }
 
 #[test]

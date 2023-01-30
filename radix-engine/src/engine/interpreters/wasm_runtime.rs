@@ -17,6 +17,7 @@ where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     api: &'y mut Y,
+    cost_units_buffer: u32,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
 }
@@ -30,6 +31,7 @@ where
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
+            cost_units_buffer: 0,
         }
     }
 }
@@ -167,9 +169,16 @@ where
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .consume_cost_units(n)
-            .map_err(InvokeError::downstream)
+        self.cost_units_buffer += n;
+        // We buffer cost units to avoid the overhead of calling the fee module too often.
+        // This also means you get up to 1000 free cost units at the end of a call frame
+        if self.cost_units_buffer > 1000 {
+            self.api
+                .consume_cost_units(self.cost_units_buffer)
+                .map_err(InvokeError::downstream)?;
+            self.cost_units_buffer = 0;
+        }
+        Ok(())
     }
 }
 
