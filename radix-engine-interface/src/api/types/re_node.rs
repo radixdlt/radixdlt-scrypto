@@ -196,17 +196,17 @@ impl Into<ResourceAddress> for GlobalAddress {
 }
 
 #[derive(
-Debug,
-Clone,
-Copy,
-PartialEq,
-Eq,
-Hash,
-PartialOrd,
-Ord,
-ScryptoCategorize,
-ScryptoEncode,
-ScryptoDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
 )]
 pub enum NodeModuleId {
     SELF,
@@ -216,7 +216,6 @@ pub enum NodeModuleId {
     ComponentRoyalty,
     PackageRoyalty,
 }
-
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
@@ -375,7 +374,6 @@ pub enum SubstateOffset {
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),
 }
-
 
 /// TODO: separate space addresses?
 #[derive(
