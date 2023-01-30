@@ -32,7 +32,7 @@ fn create_identity(
 
 fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let owner_id = NonFungibleGlobalId::from_public_key(&pk);
     let component_address = create_identity(&mut test_runner, pk.clone(), is_virtual);
@@ -66,7 +66,7 @@ fn can_set_allocated_identity_metadata_with_owner() {
 
 fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let component_address = create_identity(&mut test_runner, pk.clone(), is_virtual);
 

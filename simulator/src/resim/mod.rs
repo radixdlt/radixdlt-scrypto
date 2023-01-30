@@ -14,6 +14,7 @@ mod cmd_publish;
 mod cmd_reset;
 mod cmd_run;
 mod cmd_set_current_epoch;
+mod cmd_set_current_time;
 mod cmd_set_default_account;
 mod cmd_show;
 mod cmd_show_configs;
@@ -38,6 +39,7 @@ pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_run::*;
 pub use cmd_set_current_epoch::*;
+pub use cmd_set_current_time::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
 pub use cmd_show_configs::*;
@@ -109,6 +111,7 @@ pub enum Command {
     Reset(Reset),
     Run(Run),
     SetCurrentEpoch(SetCurrentEpoch),
+    SetCurrentTime(SetCurrentTime),
     SetDefaultAccount(SetDefaultAccount),
     ShowConfigs(ShowConfigs),
     ShowLedger(ShowLedger),
@@ -137,6 +140,7 @@ pub fn run() -> Result<(), Error> {
         Command::Reset(cmd) => cmd.run(&mut out),
         Command::Run(cmd) => cmd.run(&mut out),
         Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
+        Command::SetCurrentTime(cmd) => cmd.run(&mut out),
         Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
         Command::ShowConfigs(cmd) => cmd.run(&mut out),
         Command::ShowLedger(cmd) => cmd.run(&mut out),
@@ -152,7 +156,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     trace: bool,
     print_receipt: bool,
     out: &mut O,
-) -> Result<Option<TransactionReceipt>, Error> {
+) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
@@ -171,6 +175,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::with_tracing(trace),
         &transaction.get_executable(initial_proofs),
     );
+    drop(substate_store);
 
     if print_receipt {
         writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
@@ -231,18 +236,19 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig::with_tracing(trace),
                 &transaction.get_executable(initial_proofs),
             );
+            drop(substate_store);
 
             if print_receipt {
                 writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
                     .map_err(Error::IOError)?;
             }
 
-            process_receipt(receipt)
+            process_receipt(receipt).map(Option::Some)
         }
     }
 }
 
-pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<TransactionReceipt>, Error> {
+pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
     match receipt.result {
         TransactionResult::Commit(commit) => {
             let mut configs = get_configs()?;
@@ -251,7 +257,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<Transaction
 
             match commit.outcome {
                 TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
-                TransactionOutcome::Success(output) => Ok(Some(TransactionReceipt {
+                TransactionOutcome::Success(output) => Ok(TransactionReceipt {
                     execution: receipt.execution,
                     result: TransactionResult::Commit(CommitResult {
                         outcome: TransactionOutcome::Success(output),
@@ -261,7 +267,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<Transaction
                         application_logs: commit.application_logs,
                         next_epoch: commit.next_epoch,
                     }),
-                })),
+                }),
             }
         }
         TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),

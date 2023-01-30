@@ -24,6 +24,7 @@ pub use radix_engine_interface::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub, Min,
 };
 pub use radix_engine_interface::math::*;
+pub use radix_engine_interface::time::*;
 pub use radix_engine_interface::{access_and_or, access_rule_node, dec, i, pdec, rule};
 
 pub use sbor::rust::borrow::ToOwned;

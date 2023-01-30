@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn stored_resource_is_invokeable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_resource");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
