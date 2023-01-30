@@ -3,6 +3,7 @@ use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
 use crate::api::package::*;
 use crate::api::types::*;
+use crate::blueprints::access_controller::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
@@ -111,6 +112,18 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
+    + Invokable<AccessControllerCreateGlobalInvocation, E>
+    + Invokable<AccessControllerCreateProofInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryInvocation, E>
+    + Invokable<AccessControllerCancelPrimaryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
     + Invokable<KeyValueStoreCreateInvocation, E>
     + Invokable<KeyValueStoreGetInvocation, E>
     + Invokable<KeyValueStoreGetMutInvocation, E>

@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -48,7 +48,7 @@ fn cannot_set_package_metadata_with_no_owner() {
 #[test]
 fn can_set_package_metadata_with_owner() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
@@ -90,7 +90,7 @@ fn can_set_package_metadata_with_owner() {
 #[test]
 fn can_lock_package_metadata_with_owner() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);

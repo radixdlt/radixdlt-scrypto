@@ -183,6 +183,10 @@ where
                 RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
             ) => {}
             (
+                RENodeId::Global(GlobalAddress::Component(..)),
+                RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
+            ) => {}
+            (
                 RENodeId::Global(address),
                 RENodeInit::Global(GlobalAddressSubstate::Component(component)),
             ) => {
@@ -241,6 +245,7 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

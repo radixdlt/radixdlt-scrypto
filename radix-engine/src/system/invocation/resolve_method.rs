@@ -50,6 +50,19 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                     })?;
                 CallTableInvocation::Native(NativeInvocation::Clock(invocation))
             }
+            ComponentAddress::AccessController(..) => {
+                let invocation = AccessControllerPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ResolveError(e),
+                    ))
+                })?;
+                CallTableInvocation::Native(NativeInvocation::AccessController(invocation))
+            }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Normal(..)

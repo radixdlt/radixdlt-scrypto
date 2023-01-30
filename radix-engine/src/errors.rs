@@ -1,3 +1,4 @@
+use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
@@ -327,6 +328,8 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+
+    AccessControllerError(AccessControllerError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

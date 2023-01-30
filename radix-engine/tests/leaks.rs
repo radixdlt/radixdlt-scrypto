@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn dangling_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -37,7 +37,7 @@ fn dangling_component_should_fail() {
 #[test]
 fn dangling_bucket_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -66,7 +66,7 @@ fn dangling_bucket_should_fail() {
 #[test]
 fn dangling_vault_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -95,7 +95,7 @@ fn dangling_vault_should_fail() {
 #[test]
 fn dangling_worktop_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -117,7 +117,7 @@ fn dangling_worktop_should_fail() {
 #[test]
 fn dangling_kv_store_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -146,7 +146,7 @@ fn dangling_kv_store_should_fail() {
 #[test]
 fn dangling_bucket_with_proof_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act

@@ -23,6 +23,7 @@ pub enum ComponentAddress {
     EddsaEd25519VirtualAccount([u8; 26]),
     EcdsaSecp256k1VirtualIdentity([u8; 26]),
     EddsaEd25519VirtualIdentity([u8; 26]),
+    AccessController([u8; 26]),
 }
 
 //========
@@ -62,16 +63,17 @@ impl TryFrom<&[u8]> for ComponentAddress {
 impl ComponentAddress {
     pub fn raw(&self) -> [u8; 26] {
         match self {
-            Self::Normal(v) => v.clone(),
-            Self::Account(v) => v.clone(),
-            Self::Identity(v) => v.clone(),
-            Self::Clock(v) => v.clone(),
-            Self::EpochManager(v) => v.clone(),
-            Self::Validator(v) => v.clone(),
-            Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
-            Self::EddsaEd25519VirtualAccount(v) => v.clone(),
-            Self::EcdsaSecp256k1VirtualIdentity(v) => v.clone(),
-            Self::EddsaEd25519VirtualIdentity(v) => v.clone(),
+            Self::Normal(v)
+            | Self::Account(v)
+            | Self::Clock(v)
+            | Self::EpochManager(v)
+            | Self::Validator(v)
+            | Self::EcdsaSecp256k1VirtualAccount(v)
+            | Self::EddsaEd25519VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualIdentity(v)
+            | Self::EddsaEd25519VirtualIdentity(v)
+            | Self::Identity(v)
+            | Self::AccessController(v) => v.clone(),
         }
     }
 
@@ -88,7 +90,8 @@ impl ComponentAddress {
             | Self::EddsaEd25519VirtualAccount(v)
             | Self::EcdsaSecp256k1VirtualAccount(v)
             | Self::EcdsaSecp256k1VirtualIdentity(v)
-            | Self::EddsaEd25519VirtualIdentity(v) => buf.extend(v),
+            | Self::EddsaEd25519VirtualIdentity(v)
+            | Self::AccessController(v) => buf.extend(v),
         }
         buf
     }
@@ -192,6 +195,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::AccessController(_) => {
+                write!(f, "AccessControllerComponent[{}]", self.to_hex())
             }
             ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => {
                 write!(

@@ -71,6 +71,10 @@ blueprint! {
             // auto dropped here
         }
 
+        pub fn receive_proofs(_proofs: Vec<Proof>) {
+            // auto dropped here
+        }
+
         pub fn receive_proof_and_push_to_auth_zone(proof: Proof) {
             ComponentAuthZone::push(proof); // should fail here
         }
