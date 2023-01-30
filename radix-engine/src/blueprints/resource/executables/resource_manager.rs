@@ -438,7 +438,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
@@ -510,7 +510,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
@@ -592,7 +592,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
@@ -685,7 +685,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
             RENodeModuleInit::AccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
@@ -773,7 +773,7 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
@@ -940,7 +940,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     {
         let handle = api.lock_substate(
             self.0,
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
@@ -1034,7 +1034,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
     {
         let handle = api.lock_substate(
             self.0,
-            NodeModuleId::VaultAccessRules,
+            NodeModuleId::SELF1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
         )?;
