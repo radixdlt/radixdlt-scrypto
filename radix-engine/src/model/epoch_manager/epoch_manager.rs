@@ -3,13 +3,12 @@ use crate::engine::{
     RENodeInit, RENodeModuleInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
-    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, Validator, ValidatorSetSubstate,
-    ValidatorSubstate,
+    AccessRulesChainSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
+    HardResourceOrNonFungible, MethodAuthorization, ValidatorCreator,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{SysBucket, Vault};
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
@@ -17,6 +16,31 @@ use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerSubstate {
+    pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
+    pub epoch: u64,
+    pub round: u64,
+
+    // TODO: Move configuration to an immutable substate
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub struct Validator {
+    pub key: EcdsaSecp256k1PublicKey,
+    pub stake: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorSetSubstate {
+    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub epoch: u64,
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum EpochManagerError {
@@ -39,14 +63,33 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
 
         let mut call_frame_update =
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        for bucket in self.validator_set.values() {
+
+        // TODO: Clean this up, this is currently required in order to be able to call the scrypto account component
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
+        for (bucket, account_address) in self.validator_set.values() {
             call_frame_update
                 .nodes_to_move
                 .push(RENodeId::Bucket(bucket.0));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(*account_address)));
         }
 
         Ok((actor, call_frame_update, self))
     }
+}
+
+// TODO: Cleanup once native accounts implemented
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccountDepositInput {
+    bucket: Bucket,
 }
 
 impl Executor for EpochManagerCreateInvocation {
@@ -69,21 +112,29 @@ impl Executor for EpochManagerCreateInvocation {
             epoch: self.initial_epoch,
             round: 0,
             rounds_per_epoch: self.rounds_per_epoch,
+            num_unstake_epochs: self.num_unstake_epochs,
         };
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, bucket) in self.validator_set {
-            let stake = bucket.sys_amount(api)?;
-            let address = EpochManager::create_validator(
+        for (key, (initial_stake, account_address)) in self.validator_set {
+            let stake = initial_stake.sys_amount(api)?;
+            let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
-                Some(bucket),
+                initial_stake,
                 true,
                 api,
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
+            api.invoke(ScryptoInvocation {
+                package_address: ACCOUNT_PACKAGE,
+                blueprint_name: "Account".to_string(),
+                fn_name: "deposit".to_string(),
+                receiver: Some(ScryptoReceiver::Global(account_address)),
+                args: args!(lp_bucket),
+            })?;
         }
 
         let current_validator_set = ValidatorSetSubstate {
@@ -396,7 +447,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = EpochManager::create_validator(manager, self.1, None, false, api)?;
+        let validator_address = ValidatorCreator::create(manager, self.1, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(
@@ -463,67 +514,6 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 }
 
 impl EpochManager {
-    pub fn create_validator<Y>(
-        manager: ComponentAddress,
-        key: EcdsaSecp256k1PublicKey,
-        bucket: Option<Bucket>,
-        is_registered: bool,
-        api: &mut Y,
-    ) -> Result<ComponentAddress, RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
-        let address: ComponentAddress = global_node_id.into();
-        let mut access_rules = AccessRules::new();
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
-        );
-
-        let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        if let Some(bucket) = bucket {
-            stake_vault.sys_put(bucket, api)?;
-        }
-
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
-
-        let node = RENodeInit::Validator(ValidatorSubstate {
-            manager,
-            key,
-            address,
-            stake_vault_id: stake_vault.0,
-            is_registered,
-        });
-        api.create_node(node_id, node, node_modules)?;
-        api.create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
-            BTreeMap::new(),
-        )?;
-
-        Ok(global_node_id.into())
-    }
-
     pub fn create_auth() -> Vec<MethodAuthorization> {
         vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
             HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
@@ -532,6 +522,8 @@ impl EpochManager {
         ))]
     }
 }
+/*
+<<<<<<< HEAD:radix-engine/src/model/epoch_manager/executables.rs
 
 pub struct ValidatorRegisterExecutable(RENodeId);
 
@@ -814,3 +806,6 @@ impl Executor for ValidatorUnstakeExecutable {
         Ok((unstake_bucket, update))
     }
 }
+=======
+>>>>>>> develop:radix-engine/src/model/epoch_manager/epoch_manager.rs
+ */

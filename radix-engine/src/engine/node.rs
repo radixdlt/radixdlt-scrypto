@@ -86,6 +86,7 @@ pub enum RENodeInit {
     Clock(CurrentTimeRoundedToMinutesSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl RENodeInit {
@@ -212,6 +213,12 @@ impl RENodeInit {
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
                     transaction_hash.into(),
+                );
+            }
+            RENodeInit::AccessController(access_controller) => {
+                substates.insert(
+                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+                    access_controller.into(),
                 );
             }
         }

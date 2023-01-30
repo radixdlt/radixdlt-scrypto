@@ -43,6 +43,19 @@ pub fn resolve_method<Y: SystemApi>(
                     })?;
                 CallTableInvocation::Native(NativeInvocation::Clock(invocation))
             }
+            ComponentAddress::AccessController(..) => {
+                let invocation = AccessControllerPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ResolveError(e),
+                    ))
+                })?;
+                CallTableInvocation::Native(NativeInvocation::AccessController(invocation))
+            }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Normal(..)
@@ -450,6 +463,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ValidatorInvocation::ClaimXrd(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
         },
         NativeInvocation::Clock(clock_method) => match clock_method {
             ClockInvocation::Create(invocation) => {
@@ -521,6 +538,56 @@ where
                 Ok(Box::new(rtn))
             }
             TransactionRuntimeInvocation::GenerateUuid(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeInvocation::AccessController(method) => match method {
+            AccessControllerInvocation::CreateGlobal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CreateProof(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::LockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::UnlockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::StopTimedRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

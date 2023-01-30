@@ -60,6 +60,7 @@ pub trait InvokableModel<E>:
     + Invokable<ValidatorUnregisterInvocation, E>
     + Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
+    + Invokable<ValidatorClaimXrdInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
@@ -144,5 +145,17 @@ pub trait InvokableModel<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
+    + Invokable<AccessControllerCreateGlobalInvocation, E>
+    + Invokable<AccessControllerCreateProofInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
+    + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
+    + Invokable<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerTimedConfirmRecoveryInvocation, E>
+    + Invokable<AccessControllerCancelPrimaryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerCancelRecoveryRoleRecoveryProposalInvocation, E>
+    + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
+    + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
 {
 }

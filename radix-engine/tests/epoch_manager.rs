@@ -1,6 +1,6 @@
-use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
-use radix_engine::model::Validator;
+use radix_engine::model::{Validator, ValidatorError};
 use radix_engine::types::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
@@ -11,7 +11,7 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 #[test]
 fn get_epoch_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
@@ -29,7 +29,7 @@ fn get_epoch_should_succeed() {
 #[test]
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
@@ -56,8 +56,9 @@ fn next_round_without_supervisor_auth_fails() {
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
-    let genesis = create_genesis(BTreeMap::new(), 1u64, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let num_unstake_epochs = 1u64;
+    let genesis = create_genesis(BTreeMap::new(), 1u64, rounds_per_epoch, num_unstake_epochs);
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
@@ -87,8 +88,14 @@ fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(BTreeMap::new(), initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let num_unstake_epochs = 1u64;
+    let genesis = create_genesis(
+        BTreeMap::new(),
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
@@ -123,13 +130,25 @@ fn register_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
@@ -151,13 +170,25 @@ fn register_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
@@ -178,13 +209,25 @@ fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
@@ -206,13 +249,25 @@ fn unregister_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
@@ -233,8 +288,14 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(BTreeMap::new(), initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let num_unstake_epochs = 1u64;
+    let genesis = create_genesis(
+        BTreeMap::new(),
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, validator_address) = test_runner.new_validator();
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -276,8 +337,14 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(BTreeMap::new(), initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let num_unstake_epochs = 1u64;
+    let genesis = create_genesis(
+        BTreeMap::new(),
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key);
     let manifest = ManifestBuilder::new()
@@ -287,6 +354,11 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
         })
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -330,21 +402,36 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let num_unstake_epochs = 1u64;
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    validator_set.insert(
+        validator_pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&account_pub_key),
+        ),
+    );
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -374,31 +461,169 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 }
 
 #[test]
-fn unstaked_validator_gets_less_stake_on_epoch_change() {
+fn cannot_claim_unstake_immediately() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let num_unstake_epochs = 1u64;
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::from(10));
-    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
-    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (_, _, account_address) = test_runner.new_account(true);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unstake_validator(validator_address, Decimal::one())
+        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
+        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+            builder.claim_xrd(validator_address, bucket)
+        })
         .call_method(
-            account_address,
+            account_with_lp,
             "deposit_batch",
             args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                ValidatorError::EpochUnlockHasNotOccurredYet
+            ))
+        )
+    });
+}
+
+#[test]
+fn can_claim_unstake_after_epochs() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let mut validator_set = BTreeMap::new();
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
+        .call_method(
+            account_with_lp,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+    receipt.expect_commit_success();
+    test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft)
+        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+            builder.claim_xrd(validator_address, bucket)
+        })
+        .call_method(
+            account_with_lp,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn unstaked_validator_gets_less_stake_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let mut validator_set = BTreeMap::new();
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    let genesis = create_genesis(
+        validator_set,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account_by_amount(
+            account_with_lp,
+            Decimal::one(),
+            validator_substate.liquidity_token,
+        )
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
+        .call_method(
+            account_with_lp,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -427,7 +652,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
         &Validator {
-            key: pub_key,
+            key: validator_pub_key,
             stake: Decimal::from(9),
         }
     );
@@ -436,7 +661,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 #[test]
 fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
@@ -447,6 +672,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
+            num_unstake_epochs: 1u64,
         }),
     ))];
     let blobs = vec![];
@@ -469,7 +695,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 #[test]
 fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
@@ -480,6 +706,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
+            num_unstake_epochs: 1u64,
         }),
     ))];
     let blobs = vec![];

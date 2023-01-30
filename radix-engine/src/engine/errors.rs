@@ -299,6 +299,8 @@ pub enum ApplicationError {
 
     EpochManagerError(EpochManagerError),
 
+    ValidatorError(ValidatorError),
+
     ResourceManagerError(ResourceManagerError),
 
     AccessRulesChainError(AccessRulesChainError),
@@ -314,6 +316,8 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+
+    AccessControllerError(AccessControllerError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

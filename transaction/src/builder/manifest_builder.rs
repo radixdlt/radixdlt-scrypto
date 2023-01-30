@@ -399,12 +399,25 @@ impl ManifestBuilder {
     pub fn unstake_validator(
         &mut self,
         validator_address: ComponentAddress,
-        amount: Decimal,
+        bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: "unstake".to_string(),
-            args: args!(amount),
+            args: args!(bucket),
+        });
+        self
+    }
+
+    pub fn claim_xrd(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "claim_xrd".to_string(),
+            args: args!(bucket),
         });
         self
     }
@@ -890,6 +903,24 @@ impl ManifestBuilder {
             method_name: "create_proof_by_ids".to_string(),
 
             args: args!(ids.clone(), resource_address),
+        })
+        .0
+    }
+
+    pub fn create_access_controller(
+        &mut self,
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
         })
         .0
     }

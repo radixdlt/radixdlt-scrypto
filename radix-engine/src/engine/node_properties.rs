@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
+    AccessControllerOffset, AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
     GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
     TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
@@ -257,6 +257,7 @@ impl SubstateProperties {
             SubstateOffset::Logger(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::TransactionRuntime(..) => false,
+            SubstateOffset::AccessController(..) => true,
         }
     }
 
@@ -295,6 +296,15 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::AccessController(AccessControllerOffset::AccessController) => {
+                match node_id {
+                    RENodeId::Vault(..) => Ok(()),
+                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                        offset.clone(),
+                        node_id,
+                    ))),
+                }
+            }
             SubstateOffset::Validator(ValidatorOffset::Validator) => match node_id {
                 RENodeId::Vault(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
@@ -308,8 +318,9 @@ impl SubstateProperties {
                 | RENodeId::ResourceManager(..)
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)
+                | RENodeId::Clock(..)
                 | RENodeId::Identity(..)
-                | RENodeId::Clock(..) => Ok(()),
+                | RENodeId::AccessController(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     node_id,

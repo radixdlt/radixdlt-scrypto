@@ -546,6 +546,21 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
+        } => {
+            f.write_str("CREATE_ACCESS_CONTROLLER")?;
+            format_typed_value(f, context, controlled_asset)?;
+            format_typed_value(f, context, primary_role)?;
+            format_typed_value(f, context, recovery_role)?;
+            format_typed_value(f, context, confirmation_role)?;
+            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::CreateIdentity { access_rule } => {
             f.write_str("CREATE_IDENTITY")?;
             format_typed_value(f, context, access_rule)?;

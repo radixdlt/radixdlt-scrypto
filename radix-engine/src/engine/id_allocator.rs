@@ -1,9 +1,9 @@
 use crate::engine::{KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::{
-    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
-    NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
-    TransactionRuntimeId, ValidatorId, VaultId,
+    AccessControllerId, AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress,
+    KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType,
+    ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -93,6 +93,9 @@ impl IdAllocator {
             }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
+            RENodeType::AccessController => self
+                .new_access_controller_id()
+                .map(|id| RENodeId::AccessController(id)),
             RENodeType::Identity => self.new_component_id().map(|id| RENodeId::Identity(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
@@ -117,6 +120,9 @@ impl IdAllocator {
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalComponent => self
                 .new_component_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalAccessController => self
+                .new_access_controller_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
@@ -213,6 +219,15 @@ impl IdAllocator {
         Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
 
+    pub fn new_access_controller_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        Ok(ComponentAddress::AccessController(
+            hash(data).lower_26_bytes(),
+        ))
+    }
+
     /// Creates a new resource address.
     pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
@@ -271,6 +286,10 @@ impl IdAllocator {
     }
 
     pub fn new_package_id(&mut self) -> Result<PackageId, IdAllocationError> {
+        self.next_id()
+    }
+
+    pub fn new_access_controller_id(&mut self) -> Result<AccessControllerId, IdAllocationError> {
         self.next_id()
     }
 }
