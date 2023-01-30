@@ -113,13 +113,15 @@ impl NodeMoveModule {
                     Ok(())
                 }
             }
-            RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
+            RENodeId::Proof(..)
+            | RENodeId::Component(..)
+            | RENodeId::Vault(..)
+            | RENodeId::KeyValueStore(..) => Ok(()),
 
             RENodeId::TransactionRuntime(..)
             | RENodeId::AuthZoneStack(..)
             | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
-            | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop

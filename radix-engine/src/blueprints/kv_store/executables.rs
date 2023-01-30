@@ -65,9 +65,10 @@ impl ExecutableInvocation for KeyValueStoreGetInvocation {
     where
         Self: Sized,
     {
-        let call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::KeyValueStore(self.receiver));
 
+        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
         let actor = ResolvedActor::method(
             NativeFn::KeyValueStore(KeyValueStoreFn::Get),
             resolved_receiver,
@@ -109,9 +110,10 @@ impl ExecutableInvocation for KeyValueStoreGetMutInvocation {
     where
         Self: Sized,
     {
-        let call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::KeyValueStore(self.receiver));
 
+        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
         let actor = ResolvedActor::method(
             NativeFn::KeyValueStore(KeyValueStoreFn::Get),
             resolved_receiver,
@@ -154,9 +156,10 @@ impl ExecutableInvocation for KeyValueStoreInsertInvocation {
     where
         Self: Sized,
     {
-        let call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::KeyValueStore(self.receiver));
 
+        let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
         let actor = ResolvedActor::method(
             NativeFn::KeyValueStore(KeyValueStoreFn::Insert),
             resolved_receiver,

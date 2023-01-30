@@ -34,7 +34,7 @@ pub struct KeyValueStoreGetMethodArgs {
 }
 
 //=====================================================
-// KeyValueStore::get(&self, key: Vec<u8>) -> Vec<u8>
+// KeyValueStore::get(&self, key: Vec<u8>) -> LockHandle
 //=====================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
