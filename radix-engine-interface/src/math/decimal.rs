@@ -185,8 +185,8 @@ impl Decimal {
 
     /// Calculates power using exponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one_384 = BnumI384::try_from(Self::ONE.0).unwrap();
-        let base_384 = BnumI384::try_from(self.0).unwrap();
+        let one_384 = BnumI384::from(Self::ONE.0);
+        let base_384 = BnumI384::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
@@ -223,8 +223,8 @@ impl Decimal {
         // The BnumI256 i associated to a Decimal d is : i = d*10^18.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
-        let self_384: BnumI384 = BnumI384::try_from(self.0).unwrap();
-        let correct_nb = self_384 * BnumI384::try_from(Decimal::one().0).unwrap();
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0);
         let sqrt = BnumI256::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(Decimal(sqrt))
     }
@@ -236,8 +236,8 @@ impl Decimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_384: BnumI384 = BnumI384::try_from(self.0).unwrap();
-        let correct_nb = self_384 * BnumI384::try_from(Decimal::one().0).unwrap().pow(2);
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0).pow(2);
         let cbrt = BnumI256::try_from(correct_nb.cbrt()).expect("Overflow");
         Decimal(cbrt)
     }
@@ -345,11 +345,11 @@ where
 
     fn mul(self, other: T) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::try_from(self.0).unwrap();
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::try_from(b_dec.0).unwrap();
-        let c = a * b / BnumI384::try_from(Self::ONE.0).unwrap();
-        let c_256 = BnumI256::try_from(c).unwrap();
+        let b = BnumI384::from(b_dec.0);
+        let c = a * b / BnumI384::from(Self::ONE.0);
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }
@@ -362,11 +362,11 @@ where
 
     fn div(self, other: T) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::try_from(self.0).unwrap();
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::try_from(b_dec.0).unwrap();
-        let c = a * BnumI384::try_from(Self::ONE.0).unwrap() / b;
-        let c_256 = BnumI256::try_from(c).unwrap();
+        let b = BnumI384::from(b_dec.0);
+        let c = a * BnumI384::from(Self::ONE.0) / b;
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }

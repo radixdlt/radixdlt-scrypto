@@ -194,8 +194,8 @@ impl PreciseDecimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one_768 = BnumI768::try_from(Self::ONE.0).unwrap();
-        let base_768 = BnumI768::try_from(self.0).unwrap();
+        let one_768 = BnumI768::from(Self::ONE.0);
+        let base_768 = BnumI768::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
@@ -235,9 +235,9 @@ impl PreciseDecimal {
         // The BnumI512 i associated to a Decimal d is : i = d*10^64.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
-        let self_768 = BnumI768::try_from(self.0).unwrap();
-        let correct_nb = self_768 * BnumI768::try_from(PreciseDecimal::one().0).unwrap();
-        let sqrt = BnumI512::try_from(correct_nb.sqrt()).unwrap();
+        let self_768 = BnumI768::from(self.0);
+        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+        let sqrt = BnumI512::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(PreciseDecimal(sqrt))
     }
 
@@ -357,10 +357,10 @@ where
 
     fn mul(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::try_from(self.0).unwrap();
+        let a = BnumI768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::try_from(b_dec.0).unwrap();
-        let c = a * b / BnumI768::try_from(Self::ONE.0).unwrap();
+        let b = BnumI768::from(b_dec.0);
+        let c = a * b / BnumI768::from(Self::ONE.0);
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
@@ -374,10 +374,10 @@ where
 
     fn div(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::try_from(self.0).unwrap();
+        let a = BnumI768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::try_from(b_dec.0).unwrap();
-        let c = a * BnumI768::try_from(Self::ONE.0).unwrap() / b;
+        let b = BnumI768::from(b_dec.0);
+        let c = a * BnumI768::from(Self::ONE.0) / b;
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
@@ -582,15 +582,31 @@ macro_rules! from_integer {
         $(
             impl From<$t> for PreciseDecimal {
                 fn from(val: $t) -> Self {
-                    Self(BnumI512::try_from(val).unwrap() * Self::ONE.0)
+                    Self(BnumI512::from(val) * Self::ONE.0)
+                }
+            }
+        )*
+    };
+}
+macro_rules! try_from_integer {
+    ($($t:ident),*) => {
+        $(
+            impl TryFrom<$t> for PreciseDecimal {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: $t) -> Result<Self, Self::Error> {
+                    match BnumI512::try_from(val) {
+                        Ok(val) => Ok(Self(val * Self::ONE.0)),
+                        Err(_) => Err(ParseDecimalError::Overflow),
+                    }
                 }
             }
         )*
     };
 }
 
-from_integer!(BnumI256, BnumI512);
-from_integer!(BnumU256, BnumU512);
+from_integer!(BnumI256, BnumI512, BnumU256);
+try_from_integer!(BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -1156,13 +1172,7 @@ mod tests {
                     let pdec = PreciseDecimal::from(dec);
                     assert_eq!(pdec.to_string(), $expected);
 
-                    let pdec = PreciseDecimal::try_from(dec).unwrap();
-                    assert_eq!(pdec.to_string(), $expected);
-
                     let pdec: PreciseDecimal = dec.into();
-                    assert_eq!(pdec.to_string(), $expected);
-
-                    let pdec: PreciseDecimal = dec.try_into().unwrap();
                     assert_eq!(pdec.to_string(), $expected);
                 }
             )*

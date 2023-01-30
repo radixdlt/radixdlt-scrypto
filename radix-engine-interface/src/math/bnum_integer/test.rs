@@ -320,7 +320,7 @@ fn test_bnum_to_bnum() {
     assert_eq!(b, BnumU256::ONE);
 
     let a = BnumI256::from(-123);
-    let b = BnumI512::try_from(a).unwrap();
+    let b = BnumI512::from(a);
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumI256::MAX;
@@ -328,11 +328,15 @@ fn test_bnum_to_bnum() {
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumI256::MIN;
-    let b = BnumI512::try_from(a).unwrap();
+    let b = BnumI512::from(a);
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumU256::MAX;
-    let b = BnumI512::try_from(a).unwrap();
+    let b = BnumI512::from(a);
+    assert_eq!(a.to_string(), b.to_string());
+
+    let a = BnumU256::MAX;
+    let b = BnumI384::from(a);
     assert_eq!(a.to_string(), b.to_string());
 }
 
@@ -375,7 +379,11 @@ fn test_bnum_to_bnum_errors() {
     let err = BnumU256::try_from(i512).unwrap_err();
     assert_eq!(err, ParseBnumU256Error::NegativeToUnsigned);
 
-    let a = BnumI256::from(-123);
-    let b = BnumU512::try_from(a).unwrap_err();
-    assert_eq!(b, ParseBnumU512Error::NegativeToUnsigned);
+    let i256 = BnumI256::from(-123);
+    let err = BnumU512::try_from(i256).unwrap_err();
+    assert_eq!(err, ParseBnumU512Error::NegativeToUnsigned);
+
+    let i384 = BnumI384::MAX;
+    let err = BnumU256::try_from(i384).unwrap_err();
+    assert_eq!(err, ParseBnumU256Error::Overflow);
 }

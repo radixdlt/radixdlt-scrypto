@@ -186,7 +186,7 @@ impl_from_string! { BnumU384, BUint::<6> }
 impl_from_string! { BnumU512, BUint::<8> }
 impl_from_string! { BnumU768, BUint::<12> }
 
-macro_rules! impl_from_bnum {
+macro_rules! impl_try_from_bnum {
     ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
         $(
             paste! {
@@ -222,11 +222,57 @@ macro_rules! impl_from_bnum {
         )*
     };
 }
-impl_from_bnum! {
+macro_rules! impl_from_bnum {
+    ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
+        $(
+            paste! {
+                impl From<$t> for $into {
+                    fn from(val: $t) -> $into {
+                        let mut sign = <$into>::ONE;
+                        let mut other = val;
+
+                        if other < <$t>::ZERO {
+                            if <$into>::MIN == <$into>::ZERO {
+                                panic!("NegativeToUnsigned");
+                            } else {
+                                // This is basically abs() function (which is not available for
+                                // unsigned types).
+                                // Do not perform below for MIN value to avoid overflow
+                                if other != <$t>::MIN {
+                                    other = <$t>::ZERO - other;
+                                    sign = <$into>::ZERO - sign;
+                                }
+                            }
+                        }
+                        if (other.leading_zeros() as i32) <= <$t>::BITS as i32 - <$into>::BITS as i32 {
+                            panic!("Overflow");
+                        }
+                        Self(<$into_wrap>::cast_from(other.0)) * sign
+                    }
+                }
+
+            }
+        )*
+    };
+}
+
+impl_try_from_bnum! {
     BnumI512, BInt::<8>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
-        BnumI768, BInt::<12>,
+        BnumU256, BUint::<4>,
+        BnumU384, BUint::<6>,
+        BnumU512, BUint::<8>,
+        BnumU768, BUint::<12>
+    )
+}
+impl_from_bnum! {
+    BnumI512, BInt::<8>, (
+        BnumI768, BInt::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumI256, BInt::<4>, (
         BnumU256, BUint::<4>,
         BnumU384, BUint::<6>,
         BnumU512, BUint::<8>,
@@ -237,7 +283,12 @@ impl_from_bnum! {
     BnumI256, BInt::<4>, (
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
+        BnumI768, BInt::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumI384, BInt::<6>, (
+        BnumI256, BInt::<4>,
         BnumU256, BUint::<4>,
         BnumU384, BUint::<6>,
         BnumU512, BUint::<8>,
@@ -246,16 +297,11 @@ impl_from_bnum! {
 }
 impl_from_bnum! {
     BnumI384, BInt::<6>, (
-        BnumI256, BInt::<4>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU256, BUint::<4>,
-        BnumU384, BUint::<6>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+        BnumI768, BInt::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumI768, BInt::<12>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
@@ -268,20 +314,28 @@ impl_from_bnum! {
 }
 
 // must fit 0 - MAX
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU512, BUint::<8>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
         BnumU256, BUint::<4>,
-        BnumU384, BUint::<6>,
+        BnumU384, BUint::<6>
+    )
+}
+impl_from_bnum! {
+    BnumU512, BUint::<8>, (
+        BnumI768, BInt::<12>,
         BnumU768, BUint::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumU256, BUint::<4>, (
+        BnumI256, BInt::<4>
     )
 }
 impl_from_bnum! {
     BnumU256, BUint::<4>, (
-        BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
         BnumI768, BInt::<12>,
@@ -290,18 +344,22 @@ impl_from_bnum! {
         BnumU768, BUint::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU384, BUint::<6>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
+        BnumU256, BUint::<4>
+    )
+}
+impl_from_bnum! {
+    BnumU384, BUint::<6>, (
         BnumI512, BInt::<8>,
         BnumI768, BInt::<12>,
-        BnumU256, BUint::<4>,
         BnumU512, BUint::<8>,
         BnumU768, BUint::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU768, BUint::<12>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
