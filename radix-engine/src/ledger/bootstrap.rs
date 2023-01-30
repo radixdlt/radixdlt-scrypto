@@ -207,7 +207,7 @@ pub fn create_genesis(
     }
 
     for (amount, public_key) in account_xrd_allocations {
-        let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
+        let bucket_id = id_allocator.new_bucket_id().unwrap();
         instructions.push(
             BasicInstruction::TakeFromWorktopByAmount {
                 resource_address: RADIX_TOKEN,
@@ -222,7 +222,7 @@ pub fn create_genesis(
             BasicInstruction::CallMethod {
                 component_address: component_address,
                 method_name: "deposit".to_string(),
-                args: args!(bucket),
+                args: args!(bucket_id),
             }
             .into(),
         );
@@ -327,10 +327,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
     use transaction::signing::EcdsaSecp256k1PrivateKey;
-
-    use super::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -358,5 +357,50 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+    }
+
+    #[test]
+    fn test_genesis_xrd_allocation_to_accounts() {
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let account_component_address = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
+        );
+        let allocation_amount = dec!("100");
+        let genesis_transaction = create_genesis(
+            BTreeMap::new(),
+            vec![(allocation_amount, account_public_key)],
+            1u64,
+            1u64,
+            1u64,
+        );
+
+        let transaction_receipt = execute_transaction(
+            &substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = transaction_receipt.result.expect_commit();
+        commit_result.state_updates.commit(&mut substate_store);
+
+        let global_substate = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::Global(GlobalAddress::Component(account_component_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+        let derefed_component_id: ComponentId = global_substate.global().node_deref().into();
+
+        assert!(commit_result
+            .resource_changes
+            .iter()
+            .any(|rc| rc.resource_address == RADIX_TOKEN
+                && rc.amount == allocation_amount
+                && rc.component_id == derefed_component_id));
     }
 }
