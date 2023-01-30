@@ -14,6 +14,7 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
 
 /// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined) and Store,
@@ -23,7 +24,7 @@ type HostState = WasmiInstanceEnv;
 /// It is correctly `Send + Sync` - which is good, because this is the thing which is cached in the
 /// ScryptoInterpreter caches.
 pub struct WasmiModule {
-    store: Store<HostState>,
+    store: Store<FakeHostState>,
     instance: Instance,
     #[allow(dead_code)]
     code_size_bytes: usize,
@@ -33,6 +34,17 @@ pub struct WasmiInstance {
     store: Store<HostState>,
     instance: Instance,
     memory: Memory,
+}
+
+#[derive(Clone)]
+pub struct FakeWasmiInstanceEnv {
+    runtime_ptr: usize,
+}
+
+impl FakeWasmiInstanceEnv {
+    pub fn new() -> Self {
+        Self { runtime_ptr: 0 }
+    }
 }
 
 /// WasmiInstanceEnv stores masked runtime pointer to a `Box<dyn WasmRuntime>`.
@@ -48,11 +60,15 @@ pub struct WasmiInstance {
 #[derive(Clone)]
 pub struct WasmiInstanceEnv {
     runtime_ptr: usize,
+    _not_send_sync: PhantomData<*const ()>, // TODO: replace with negative impl, https://github.com/rust-lang/rust/issues/68318
 }
 
 impl WasmiInstanceEnv {
     pub fn new() -> Self {
-        Self { runtime_ptr: 0 }
+        Self {
+            runtime_ptr: 0,
+            _not_send_sync: PhantomData,
+        }
     }
 }
 
@@ -236,7 +252,7 @@ impl WasmiModule {
             .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(Self {
-            store,
+            store: unsafe { std::mem::transmute(store) },
             instance,
             code_size_bytes: code.len(),
         })
@@ -408,7 +424,7 @@ impl WasmiModule {
 
         WasmiInstance {
             instance,
-            store,
+            store: unsafe { std::mem::transmute(store) },
             memory,
         }
     }
