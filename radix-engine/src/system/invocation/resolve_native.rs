@@ -1,12 +1,14 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
-use radix_engine_interface::api::blueprints::{
-    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
-};
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
+use radix_engine_interface::blueprints::{
+    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
+};
 
 pub fn resolve_and_invoke_native_fn<Y>(
     native_fn: NativeFn,
@@ -631,6 +633,98 @@ where
             TransactionRuntimeFn::GenerateUuid => {
                 let invocation =
                     scrypto_decode::<TransactionRuntimeGenerateUuidInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeFn::AccessController(ac_fn) => match ac_fn {
+            AccessControllerFn::CreateGlobal => {
+                let invocation =
+                    scrypto_decode::<AccessControllerCreateGlobalInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::CreateProof => {
+                let invocation =
+                    scrypto_decode::<AccessControllerCreateProofInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::InitiateRecoveryAsPrimary => {
+                let invocation = scrypto_decode::<
+                    AccessControllerInitiateRecoveryAsPrimaryInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::InitiateRecoveryAsRecovery => {
+                let invocation = scrypto_decode::<
+                    AccessControllerInitiateRecoveryAsRecoveryInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => {
+                let invocation = scrypto_decode::<
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => {
+                let invocation = scrypto_decode::<
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::TimedConfirmRecovery => {
+                let invocation =
+                    scrypto_decode::<AccessControllerTimedConfirmRecoveryInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal => {
+                let invocation = scrypto_decode::<
+                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal => {
+                let invocation = scrypto_decode::<
+                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation,
+                >(&invocation)
+                .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::LockPrimaryRole => {
+                let invocation =
+                    scrypto_decode::<AccessControllerLockPrimaryRoleInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::UnlockPrimaryRole => {
+                let invocation =
+                    scrypto_decode::<AccessControllerUnlockPrimaryRoleInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerFn::StopTimedRecovery => {
+                let invocation =
+                    scrypto_decode::<AccessControllerStopTimedRecoveryInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

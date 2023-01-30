@@ -17,6 +17,10 @@ pub struct AccessControllerCreateGlobalInvocation {
 
 impl Invocation for AccessControllerCreateGlobalInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateGlobal))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCreateGlobalInvocation {
@@ -43,6 +47,10 @@ pub struct AccessControllerCreateProofInvocation {
 
 impl Invocation for AccessControllerCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCreateProofInvocation {
@@ -73,6 +81,12 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
 
 impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsPrimary,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -106,6 +120,12 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
 
 impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
@@ -139,6 +159,12 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
@@ -174,6 +200,12 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
@@ -209,6 +241,12 @@ pub struct AccessControllerTimedConfirmRecoveryInvocation {
 
 impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::TimedConfirmRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
@@ -236,6 +274,12 @@ pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
@@ -265,6 +309,12 @@ pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
@@ -294,6 +344,12 @@ pub struct AccessControllerLockPrimaryRoleInvocation {
 
 impl Invocation for AccessControllerLockPrimaryRoleInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::LockPrimaryRole,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerLockPrimaryRoleInvocation {
@@ -320,6 +376,12 @@ pub struct AccessControllerUnlockPrimaryRoleInvocation {
 
 impl Invocation for AccessControllerUnlockPrimaryRoleInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::UnlockPrimaryRole,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
@@ -351,6 +413,12 @@ pub struct AccessControllerStopTimedRecoveryInvocation {
 
 impl Invocation for AccessControllerStopTimedRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::StopTimedRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerStopTimedRecoveryInvocation {
