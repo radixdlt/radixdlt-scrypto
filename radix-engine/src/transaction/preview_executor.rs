@@ -1,11 +1,11 @@
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
-use crate::engine::ScryptoInterpreter;
+use crate::kernel::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;

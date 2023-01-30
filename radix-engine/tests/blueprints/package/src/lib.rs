@@ -1,4 +1,3 @@
-use radix_engine_interface::api::wasm::*;
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 

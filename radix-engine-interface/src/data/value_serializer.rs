@@ -1,5 +1,6 @@
 use super::types::ManifestExpression;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::*;
 use sbor::rust::format;
 use sbor::rust::vec;
@@ -652,7 +653,6 @@ mod tests {
 
     use crate::{
         address::NO_NETWORK,
-        api::types::ResourceAddress,
         constants::RADIX_TOKEN,
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };

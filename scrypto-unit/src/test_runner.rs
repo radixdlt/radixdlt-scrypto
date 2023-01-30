@@ -4,13 +4,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::errors::*;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
-    ValidatorSetSubstate, ValidatorSubstate,
-};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
@@ -18,15 +18,19 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{RENodeId, VaultOffset};
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::types::{
+    ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
+};
+use radix_engine_interface::blueprints::clock::{
+    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
+};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::{
-    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleGlobalId, NonFungibleIdType,
-};
-use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::put_at_next_version;
@@ -273,14 +277,11 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        if let Some(output) = self
-            .substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                NodeModuleId::ComponentRoyalty,
-                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            ))
-        {
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+        )) {
             let royalty_vault: Own = output
                 .substate
                 .component_royalty_accumulator()

@@ -352,22 +352,21 @@ impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::ScryptoInterpreter;
-    use crate::fee::FeeSummary;
+    use crate::blueprints::resource::{Resource, VaultSubstate};
+    use crate::kernel::ScryptoInterpreter;
     use crate::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
-    use crate::model::{PersistedSubstate, Resource, VaultSubstate};
     use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager, StateDiff};
+    use crate::system::kernel_modules::fee::FeeSummary;
+    use crate::system::substates::PersistedSubstate;
     use crate::transaction::{
         CommitResult, EntityChanges, TransactionExecution, TransactionOutcome, TransactionReceipt,
         TransactionResult,
     };
     use crate::types::rust::iter::zip;
     use crate::wasm::DefaultWasmEngine;
-    use radix_engine_interface::api::types::{
-        NodeModuleId, RENodeId, SubstateId, SubstateOffset, VaultOffset,
-    };
+    use radix_engine_interface::api::types::{NodeModuleId, ResourceAddress};
+    use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
     use radix_engine_interface::math::Decimal;
-    use radix_engine_interface::model::ResourceAddress;
     use sbor::rust::collections::BTreeMap;
     use sbor::rust::collections::HashMap;
     use sbor::rust::vec::Vec;

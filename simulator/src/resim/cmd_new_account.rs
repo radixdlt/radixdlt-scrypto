@@ -1,7 +1,8 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;

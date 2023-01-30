@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::manifest::*;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
 
     #[test]

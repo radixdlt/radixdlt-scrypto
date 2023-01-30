@@ -1,5 +1,6 @@
 use crate::abi::*;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::ScryptoCustomValueKind;
 use crate::*;
 #[cfg(not(feature = "alloc"))]

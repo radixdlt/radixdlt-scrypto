@@ -1,11 +1,11 @@
-use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;

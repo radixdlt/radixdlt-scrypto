@@ -1,4 +1,6 @@
-use crate::model::*;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
 pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;

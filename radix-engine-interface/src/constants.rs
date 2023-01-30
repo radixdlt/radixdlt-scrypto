@@ -1,6 +1,8 @@
 use crate::address;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::ResourceAddress;
 use crate::construct_address;
-use crate::model::*;
 
 /// The XRD resource address.
 pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 0);

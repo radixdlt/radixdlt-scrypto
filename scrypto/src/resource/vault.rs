@@ -1,13 +1,12 @@
-use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::ScryptoCustomValueKind;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::Categorize;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 use scrypto_abi::Type;

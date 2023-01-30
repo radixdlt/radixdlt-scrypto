@@ -1,9 +1,8 @@
-use radix_engine_interface::api::wasm::BufferId;
+use radix_engine_interface::api::types::BufferId;
 use wasmi::HostError;
 
-use crate::engine::{CanBeAbortion, KernelError, RuntimeError, SelfError};
-use crate::fee::FeeReserveError;
-use crate::model::InvokeError;
+use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
+use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
