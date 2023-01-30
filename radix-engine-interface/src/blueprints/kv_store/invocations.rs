@@ -44,7 +44,7 @@ pub struct KeyValueStoreGetInvocation {
 }
 
 impl Invocation for KeyValueStoreGetInvocation {
-    type Output = Option<Vec<u8>>;
+    type Output = LockHandle;
 
     fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Get))
@@ -52,7 +52,7 @@ impl Invocation for KeyValueStoreGetInvocation {
 }
 
 impl SerializableInvocation for KeyValueStoreGetInvocation {
-    type ScryptoOutput = Option<Vec<u8>>;
+    type ScryptoOutput = LockHandle;
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
@@ -62,32 +62,28 @@ impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
 }
 
 //=======================================================================
-// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> Option<(LockHandle, Vec<u8>)>
+// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> LockHandle
 //=======================================================================
 
-// FIXME: This interface is probably wrong, as clients may want to lock the entry regardless existence.
-// Didn't change it now so to maintain client compatibility
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KeyValueStoreLockInvocation {
+pub struct KeyValueStoreGetMutInvocation {
     pub receiver: KeyValueStoreId,
     pub key: Vec<u8>,
-    pub mutable: bool,
 }
 
-impl Invocation for KeyValueStoreLockInvocation {
-    type Output = Option<(LockHandle, Vec<u8>)>;
+impl Invocation for KeyValueStoreGetMutInvocation {
+    type Output = LockHandle;
 
     fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Lock))
     }
 }
 
-impl SerializableInvocation for KeyValueStoreLockInvocation {
-    type ScryptoOutput = Option<(LockHandle, Vec<u8>)>;
+impl SerializableInvocation for KeyValueStoreGetMutInvocation {
+    type ScryptoOutput = LockHandle;
 }
 
-impl Into<CallTableInvocation> for KeyValueStoreLockInvocation {
+impl Into<CallTableInvocation> for KeyValueStoreGetMutInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::KeyValueStore(KeyValueStoreInvocation::Lock(self)).into()
     }

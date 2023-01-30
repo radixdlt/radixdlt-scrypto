@@ -224,7 +224,7 @@ pub enum ResourceInvocation {
 pub enum KeyValueStoreInvocation {
     Create(KeyValueStoreCreateInvocation),
     Get(KeyValueStoreGetInvocation),
-    Lock(KeyValueStoreLockInvocation),
+    Lock(KeyValueStoreGetMutInvocation),
     Insert(KeyValueStoreInsertInvocation),
 }
 

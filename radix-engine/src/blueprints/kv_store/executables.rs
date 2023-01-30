@@ -79,12 +79,12 @@ impl ExecutableInvocation for KeyValueStoreGetInvocation {
 }
 
 impl Executor for KeyValueStoreGetExecutable {
-    type Output = Option<Vec<u8>>;
+    type Output = LockHandle;
 
     fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
-    ) -> Result<(Option<Vec<u8>>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(LockHandle, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
@@ -93,17 +93,14 @@ impl Executor for KeyValueStoreGetExecutable {
 
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(handle)?;
-        let substate = substate_ref.kv_store_entry();
-        let value = substate.0.clone();
-        Ok((value, CallFrameUpdate::empty()))
+        Ok((handle, CallFrameUpdate::empty()))
     }
 }
 
-pub struct KeyValueStoreLockExecutable(RENodeId, Vec<u8>, bool);
+pub struct KeyValueStoreGetMutExecutable(RENodeId, Vec<u8>);
 
-impl ExecutableInvocation for KeyValueStoreLockInvocation {
-    type Exec = KeyValueStoreLockExecutable;
+impl ExecutableInvocation for KeyValueStoreGetMutInvocation {
+    type Exec = KeyValueStoreGetMutExecutable;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -119,47 +116,29 @@ impl ExecutableInvocation for KeyValueStoreLockInvocation {
             NativeFn::KeyValueStore(KeyValueStoreFn::Get),
             resolved_receiver,
         );
-        let executor =
-            KeyValueStoreLockExecutable(resolved_receiver.receiver, self.key, self.mutable);
+        let executor = KeyValueStoreGetMutExecutable(resolved_receiver.receiver, self.key);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for KeyValueStoreLockExecutable {
-    type Output = Option<(LockHandle, Vec<u8>)>;
+impl Executor for KeyValueStoreGetMutExecutable {
+    type Output = LockHandle;
 
     fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
-    ) -> Result<(Option<(LockHandle, Vec<u8>)>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(LockHandle, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = self.0;
         let key = self.1;
-        let mutable = self.2;
 
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
-        let handle = api.lock_substate(
-            node_id,
-            offset,
-            if mutable {
-                LockFlags::MUTABLE
-            } else {
-                LockFlags::read_only()
-            },
-        )?;
-        let substate_ref = api.get_ref(handle)?;
-        let result = match substate_ref.kv_store_entry().0.clone() {
-            Some(v) => Some((handle, v)),
-            None => {
-                api.drop_lock(handle)?;
-                None
-            }
-        };
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        Ok((result, CallFrameUpdate::empty()))
+        Ok((handle, CallFrameUpdate::empty()))
     }
 }
 

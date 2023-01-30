@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{KeyValueStoreOffset, SubstateOffset};
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::blueprints::kv_store::{
-    KeyValueStoreCreateInvocation, KeyValueStoreInsertInvocation, KeyValueStoreLockInvocation,
+    KeyValueStoreCreateInvocation, KeyValueStoreGetMutInvocation, KeyValueStoreInsertInvocation,
 };
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
@@ -23,7 +23,7 @@ pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + Sc
 
 // TODO: de-duplication
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
+pub struct KeyValueStoreEntrySubstate(pub LockHandle);
 
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     /// Creates a new key value store.
@@ -41,7 +41,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut env = ScryptoEnv;
-        env.invoke(KeyValueStoreLockInvocation {
+        env.invoke(KeyValueStoreGetMutInvocation {
             receiver: self.own.kv_store_id(),
             key: scrypto_encode(key).unwrap(),
             mutable: false,
@@ -52,7 +52,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut env = ScryptoEnv;
-        env.invoke(KeyValueStoreLockInvocation {
+        env.invoke(KeyValueStoreGetMutInvocation {
             receiver: self.own.kv_store_id(),
             key: scrypto_encode(key).unwrap(),
             mutable: true,
