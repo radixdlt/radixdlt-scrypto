@@ -1,7 +1,9 @@
-use radix_engine_interface::api::types::{ComponentId, RENodeId};
+use radix_engine_interface::api::blueprints::resource::AccessRules;
+use radix_engine_interface::api::component::ComponentSetRoyaltyConfigInvocation;
+use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(PartialEq, Eq, Hash, Clone)]

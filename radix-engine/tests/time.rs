@@ -1,5 +1,4 @@
-use radix_engine_interface::model::TimePrecision;
-use radix_engine_interface::time::UtcDateTime;
+use radix_engine_interface::{api::blueprints::clock::TimePrecision, time::UtcDateTime};
 use scrypto_unit::*;
 
 #[test]

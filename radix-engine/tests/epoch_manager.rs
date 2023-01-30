@@ -1,8 +1,11 @@
-use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
-use radix_engine::model::{Validator, ValidatorError};
 use radix_engine::types::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::api::blueprints::epoch_manager::*;
+use radix_engine_interface::api::blueprints::resource::FromPublicKey;
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::serialize::{EpochManagerInvocation, NativeInvocation};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};

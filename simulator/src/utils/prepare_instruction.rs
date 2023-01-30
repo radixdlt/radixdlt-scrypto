@@ -5,6 +5,7 @@
 
 use radix_engine::types::*;
 use radix_engine_interface::abi::{BlueprintAbi, Type};
+use radix_engine_interface::api::blueprints::resource::ParseNonFungibleLocalIdError;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;

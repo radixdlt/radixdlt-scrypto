@@ -1,8 +1,12 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
+use radix_engine_interface::api::blueprints::resource::Bucket;
+use radix_engine_interface::api::package::{
+    PackageClaimRoyaltyInvocation, PackageSetRoyaltyConfigInvocation,
+};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;

@@ -1,8 +1,7 @@
 use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthZoneParams, Executable};
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::model::NonFungibleGlobalId;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 

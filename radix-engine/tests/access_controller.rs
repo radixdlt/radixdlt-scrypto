@@ -1,7 +1,13 @@
-use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::model::AccessControllerError;
+use radix_engine::blueprints::access_controller::AccessControllerError;
+use radix_engine::errors::ApplicationError;
+use radix_engine::errors::ModuleError;
+use radix_engine::errors::RuntimeError;
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::api::blueprints::access_controller::*;
+use radix_engine_interface::api::blueprints::clock::TimePrecision;
+use radix_engine_interface::api::blueprints::resource::*;
 use scrypto_unit::TestRunner;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 

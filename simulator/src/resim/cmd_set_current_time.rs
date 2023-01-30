@@ -1,6 +1,13 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::{modules::auth::AuthAddresses, time::UtcDateTime};
+use radix_engine_interface::{
+    api::{
+        blueprints::clock::ClockSetCurrentTimeInvocation,
+        kernel_modules::auth::AuthAddresses,
+        serialize::{ClockInvocation, NativeInvocation},
+    },
+    time::UtcDateTime,
+};
 
 use crate::resim::*;
 

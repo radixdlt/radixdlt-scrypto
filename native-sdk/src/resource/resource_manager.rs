@@ -1,7 +1,8 @@
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;

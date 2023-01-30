@@ -32,14 +32,17 @@ pub mod data {
 pub mod math {
     pub use radix_engine_interface::math::*;
 }
-/// Scrypto RE node model.
 pub mod model {
-    pub use radix_engine_interface::model::*;
+    pub use radix_engine_interface::api::blueprints::resource::*;
+    pub use radix_engine_interface::api::component::ComponentAddress;
+    pub use radix_engine_interface::api::package::PackageAddress;
+    pub use radix_engine_interface::api::types::RoyaltyConfig;
 }
+/// Scrypto crypto library
 pub mod crypto {
     pub use radix_engine_interface::crypto::*;
 }
-/// Scrypto RE abstraction.
+/// Scrypto engine abstraction.
 pub mod engine;
 /// Scrypto resource abstraction.
 pub mod resource;

@@ -1,8 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::resource_access_rules_from_owner_badge;
-use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::marker::PhantomData;

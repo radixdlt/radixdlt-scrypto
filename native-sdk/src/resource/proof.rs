@@ -1,7 +1,7 @@
+use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{EngineApi, Invokable};
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
-use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 pub trait SysProof {

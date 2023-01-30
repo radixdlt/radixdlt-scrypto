@@ -1,4 +1,4 @@
-use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;

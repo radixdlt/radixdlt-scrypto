@@ -1,3 +1,7 @@
+use radix_engine_interface::api::blueprints::resource::{
+    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+};
+use radix_engine_interface::api::serialize::NativeInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;

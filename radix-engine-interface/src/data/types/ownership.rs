@@ -1,4 +1,5 @@
 use crate::abi::*;
+use crate::api::blueprints::resource::*;
 use crate::api::types::*;
 use crate::data::ScryptoCustomValueKind;
 use crate::*;
