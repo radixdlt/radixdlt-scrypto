@@ -107,3 +107,13 @@ scrypto test
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
+
+## License
+
+This software/code is licensed and used pursuant to the Radix License, Version 1.0 and includes
+modified third party work which is reproduced here pursuant to the Apache 2.0 licensing regime.
+Where third party software has been used this is identified together with the appropriate
+open-source licence.
+
+A copy of the Radix License, Version 1.0 may be found in the `LICENSE` file in the root directory of
+this repository.

@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(
@@ -49,7 +49,7 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -72,7 +72,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -95,7 +95,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -118,7 +118,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -141,7 +141,7 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "some_blueprint".to_string(),

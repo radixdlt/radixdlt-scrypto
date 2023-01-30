@@ -12,7 +12,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -51,7 +51,7 @@ fn test_transaction_preview_cost_estimate() {
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();

@@ -184,6 +184,11 @@ impl AccessRules {
         self.method_auth_mutability.insert(key, mutability);
     }
 
+    pub fn set_method_access_rule_to_group(&mut self, key: AccessRuleKey, group: String) {
+        self.method_auth
+            .insert(key.clone(), AccessRuleEntry::Group(group));
+    }
+
     pub fn get_all_method_auth(&self) -> &BTreeMap<AccessRuleKey, AccessRuleEntry> {
         &self.method_auth
     }

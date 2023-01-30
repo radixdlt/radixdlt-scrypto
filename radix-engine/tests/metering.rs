@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_basic_transfer() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -54,7 +54,7 @@ fn test_basic_transfer() {
 #[test]
 fn test_publish_large_package() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -91,7 +91,7 @@ fn test_publish_large_package() {
 #[test]
 fn should_be_able_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -121,7 +121,7 @@ fn should_be_able_run_large_manifest() {
 #[test]
 fn should_be_able_invoke_account_balance_50_times() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -143,7 +143,7 @@ fn should_be_able_invoke_account_balance_50_times() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
