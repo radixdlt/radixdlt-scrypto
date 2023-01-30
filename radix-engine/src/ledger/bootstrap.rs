@@ -343,7 +343,8 @@ mod tests {
             EcdsaSecp256k1PublicKey([0; 33]),
             (Decimal::one(), account_address),
         );
-        let genesis_transaction = create_genesis(initial_validator_set, Vec::new(), 1u64, 1u64, 1u64);
+        let genesis_transaction =
+            create_genesis(initial_validator_set, Vec::new(), 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,

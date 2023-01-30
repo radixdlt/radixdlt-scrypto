@@ -29,7 +29,7 @@ fn get_epoch_should_succeed() {
 #[test]
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
@@ -57,7 +57,13 @@ fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(BTreeMap::new(), 1u64, rounds_per_epoch, num_unstake_epochs);
+    let genesis = create_genesis(
+        BTreeMap::new(),
+        Vec::new(),
+        1u64,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
