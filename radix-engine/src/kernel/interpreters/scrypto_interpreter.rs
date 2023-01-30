@@ -61,6 +61,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::EpochManager(..)
                     | ComponentAddress::Validator(..)
                     | ComponentAddress::Identity(..)
+                    | ComponentAddress::AccessController(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                     | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
                         return Err(RuntimeError::InterpreterError(

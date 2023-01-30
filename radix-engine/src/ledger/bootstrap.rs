@@ -8,13 +8,6 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    ClockInvocation, EpochManagerInvocation, NativeInvocation, PackageInvocation,
-    ResourceInvocation,
-};
-use radix_engine_interface::api::types::{
-    GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
-};
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
@@ -280,7 +273,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .is_none()
     {

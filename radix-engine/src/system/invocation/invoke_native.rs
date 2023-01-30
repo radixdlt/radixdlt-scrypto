@@ -421,5 +421,55 @@ where
                 Ok(Box::new(rtn))
             }
         },
+        NativeInvocation::AccessController(method) => match method {
+            AccessControllerInvocation::CreateGlobal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CreateProof(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::InitiateRecoveryAsRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::LockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::UnlockPrimaryRole(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccessControllerInvocation::StopTimedRecovery(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
     }
 }

@@ -364,7 +364,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 #[test]
 fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
     let (public_key, _, _account_component) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -391,7 +391,7 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
     // Arrange
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
     let (public_key, _, account_component) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -412,7 +412,7 @@ fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
 #[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
     let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
@@ -459,7 +459,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
     let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
@@ -514,7 +514,7 @@ impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn new(access_rules: Vec<AccessRules>) -> Self {
-        let mut test_runner = TestRunner::new(true);
+        let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()

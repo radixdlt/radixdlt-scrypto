@@ -1,3 +1,4 @@
+pub mod access_controller;
 pub mod clock;
 pub mod epoch_manager;
 pub mod identity;

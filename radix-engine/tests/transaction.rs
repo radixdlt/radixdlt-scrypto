@@ -14,7 +14,7 @@ use utils::ContextualDisplay;
 #[test]
 fn test_manifest_with_non_existent_resource() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let non_existent_resource = ResourceAddress::Normal([1u8; 26]);
 
@@ -44,7 +44,7 @@ fn test_manifest_with_non_existent_resource() {
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -89,7 +89,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
 #[test]
 fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -113,7 +113,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
 #[test]
 fn test_non_existent_blob_hash() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -148,7 +148,7 @@ fn test_non_existent_blob_hash() {
 #[test]
 fn test_entire_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
@@ -176,7 +176,7 @@ fn test_entire_auth_zone() {
 #[test]
 fn test_faucet_drain_attempt_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
