@@ -62,7 +62,7 @@ impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
 }
 
 //=======================================================================
-// KeyValueStore::lock(&self, key: Vec<u8>, mutable: bool) -> LockHandle
+// KeyValueStore::get_mut(&self, key: Vec<u8>) -> LockHandle
 //=======================================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -75,7 +75,7 @@ impl Invocation for KeyValueStoreGetMutInvocation {
     type Output = LockHandle;
 
     fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Lock))
+        FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::GetMut))
     }
 }
 
@@ -85,7 +85,7 @@ impl SerializableInvocation for KeyValueStoreGetMutInvocation {
 
 impl Into<CallTableInvocation> for KeyValueStoreGetMutInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::KeyValueStore(KeyValueStoreInvocation::Lock(self)).into()
+        NativeInvocation::KeyValueStore(KeyValueStoreInvocation::GetMut(self)).into()
     }
 }
 

@@ -39,6 +39,33 @@ extern "C" {
     // Invocation API
     //===============
 
+    /// Invokes a native function or method.
+    pub fn call_native(
+        native_fn_identifier_ptr: *const u8,
+        native_fn_identifier_len: usize,
+        invocation_ptr: *const u8,
+        invocation_len: usize,
+    ) -> Buffer;
+
+    //===============
+    // Component API
+    //===============
+
+    pub fn instantiate_component(
+        blueprint_ident_ptr: *const u8,
+        blueprint_ident: usize,
+        app_states_ptr: *const u8,
+        app_states: usize,
+        access_rules_chain_ptr: *const u8,
+        access_rules_chain: usize,
+        royalty_config_ptr: *const u8,
+        royalty_config: usize,
+        metadata_ptr: *const u8,
+        metadata_len: usize,
+    ) -> Buffer;
+
+    pub fn globalize_component(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
@@ -47,6 +74,23 @@ extern "C" {
         ident_len: usize,
         args_ptr: *const u8,
         args_len: usize,
+    ) -> Buffer;
+
+    //===============
+    // Package API
+    //===============
+
+    pub fn instantiate_package(
+        code_ptr: *const u8,
+        code_len: usize,
+        abi_ptr: *const u8,
+        abi_len: usize,
+        access_rules_chain_ptr: *const u8,
+        access_rules_chain: usize,
+        royalty_config_ptr: *const u8,
+        royalty_config: usize,
+        metadata_ptr: *const u8,
+        metadata_len: usize,
     ) -> Buffer;
 
     /// Invokes a function on a blueprint.
@@ -59,14 +103,6 @@ extern "C" {
         function_ident_len: usize,
         args_ptr: *const u8,
         args_len: usize,
-    ) -> Buffer;
-
-    /// Invokes a native function or method.
-    pub fn call_native(
-        native_fn_identifier_ptr: *const u8,
-        native_fn_identifier_len: usize,
-        invocation_ptr: *const u8,
-        invocation_len: usize,
     ) -> Buffer;
 
     //===============
@@ -118,6 +154,40 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn call_native(
+    _native_fn_identifier_ptr: *const u8,
+    _native_fn_identifier_len: usize,
+    _invocation_ptr: *const u8,
+    _invocation_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn instantiate_component(
+    _blueprint_ident_ptr: *const u8,
+    _blueprint_ident: usize,
+    _app_states_ptr: *const u8,
+    _app_states: usize,
+    _access_rules_chain_ptr: *const u8,
+    _access_rules_chain: usize,
+    _royalty_config_ptr: *const u8,
+    _royalty_config: usize,
+    _metadata_ptr: *const u8,
+    _metadata_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn globalize_component(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
@@ -125,6 +195,22 @@ pub unsafe fn call_method(
     _ident_len: usize,
     _args_ptr: *const u8,
     _args_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn instantiate_package(
+    _code_ptr: *const u8,
+    _code_len: usize,
+    _abi_ptr: *const u8,
+    _abi_len: usize,
+    _access_rules_chain_ptr: *const u8,
+    _access_rules_chain: usize,
+    _royalty_config_ptr: *const u8,
+    _royalty_config: usize,
+    _metadata_ptr: *const u8,
+    _metadata_len: usize,
 ) -> Buffer {
     todo!()
 }
@@ -140,21 +226,6 @@ pub unsafe fn call_function(
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_native(
-    _native_fn_identifier_ptr: *const u8,
-    _native_fn_identifier_len: usize,
-    _invocation_ptr: *const u8,
-    _invocation_len: usize,
-) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn create_node(_node_ptr: *const u8, _node_len: usize) -> Buffer {
     todo!()
 }
 

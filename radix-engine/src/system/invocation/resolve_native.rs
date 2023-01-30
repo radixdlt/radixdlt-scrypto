@@ -650,7 +650,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            KeyValueStoreFn::Lock => {
+            KeyValueStoreFn::GetMut => {
                 let invocation = scrypto_decode::<KeyValueStoreGetMutInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;

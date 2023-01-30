@@ -26,14 +26,37 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, ClientApiError> {
-        todo!()
+        let app_states = scrypto_encode(&app_states).unwrap();
+        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
+        let royalty_config = scrypto_encode(&royalty_config).unwrap();
+        let metadata = scrypto_encode(&metadata).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            instantiate_component(
+                blueprint_ident.as_ptr(),
+                blueprint_ident.len(),
+                app_states.as_ptr(),
+                app_states.len(),
+                access_rules_chain.as_ptr(),
+                access_rules_chain.len(),
+                royalty_config.as_ptr(),
+                royalty_config.len(),
+                metadata.as_ptr(),
+                metadata.len(),
+            )
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize_component(
         &mut self,
         component_id: ComponentId,
     ) -> Result<ComponentAddress, ClientApiError> {
-        todo!()
+        let component_id = scrypto_encode(&component_id).unwrap();
+
+        let bytes =
+            copy_buffer(unsafe { globalize_component(component_id.as_ptr(), component_id.len()) });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     // Slightly different from ClientComponentApi::call_method, for the return type.
@@ -62,13 +85,46 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientPackageApi<ClientApiError> for ScryptoEnv {
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
+    fn instantiate_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: BTreeMap<String, scrypto_abi::BlueprintAbi>,
+        access_rules_chain: Vec<AccessRules>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<PackageAddress, ClientApiError> {
+        let abi = scrypto_encode(&abi).unwrap();
+        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
+        let royalty_config = scrypto_encode(&royalty_config).unwrap();
+        let metadata = scrypto_encode(&metadata).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            instantiate_package(
+                code.as_ptr(),
+                code.len(),
+                abi.as_ptr(),
+                abi.len(),
+                access_rules_chain.as_ptr(),
+                access_rules_chain.len(),
+                royalty_config.as_ptr(),
+                royalty_config.len(),
+                metadata.as_ptr(),
+                metadata.len(),
+            )
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_code(
+        &mut self,
+        _package_address: PackageAddress,
+    ) -> Result<PackageCode, ClientApiError> {
         todo!()
     }
 
     fn get_abi(
         &mut self,
-        package_address: PackageAddress,
+        _package_address: PackageAddress,
     ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
         todo!()
     }
@@ -98,17 +154,6 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         });
 
         Ok(return_data)
-    }
-
-    fn instantiate_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: BTreeMap<String, scrypto_abi::BlueprintAbi>,
-        access_rules_chain: Vec<AccessRules>,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-    ) -> Result<PackageAddress, ClientApiError> {
-        todo!()
     }
 }
 
