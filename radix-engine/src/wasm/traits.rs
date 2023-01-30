@@ -65,18 +65,32 @@ pub trait WasmInstance {
     /// - The return data is U64, which represents a `(SlicePtr, SliceLen)`.
     ///
     /// The return data is copied into a `Vec<u8>`.
-    fn invoke_export<'r>(
+    fn invoke_export(
         &mut self,
         func_name: &str,
         args: Vec<Buffer>,
-        runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
+}
+
+pub trait TemplateWasmInstance {
+    /// The lifetime parameter `'r` represents the lifetime of the &mut reference to the runtime.
+    /// The lifetime parameter `'a` represents the lifetime of the runtime.
+    type WasmInstance<'r, 'a: 'r>: WasmInstance;
+
+    /// Install the runtime in a Scrypto module.
+    fn install_runtime<'r, 'a: 'r>(
+        self,
+        runtime: &'r mut Box<dyn WasmRuntime + 'a>,
+    ) -> Self::WasmInstance<'r, 'a>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine {
-    type WasmInstance: WasmInstance;
+    type TemplateWasmInstance: TemplateWasmInstance;
 
     /// Instantiate a Scrypto module.
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
+    fn instantiate_template_instance(
+        &'_ self,
+        instrumented_code: &'_ InstrumentedCode,
+    ) -> Self::TemplateWasmInstance;
 }

@@ -1,6 +1,8 @@
 use crate::engine::*;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use crate::wasm::TemplateWasmInstance;
+use crate::wasm::WasmInstance;
+use crate::wasm::{WasmEngine, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
@@ -45,17 +47,14 @@ impl Executor for ScryptoExecutor {
 
         // Emit event
         api.on_wasm_instantiation(package.code())?;
-        let mut instance = api
-            .vm()
-            .create_instance(self.package_address, &package.code);
 
         let output = {
-            let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
+            let mut allocator = WasmRuntimeAllocator::new();
 
             let mut input = Vec::new();
             if let Some(component_id) = self.component_id {
                 input.push(
-                    runtime
+                    allocator
                         .allocate_buffer(
                             scrypto_encode(&component_id).expect("Failed to encode component id"),
                         )
@@ -63,12 +62,20 @@ impl Executor for ScryptoExecutor {
                 );
             }
             input.push(
-                runtime
+                allocator
                     .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
                     .expect("Failed to allocate buffer"),
             );
 
-            instance.invoke_export(&self.export_name, input, &mut runtime)?
+            let template_instance = api
+                .vm()
+                .instantiate_template_instance(self.package_address, &package.code);
+
+            let mut wasm_runtime: Box<dyn WasmRuntime> =
+                Box::new(RadixEngineWasmRuntime::new(api, allocator));
+            let mut instance = template_instance.install_runtime(&mut wasm_runtime);
+
+            instance.invoke_export(&self.export_name, input)?
         };
         let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
@@ -117,11 +124,16 @@ impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
 }
 
 impl<W: WasmEngine> ScryptoInterpreter<W> {
-    pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> W::WasmInstance {
+    pub fn instantiate_template_instance(
+        &'_ self,
+        package_address: PackageAddress,
+        code: &'_ [u8],
+    ) -> W::TemplateWasmInstance {
         let instrumented_code =
             self.wasm_instrumenter
                 .instrument(package_address, code, self.wasm_metering_config);
-        self.wasm_engine.instantiate(&instrumented_code)
+        self.wasm_engine
+            .instantiate_template_instance(&instrumented_code)
     }
 }
 

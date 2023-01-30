@@ -637,7 +637,7 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn vm(&mut self) -> &ScryptoInterpreter<W> {
+    fn vm(&self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
 

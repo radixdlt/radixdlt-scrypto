@@ -29,11 +29,14 @@ pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, Extrac
     );
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
-    let mut instance = wasm_engine.instantiate(&instrumented_code);
+    let mut instance = wasm_engine
+        .instantiate_template_instance(&instrumented_code)
+        .install_runtime(&mut runtime);
+
     let mut blueprints = BTreeMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, vec![], &mut runtime)
+            .invoke_export(&method_name, vec![])
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

@@ -14,7 +14,7 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-type HostState = WasmiInstanceEnv;
+type HostState<'r, 'a> = WasmiInstanceEnv<'r, 'a>;
 
 /// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined) and Store,
 /// which keeps user data.
@@ -23,14 +23,14 @@ type HostState = WasmiInstanceEnv;
 /// It is correctly `Send + Sync` - which is good, because this is the thing which is cached in the
 /// ScryptoInterpreter caches.
 pub struct WasmiModule {
-    store: Store<HostState>,
-    instance: Instance,
+    template_store: Store<WasmiInstanceEnv<'static, 'static>>,
+    template_instance: Instance,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
-pub struct WasmiInstance {
-    store: Store<HostState>,
+pub struct WasmiInstance<'r, 'a: 'r> {
+    store: Store<WasmiInstanceEnv<'r, 'a>>,
     instance: Instance,
     memory: Memory,
 }
@@ -45,39 +45,61 @@ pub struct WasmiInstance {
 ///   - Store also shall be `Send + Sync` because of `WasmiModule`, which is cached.
 /// - WasmiInstanceEnv must be clonable (it is a user data for the Store, which is cloned when
 ///   WasmiModule is instantiated)
-#[derive(Clone)]
-pub struct WasmiInstanceEnv {
-    runtime_ptr: usize,
+pub struct WasmiInstanceEnv<'r, 'a: 'r> {
+    runtime: Option<&'r mut Box<dyn WasmRuntime + 'a>>,
 }
 
-impl WasmiInstanceEnv {
-    pub fn new() -> Self {
-        Self { runtime_ptr: 0 }
+unsafe impl Send for WasmiInstanceEnv<'static, 'static> {}
+unsafe impl Sync for WasmiInstanceEnv<'static, 'static> {}
+
+impl Clone for WasmiInstanceEnv<'static, 'static> {
+    fn clone(&self) -> Self {
+        Self { runtime: None }
     }
 }
 
-macro_rules! grab_runtime {
-    ($caller: expr) => {{
-        let runtime: &mut Box<dyn WasmRuntime> =
-            unsafe { &mut *($caller.data().runtime_ptr as *mut _) };
+impl WasmiInstanceEnv<'static, 'static> {
+    pub fn new() -> Self {
+        Self { runtime: None }
+    }
+}
 
-        let memory = match $caller.get_export(EXPORT_MEMORY) {
-            Some(Extern::Memory(memory)) => memory,
-            _ => panic!("Failed to find memory export"),
-        };
-        (memory, runtime)
-    }};
+pub fn clone_store_with_new_runtime_reference<'r, 'a: 'r>(
+    template_store: Store<WasmiInstanceEnv<'static, 'static>>,
+    runtime: &'r mut Box<dyn WasmRuntime + 'a>,
+) -> Store<WasmiInstanceEnv<'r, 'a>> {
+    let mut new_store: Store<WasmiInstanceEnv<'r, 'a>> = unsafe {
+        sbor::rust::mem::transmute::<
+            Store<WasmiInstanceEnv<'static, 'static>>,
+            Store<WasmiInstanceEnv<'r, 'a>>,
+        >(template_store)
+    };
+    new_store.data_mut().runtime = Some(runtime);
+    new_store
+}
+
+pub fn get_memory(caller: &Caller<'_, HostState>) -> Memory {
+    match caller.get_export(EXPORT_MEMORY) {
+        Some(Extern::Memory(memory)) => memory,
+        _ => panic!("Failed to find memory export"),
+    }
+}
+
+pub fn get_runtime<'a: 'o, 'b: 'o, 'r: 'o, 's: 'o, 'o>(
+    caller: &'b mut Caller<'s, HostState<'r, 'a>>,
+) -> &'o mut Box<dyn WasmRuntime + 'a> {
+    caller.data_mut().runtime.as_deref_mut().unwrap()
 }
 
 // native functions start
 fn consume_buffer(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
     buffer_id: BufferId,
     destination_ptr: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let result = get_runtime(&mut caller).consume_buffer(buffer_id);
 
-    let result = runtime.consume_buffer(buffer_id);
+    let memory = get_memory(&caller);
     match result {
         Ok(slice) => {
             write_memory(caller, memory, destination_ptr, &slice)?;
@@ -96,13 +118,13 @@ fn invoke_method(
     args_ptr: u32,
     args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
-    runtime
+    get_runtime(&mut caller)
         .invoke_method(receiver, ident, args)
         .map(|buffer| buffer.0)
 }
@@ -112,7 +134,7 @@ fn invoke(
     invocation_ptr: u32,
     invocation_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let invocation = read_memory(
         caller.as_context_mut(),
@@ -121,7 +143,7 @@ fn invoke(
         invocation_len,
     )?;
 
-    runtime.invoke(invocation).map(|buffer| buffer.0)
+    get_runtime(&mut caller).invoke(invocation).map(|buffer| buffer.0)
 }
 
 fn create_node(
@@ -129,17 +151,17 @@ fn create_node(
     node_ptr: u32,
     node_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let node = read_memory(caller.as_context_mut(), memory, node_ptr, node_len)?;
 
-    runtime.create_node(node).map(|buffer| buffer.0)
+    get_runtime(&mut caller).create_node(node).map(|buffer| buffer.0)
 }
 
-fn get_visible_nodes(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_visible_nodes().map(|buffer| buffer.0)
+fn get_visible_nodes(
+    mut caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    get_runtime(&mut caller).get_visible_nodes().map(|buffer| buffer.0)
 }
 
 fn drop_node(
@@ -147,11 +169,11 @@ fn drop_node(
     node_id_ptr: u32,
     node_id_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
 
-    runtime.drop_node(node_id)
+    get_runtime(&mut caller).drop_node(node_id)
 }
 
 fn lock_substate(
@@ -162,21 +184,19 @@ fn lock_substate(
     offset_len: u32,
     mutable: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, offset, mutable != 0)
+    get_runtime(&mut caller).lock_substate(node_id, offset, mutable != 0)
 }
 
 fn read_substate(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.read_substate(handle).map(|buffer| buffer.0)
+    get_runtime(&mut caller).read_substate(handle).map(|buffer| buffer.0)
 }
 
 fn write_substate(
@@ -185,34 +205,29 @@ fn write_substate(
     data_ptr: u32,
     data_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let memory = get_memory(&caller);
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime.write_substate(handle, data)
+    get_runtime(&mut caller).write_substate(handle, data)
 }
 
 fn unlock_substate(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.unlock_substate(handle)
+    get_runtime(&mut caller).unlock_substate(handle)
 }
 
-fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_actor().map(|buffer| buffer.0)
+fn get_actor(mut caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    get_runtime(&mut caller).get_actor().map(|buffer| buffer.0)
 }
 
 fn consume_cost_units(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
     cost_unit: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-    runtime.consume_cost_units(cost_unit)
+    get_runtime(&mut caller).consume_cost_units(cost_unit)
 }
 // native functions ends
 
@@ -236,8 +251,8 @@ impl WasmiModule {
             .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(Self {
-            store,
-            instance,
+            template_store: store,
+            template_instance: instance,
             code_size_bytes: code.len(),
         })
     }
@@ -398,17 +413,17 @@ impl WasmiModule {
         linker.instantiate(store.as_context_mut(), &module)
     }
 
-    fn instantiate(&self) -> WasmiInstance {
-        let instance = self.instance.clone();
-        let mut store = self.store.clone();
-        let memory = match instance.get_export(store.as_context_mut(), EXPORT_MEMORY) {
+    fn instantiate_template_instance(&self) -> WasmiInstance<'static, 'static> {
+        let instance = self.template_instance.clone();
+        let mut blank_store = self.template_store.clone();
+        let memory = match instance.get_export(blank_store.as_context_mut(), EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
         };
 
         WasmiInstance {
             instance,
-            store,
+            store: blank_store,
             memory,
         }
     }
@@ -460,7 +475,7 @@ fn read_slice(
     read_memory(store, memory, ptr, len)
 }
 
-impl WasmiInstance {
+impl<'r, 'a: 'r> WasmiInstance<'r, 'a> {
     fn get_export_func(&mut self, name: &str) -> Result<Func, InvokeError<WasmRuntimeError>> {
         self.instance
             .get_export(self.store.as_context_mut(), name)
@@ -490,18 +505,12 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
     }
 }
 
-impl WasmInstance for WasmiInstance {
-    fn invoke_export<'r>(
+impl<'r, 'a: 'r> WasmInstance for WasmiInstance<'r, 'a> {
+    fn invoke_export(
         &mut self,
         func_name: &str,
         args: Vec<Buffer>,
-        runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
-        {
-            // set up runtime pointer
-            self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
-        }
-
         let func = self.get_export_func(func_name).unwrap();
         let input: Vec<Value> = args
             .into_iter()
@@ -567,26 +576,44 @@ impl WasmiEngine {
     }
 }
 
-impl WasmEngine for WasmiEngine {
-    type WasmInstance = WasmiInstance;
+impl TemplateWasmInstance for WasmiInstance<'static, 'static> {
+    type WasmInstance<'r, 'a: 'r> = WasmiInstance<'r, 'a>;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+    fn install_runtime<'r, 'a: 'r>(
+        self,
+        runtime: &'r mut Box<dyn WasmRuntime + 'a>,
+    ) -> Self::WasmInstance<'r, 'a> {
+        WasmiInstance {
+            store: clone_store_with_new_runtime_reference(self.store, runtime),
+            instance: self.instance,
+            memory: self.memory,
+        }
+    }
+}
+
+impl WasmEngine for WasmiEngine {
+    type TemplateWasmInstance = WasmiInstance<'static, 'static>;
+
+    fn instantiate_template_instance(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Self::TemplateWasmInstance {
         let metered_code_key = &instrumented_code.metered_code_key;
 
         #[cfg(not(feature = "moka"))]
         {
             if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                return cached_module.instantiate();
+                return cached_module.instantiate_template_instance();
             }
         }
         #[cfg(feature = "moka")]
         if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-            return cached_module.as_ref().instantiate();
+            return cached_module.as_ref().instantiate_template_instance();
         }
 
         let code = &instrumented_code.code.as_ref()[..];
         let module = WasmiModule::new(code).unwrap();
-        let instance = module.instantiate();
+        let instance = module.instantiate_template_instance();
 
         #[cfg(not(feature = "moka"))]
         self.modules_cache

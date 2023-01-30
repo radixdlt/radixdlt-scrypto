@@ -81,7 +81,7 @@ pub trait SystemApi {
 
 pub trait VmApi<W: WasmEngine> {
     fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
-    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+    fn vm(&self) -> &ScryptoInterpreter<W>;
 }
 
 // TODO: Clean this up

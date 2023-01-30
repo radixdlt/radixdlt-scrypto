@@ -17,20 +17,55 @@ where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     api: &'y mut Y,
+    allocator: WasmRuntimeAllocator,
+}
+
+pub struct WasmRuntimeAllocator {
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
+}
+
+impl WasmRuntimeAllocator {
+    pub fn new() -> Self {
+        Self {
+            buffers: BTreeMap::new(),
+            next_buffer_id: 0,
+        }
+    }
+
+    pub fn allocate_buffer(
+        &mut self,
+        buffer: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        assert!(buffer.len() <= 0xffffffff);
+
+        let id = self.next_buffer_id;
+        let len = buffer.len();
+
+        self.buffers.insert(id, buffer);
+        self.next_buffer_id += 1;
+
+        Ok(Buffer::new(id, len as u32))
+    }
+
+    pub fn consume_buffer(
+        &mut self,
+        buffer_id: BufferId,
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
+        self.buffers
+            .remove(&buffer_id)
+            .ok_or(InvokeError::SelfError(WasmRuntimeError::BufferNotFound(
+                buffer_id,
+            )))
+    }
 }
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
-    pub fn new(api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime {
-            api,
-            buffers: BTreeMap::new(),
-            next_buffer_id: 0,
-        }
+    pub fn new(api: &'y mut Y, allocator: WasmRuntimeAllocator) -> Self {
+        RadixEngineWasmRuntime { api, allocator }
     }
 }
 
@@ -46,26 +81,14 @@ where
         &mut self,
         buffer: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        assert!(buffer.len() <= 0xffffffff);
-
-        let id = self.next_buffer_id;
-        let len = buffer.len();
-
-        self.buffers.insert(id, buffer);
-        self.next_buffer_id += 1;
-
-        Ok(Buffer::new(id, len as u32))
+        self.allocator.allocate_buffer(buffer)
     }
 
     fn consume_buffer(
         &mut self,
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
-        self.buffers
-            .remove(&buffer_id)
-            .ok_or(InvokeError::SelfError(WasmRuntimeError::BufferNotFound(
-                buffer_id,
-            )))
+        self.allocator.consume_buffer(buffer_id)
     }
 
     fn invoke_method(

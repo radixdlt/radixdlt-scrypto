@@ -25,12 +25,12 @@ pub use wasm_validator::*;
 #[cfg(feature = "wasmer")]
 pub type DefaultWasmEngine = WasmerEngine;
 #[cfg(feature = "wasmer")]
-pub type DefaultWasmInstance = WasmerInstance;
+pub type DefaultWasmInstance<'r, 'a> = WasmerInstance<'r, 'a>;
 
 #[cfg(not(feature = "wasmer"))]
 pub type DefaultWasmEngine = WasmiEngine;
 #[cfg(not(feature = "wasmer"))]
-pub type DefaultWasmInstance = WasmiInstance;
+pub type DefaultWasmInstance<'r, 'a> = WasmiInstance<'r, 'a>;
 
 // TODO: expand if package is upgradable.
 use radix_engine_interface::model::PackageAddress;
