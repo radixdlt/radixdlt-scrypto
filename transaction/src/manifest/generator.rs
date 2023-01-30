@@ -536,6 +536,9 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+        ast::Instruction::CreateValidator { key } => BasicInstruction::CreateValidator {
+            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+        },
         ast::Instruction::CreateAccessController {
             controlled_asset,
             primary_role,

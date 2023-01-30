@@ -193,6 +193,9 @@ pub enum Instruction {
         initial_supply: Value,
     },
 
+    CreateValidator {
+        key: Value,
+    },
     CreateAccessController {
         controlled_asset: Value,
         primary_role: Value,
