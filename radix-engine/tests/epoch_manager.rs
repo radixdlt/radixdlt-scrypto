@@ -60,7 +60,13 @@ fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(BTreeMap::new(), 1u64, rounds_per_epoch, num_unstake_epochs);
+    let genesis = create_genesis(
+        BTreeMap::new(),
+        BTreeMap::new(),
+        1u64,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -93,6 +99,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
+        BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
@@ -137,8 +144,8 @@ fn register_validator_with_auth_succeeds() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
         pub_key,
         (
             Decimal::one(),
@@ -146,7 +153,8 @@ fn register_validator_with_auth_succeeds() {
         ),
     );
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -177,8 +185,8 @@ fn register_validator_without_auth_fails() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
         pub_key,
         (
             Decimal::one(),
@@ -186,7 +194,8 @@ fn register_validator_without_auth_fails() {
         ),
     );
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -216,8 +225,8 @@ fn unregister_validator_with_auth_succeeds() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
         pub_key,
         (
             Decimal::one(),
@@ -225,7 +234,8 @@ fn unregister_validator_with_auth_succeeds() {
         ),
     );
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -256,8 +266,8 @@ fn unregister_validator_without_auth_fails() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
         pub_key,
         (
             Decimal::one(),
@@ -265,7 +275,8 @@ fn unregister_validator_without_auth_fails() {
         ),
     );
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -293,6 +304,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
+        BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
@@ -342,6 +354,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
+        BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
@@ -412,8 +425,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
         validator_pub_key,
         (
             Decimal::one(),
@@ -421,7 +434,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         ),
     );
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -475,11 +489,12 @@ fn cannot_claim_unstake_immediately() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = BTreeMap::new();
+    let mut validator_set_and_stake_owners = BTreeMap::new();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -532,10 +547,11 @@ fn can_claim_unstake_after_epochs() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -597,10 +613,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let mut validator_set = BTreeMap::new();
-    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
-        validator_set,
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
