@@ -1,5 +1,6 @@
 use crate::api::types::*;
 use crate::data::types::Own;
+use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::fmt::Debug;
 
@@ -28,19 +29,15 @@ impl Into<CallTableInvocation> for KeyValueStoreCreateInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KeyValueStoreGetMethodArgs {
-    pub key: Vec<u8>,
-}
-
 //=====================================================
-// KeyValueStore::get(&self, key: Vec<u8>) -> LockHandle
+// KeyValueStore::get(&self, hash: Hash) -> LockHandle
+// (Not active yet)
 //=====================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreGetInvocation {
     pub receiver: KeyValueStoreId,
-    pub key: Vec<u8>,
+    pub hash: Hash,
 }
 
 impl Invocation for KeyValueStoreGetInvocation {
@@ -62,13 +59,14 @@ impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
 }
 
 //=======================================================================
-// KeyValueStore::get_mut(&self, key: Vec<u8>) -> LockHandle
+// KeyValueStore::get_mut(&self, hash: Hash) -> LockHandle
+// (Not active yet)
 //=======================================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreGetMutInvocation {
     pub receiver: KeyValueStoreId,
-    pub key: Vec<u8>,
+    pub hash: Hash,
 }
 
 impl Invocation for KeyValueStoreGetMutInvocation {
@@ -90,7 +88,7 @@ impl Into<CallTableInvocation> for KeyValueStoreGetMutInvocation {
 }
 
 //=============================================================
-// KeyValueStore::insert(&self, key: Vec<u8>, value: Vec<u8>)
+// KeyValueStore::insert(&self, key: ScryptoValue, value: ScryptoValue)
 //=============================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -101,8 +99,9 @@ pub struct KeyValueStoreInsertMethodArgs {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreInsertInvocation {
     pub receiver: KeyValueStoreId,
-    pub key: Vec<u8>,
-    pub value: Vec<u8>,
+    pub hash: Hash,
+    pub key: ScryptoValue,
+    pub value: ScryptoValue,
 }
 
 impl Invocation for KeyValueStoreInsertInvocation {

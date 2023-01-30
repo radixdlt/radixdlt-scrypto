@@ -1,4 +1,5 @@
 use super::KeyValueStoreEntrySubstate;
+use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
@@ -10,6 +11,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::kv_store::*;
+use radix_engine_interface::data::ScryptoValue;
 
 pub struct KeyValueStore;
 
@@ -53,10 +55,8 @@ impl Executor for KeyValueStoreCreateInvocation {
     }
 }
 
-pub struct KeyValueStoreGetExecutable(RENodeId, Vec<u8>);
-
 impl ExecutableInvocation for KeyValueStoreGetInvocation {
-    type Exec = KeyValueStoreGetExecutable;
+    type Exec = Self;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -73,13 +73,12 @@ impl ExecutableInvocation for KeyValueStoreGetInvocation {
             NativeFn::KeyValueStore(KeyValueStoreFn::Get),
             resolved_receiver,
         );
-        let executor = KeyValueStoreGetExecutable(resolved_receiver.receiver, self.key);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for KeyValueStoreGetExecutable {
+impl Executor for KeyValueStoreGetInvocation {
     type Output = LockHandle;
 
     fn execute<Y, W: WasmEngine>(
@@ -89,19 +88,20 @@ impl Executor for KeyValueStoreGetExecutable {
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
-        let node_id = self.0;
-        let key = self.1;
-
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(self.hash));
+        let handle = api.lock_substate(
+            RENodeId::KeyValueStore(self.receiver),
+            offset,
+            LockFlags::read_only(),
+        )?;
         Ok((handle, CallFrameUpdate::empty()))
     }
 }
 
-pub struct KeyValueStoreGetMutExecutable(RENodeId, Vec<u8>);
+pub struct KeyValueStoreGetMutExecutable(RENodeId, Hash);
 
 impl ExecutableInvocation for KeyValueStoreGetMutInvocation {
-    type Exec = KeyValueStoreGetMutExecutable;
+    type Exec = Self;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -118,13 +118,12 @@ impl ExecutableInvocation for KeyValueStoreGetMutInvocation {
             NativeFn::KeyValueStore(KeyValueStoreFn::Get),
             resolved_receiver,
         );
-        let executor = KeyValueStoreGetMutExecutable(resolved_receiver.receiver, self.key);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for KeyValueStoreGetMutExecutable {
+impl Executor for KeyValueStoreGetMutInvocation {
     type Output = LockHandle;
 
     fn execute<Y, W: WasmEngine>(
@@ -134,20 +133,26 @@ impl Executor for KeyValueStoreGetMutExecutable {
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
-        let node_id = self.0;
-        let key = self.1;
-
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(self.hash));
+        let handle = api.lock_substate(
+            RENodeId::KeyValueStore(self.receiver),
+            offset,
+            LockFlags::MUTABLE,
+        )?;
 
         Ok((handle, CallFrameUpdate::empty()))
     }
 }
 
-pub struct KeyValueStoreInsertExecutable(RENodeId, Vec<u8>, Vec<u8>);
+pub struct KeyValueStoreInsertExecutable {
+    receiver: RENodeId,
+    hash: Hash,
+    key: ScryptoValue,
+    value: ScryptoValue,
+}
 
 impl ExecutableInvocation for KeyValueStoreInsertInvocation {
-    type Exec = KeyValueStoreInsertExecutable;
+    type Exec = Self;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -158,34 +163,39 @@ impl ExecutableInvocation for KeyValueStoreInsertInvocation {
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         call_frame_update.add_ref(RENodeId::KeyValueStore(self.receiver));
+        for id in IndexedScryptoValue::from_value(self.key.clone())
+            .owned_node_ids()
+            .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
+        {
+            call_frame_update.nodes_to_move.push(id);
+        }
+        // TODO: reference passing?
 
         let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
         let actor = ResolvedActor::method(
             NativeFn::KeyValueStore(KeyValueStoreFn::Insert),
             resolved_receiver,
         );
-        let executor =
-            KeyValueStoreInsertExecutable(resolved_receiver.receiver, self.key, self.value);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for KeyValueStoreInsertExecutable {
+impl Executor for KeyValueStoreInsertInvocation {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
-        let node_id = self.0;
-        let key = self.1;
-        let value = self.2;
-
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key));
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(self.hash));
+        let handle = api.lock_substate(
+            RENodeId::KeyValueStore(self.receiver),
+            offset,
+            LockFlags::MUTABLE,
+        )?;
         let mut substate_ref = api.get_ref_mut(handle)?;
-        *substate_ref.kv_store_entry() = KeyValueStoreEntrySubstate(Some(value));
+        *substate_ref.kv_store_entry() = KeyValueStoreEntrySubstate::Some(self.key, self.value);
 
         Ok(((), CallFrameUpdate::empty()))
     }

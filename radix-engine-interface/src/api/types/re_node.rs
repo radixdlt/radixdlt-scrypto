@@ -228,9 +228,9 @@ pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
-    Entry(Vec<u8>),
+    Entry(Hash),
 }
 
 #[derive(

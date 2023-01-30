@@ -1,4 +1,8 @@
 use crate::types::*;
+use radix_engine_interface::data::ScryptoValue;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialEq, Eq)]
+pub enum KeyValueStoreEntrySubstate {
+    Some(ScryptoValue, ScryptoValue),
+    None,
+}
