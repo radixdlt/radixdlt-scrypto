@@ -475,6 +475,7 @@ impl Lexer {
             }
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
+            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
