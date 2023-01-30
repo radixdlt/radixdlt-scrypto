@@ -59,7 +59,7 @@ fn next_round_with_validator_auth_succeeds() {
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         BTreeMap::new(),
-        Vec::new(),
+        BTreeMap::new(),
         1u64,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -97,7 +97,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         BTreeMap::new(),
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -151,7 +151,7 @@ fn register_validator_with_auth_succeeds() {
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -192,7 +192,7 @@ fn register_validator_without_auth_fails() {
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -232,7 +232,7 @@ fn unregister_validator_with_auth_succeeds() {
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -273,7 +273,7 @@ fn unregister_validator_without_auth_fails() {
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -302,7 +302,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         BTreeMap::new(),
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -352,7 +352,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         BTreeMap::new(),
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -432,7 +432,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -491,7 +491,7 @@ fn cannot_claim_unstake_immediately() {
     validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -548,7 +548,7 @@ fn can_claim_unstake_after_epochs() {
     validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -614,7 +614,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set_and_stake_owners,
-        Vec::new(),
+        BTreeMap::new(),
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,

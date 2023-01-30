@@ -25,7 +25,7 @@ pub struct GenesisReceipt {
 
 pub fn create_genesis(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-    account_xrd_allocations: Vec<(Decimal, EcdsaSecp256k1PublicKey)>,
+    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -206,7 +206,7 @@ pub fn create_genesis(
         )));
     }
 
-    for (amount, public_key) in account_xrd_allocations {
+    for (public_key, amount) in account_xrd_allocations.into_iter() {
         let bucket_id = id_allocator.new_bucket_id().unwrap();
         instructions.push(
             BasicInstruction::TakeFromWorktopByAmount {
@@ -272,7 +272,7 @@ where
         substate_store,
         scrypto_interpreter,
         BTreeMap::new(),
-        Vec::new(),
+        BTreeMap::new(),
         1u64,
         1u64,
         1u64,
@@ -283,7 +283,7 @@ pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-    account_xrd_allocations: Vec<(Decimal, EcdsaSecp256k1PublicKey)>,
+    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -343,7 +343,7 @@ mod tests {
             (Decimal::one(), account_address),
         );
         let genesis_transaction =
-            create_genesis(initial_validator_set, Vec::new(), 1u64, 1u64, 1u64);
+            create_genesis(initial_validator_set, BTreeMap::new(), 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -368,13 +368,10 @@ mod tests {
             &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
         );
         let allocation_amount = dec!("100");
-        let genesis_transaction = create_genesis(
-            BTreeMap::new(),
-            vec![(allocation_amount, account_public_key)],
-            1u64,
-            1u64,
-            1u64,
-        );
+        let mut account_xrd_allocations = BTreeMap::new();
+        account_xrd_allocations.insert(account_public_key, allocation_amount);
+        let genesis_transaction =
+            create_genesis(BTreeMap::new(), account_xrd_allocations, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
