@@ -832,7 +832,6 @@ pub enum AccountFn {
     Create,
 
     New,
-    NewWithResource,
 
     Balance,
 
@@ -865,7 +864,7 @@ impl AccountPackage {
     ) -> Result<AccountInvocation, ResolveError> {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
-            AccountFn::Create | AccountFn::New | AccountFn::NewWithResource => {
+            AccountFn::Create | AccountFn::New => {
                 return Err(ResolveError::NotAMethod);
             }
             AccountFn::Balance => {

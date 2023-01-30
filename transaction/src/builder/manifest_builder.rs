@@ -728,19 +728,6 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Creates an account with some initial resource.
-    pub fn new_account_with_resource(
-        &mut self,
-        withdraw_auth: &AccessRule,
-        bucket_id: ManifestBucket,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateAccountWithResource {
-            withdraw_rule: withdraw_auth.clone(),
-            bucket: bucket_id,
-        })
-        .0
-    }
-
     pub fn lock_fee_and_withdraw(
         &mut self,
         account: ComponentAddress,

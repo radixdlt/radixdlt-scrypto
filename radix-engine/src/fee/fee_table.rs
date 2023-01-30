@@ -236,7 +236,6 @@ impl FeeTable {
                 AccountFn::Create => self.fixed_low,
 
                 AccountFn::New => self.fixed_low,
-                AccountFn::NewWithResource => self.fixed_low,
 
                 AccountFn::Balance => self.fixed_low,
 

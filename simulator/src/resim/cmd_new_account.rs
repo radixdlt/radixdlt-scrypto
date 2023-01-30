@@ -34,10 +34,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(&withdraw_auth, bucket_id)
-            })
+            .new_account(&withdraw_auth)
             .build();
 
         let receipt = handle_manifest(
@@ -96,6 +93,32 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
         }
+
+        let component_address = receipt
+            .result
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(
+                component_address,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = handle_manifest(
+            manifest,
+            &Some("".to_string()), // explicit empty signer public keys
+            &self.network,
+            &self.manifest,
+            self.trace,
+            false,
+            out,
+        )?
+        .expect("Should not fail!");
+
         Ok(())
     }
 }

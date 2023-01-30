@@ -567,6 +567,21 @@ ASSERT_ACCESS_RULE
         );
     }
 
+    #[test]
+    fn test_create_account() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/account/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_ACCOUNT
+    Enum(0u8);
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,

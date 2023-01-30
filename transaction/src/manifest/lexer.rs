@@ -133,7 +133,6 @@ pub enum TokenKind {
     CreateIdentity,
     AssertAccessRule,
     CreateAccount,
-    CreateAccountWithResource,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -478,7 +477,6 @@ impl Lexer {
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
             "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
-            "CREATE_ACCOUNT_WITH_RESOURCE" => Ok(TokenKind::CreateAccountWithResource),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

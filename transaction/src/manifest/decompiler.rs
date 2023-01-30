@@ -575,15 +575,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CreateAccountWithResource {
-            withdraw_rule,
-            bucket,
-        } => {
-            f.write_str("CREATE_ACCOUNT_WITH_RESOURCE")?;
-            format_typed_value(f, context, withdraw_rule)?;
-            format_typed_value(f, context, bucket)?;
-            f.write_str(";")?;
-        }
     }
     Ok(())
 }

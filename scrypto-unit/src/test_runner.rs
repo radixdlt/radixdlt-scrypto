@@ -19,7 +19,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
@@ -363,21 +363,25 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.new_account_with_resource(withdraw_auth, bucket)
-            })
-            .build();
-
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-
-        receipt
+        let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let account_component = receipt
             .expect_commit()
             .entity_changes
-            .new_component_addresses[0]
+            .new_component_addresses[0];
+
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(
+                account_component,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
+        account_component
     }
 
     pub fn new_virtual_account(

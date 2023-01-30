@@ -225,7 +225,6 @@ pub enum WorktopInvocation {
 pub enum AccountInvocation {
     Create(AccountCreateInvocation),
     New(AccountNewInvocation),
-    NewWithResource(AccountNewWithResourceInvocation),
 
     Balance(AccountBalanceInvocation),
 
@@ -544,9 +543,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {
-                AccountInvocation::Create(..)
-                | AccountInvocation::New(..)
-                | AccountInvocation::NewWithResource(..) => {}
+                AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
                 AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
                 | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
                 | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {

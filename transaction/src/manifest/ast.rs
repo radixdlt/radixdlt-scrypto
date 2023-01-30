@@ -211,11 +211,6 @@ pub enum Instruction {
     CreateAccount {
         withdraw_rule: Value,
     },
-
-    CreateAccountWithResource {
-        withdraw_rule: Value,
-        bucket: Value,
-    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

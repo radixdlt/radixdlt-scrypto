@@ -361,18 +361,6 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::NewWithResource;
-
-            let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
-                mutability: None,
-                input: AccountNewWithResourceInvocation::describe(),
-                output: <AccountNewWithResourceInvocation as Invocation>::Output::describe(),
-            };
-            fns.push(fn_def);
-        }
-        {
             let fn_ident = AccountFn::LockFee;
 
             let fn_def = Fn {

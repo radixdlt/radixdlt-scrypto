@@ -560,10 +560,6 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccountInvocation::NewWithResource(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccountInvocation::LockFee(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

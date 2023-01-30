@@ -58,32 +58,6 @@ impl Into<CallTableInvocation> for AccountNewInvocation {
     }
 }
 
-//===========================
-// Account New With Resource
-//===========================
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountNewWithResourceInvocation {
-    pub withdraw_rule: AccessRule,
-    pub bucket: BucketId,
-}
-
-impl Invocation for AccountNewWithResourceInvocation {
-    type Output = ComponentAddress;
-}
-
-impl SerializableInvocation for AccountNewWithResourceInvocation {
-    type ScryptoOutput = ComponentAddress;
-}
-
-impl Into<CallTableInvocation> for AccountNewWithResourceInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::NewWithResource(self)).into()
-    }
-}
-
 //=================
 // Account Balance
 //=================

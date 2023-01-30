@@ -60,17 +60,13 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-                    });
+                    builder.new_account(&AccessRule::AllowAll);
                 }
                 1 => {
                     builder.new_account(&AccessRule::AllowAll);
                 }
                 2 => {
-                    builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-                    });
+                    builder.new_account(&AccessRule::AllowAll);
                 }
                 3 => {
                     builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));

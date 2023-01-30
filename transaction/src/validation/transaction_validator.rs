@@ -290,11 +290,6 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(controlled_asset)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CreateAccountWithResource { bucket, .. } => {
-                    id_validator
-                        .drop_bucket(bucket)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
                 BasicInstruction::RecallResource { .. }
                 | BasicInstruction::SetMetadata { .. }
                 | BasicInstruction::SetPackageRoyaltyConfig { .. }

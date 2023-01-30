@@ -202,8 +202,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateAccessController { .. }
             | BasicInstruction::CreateIdentity { .. }
             | BasicInstruction::AssertAccessRule { .. }
-            | BasicInstruction::CreateAccount { .. }
-            | BasicInstruction::CreateAccountWithResource { .. } => {}
+            | BasicInstruction::CreateAccount { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -801,17 +800,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
                     let rtn = api.invoke(AccountNewInvocation {
                         withdraw_rule: withdraw_rule.clone(),
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateAccountWithResource {
-                    withdraw_rule,
-                    bucket,
-                }) => {
-                    let bucket = processor.get_bucket(bucket)?;
-                    let rtn = api.invoke(AccountNewWithResourceInvocation {
-                        withdraw_rule: withdraw_rule.clone(),
-                        bucket: bucket.0,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
