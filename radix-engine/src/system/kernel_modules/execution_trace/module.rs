@@ -102,24 +102,24 @@ pub enum SysCallTraceOrigin {
 }
 
 impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
-    fn pre_sys_call(
+    fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track<R>,
-        input: SysCallInput,
+        input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
-        self.handle_pre_sys_call(call_frame, heap, input)
+        self.handle_pre_kernel_api_call(call_frame, heap, input)
     }
 
-    fn post_sys_call(
+    fn post_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track<R>,
-        output: SysCallOutput,
+        output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
-        self.handle_post_sys_call(call_frame, heap, output)
+        self.handle_post_kernel_api_call(call_frame, heap, output)
     }
 
     fn pre_execute_invocation(
@@ -267,13 +267,13 @@ impl ExecutionTraceModule {
         })
     }
 
-    fn handle_pre_sys_call(
+    fn handle_pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        input: SysCallInput,
+        input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
-        if let SysCallInput::Invoke { .. } = input {
+        if let KernelApiCallInput::Invoke { .. } = input {
             // Invoke calls are handled separately in pre_execute_invocation
             return Ok(());
         }
@@ -282,7 +282,7 @@ impl ExecutionTraceModule {
             let instruction_index = Self::get_instruction_index(call_frame, heap);
 
             let traced_input = match input {
-                SysCallInput::DropNode { node_id } => {
+                KernelApiCallInput::DropNode { node_id } => {
                     // Buckets can't be dropped, so only tracking Proofs here
                     let data = if let RENodeId::Proof(proof_id) = node_id {
                         let proof = Self::read_proof(heap, proof_id)?;
@@ -297,7 +297,7 @@ impl ExecutionTraceModule {
 
                     (data, SysCallTraceOrigin::DropNode, instruction_index)
                 }
-                SysCallInput::CreateNode { .. } => (
+                KernelApiCallInput::CreateNode { .. } => (
                     TracedSysCallData::new_empty(),
                     SysCallTraceOrigin::CreateNode,
                     instruction_index,
@@ -315,13 +315,13 @@ impl ExecutionTraceModule {
         Ok(())
     }
 
-    fn handle_post_sys_call(
+    fn handle_post_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        output: SysCallOutput,
+        output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
-        if let SysCallOutput::Invoke { .. } = output {
+        if let KernelApiCallOutput::Invoke { .. } = output {
             // Invoke calls are handled separately in post_execute_invocation
             return Ok(());
         }
@@ -335,7 +335,7 @@ impl ExecutionTraceModule {
         }
 
         let traced_output = match output {
-            SysCallOutput::CreateNode { node_id } => match node_id {
+            KernelApiCallOutput::CreateNode { node_id } => match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
                     TracedSysCallData {

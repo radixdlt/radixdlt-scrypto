@@ -369,7 +369,6 @@ mod tests {
     use radix_engine_interface::blueprints::resource::Resource;
     use radix_engine_interface::math::Decimal;
     use sbor::rust::collections::BTreeMap;
-    use sbor::rust::collections::HashMap;
     use sbor::rust::vec::Vec;
 
     fn build_transaction_receipt_from_state_diff(state_diff: StateDiff) -> TransactionReceipt {
@@ -379,14 +378,14 @@ mod tests {
                     cost_unit_price: Decimal::default(),
                     tip_percentage: 0,
                     cost_unit_limit: 10,
-                    cost_unit_consumed: 1,
+                    total_cost_units_consumed: 1,
                     total_execution_cost_xrd: Decimal::default(),
                     total_royalty_cost_xrd: Decimal::default(),
                     bad_debt_xrd: Decimal::default(),
                     vault_locks: Vec::new(),
                     vault_payments_xrd: None,
-                    execution_cost_unit_breakdown: HashMap::new(),
-                    royalty_cost_unit_breakdown: HashMap::new(),
+                    execution_cost_unit_breakdown: BTreeMap::new(),
+                    royalty_cost_unit_breakdown: BTreeMap::new(),
                 },
                 events: Vec::new(),
             },

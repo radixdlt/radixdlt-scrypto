@@ -7,13 +7,13 @@ use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, V
 use radix_engine_interface::blueprints::resource::Resource;
 
 #[derive(Clone)]
-pub enum SysCallInput<'a> {
+pub enum KernelApiCallInput<'a> {
     Invoke {
         fn_identifier: String,
         input_size: u32,
         depth: usize,
     },
-    ReadOwnedNodes,
+    GetVisibleNodes,
     DropNode {
         node_id: &'a RENodeId,
     },
@@ -34,41 +34,39 @@ pub enum SysCallInput<'a> {
     DropLock {
         lock_handle: &'a LockHandle,
     },
-    ReadBlob {
-        blob_hash: &'a Hash,
-    },
 }
 
 #[derive(Debug, Clone)]
-pub enum SysCallOutput<'a> {
+pub enum KernelApiCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
-    ReadOwnedNodes,
+
+    GetVisibleNodes,
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
+
     LockSubstate { lock_handle: LockHandle },
     GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    ReadBlob { blob: &'a [u8] },
 }
 
 pub trait BaseModule<R: FeeReserve> {
-    fn pre_sys_call(
+    fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _input: SysCallInput,
+        _input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
 
-    fn post_sys_call(
+    fn post_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _output: SysCallOutput,
+        _output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
@@ -120,9 +118,9 @@ pub trait BaseModule<R: FeeReserve> {
         _call_frame: &CallFrame,
         _eap: &mut Heap,
         _rack: &mut Track<R>,
-        _ault_id: VaultId,
+        _vault_id: VaultId,
         fee: Resource,
-        _ontingent: bool,
+        _contingent: bool,
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }
