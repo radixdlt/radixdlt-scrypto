@@ -1,6 +1,7 @@
 use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::{BaseModule, Kernel, RENodeInit};
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::{BaseModule, Kernel, KernelNodeApi, KernelSubstateApi, RENodeInit};
 use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
@@ -9,23 +10,21 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::substates::RuntimeSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::SystemApi;
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -106,7 +105,14 @@ where
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         self.get_visible_nodes()
     }
+}
 
+impl<'g, 's, W, R, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
     fn sys_lock_substate(
         &mut self,
         node_id: RENodeId,

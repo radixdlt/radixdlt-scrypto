@@ -1,9 +1,9 @@
 use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::fee::CostingEntry;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::fee::FeeReserveError;
-use crate::system::kernel_modules::fee::SystemApiCostingEntry;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
@@ -38,7 +38,7 @@ impl CostingModule {
 pub fn consume_api_cost<R: FeeReserve>(
     track: &mut Track<R>,
     reason: &'static str,
-    costing_entry: SystemApiCostingEntry,
+    costing_entry: CostingEntry,
 ) -> Result<(), ModuleError> {
     let cost_units = track.fee_table.system_api_cost(costing_entry);
     track
@@ -67,42 +67,26 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 }
 
                 if depth > 0 {
-                    consume_api_cost(
-                        track,
-                        "invoke",
-                        SystemApiCostingEntry::Invoke { input_size },
-                    )?;
+                    consume_api_cost(track, "invoke", CostingEntry::Invoke { input_size })?;
                 }
             }
             SysCallInput::ReadOwnedNodes => {
-                consume_api_cost(
-                    track,
-                    "read_owned_nodes",
-                    SystemApiCostingEntry::ReadOwnedNodes,
-                )?;
+                consume_api_cost(track, "read_owned_nodes", CostingEntry::ReadOwnedNodes)?;
             }
             SysCallInput::DropNode { .. } => {
                 // TODO: get size of the value
-                consume_api_cost(
-                    track,
-                    "drop_node",
-                    SystemApiCostingEntry::DropNode { size: 0 },
-                )?;
+                consume_api_cost(track, "drop_node", CostingEntry::DropNode { size: 0 })?;
             }
             SysCallInput::CreateNode { .. } => {
                 // TODO: get size of the value
-                consume_api_cost(
-                    track,
-                    "create_node",
-                    SystemApiCostingEntry::CreateNode { size: 0 },
-                )?;
+                consume_api_cost(track, "create_node", CostingEntry::CreateNode { size: 0 })?;
             }
             SysCallInput::LockSubstate { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(
                     track,
                     "lock_substate",
-                    SystemApiCostingEntry::LockSubstate { size: 0 },
+                    CostingEntry::LockSubstate { size: 0 },
                 )?;
             }
             SysCallInput::GetRef { .. } => {
@@ -110,7 +94,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "read_substate",
-                    SystemApiCostingEntry::ReadSubstate { size: 0 },
+                    CostingEntry::ReadSubstate { size: 0 },
                 )?;
             }
             SysCallInput::GetRefMut { .. } => {
@@ -118,19 +102,15 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 consume_api_cost(
                     track,
                     "write_substate",
-                    SystemApiCostingEntry::WriteSubstate { size: 0 },
+                    CostingEntry::WriteSubstate { size: 0 },
                 )?;
             }
             SysCallInput::DropLock { .. } => {
-                consume_api_cost(track, "drop_lock", SystemApiCostingEntry::DropLock)?;
+                consume_api_cost(track, "drop_lock", CostingEntry::DropLock)?;
             }
             SysCallInput::ReadBlob { .. } => {
                 // TODO pass the right size
-                consume_api_cost(
-                    track,
-                    "read_blob",
-                    SystemApiCostingEntry::ReadBlob { size: 0 },
-                )?;
+                consume_api_cost(track, "read_blob", CostingEntry::ReadBlob { size: 0 })?;
             }
         }
 

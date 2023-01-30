@@ -1,10 +1,12 @@
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
+use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
 use crate::kernel::*;
-use crate::system::system_api::{LockFlags, SystemApi, VmApi};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
+};
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
 pub struct ScryptoExecutor {
@@ -19,12 +21,14 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>
-            + ComponentApi<RuntimeError>
-            + VmApi<W>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>
+            + ClientActorApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
+            + KernelWasmApi<W>,
         W: WasmEngine,
     {
         let package = {
@@ -46,9 +50,9 @@ impl Executor for ScryptoExecutor {
         let rtn_type = fn_abi.output.clone();
 
         // Emit event
-        api.on_wasm_instantiation(package.code())?;
+        api.emit_wasm_instantiation_event(package.code())?;
         let mut instance = api
-            .vm()
+            .scrypto_interpreter()
             .create_instance(self.package_address, &package.code);
 
         let output = {

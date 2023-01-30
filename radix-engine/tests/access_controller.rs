@@ -5,9 +5,9 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::blueprints::access_controller::*;
-use radix_engine_interface::api::blueprints::clock::TimePrecision;
-use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::clock::TimePrecision;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::TestRunner;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 

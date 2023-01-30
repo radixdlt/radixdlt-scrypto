@@ -1,17 +1,17 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::logger::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::logger::*;
 
 impl ExecutableInvocation for LoggerLogInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -36,7 +36,7 @@ impl Executor for LoggerLogInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let offset = SubstateOffset::Logger(LoggerOffset::Logger);
         let node_id = RENodeId::Logger;

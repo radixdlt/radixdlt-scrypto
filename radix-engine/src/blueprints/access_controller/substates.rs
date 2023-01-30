@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::time::Instant;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -27,6 +27,8 @@ pub mod network;
 /// RE time library.
 pub mod time;
 
+pub mod blueprints;
+
 mod macros;
 pub use macros::*;
 

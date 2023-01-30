@@ -2,31 +2,31 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::blueprints::resource::AccessRule::{AllowAll, DenyAll};
-use radix_engine_interface::api::blueprints::resource::VaultMethodAuthKey::{
-    Deposit, Recall, Withdraw,
-};
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::api::{EngineApi, InvokableModel};
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::{ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
+use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -48,7 +48,7 @@ pub enum ResourceManagerError {
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -64,7 +64,7 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
     fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
@@ -80,7 +80,7 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
-    Y: SystemApi,
+    Y: KernelNodeApi + KernelSubstateApi,
 {
     let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
     api.create_node(
@@ -139,7 +139,7 @@ fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
-    Y: SystemApi,
+    Y: KernelNodeApi + KernelSubstateApi,
 {
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
@@ -365,7 +365,7 @@ fn build_substates(
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -385,7 +385,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let global_node_id = if let Some(address) = self.resource_address {
             // If address isn't user frame allocated or pre_allocated then
@@ -439,7 +439,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
 impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -458,7 +458,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
         api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -500,7 +500,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -520,7 +520,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -581,7 +581,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 impl ExecutableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -601,7 +601,11 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -659,7 +663,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
 impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -679,7 +683,7 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let global_node_id = if let Some(address) = self.resource_address {
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(address)))
@@ -738,7 +742,7 @@ pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ResourceManagerBurnInvocation {
     type Exec = ResourceManagerBurnExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -765,7 +769,7 @@ impl Executor for ResourceManagerBurnExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -826,7 +830,7 @@ pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey
 impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type Exec = ResourceManagerUpdateVaultAuthExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -858,7 +862,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -916,7 +920,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Exec = ResourceManagerLockVaultAuthExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -949,7 +953,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -1007,7 +1011,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
     type Exec = ResourceManagerCreateVaultExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1036,7 +1040,7 @@ impl Executor for ResourceManagerCreateVaultExecutable {
         api: &mut Y,
     ) -> Result<(Own, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1065,7 +1069,7 @@ impl Executor for ResourceManagerCreateVaultExecutable {
 impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
     type Exec = ResourceManagerCreateBucketExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1094,7 +1098,7 @@ impl Executor for ResourceManagerCreateBucketExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1125,7 +1129,7 @@ pub struct ResourceManagerMintNonFungibleExecutable(
 impl ExecutableInvocation for ResourceManagerMintNonFungibleInvocation {
     type Exec = ResourceManagerMintNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1153,7 +1157,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1260,7 +1264,7 @@ pub struct ResourceManagerMintUuidNonFungibleExecutable(RENodeId, Vec<(Vec<u8>, 
 impl ExecutableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
     type Exec = ResourceManagerMintUuidNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1288,7 +1292,11 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1367,7 +1375,7 @@ pub struct ResourceManagerMintFungibleExecutable(RENodeId, Decimal);
 impl ExecutableInvocation for ResourceManagerMintFungibleInvocation {
     type Exec = ResourceManagerMintFungibleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1395,7 +1403,7 @@ impl Executor for ResourceManagerMintFungibleExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1422,7 +1430,7 @@ impl Executor for ResourceManagerMintFungibleExecutable {
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = ResourceManagerGetResourceTypeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1451,7 +1459,7 @@ impl Executor for ResourceManagerGetResourceTypeExecutable {
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -1466,7 +1474,7 @@ impl Executor for ResourceManagerGetResourceTypeExecutable {
 impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Exec = ResourceManagerGetTotalSupplyExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1495,7 +1503,7 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -1509,7 +1517,7 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
 impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Exec = ResourceManagerUpdateNonFungibleDataExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1542,7 +1550,7 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1581,7 +1589,7 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
 impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Exec = ResourceManagerNonFungibleExistsExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1611,7 +1619,7 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -1636,7 +1644,7 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
 impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     type Exec = ResourceManagerGetNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1665,7 +1673,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         system_api: &mut Y,
     ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;

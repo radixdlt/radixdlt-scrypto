@@ -1,12 +1,8 @@
-use sbor::rust::fmt::Debug;
-
-use crate::api::blueprints::resource::*;
-use crate::api::component::ComponentAddress;
-use crate::api::serialize::*;
+use crate::api::static_invoke_api::*;
 use crate::api::types::*;
-use crate::api::types::{ComponentId, RENodeId};
-use crate::api::*;
+use crate::blueprints::resource::*;
 use crate::*;
+use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeInvocation {

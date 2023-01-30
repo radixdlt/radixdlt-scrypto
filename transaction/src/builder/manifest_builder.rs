@@ -1,8 +1,8 @@
 use radix_engine_interface::abi::*;
-use radix_engine_interface::api::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
+use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;

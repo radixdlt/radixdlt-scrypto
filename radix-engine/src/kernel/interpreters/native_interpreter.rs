@@ -1,9 +1,9 @@
 use crate::errors::*;
 use crate::kernel::*;
-use crate::system::system_api::ResolverApi;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::ClientDerefApi;
 
-pub fn deref_and_update<D: ResolverApi>(
+pub fn deref_and_update<D: ClientDerefApi<RuntimeError>>(
     receiver: RENodeId,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,

@@ -1,4 +1,3 @@
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
@@ -10,6 +9,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;

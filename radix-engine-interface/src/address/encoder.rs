@@ -7,9 +7,9 @@ use utils::combine;
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
-use crate::api::blueprints::resource::ResourceAddress;
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
+use crate::blueprints::resource::ResourceAddress;
 use crate::network::NetworkDefinition;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.

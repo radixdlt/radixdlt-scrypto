@@ -1,7 +1,5 @@
-use radix_engine_interface::api::{
-    blueprints::logger::{Level, LoggerLogInvocation},
-    Invokable,
-};
+use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::logger::{Level, LoggerLogInvocation};
 use sbor::rust::string::String;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 

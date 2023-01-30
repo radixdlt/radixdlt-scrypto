@@ -1,14 +1,14 @@
 use crate::{
     errors::RuntimeError,
+    kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     kernel::{CallFrameUpdate, ResolvedActor},
-    system::system_api::SystemApi,
 };
 use radix_engine_interface::api::types::RENodeId;
 
 pub struct TransactionHashModule;
 
 impl TransactionHashModule {
-    pub fn on_call_frame_enter<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         _actor: &ResolvedActor,
         api: &mut Y,

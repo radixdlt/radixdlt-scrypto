@@ -5,4 +5,3 @@ pub mod kernel_modules;
 pub mod node_modules;
 pub mod package;
 pub mod substates;
-pub mod system_api;

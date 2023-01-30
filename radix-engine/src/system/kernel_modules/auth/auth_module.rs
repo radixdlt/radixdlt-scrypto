@@ -1,15 +1,14 @@
 use crate::blueprints::clock::Clock;
 use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
-use radix_engine_interface::api::ActorApi;
+use radix_engine_interface::api::ClientActorApi;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -33,7 +32,7 @@ impl AuthModule {
         system_api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         if matches!(
             actor.identifier,
@@ -235,7 +234,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
         system_api: &mut Y,
@@ -292,7 +291,7 @@ impl AuthModule {
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: SystemApi + ActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
     {
         if matches!(
             api.fn_identifier()?,

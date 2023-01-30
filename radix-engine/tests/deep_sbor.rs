@@ -1,7 +1,7 @@
 use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

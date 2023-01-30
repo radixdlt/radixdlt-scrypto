@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
-use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
 pub struct ProofSubstate {

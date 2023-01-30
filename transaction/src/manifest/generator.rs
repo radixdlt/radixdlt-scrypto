@@ -1,5 +1,4 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -1418,10 +1417,10 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::api::blueprints::resource::{
+    use radix_engine_interface::args;
+    use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
     };
-    use radix_engine_interface::args;
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::pdec;
 

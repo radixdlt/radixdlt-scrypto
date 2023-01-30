@@ -7,7 +7,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::api::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;

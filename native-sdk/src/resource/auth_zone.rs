@@ -1,7 +1,7 @@
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -15,7 +15,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneDrainInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneDrainInvocation {
@@ -25,7 +25,7 @@ impl ComponentAuthZone {
 
     pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<(), E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneClearInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneClearInvocation {
@@ -35,7 +35,7 @@ impl ComponentAuthZone {
 
     pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + Invokable<AuthZonePopInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZonePopInvocation {
@@ -48,7 +48,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofInvocation {
@@ -63,7 +63,9 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByAmountInvocation {
@@ -79,7 +81,9 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByIdsInvocation {
@@ -94,7 +98,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineApi<E> + Invokable<AuthZonePushInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         let proof: Proof = proof.into();
@@ -107,7 +111,7 @@ impl ComponentAuthZone {
 
     pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, env: &mut Y) -> Result<(), E>
     where
-        Y: EngineApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
@@ -119,7 +123,7 @@ impl ComponentAuthZone {
 
     fn auth_zone_node_id<Y, E>(api: &mut Y) -> Option<RENodeId>
     where
-        Y: EngineApi<E>,
+        Y: ClientNodeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let owned_node_ids = api.sys_get_visible_nodes().unwrap();

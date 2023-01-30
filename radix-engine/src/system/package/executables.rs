@@ -2,22 +2,21 @@ use super::PackageInfoSubstate;
 use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 
 use crate::errors::*;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::system_api::*;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::blueprints::resource::{
-    Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
-};
-use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::InvokableModel;
+use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::{package::*, ClientDerefApi};
+use radix_engine_interface::blueprints::resource::{
+    Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
+};
 
 pub struct Package;
 
@@ -48,7 +47,7 @@ impl Package {
 impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -67,7 +66,7 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -138,7 +137,7 @@ impl Executor for PackagePublishInvocation {
 impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -167,7 +166,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -186,7 +185,7 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
 impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -214,7 +213,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;

@@ -2,17 +2,17 @@ use super::state_machine::*;
 use super::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
+    KernelSubstateApi, LockFlags, RENodeInit, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
-use radix_engine_interface::api::blueprints::access_controller::*;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
@@ -61,7 +61,7 @@ impl From<AccessControllerError> for RuntimeError {
 impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -84,7 +84,11 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -132,7 +136,7 @@ pub struct AccessControllerCreateProofExecutable {
 impl ExecutableInvocation for AccessControllerCreateProofInvocation {
     type Exec = AccessControllerCreateProofExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -164,7 +168,11 @@ impl Executor for AccessControllerCreateProofExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let proof = transition(
             self.receiver,
@@ -189,7 +197,7 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryExecutable {
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type Exec = AccessControllerInitiateRecoveryAsPrimaryExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -224,7 +232,11 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -246,7 +258,7 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryExecutable {
 impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
     type Exec = AccessControllerInitiateRecoveryAsRecoveryExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -281,7 +293,11 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -307,7 +323,7 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable {
 impl ExecutableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     type Exec = AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -340,7 +356,11 @@ impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecuta
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -368,7 +388,7 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable {
 impl ExecutableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     type Exec = AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -403,7 +423,11 @@ impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecut
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -435,7 +459,7 @@ pub struct AccessControllerTimedConfirmRecoveryExecutable {
 impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Exec = AccessControllerTimedConfirmRecoveryExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -469,7 +493,11 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -501,7 +529,7 @@ pub struct AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
 impl ExecutableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
     type Exec = AccessControllerCancelPrimaryRoleRecoveryProposalExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -533,7 +561,11 @@ impl Executor for AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -552,7 +584,7 @@ pub struct AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
 impl ExecutableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
     type Exec = AccessControllerCancelRecoveryRoleRecoveryProposalExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -584,7 +616,11 @@ impl Executor for AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -607,7 +643,7 @@ pub struct AccessControllerLockPrimaryRoleExecutable {
 impl ExecutableInvocation for AccessControllerLockPrimaryRoleInvocation {
     type Exec = AccessControllerLockPrimaryRoleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -639,7 +675,11 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -662,7 +702,7 @@ pub struct AccessControllerUnlockPrimaryRoleExecutable {
 impl ExecutableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
     type Exec = AccessControllerUnlockPrimaryRoleExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -694,7 +734,11 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -718,7 +762,7 @@ pub struct AccessControllerStopTimedRecoveryExecutable {
 impl ExecutableInvocation for AccessControllerStopTimedRecoveryInvocation {
     type Exec = AccessControllerStopTimedRecoveryExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -751,7 +795,11 @@ impl Executor for AccessControllerStopTimedRecoveryExecutable {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -886,7 +934,11 @@ fn transition<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + ClientNodeApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -911,7 +963,11 @@ fn transition_mut<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + ClientNodeApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -942,7 +998,11 @@ fn update_access_rules<Y>(
     access_rules: AccessRules,
 ) -> Result<(), RuntimeError>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + ClientNodeApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
 {
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
         api.invoke(AccessRulesSetGroupAccessRuleInvocation {

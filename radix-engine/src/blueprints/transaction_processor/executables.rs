@@ -2,36 +2,29 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::invocation::native_wrapper::invoke_native_fn;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::blueprints::access_controller::*;
-use radix_engine_interface::api::blueprints::identity::IdentityCreateInvocation;
-use radix_engine_interface::api::blueprints::resource::ResourceManagerCreateFungibleInvocation;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
-use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
-use radix_engine_interface::api::serialize::CallTableInvocation;
-use radix_engine_interface::api::serialize::NativeInvocation;
+use radix_engine_interface::api::static_invoke_api::Invocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
-};
-use radix_engine_interface::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
-    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
+    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
 };
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
@@ -242,7 +235,7 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -277,10 +270,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + EngineApi<RuntimeError>
-            + ComponentApi<RuntimeError>
-            + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
@@ -939,7 +934,11 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value
@@ -980,7 +979,9 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: ClientNodeApi<RuntimeError>
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {
@@ -1014,7 +1015,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: InvokableModel<RuntimeError>,
+        Y: ClientStaticInvokeApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

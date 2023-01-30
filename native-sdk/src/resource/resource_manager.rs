@@ -1,6 +1,6 @@
-use radix_engine_interface::api::blueprints::resource::*;
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
@@ -20,7 +20,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
     {
         api.invoke(ResourceManagerCreateFungibleInvocation {
             metadata,
@@ -38,7 +38,8 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
+        Y: ClientNodeApi<E>
+            + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
     {
         api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
             resource_address: None,
@@ -57,7 +58,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerCreateNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateNonFungibleInvocation, E>,
     {
         api.invoke(ResourceManagerCreateNonFungibleInvocation {
             resource_address: None,
@@ -75,7 +76,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>,
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
@@ -94,7 +95,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerMintFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerMintFungibleInvocation, E>,
     {
         api.invoke(ResourceManagerMintFungibleInvocation {
             receiver: self.0,
@@ -108,7 +109,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerGetNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerGetNonFungibleInvocation, E>,
     {
         let output = api.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -125,7 +126,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerBurnInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerBurnInvocation, E>,
     {
         api.invoke(ResourceManagerBurnInvocation {
             receiver: self.0,
@@ -135,7 +136,7 @@ impl ResourceManager {
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerGetTotalSupplyInvocation, E>,
+        Y: ClientNodeApi<E> + Invokable<ResourceManagerGetTotalSupplyInvocation, E>,
     {
         api.invoke(ResourceManagerGetTotalSupplyInvocation { receiver: self.0 })
     }

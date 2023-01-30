@@ -1,20 +1,21 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
 use crate::system::kernel_modules::fee::FeeReserveError;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultError {
@@ -32,7 +33,7 @@ pub enum VaultError {
 impl ExecutableInvocation for VaultRecallInvocation {
     type Exec = VaultTakeInvocation;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -53,7 +54,7 @@ impl ExecutableInvocation for VaultRecallInvocation {
 impl ExecutableInvocation for VaultTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -75,7 +76,7 @@ impl Executor for VaultTakeInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
@@ -101,7 +102,7 @@ impl Executor for VaultTakeInvocation {
 impl ExecutableInvocation for VaultPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -126,7 +127,7 @@ impl Executor for VaultPutInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -151,7 +152,7 @@ impl Executor for VaultPutInvocation {
 impl ExecutableInvocation for VaultLockFeeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -173,7 +174,7 @@ impl Executor for VaultLockFeeInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -222,7 +223,7 @@ impl Executor for VaultLockFeeInvocation {
 impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
     type Exec = VaultTakeNonFungiblesInvocation;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -243,7 +244,7 @@ impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
 impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -265,7 +266,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -291,7 +292,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
 impl ExecutableInvocation for VaultGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -313,7 +314,7 @@ impl Executor for VaultGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -330,7 +331,7 @@ impl Executor for VaultGetAmountInvocation {
 impl ExecutableInvocation for VaultGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -352,7 +353,7 @@ impl Executor for VaultGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -372,7 +373,7 @@ impl Executor for VaultGetResourceAddressInvocation {
 impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -394,7 +395,7 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -415,7 +416,7 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for VaultCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -437,7 +438,7 @@ impl Executor for VaultCreateProofInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -469,7 +470,7 @@ impl Executor for VaultCreateProofInvocation {
 impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -491,7 +492,7 @@ impl Executor for VaultCreateProofByAmountInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -523,7 +524,7 @@ impl Executor for VaultCreateProofByAmountInvocation {
 impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -545,7 +546,7 @@ impl Executor for VaultCreateProofByIdsInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

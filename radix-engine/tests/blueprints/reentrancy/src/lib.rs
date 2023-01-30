@@ -1,5 +1,5 @@
-use crate::radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
-use crate::radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
+use crate::radix_engine_interface::api::types::ScryptoInvocation;
+use crate::radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::Invokable;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

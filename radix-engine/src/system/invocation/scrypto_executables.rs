@@ -1,15 +1,16 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError, ScryptoFnResolvingError};
+use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::*;
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
-use radix_engine_interface::api::scrypto_invocation::{ScryptoInvocation, ScryptoReceiver};
+use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
+use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::data::*;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: ResolverApi + SystemApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

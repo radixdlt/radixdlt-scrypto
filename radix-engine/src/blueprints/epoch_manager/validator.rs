@@ -3,16 +3,15 @@ use crate::errors::RuntimeError;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::system::system_api::LockFlags;
-use crate::system::system_api::ResolverApi;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
-use radix_engine_interface::api::blueprints::epoch_manager::*;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{EngineApi, InvokableModel};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -39,7 +38,7 @@ pub struct ValidatorRegisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorRegisterInvocation {
     type Exec = ValidatorRegisterExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -64,7 +63,10 @@ impl Executor for ValidatorRegisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
@@ -108,7 +110,7 @@ pub struct ValidatorUnregisterExecutable(RENodeId);
 impl ExecutableInvocation for ValidatorUnregisterInvocation {
     type Exec = ValidatorUnregisterExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -132,7 +134,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
@@ -168,7 +170,7 @@ pub struct ValidatorStakeExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ValidatorStakeInvocation {
     type Exec = ValidatorStakeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -197,7 +199,10 @@ impl Executor for ValidatorStakeExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -253,7 +258,7 @@ pub struct ValidatorUnstakeExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ValidatorUnstakeInvocation {
     type Exec = ValidatorUnstakeExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -288,7 +293,10 @@ impl Executor for ValidatorUnstakeExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -371,7 +379,7 @@ pub struct ValidatorClaimXrdExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ValidatorClaimXrdInvocation {
     type Exec = ValidatorClaimXrdExecutable;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -402,7 +410,10 @@ impl Executor for ValidatorClaimXrdExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
@@ -460,7 +471,10 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_id = NonFungibleLocalId::Bytes(
@@ -494,7 +508,10 @@ impl ValidatorCreator {
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
@@ -523,7 +540,10 @@ impl ValidatorCreator {
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
@@ -588,7 +608,10 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
@@ -631,7 +654,10 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;

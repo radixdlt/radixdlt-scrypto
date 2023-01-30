@@ -2,17 +2,20 @@ use crate::blueprints::resource::ResourceOperationError;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::system_api::{LockFlags, ResolverApi, SystemApi};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::blueprints::resource::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::blueprints::resource::*;
 
 use super::ProofError;
 
@@ -31,7 +34,7 @@ pub enum BucketError {
 impl ExecutableInvocation for BucketTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -53,7 +56,7 @@ impl Executor for BucketTakeInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -80,7 +83,7 @@ impl Executor for BucketTakeInvocation {
 impl ExecutableInvocation for BucketCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -102,7 +105,7 @@ impl Executor for BucketCreateProofInvocation {
         api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -130,7 +133,7 @@ impl Executor for BucketCreateProofInvocation {
 impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -152,7 +155,7 @@ impl Executor for BucketTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -179,7 +182,7 @@ impl Executor for BucketTakeNonFungiblesInvocation {
 impl ExecutableInvocation for BucketGetNonFungibleLocalIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -201,7 +204,7 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -221,7 +224,7 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
 impl ExecutableInvocation for BucketGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -243,7 +246,7 @@ impl Executor for BucketGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -258,7 +261,7 @@ impl Executor for BucketGetAmountInvocation {
 impl ExecutableInvocation for BucketPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -283,7 +286,7 @@ impl Executor for BucketPutInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -307,7 +310,7 @@ impl Executor for BucketPutInvocation {
 impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi>(
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -329,7 +332,7 @@ impl Executor for BucketGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);

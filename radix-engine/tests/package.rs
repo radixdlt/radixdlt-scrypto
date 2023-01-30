@@ -2,7 +2,7 @@ use radix_engine::errors::{ApplicationError, InterpreterError, KernelError, Runt
 use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_interface::api::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

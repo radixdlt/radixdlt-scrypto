@@ -1,22 +1,23 @@
 use crate::{
     blueprints::transaction_processor::{NativeOutput, TransactionProcessorError},
     errors::{ApplicationError, RuntimeError},
-    system::system_api::{LockFlags, SystemApi},
+    kernel::kernel_api::LockFlags,
+    kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
 use radix_engine_interface::api::{
-    scrypto_invocation::{ScryptoInvocation, ScryptoReceiver},
-    serialize::{
+    types::{
         AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, CallTableInvocation,
         ClockInvocation, ComponentInvocation, EpochManagerInvocation, IdentityInvocation,
         LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
         ResourceInvocation, TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation,
         WorktopInvocation,
     },
+    types::{ScryptoInvocation, ScryptoReceiver},
+    ClientStaticInvokeApi,
 };
-use radix_engine_interface::api::{serialize::AccessControllerInvocation, InvokableModel};
 
-pub fn resolve_method<Y: SystemApi>(
+pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     receiver: ScryptoReceiver,
     method_name: &str,
     args: &[u8],
@@ -131,7 +132,7 @@ pub fn invoke_call_table<Y, E>(
     api: &mut Y,
 ) -> Result<IndexedScryptoValue, E>
 where
-    Y: InvokableModel<E>,
+    Y: ClientStaticInvokeApi<E>,
 {
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
@@ -150,7 +151,7 @@ pub fn invoke_native_fn<Y, E>(
     api: &mut Y,
 ) -> Result<Box<dyn NativeOutput>, E>
 where
-    Y: InvokableModel<E>,
+    Y: ClientStaticInvokeApi<E>,
 {
     match native_invocation {
         NativeInvocation::Component(component_method) => match component_method {

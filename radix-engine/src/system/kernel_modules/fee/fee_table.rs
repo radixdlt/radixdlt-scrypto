@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::*;
 
-pub enum SystemApiCostingEntry {
+pub enum CostingEntry {
     /*
      * Invocation
      */
@@ -255,29 +255,27 @@ impl FeeTable {
         }
     }
 
-    pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
+    pub fn system_api_cost(&self, entry: CostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke { input_size, .. } => {
-                self.fixed_low + (5 * input_size) as u32
-            }
+            CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
 
-            SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
-            SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
-            SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
+            CostingEntry::ReadOwnedNodes => self.fixed_low,
+            CostingEntry::CreateNode { .. } => self.fixed_medium,
+            CostingEntry::DropNode { .. } => self.fixed_medium,
 
-            SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
+            CostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
-            SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
-            SystemApiCostingEntry::DropLock => self.fixed_low,
+            CostingEntry::LockSubstate { .. } => self.fixed_low,
+            CostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            CostingEntry::WriteSubstate { .. } => self.fixed_medium,
+            CostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
+            CostingEntry::ReadBlob { size } => self.fixed_low + size,
         }
     }
 }

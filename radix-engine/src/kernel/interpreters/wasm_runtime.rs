@@ -1,50 +1,68 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::kernel::KernelNodeApi;
+use crate::kernel::KernelSubstateApi;
+use crate::kernel::KernelWasmApi;
 use crate::system::invocation::native_wrapper::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
-use crate::system::system_api::SystemApi;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_interface::api::scrypto_invocation::ScryptoInvocation;
-use radix_engine_interface::api::scrypto_invocation::ScryptoReceiver;
-use radix_engine_interface::api::serialize::CallTableInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
+    Invokable,
+};
 use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, Y>
+pub struct RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + KernelWasmApi<W>
+        + ClientSubstateApi<RuntimeError>
+        + Invokable<ScryptoInvocation, RuntimeError>,
+    W: WasmEngine,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
+    phantom: PhantomData<W>,
 }
 
-impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
+impl<'y, Y, W> RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + KernelWasmApi<W>
+        + ClientSubstateApi<RuntimeError>
+        + Invokable<ScryptoInvocation, RuntimeError>,
+    W: WasmEngine,
 {
     pub fn new(api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
+impl<'y, Y, W> WasmRuntime for RadixEngineWasmRuntime<'y, Y, W>
 where
-    Y: SystemApi
-        + ComponentApi<RuntimeError>
-        + EngineApi<RuntimeError>
-        + InvokableModel<RuntimeError>
-        + ActorApi<RuntimeError>,
+    Y: KernelNodeApi
+        + KernelSubstateApi
+        + KernelWasmApi<W>
+        + ClientComponentApi<RuntimeError>
+        + ClientNodeApi<RuntimeError>
+        + ClientSubstateApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>
+        + ClientActorApi<RuntimeError>,
+    W: WasmEngine,
 {
     fn allocate_buffer(
         &mut self,
