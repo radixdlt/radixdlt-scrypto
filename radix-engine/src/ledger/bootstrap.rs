@@ -25,6 +25,7 @@ pub struct GenesisReceipt {
 
 pub fn create_genesis(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    account_xrd_allocations: Vec<(Decimal, EcdsaSecp256k1PublicKey)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -205,6 +206,28 @@ pub fn create_genesis(
         )));
     }
 
+    for (amount, public_key) in account_xrd_allocations {
+        let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
+        instructions.push(
+            BasicInstruction::TakeFromWorktopByAmount {
+                resource_address: RADIX_TOKEN,
+                amount,
+            }
+            .into(),
+        );
+        let component_address = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(public_key),
+        );
+        instructions.push(
+            BasicInstruction::CallMethod {
+                component_address: component_address,
+                method_name: "deposit".to_string(),
+                args: args!(bucket),
+            }
+            .into(),
+        );
+    }
+
     // Faucet
     {
         instructions.push(
@@ -249,6 +272,7 @@ where
         substate_store,
         scrypto_interpreter,
         BTreeMap::new(),
+        Vec::new(),
         1u64,
         1u64,
         1u64,
@@ -258,7 +282,8 @@ where
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    account_xrd_allocations: Vec<(Decimal, EcdsaSecp256k1PublicKey)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -275,7 +300,8 @@ where
         .is_none()
     {
         let genesis_transaction = create_genesis(
-            validator_set,
+            validator_set_and_stake_owners,
+            account_xrd_allocations,
             initial_epoch,
             rounds_per_epoch,
             num_unstake_epochs,
@@ -317,7 +343,7 @@ mod tests {
             EcdsaSecp256k1PublicKey([0; 33]),
             (Decimal::one(), account_address),
         );
-        let genesis_transaction = create_genesis(initial_validator_set, 1u64, 1u64, 1u64);
+        let genesis_transaction = create_genesis(initial_validator_set, Vec::new(), 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
