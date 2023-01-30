@@ -7,7 +7,7 @@ use utils::ContextualDisplay;
 #[test]
 fn test_integer_basic_ops() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
@@ -34,7 +34,7 @@ fn test_integer_basic_ops() {
 #[test]
 fn test_native_and_safe_integer_interop() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act

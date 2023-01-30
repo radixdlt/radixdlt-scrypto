@@ -15,9 +15,7 @@ use radix_engine_interface::api::serialize::{
     ResourceInvocation,
 };
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
@@ -280,7 +278,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .is_none()
     {

@@ -1,0 +1,6 @@
+CREATE_ACCESS_CONTROLLER
+    Bucket(1u32)
+    Enum(0u8)
+    Enum(0u8)
+    Enum(0u8)
+    Some(1u32);

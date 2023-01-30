@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
@@ -32,7 +32,7 @@ fn vector_of_buckets_argument_should_succeed() {
 #[test]
 fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
@@ -58,7 +58,7 @@ fn tuple_of_buckets_argument_should_succeed() {
 #[test]
 fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
@@ -83,7 +83,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
@@ -108,7 +108,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn some_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
@@ -132,7 +132,7 @@ fn some_optional_bucket_argument_should_succeed() {
 #[test]
 fn none_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act

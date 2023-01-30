@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_state_track_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -72,7 +72,7 @@ fn test_state_track_success() {
 #[test]
 fn test_state_track_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 

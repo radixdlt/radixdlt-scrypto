@@ -8,13 +8,12 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
-    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt,
+    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
+    PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
@@ -35,6 +34,8 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
+use radix_engine_stores::hash_tree::put_at_next_version;
+use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -108,53 +109,81 @@ impl Compile {
     }
 }
 
+pub struct TestRunnerBuilder {
+    custom_genesis: Option<SystemTransaction>,
+    trace: bool,
+    state_hashing: bool,
+}
+
+impl TestRunnerBuilder {
+    pub fn without_trace(mut self) -> Self {
+        self.trace = false;
+        self
+    }
+
+    pub fn with_state_hashing(mut self) -> Self {
+        self.state_hashing = true;
+        self
+    }
+
+    pub fn with_custom_genesis(mut self, genesis: SystemTransaction) -> Self {
+        self.custom_genesis = Some(genesis);
+        self
+    }
+
+    pub fn build(self) -> TestRunner {
+        let mut runner = TestRunner {
+            scrypto_interpreter: ScryptoInterpreter {
+                wasm_metering_config: WasmMeteringConfig::V0,
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+            },
+            substate_store: TypedInMemorySubstateStore::new(),
+            state_hash_support: Some(self.state_hashing)
+                .filter(|x| *x)
+                .map(|_| StateHashSupport::new()),
+            intent_hash_manager: TestIntentHashManager::new(),
+            next_private_key: 1, // 0 is invalid
+            next_transaction_nonce: 0,
+            trace: self.trace,
+        };
+        let genesis = self
+            .custom_genesis
+            .unwrap_or_else(|| create_genesis(BTreeMap::new(), 1u64, 1u64, 1u64));
+        runner.execute_transaction_with_config(
+            genesis.get_executable(vec![AuthAddresses::system_role()]),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+        );
+        runner
+    }
+}
+
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    staged_substate_store_manager: StagedSubstateStoreManager<TypedInMemorySubstateStore>,
+    substate_store: TypedInMemorySubstateStore,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
+    state_hash_support: Option<StateHashSupport>,
 }
 
 impl TestRunner {
-    pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(BTreeMap::new(), 1u64, 1u64, 1u64))
-    }
-
-    pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
-        let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_config: WasmMeteringConfig::V0,
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-        };
-        let mut substate_store = TypedInMemorySubstateStore::new();
-        let transaction_receipt = execute_transaction(
-            &mut substate_store,
-            &scrypto_interpreter,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
-            &genesis.get_executable(vec![AuthAddresses::system_role()]),
-        );
-        let commit_result = transaction_receipt.expect_commit();
-        commit_result.outcome.expect_success();
-        commit_result.state_updates.commit(&mut substate_store);
-        Self {
-            scrypto_interpreter,
-            staged_substate_store_manager: StagedSubstateStoreManager::new(substate_store),
-            intent_hash_manager: TestIntentHashManager::new(),
-            next_private_key: 1, // 0 is invalid
-            next_transaction_nonce: 0,
-            trace,
+    pub fn builder() -> TestRunnerBuilder {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            trace: true,
+            state_hashing: false,
         }
     }
 
     pub fn substate_store(&self) -> &TypedInMemorySubstateStore {
-        &self.staged_substate_store_manager.root
+        &self.substate_store
     }
 
     pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
-        &mut self.staged_substate_store_manager.root
+        &mut self.substate_store
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -192,8 +221,7 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -204,8 +232,7 @@ impl TestRunner {
         let underlying_node = global.global().node_deref();
 
         let metadata = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -220,8 +247,7 @@ impl TestRunner {
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -233,8 +259,7 @@ impl TestRunner {
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let global = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -249,22 +274,17 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        if let Some(output) = self
-            .staged_substate_store_manager
-            .root
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-            ))
-        {
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+        )) {
             let royalty_vault: Own = output
                 .substate
                 .component_royalty_accumulator()
                 .royalty
                 .clone();
 
-            self.staged_substate_store_manager
-                .root
+            self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     SubstateOffset::Vault(VaultOffset::Vault),
@@ -278,22 +298,17 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        if let Some(output) = self
-            .staged_substate_store_manager
-            .root
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-            ))
-        {
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+        )) {
             let royalty_vault: Own = output
                 .substate
                 .package_royalty_accumulator()
                 .royalty
                 .clone();
 
-            self.staged_substate_store_manager
-                .root
+            self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     SubstateOffset::Vault(VaultOffset::Vault),
@@ -312,11 +327,8 @@ impl TestRunner {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
-        let mut state_tree_visitor = StateTreeTraverser::new(
-            &self.staged_substate_store_manager.root,
-            &mut vault_finder,
-            100,
-        );
+        let mut state_tree_visitor =
+            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
@@ -337,7 +349,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-        let mut accounter = ResourceAccounter::new(&self.staged_substate_store_manager.root);
+        let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
@@ -390,8 +402,7 @@ impl TestRunner {
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -404,8 +415,7 @@ impl TestRunner {
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .staged_substate_store_manager
-            .root
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -618,13 +628,20 @@ impl TestRunner {
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        execute_and_commit_transaction(
-            &mut self.staged_substate_store_manager.root,
+        let transaction_receipt = execute_transaction(
+            &mut self.substate_store,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
             &executable,
-        )
+        );
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            let commit_receipt = commit.state_updates.commit(&mut self.substate_store);
+            if let Some(state_hash_support) = &mut self.state_hash_support {
+                state_hash_support.update_with(commit_receipt.outputs);
+            }
+        }
+        transaction_receipt
     }
 
     pub fn preview(
@@ -633,7 +650,7 @@ impl TestRunner {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         execute_preview(
-            &self.staged_substate_store_manager.root,
+            &self.substate_store,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -646,16 +663,12 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        export_abi(
-            &self.staged_substate_store_manager.root,
-            package_address,
-            blueprint_name,
-        )
-        .expect("Failed to export ABI")
+        export_abi(&self.substate_store, package_address, blueprint_name)
+            .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        export_abi_by_component(&self.staged_substate_store_manager.root, component_address)
+        export_abi_by_component(&self.substate_store, component_address)
             .expect("Failed to export ABI")
     }
 
@@ -989,6 +1002,13 @@ impl TestRunner {
         receipt.output(0)
     }
 
+    pub fn get_state_hash(&self) -> Hash {
+        self.state_hash_support
+            .as_ref()
+            .expect("state hashing not enabled")
+            .get_current()
+    }
+
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::System(NativeInvocation::Clock(
             ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
@@ -1031,6 +1051,39 @@ impl TestRunner {
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
         receipt.output(0)
+    }
+}
+
+pub struct StateHashSupport {
+    tree_store: MemoryTreeStore,
+    current_version: Version,
+    current_hash: Hash,
+}
+
+impl StateHashSupport {
+    fn new() -> Self {
+        StateHashSupport {
+            tree_store: MemoryTreeStore::new(),
+            current_version: 0,
+            current_hash: Hash([0; Hash::LENGTH]),
+        }
+    }
+
+    pub fn update_with(&mut self, transaction_outputs: Vec<OutputId>) {
+        let hash_changes = transaction_outputs
+            .iter()
+            .map(|output_id| (output_id.substate_id.clone(), Some(output_id.substate_hash)))
+            .collect::<Vec<(SubstateId, Option<Hash>)>>();
+        self.current_hash = put_at_next_version(
+            &mut self.tree_store,
+            Some(self.current_version).filter(|version| *version > 0),
+            &hash_changes,
+        );
+        self.current_version += 1;
+    }
+
+    pub fn get_current(&self) -> Hash {
+        self.current_hash
     }
 }
 

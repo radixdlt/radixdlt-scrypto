@@ -4,7 +4,7 @@ use scrypto_unit::*;
 #[test]
 fn setting_single_time_succeeds() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     let time_rounded_to_minutes = UtcDateTime::new(2022, 1, 1, 0, 0, 0)
         .unwrap()
@@ -28,7 +28,7 @@ fn setting_single_time_succeeds() {
 #[test]
 fn setting_multiple_time_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let times = vec![
         UtcDateTime::new(2022, 1, 1, 0, 0, 0),
         UtcDateTime::new(2022, 2, 1, 0, 0, 0),
