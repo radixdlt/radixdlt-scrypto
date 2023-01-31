@@ -30,7 +30,7 @@ pub struct ResourcesUsage {
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
-    pub resources_usage: ResourcesUsage
+    pub resources_usage: ResourcesUsage,
 }
 
 /// Captures whether a transaction should be committed, and its other results

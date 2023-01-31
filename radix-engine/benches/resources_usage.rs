@@ -14,25 +14,39 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
-
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
 impl std::fmt::Display for Bytes {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> { 
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         if self.0 < 1_000 {
             write!(fmt, "{} B", self.0)
         } else if self.0 < 1_000_000 {
-            write!(fmt, "{:.3} kB ({} Bytes)", self.0 as f64 / 1_000_f64, self.0)
+            write!(
+                fmt,
+                "{:.3} kB ({} Bytes)",
+                self.0 as f64 / 1_000_f64,
+                self.0
+            )
         } else if self.0 < 1_000_000_000 {
-            write!(fmt, "{:.3} MB ({} Bytes)", self.0 as f64 / 1_000_000_f64, self.0)
+            write!(
+                fmt,
+                "{:.3} MB ({} Bytes)",
+                self.0 as f64 / 1_000_000_f64,
+                self.0
+            )
         } else {
-            write!(fmt, "{:.3} GB ({} Bytes)", self.0 as f64 / 1_000_000_000_f64, self.0)
+            write!(
+                fmt,
+                "{:.3} GB ({} Bytes)",
+                self.0 as f64 / 1_000_000_000_f64,
+                self.0
+            )
         }
     }
 }
 impl std::fmt::Debug for Bytes {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> { 
-        write!(fmt, "{}", self) 
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(fmt, "{}", self)
     }
 }
 impl AddAssign for Bytes {
@@ -40,7 +54,6 @@ impl AddAssign for Bytes {
         self.0 += other.0
     }
 }
-
 
 struct ResourceInfoFramework {
     counter: Bytes,
@@ -56,7 +69,7 @@ impl ResourceInfoFramework {
             sum_allocations: Vec::new(),
             peak_allocations: Vec::new(),
             #[cfg(feature = "resource-usage-with-cpu")]
-            cpu_cycles: Vec::new()
+            cpu_cycles: Vec::new(),
         }
     }
     pub fn add_measurement(&mut self, value: &ResourcesUsage) {
@@ -70,13 +83,22 @@ impl ResourceInfoFramework {
     pub fn print_report(&self) {
         let mut map: HashMap<Bytes, usize> = HashMap::new();
         for i in self.sum_allocations.iter() {
-            map.entry(i.clone()).and_modify(|e| { *e += 1; }).or_insert(1);
+            map.entry(i.clone())
+                .and_modify(|e| {
+                    *e += 1;
+                })
+                .or_insert(1);
         }
 
         let mut sum_peak = Bytes(0);
         let mut map_peak: HashMap<Bytes, usize> = HashMap::new();
         for i in self.peak_allocations.iter() {
-            map_peak.entry(i.clone()).and_modify(|e| { *e += 1; }).or_insert(1);
+            map_peak
+                .entry(i.clone())
+                .and_modify(|e| {
+                    *e += 1;
+                })
+                .or_insert(1);
             sum_peak += *i;
         }
 
@@ -84,13 +106,20 @@ impl ResourceInfoFramework {
 
         #[cfg(feature = "resource-usage-with-cpu")]
         {
-            let avg_cpu_cycles: u64 = self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
+            let avg_cpu_cycles: u64 =
+                self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
             let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
             let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
-            println!("Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})", avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles);
+            println!(
+                "Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})",
+                avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles
+            );
         }
 
-        println!("Sum of allocated heap memory in all iterations: {}", self.counter);
+        println!(
+            "Sum of allocated heap memory in all iterations: {}",
+            self.counter
+        );
         let x = Bytes(self.counter.0 / self.sum_allocations.len());
         println!("Average allocation per iteration: {}", x);
         let x = Bytes(sum_peak.0 / self.peak_allocations.len());
@@ -99,8 +128,6 @@ impl ResourceInfoFramework {
         println!("Peak allocations (size: count): {:#?}", map_peak);
     }
 }
-
-
 
 fn transfer_test(c: &mut Criterion) {
     // Set up environment.

@@ -13,8 +13,6 @@ use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
-
-
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
     pub system_loan: u32,
@@ -147,7 +145,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         events: vec![],
-                        resources_usage: ResourcesUsage::default()
+                        resources_usage: ResourcesUsage::default(),
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -192,7 +190,7 @@ where
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
-                resources_usage: resources_tracker.end_measurement()
+                resources_usage: resources_tracker.end_measurement(),
             },
             result: track_receipt.result,
         };
