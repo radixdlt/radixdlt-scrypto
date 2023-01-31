@@ -8,7 +8,7 @@ fn test_loop() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -26,7 +26,7 @@ fn test_loop() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
 
     // Assert
     receipt.expect_commit_success();
@@ -40,7 +40,7 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -55,10 +55,10 @@ fn test_loop_out_of_cost_unit() {
         AccessRules::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 45.into())
+        .lock_fee(FAUCET_COMPONENT, 450.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
 
     // Assert
     receipt.expect_specific_failure(is_costing_error)
