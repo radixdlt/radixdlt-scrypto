@@ -1,5 +1,8 @@
-use crate::types::*;
+use crate::api::types::*;
+use crate::data::IndexedScryptoValue;
+use radix_engine_derive::*;
 use radix_engine_interface::data::ScryptoValue;
+use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialEq, Eq)]
 pub enum KeyValueStoreEntrySubstate {
@@ -8,6 +11,10 @@ pub enum KeyValueStoreEntrySubstate {
 }
 
 impl KeyValueStoreEntrySubstate {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
     pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
         let mut owned_node_ids = HashSet::new();
         match self {

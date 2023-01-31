@@ -4,7 +4,6 @@ use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
-use crate::system::component::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::fee::FeeReserveSubstate;
@@ -12,6 +11,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
 use crate::system::package::*;
 use crate::types::*;
+use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,

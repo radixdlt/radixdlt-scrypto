@@ -1,7 +1,3 @@
-use super::component::ComponentInfoSubstate;
-use super::component::ComponentRoyaltyAccumulatorSubstate;
-use super::component::ComponentRoyaltyConfigSubstate;
-use super::component::ComponentStateSubstate;
 use super::global::GlobalAddressSubstate;
 use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
@@ -15,7 +11,6 @@ use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
@@ -27,10 +22,12 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::types::*;
+use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
 };
+use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -1147,17 +1144,7 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
-                let mut owned_nodes = HashSet::new();
-                let mut global_references = HashSet::new();
-                if let KeyValueStoreEntrySubstate::Some(k, v) = substate {
-                    let k = IndexedScryptoValue::from_value(k.clone());
-                    let v = IndexedScryptoValue::from_value(v.clone());
-                    owned_nodes.extend(k.owned_node_ids().expect("No duplicates expected"));
-                    owned_nodes.extend(v.owned_node_ids().expect("No duplicates expected"));
-                    global_references.extend(k.global_references());
-                    global_references.extend(v.global_references());
-                }
-                (global_references, owned_nodes)
+                (substate.global_references(), substate.owned_node_ids())
             }
             SubstateRef::NonFungible(substate) => {
                 let maybe_scrypto_value = substate

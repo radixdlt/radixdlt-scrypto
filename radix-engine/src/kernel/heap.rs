@@ -1,4 +1,3 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
@@ -8,6 +7,7 @@ use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::types::{
     BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
+use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

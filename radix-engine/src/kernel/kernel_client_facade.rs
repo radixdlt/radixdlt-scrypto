@@ -3,10 +3,6 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::BaseModule;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
-use crate::system::component::{
-    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate,
-};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
@@ -22,6 +18,10 @@ use crate::system::package::PackageRoyaltyAccumulatorSubstate;
 use crate::system::package::PackageRoyaltyConfigSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::component::{
+    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentStateSubstate,
+};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientMeteringApi,

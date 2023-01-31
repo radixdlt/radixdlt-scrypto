@@ -1,4 +1,3 @@
-use super::KeyValueStoreEntrySubstate;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;

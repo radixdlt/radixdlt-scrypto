@@ -1,19 +1,18 @@
 use radix_engine_interface::api::types::{KeyValueStoreOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::{ClientSubstateApi, Invokable};
 use radix_engine_interface::blueprints::kv_store::{
-    KeyValueStoreCreateInvocation, KeyValueStoreInsertInvocation,
+    KeyValueStoreCreateInvocation, KeyValueStoreEntrySubstate, KeyValueStoreInsertInvocation,
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::marker::PhantomData;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::runtime::{DataRef, DataRefMut};
+use crate::runtime::{DataRef, DataRefMut, OriginalData};
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
@@ -21,10 +20,6 @@ pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + Sc
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
-
-// TODO: de-duplication
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     /// Creates a new key value store.
@@ -54,13 +49,16 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let raw_bytes = env.sys_read_substate(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
-        if value.0.is_none() {
-            env.sys_drop_lock(lock_handle).unwrap();
+        match value {
+            KeyValueStoreEntrySubstate::Some(_, value) => Some(DataRef::new(
+                lock_handle,
+                scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
+            )),
+            KeyValueStoreEntrySubstate::None => {
+                env.sys_drop_lock(lock_handle).unwrap();
+                None
+            }
         }
-
-        value
-            .0
-            .map(|raw| DataRef::new(lock_handle, scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
@@ -77,13 +75,20 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let raw_bytes = env.sys_read_substate(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
-        if value.0.is_none() {
-            env.sys_drop_lock(lock_handle).unwrap();
+        match value {
+            KeyValueStoreEntrySubstate::Some(key, value) => {
+                let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+                Some(DataRefMut::new(
+                    lock_handle,
+                    OriginalData::KeyValueStoreEntry(key, value),
+                    rust_value,
+                ))
+            }
+            KeyValueStoreEntrySubstate::None => {
+                env.sys_drop_lock(lock_handle).unwrap();
+                None
+            }
         }
-
-        value
-            .0
-            .map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.

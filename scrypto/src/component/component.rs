@@ -11,9 +11,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
-use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset,
-};
+use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
@@ -88,22 +86,12 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let pointer = DataPointer::new(
-            RENodeId::Component(self.0),
-            SubstateOffset::Component(ComponentOffset::Info),
-        );
-        let state: DataRef<ComponentInfoSubstate> = pointer.get();
-        state.package_address
+        todo!()
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let pointer = DataPointer::new(
-            RENodeId::Component(self.0),
-            SubstateOffset::Component(ComponentOffset::Info),
-        );
-        let state: DataRef<ComponentInfoSubstate> = pointer.get();
-        state.blueprint_name.clone()
+        todo!()
     }
 
     /// Add access check on the component.
@@ -209,22 +197,12 @@ impl GlobalComponentRef {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let pointer = DataPointer::new(
-            RENodeId::Global(GlobalAddress::Component(self.0)),
-            SubstateOffset::Component(ComponentOffset::Info),
-        );
-        let state: DataRef<ComponentInfoSubstate> = pointer.get();
-        state.package_address
+        todo!()
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let pointer = DataPointer::new(
-            RENodeId::Global(GlobalAddress::Component(self.0)),
-            SubstateOffset::Component(ComponentOffset::Info),
-        );
-        let state: DataRef<ComponentInfoSubstate> = pointer.get();
-        state.blueprint_name.clone()
+        todo!()
     }
 
     pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
