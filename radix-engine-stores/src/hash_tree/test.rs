@@ -1,13 +1,14 @@
 use super::tree_store::MemoryTreeStore;
 use super::types::{Nibble, NibblePath, NodeKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::put_at_next_version;
-use radix_engine::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
+use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::types::PackageAddress;
 use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::PackageAddress;
 use sbor::rust::collections::HashSet;
 
 #[test]

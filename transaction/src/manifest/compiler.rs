@@ -1,6 +1,6 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 
 use sbor::rust::collections::BTreeMap;
 

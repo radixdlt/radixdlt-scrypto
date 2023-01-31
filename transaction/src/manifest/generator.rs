@@ -1,5 +1,5 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -10,14 +10,11 @@ use radix_engine_interface::data::{
     ScryptoValue, ScryptoValueKind,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
-use sbor::value_kind::*;
-use sbor::*;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -1424,7 +1421,10 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+    };
+    use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]

@@ -1,7 +1,9 @@
-use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::package::PackageSetRoyaltyConfigInvocation;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -16,7 +18,9 @@ impl BorrowedPackage {
         sys_calls: &mut Y,
     ) -> Result<&Self, E>
     where
-        Y: EngineApi<E> + Invokable<PackageSetRoyaltyConfigInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<PackageSetRoyaltyConfigInvocation, E>,
     {
         sys_calls.invoke(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,

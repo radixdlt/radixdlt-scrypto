@@ -1,8 +1,8 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::model::NonFungibleGlobalId;
-use radix_engine_interface::node::*;
+use radix_engine_interface::blueprints::resource::NonFungibleIdType;
+use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;

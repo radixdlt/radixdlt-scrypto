@@ -107,7 +107,7 @@ macro_rules! args {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::*;
+    use crate::blueprints::resource::*;
     use crate::*;
     use sbor::rust::borrow::ToOwned;
     use sbor::rust::boxed::Box;

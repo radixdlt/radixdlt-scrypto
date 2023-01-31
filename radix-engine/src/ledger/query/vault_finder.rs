@@ -1,7 +1,6 @@
+use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::StateTreeVisitor;
-use crate::model::VaultSubstate;
-use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::model::ResourceAddress;
+use radix_engine_interface::api::types::{ResourceAddress, VaultId};
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {

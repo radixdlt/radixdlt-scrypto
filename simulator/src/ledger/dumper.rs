@@ -1,11 +1,18 @@
 #![allow(unused_must_use)]
 use colored::*;
+use radix_engine::blueprints::resource::{
+    NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
+};
 use radix_engine::ledger::*;
-use radix_engine::model::*;
+use radix_engine::system::component::{ComponentInfoSubstate, ComponentStateSubstate};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::PackageInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 

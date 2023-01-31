@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::model::extract_abi;
+use radix_engine::system::package::extract_abi;
 use radix_engine::types::PackageAddress;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::InstrumentedCode;

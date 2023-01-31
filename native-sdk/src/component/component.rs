@@ -1,7 +1,9 @@
-use radix_engine_interface::api::types::{ComponentId, RENodeId};
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::component::ComponentSetRoyaltyConfigInvocation;
+use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -14,7 +16,9 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: EngineApi<E> + Invokable<AccessRulesAddAccessCheckInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<AccessRulesAddAccessCheckInvocation, E>,
     {
         sys_calls.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
@@ -30,7 +34,9 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: EngineApi<E> + Invokable<ComponentSetRoyaltyConfigInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<ComponentSetRoyaltyConfigInvocation, E>,
     {
         sys_calls.invoke(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),

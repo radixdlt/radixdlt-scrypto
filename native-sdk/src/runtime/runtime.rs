@@ -1,9 +1,11 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::transaction_hash::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
-use radix_engine_interface::model::*;
-use radix_engine_interface::time::{Instant, TimeComparisonOperator};
+use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]
@@ -52,7 +54,9 @@ impl Runtime {
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
-        Y: EngineApi<E> + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let visible_node_ids = api.sys_get_visible_nodes()?;

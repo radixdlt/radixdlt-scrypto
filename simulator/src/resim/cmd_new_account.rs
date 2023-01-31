@@ -1,7 +1,8 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;
@@ -49,13 +50,34 @@ impl NewAccount {
 
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-        if let Some(receipt) = receipt {
+        if let Some(ref receipt) = receipt {
             let commit_result = receipt.result.expect_commit();
             commit_result
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
             let account = commit_result.entity_changes.new_component_addresses[0];
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    args!(ManifestExpression::EntireWorktop),
+                )
+                .build();
+            handle_manifest(
+                manifest,
+                &Some("".to_string()), // explicit empty signer public keys
+                &self.network,
+                &None,
+                self.trace,
+                false,
+                out,
+            )?
+            .unwrap()
+            .expect_commit_success();
+
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
@@ -93,31 +115,6 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
         }
-
-        let component_address = receipt
-            .result
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0];
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .call_method(
-                component_address,
-                "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
-            )
-            .build();
-        let receipt = handle_manifest(
-            manifest,
-            &Some("".to_string()), // explicit empty signer public keys
-            &self.network,
-            &self.manifest,
-            self.trace,
-            false,
-            out,
-        )?
-        .expect("Should not fail!");
 
         Ok(())
     }

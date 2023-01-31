@@ -1,9 +1,8 @@
 use radix_engine::types::{
-    hash, require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey,
-    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    FAUCET_COMPONENT, RADIX_TOKEN,
+    hash, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, NetworkDefinition,
+    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
 };
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
@@ -271,7 +270,7 @@ fn minting_of_fungible_resource_succeeds() {
 fn minting_of_non_fungible_resource_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdType::Integer,
+            id_type: NonFungibleIdType::Integer,
         },
         |account_component_address,
          minter_badge_resource_address,

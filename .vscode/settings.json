@@ -11,6 +11,7 @@
         "eddsa",
         "instantiatable",
         "Instrumenter",
+        "Invokable",
         "persistable",
         "repr",
         "Sbor",

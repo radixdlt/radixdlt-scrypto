@@ -1,5 +1,8 @@
 use super::*;
-use crate::model::*;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::NonFungibleLocalId;
+use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes

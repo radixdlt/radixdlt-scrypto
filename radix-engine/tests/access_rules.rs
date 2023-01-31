@@ -1,8 +1,10 @@
-use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::model::{AccessRulesChainError, AuthZoneError};
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;

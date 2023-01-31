@@ -1,7 +1,7 @@
-use radix_engine::engine::{ApplicationError, RuntimeError};
-use radix_engine::model::ResourceManagerError;
+use radix_engine::blueprints::resource::ResourceManagerError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

@@ -1,11 +1,11 @@
-use sbor::rust::vec::Vec;
-
-use crate::model::*;
-use crate::node::NetworkDefinition;
-
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::ResourceAddress;
+use crate::network::NetworkDefinition;
+use sbor::rust::vec::Vec;
 
 use bech32::{self, FromBase32, Variant};
 
