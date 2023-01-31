@@ -763,7 +763,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: RENodeId::Global(entity_address.clone()),
                         index: index.clone(),
                         key: key.clone(),
-                        rule: rule.clone(),
+                        rule: AccessRuleEntry::AccessRule(rule.clone()),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

@@ -3,10 +3,7 @@ use radix_engine_derive::LegacyDescribe;
 use radix_engine_derive::*;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId, ToString};
 use radix_engine_interface::api::Invokable;
-use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
-    AccessRulesSetMethodMutabilityInvocation, ComponentAddress,
-};
+use radix_engine_interface::model::{AccessRule, AccessRuleEntry, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation, ComponentAddress};
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
@@ -41,7 +38,7 @@ impl ComponentAccessRules {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
-                rule: access_rule,
+                rule: AccessRuleEntry::AccessRule(access_rule),
             })
             .unwrap();
     }
