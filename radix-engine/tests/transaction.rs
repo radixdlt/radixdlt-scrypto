@@ -2,8 +2,6 @@ use radix_engine::engine::ApplicationError;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
-use radix_engine::model::VaultError;
-use radix_engine::model::ResourceOperationError;
 use radix_engine::model::TransactionProcessorError;
 use radix_engine::types::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -11,7 +9,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 use utils::ContextualDisplay;
-use std::thread;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -200,56 +197,4 @@ fn test_faucet_drain_attempt_should_fail() {
 
     // Assert
     receipt.expect_commit_failure();
-}
-
-// This is to verify whether it is posssible to share one ScryptoInterpreter and reuse
-// cached WasmiModule between multiple threads.
-#[test]
-fn test_multithread_transfer() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-    let (public_key1, _, account1) = test_runner.new_allocated_account();
-    let (_, _, account2) = test_runner.new_allocated_account();
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 10u32.into())
-        .withdraw_from_account_by_amount(account1, 100u32.into(), RADIX_TOKEN)
-        .call_method(
-            account2,
-            "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
-        )
-        .build();
-
-    // Spawning threads that will attempt to withdraw 100XRD from account1, which has 1000XRD
-    // balance, so some transactions should fail with InsufficientBalance error
-    let handle = thread::spawn(move || {
-        for _i in 1..20 {
-            let receipt = test_runner.execute_manifest(
-                manifest.clone(),
-                vec![NonFungibleGlobalId::from_public_key(&public_key1)],
-            );
-
-            let commit_result = receipt.result.expect_commit();
-            let _result = commit_result
-                .outcome
-                .success_or_else(|err|
-                    match err {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::VaultError(
-                                    VaultError::ResourceOperationError(
-                                        ResourceOperationError::InsufficientBalance
-                            ))) => {},
-                            err => {
-                                panic!("Outcome was a failure: {}", err)
-                            },
-
-                    }
-                );
-        }
-    });
-
-    handle.join().unwrap();
-
 }

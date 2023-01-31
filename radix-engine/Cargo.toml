@@ -46,6 +46,7 @@ rand_chacha = { version = "0.3.1" }
 rayon = "1.5.3"
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
+crossbeam = { version = "0.8.2" }
 
 [[bench]]
 name = "radix_engine"
