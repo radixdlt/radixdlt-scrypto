@@ -245,10 +245,7 @@ fn generate_dispatcher(
                         let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
-                        let mut component_data = ::scrypto::runtime::DataPointer::new(
-                            radix_engine_interface::api::types::RENodeId::Component(component_id),
-                            radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
-                        );
+                        let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                     });
                     stmts.push(stmt);
                 }
@@ -676,10 +673,7 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                     let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
-                    let mut component_data = ::scrypto::runtime::DataPointer::new(
-                        radix_engine_interface::api::types::RENodeId::Component(component_id),
-                        radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
-                    );
+                    let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let return_data = Test_impl::Test::x(state.deref(), input.arg0);

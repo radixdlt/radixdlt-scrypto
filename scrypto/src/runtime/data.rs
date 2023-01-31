@@ -1,9 +1,12 @@
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::types::LockHandle;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::kv_store::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoValue};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
+};
 use sbor::rust::fmt;
+use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -101,5 +104,56 @@ impl<V: ScryptoEncode> Deref for DataRefMut<V> {
 impl<V: ScryptoEncode> DerefMut for DataRefMut<V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
+    }
+}
+
+pub struct ComponentStatePointer<V: 'static + ScryptoEncode + ScryptoDecode> {
+    component_id: ComponentId,
+    phantom_data: PhantomData<V>,
+}
+
+impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
+    pub fn new(component_id: ComponentId) -> Self {
+        Self {
+            component_id,
+            phantom_data: PhantomData,
+        }
+    }
+
+    pub fn get(&self) -> DataRef<V> {
+        let mut env = ScryptoEnv;
+
+        let lock_handle = env
+            .sys_lock_substate(
+                RENodeId::Component(self.component_id),
+                SubstateOffset::Component(ComponentOffset::State),
+                false,
+            )
+            .unwrap();
+        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
+        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
+        DataRef {
+            lock_handle,
+            value: scrypto_decode(&substate.raw).unwrap(),
+        }
+    }
+
+    pub fn get_mut(&mut self) -> DataRefMut<V> {
+        let mut env = ScryptoEnv;
+
+        let lock_handle = env
+            .sys_lock_substate(
+                RENodeId::Component(self.component_id),
+                SubstateOffset::Component(ComponentOffset::State),
+                true,
+            )
+            .unwrap();
+        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
+        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
+        DataRefMut {
+            lock_handle,
+            original_data: OriginalData::ComponentAppState(raw_substate),
+            value: scrypto_decode(&substate.raw).unwrap(),
+        }
     }
 }
