@@ -12,12 +12,18 @@ use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-
+#[cfg(not(feature = "resource-usage-with-cpu"))]
 #[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
-    pub cpu_cycles: u64
+}
+#[cfg(feature = "resource-usage-with-cpu")]
+#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
+pub struct ResourcesUsage {
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

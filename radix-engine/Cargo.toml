@@ -58,7 +58,6 @@ harness = false
 [[bench]]
 name = "resource_usage"
 harness = false
-required-features = ["resource-usage"]
 
 [features]
 # You should enable either `std` or `alloc`
@@ -66,9 +65,8 @@ default = ["std"]
 std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka", "scrypto/std", "scrypto-unit/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown", "scrypto/alloc", "scrypto-unit/alloc"]
 
-# Enables resource usage tracing, 'with-cpu' option is available only for Linux OS on x86 arch and requires higher priviledges for process execution.
-resource-usage = []
-resource-usage-with-cpu = ["resource-usage", "dep:perfcnt"] 
+# Enables CPU cycles resource tracing - available only for Linux OS on x86 arch, requires CAP_PERFMON capability for the process.
+resource-usage-with-cpu = ["dep:perfcnt"] 
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]

@@ -132,7 +132,7 @@ where
             println!("{:-^80}", "Engine Execution Log");
         }
 
-        #[cfg(feature = "resource-usage")]
+        // Start resources usage measurement
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
         // Prepare state track and execution trace
@@ -188,18 +188,11 @@ where
             track.finalize(invoke_result, events)
         };
 
-		let resources_usage = match () {
-	        #[cfg(not(feature = "resource-usage"))]
-	        () => ResourcesUsage::default(),
-	        #[cfg(feature = "resource-usage")]
-	        () => resources_tracker.end_measurement()
-		};
-
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
-                resources_usage
+                resources_usage: resources_tracker.end_measurement()
             },
             result: track_receipt.result,
         };

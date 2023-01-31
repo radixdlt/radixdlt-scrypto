@@ -4,25 +4,22 @@ use crate::transaction::ResourcesUsage;
 
 #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 use perfcnt::{AbstractPerfCounter, PerfCounter, linux::{PerfCounterBuilderLinux, HardwareEventType}};
-
-#[cfg(feature = "resource-usage")]
 #[global_allocator]
 static INFO_ALLOC: InfoAlloc<std::alloc::System> = InfoAlloc::new(std::alloc::System);
-
 
 
 /// Heap allocations tracker
 /// 
 /// This allocator information provider can count allocations up to isize::MAX (9_223_372_036_854_775_807),
-/// in case if anyone will try to alocate more memory it will panice with message: 'Value out of range'.
+/// in case of exceeding this value code will panic with message: 'Value out of range'.
 pub struct InfoAlloc<T: GlobalAlloc> {
-    /// Heap allocator to use, by default use: System
+    /// Heap allocator to use, default usage: System
     allocator: T,
     /// Sum of bytes allocated during measurements (no dealocation is counted)
     sum_counter: AtomicIsize,
-    /// Current level of allocated bytes (allocation and deallocation is counted)
+    /// Current level of allocated bytes (allocation and deallocation are counted)
     current_level: AtomicIsize,
-    /// Maximum level (peak) of allocated bytes (allocation and deallocation is counted)
+    /// Maximum level (peak) of allocated bytes (allocation and deallocation are counted)
     max_level: AtomicIsize
 }
 
@@ -37,14 +34,15 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
         }
     }
 
-    pub fn reset_counter(&self) {
+    /// Resets internal counters. Usually used to start measurement.
+    pub fn reset_counters(&self) {
         self.sum_counter.store(0, Ordering::Release);
         self.current_level.store(0, Ordering::Release);
         self.max_level.store(0, Ordering::Release);
     }
 
     #[inline]
-    fn increase_counter(&self, value: usize) {
+    fn increase_counters(&self, value: usize) {
         let ivalue: isize = value.try_into().expect("Value out of range");
 
         self.sum_counter.fetch_add(ivalue, Ordering::AcqRel);
@@ -54,7 +52,7 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
     }
 
     #[inline]
-    fn decrease_counter(&self, value: usize) {
+    fn decrease_counters(&self, value: usize) {
         self.current_level.fetch_sub(value.try_into().expect("Value out of range"), Ordering::AcqRel);
     }
 
@@ -64,8 +62,8 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
     }
 
     /// Returns current counters values: sum fo all allocations, current allocation level, peak allocation level
-    /// Negative values can occur because of memory allocations before calling to reset_counters() function and 
-    /// deallocating them during measurements. In that case they are set to 0.
+    /// Counters can have negative values because of memory allocations before calling to reset_counters() function
+    /// and deallocating them during measurements. In that case counter value is set to 0.
     pub fn get_counters_value(&self) -> (usize, usize, usize) {
         (self.sum_counter.load(Ordering::Acquire).max(0) as usize, 
         self.current_level.load(Ordering::Acquire).max(0) as usize,
@@ -76,12 +74,12 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
 unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
 
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.increase_counter(layout.size());
+        self.increase_counters(layout.size());
         self.allocator.alloc(layout)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.decrease_counter(layout.size());
+        self.decrease_counters(layout.size());
         self.allocator.dealloc(ptr, layout);
     }
 
@@ -93,7 +91,9 @@ unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
 
 
 
-
+/// CPU cycles tracker
+/// 
+/// Performance counters are used to read Reference CPU cycles.
 #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 pub struct InfoCpu {
     perf: PerfCounter
@@ -136,21 +136,18 @@ impl ResourcesTracker {
 		#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 		ret.cpu.start_measurement();
 
-        INFO_ALLOC.reset_counter();
+        INFO_ALLOC.reset_counters();
 		ret
     }
 
     pub fn end_measurement(&mut self) -> ResourcesUsage {
-		let cpu_cycles = match () {
-			#[cfg(not(all(target_os = "linux", feature = "resource-usage-with-cpu")))]
-			() => 0,
-			#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
-			() => self.cpu.end_measurement(),
-		};
+        #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
+        let cpu_cycles = self.cpu.end_measurement();
         let (heap_allocations_sum, _heap_current_level, heap_peak_memory) = INFO_ALLOC.get_counters_value();
 		ResourcesUsage {
 			heap_allocations_sum, 
 			heap_peak_memory,
+			#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 			cpu_cycles
 		}
 	}

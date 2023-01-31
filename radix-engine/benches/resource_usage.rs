@@ -42,18 +42,20 @@ impl AddAssign for Bytes {
 }
 
 
-struct MemInfoFramework {
+struct ResourceInfoFramework {
     counter: Bytes,
     sum_allocations: Vec<Bytes>,
     peak_allocations: Vec<Bytes>,
+    #[cfg(feature = "resource-usage-with-cpu")]
     cpu_cycles: Vec<u64>,
 }
-impl MemInfoFramework {
+impl ResourceInfoFramework {
     pub fn new() -> Self {
         Self {
             counter: Bytes(0),
             sum_allocations: Vec::new(),
             peak_allocations: Vec::new(),
+            #[cfg(feature = "resource-usage-with-cpu")]
             cpu_cycles: Vec::new()
         }
     }
@@ -61,6 +63,7 @@ impl MemInfoFramework {
         self.counter += Bytes(value.heap_allocations_sum);
         self.sum_allocations.push(Bytes(value.heap_allocations_sum));
         self.peak_allocations.push(Bytes(value.heap_peak_memory));
+        #[cfg(feature = "resource-usage-with-cpu")]
         self.cpu_cycles.push(value.cpu_cycles);
     }
 
@@ -79,7 +82,7 @@ impl MemInfoFramework {
 
         println!("Iterations: {}", self.sum_allocations.len());
 
-        #[cfg(any(feature = "resource-usage-with-cpu"))]
+        #[cfg(feature = "resource-usage-with-cpu")]
         {
             let avg_cpu_cycles: u64 = self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
             let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
@@ -99,9 +102,9 @@ impl MemInfoFramework {
 
 
 
-fn mem_test(c: &mut Criterion) {
+fn transfer_test(c: &mut Criterion) {
     // Set up environment.
-    let mut fwk = MemInfoFramework::new();
+    let mut fwk = ResourceInfoFramework::new();
 
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
@@ -207,5 +210,5 @@ fn mem_test(c: &mut Criterion) {
     fwk.print_report();
 }
 
-criterion_group!(resource_usage, mem_test);
+criterion_group!(resource_usage, transfer_test);
 criterion_main!(resource_usage);
