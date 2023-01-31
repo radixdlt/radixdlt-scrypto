@@ -304,7 +304,16 @@ where
         &mut self,
         component_id: ComponentId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        let node_id = self.allocate_node_id(RENodeType::GlobalComponent)?;
+        // TODO: remove this logic
+        let type_info = self.get_type_info(component_id)?;
+        let re_node_type = if type_info.0.eq(&ACCOUNT_PACKAGE) && type_info.1.eq(&ACCOUNT_BLUEPRINT)
+        {
+            RENodeType::GlobalAccount
+        } else {
+            RENodeType::GlobalComponent
+        };
+
+        let node_id = self.allocate_node_id(re_node_type)?;
 
         self.create_node(
             node_id,

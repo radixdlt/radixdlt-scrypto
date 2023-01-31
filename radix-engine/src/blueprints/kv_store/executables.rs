@@ -154,13 +154,28 @@ impl ExecutableInvocation for KeyValueStoreInsertInvocation {
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         call_frame_update.add_ref(RENodeId::KeyValueStore(self.receiver));
-        for id in IndexedScryptoValue::from_value(self.key.clone())
+        // Entry::key
+        let key = IndexedScryptoValue::from_value(self.key.clone());
+        for id in key
             .owned_node_ids()
             .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
         {
             call_frame_update.nodes_to_move.push(id);
         }
-        // TODO: reference passing?
+        for global_address in key.global_references() {
+            call_frame_update.add_ref(RENodeId::Global(global_address));
+        }
+        // Entry::value
+        let value = IndexedScryptoValue::from_value(self.value.clone());
+        for id in value
+            .owned_node_ids()
+            .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
+        {
+            call_frame_update.nodes_to_move.push(id);
+        }
+        for global_address in value.global_references() {
+            call_frame_update.add_ref(RENodeId::Global(global_address));
+        }
 
         let resolved_receiver = ResolvedReceiver::new(RENodeId::KeyValueStore(self.receiver));
         let actor = ResolvedActor::method(

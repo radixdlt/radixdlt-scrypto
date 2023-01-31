@@ -68,7 +68,7 @@ impl NodeMoveModule {
                     Ok(())
                 }
             }
-            RENodeId::Component(..) => Ok(()),
+            RENodeId::Vault(..) | RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime(..)
             | RENodeId::AuthZoneStack(..)
@@ -76,7 +76,6 @@ impl NodeMoveModule {
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Vault(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
             | RENodeId::Logger
