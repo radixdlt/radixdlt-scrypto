@@ -768,10 +768,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                Instruction::Basic(BasicInstruction::CreateValidator {
+                    key,
+                    owner_access_rule,
+                }) => {
                     let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
                         receiver: EPOCH_MANAGER,
                         key: key.clone(),
+                        owner_access_rule: owner_access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

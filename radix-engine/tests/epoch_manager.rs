@@ -142,13 +142,8 @@ fn register_validator_with_auth_succeeds() {
         .unwrap()
         .public_key();
     let mut validator_set_and_stake_owners = BTreeMap::new();
-    validator_set_and_stake_owners.insert(
-        pub_key,
-        (
-            Decimal::one(),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
-        ),
-    );
+    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    validator_set_and_stake_owners.insert(pub_key, (Decimal::one(), validator_account_address));
     let genesis = create_genesis(
         validator_set_and_stake_owners,
         BTreeMap::new(),
@@ -161,6 +156,7 @@ fn register_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
+        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -222,14 +218,9 @@ fn unregister_validator_with_auth_succeeds() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
+    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let mut validator_set_and_stake_owners = BTreeMap::new();
-    validator_set_and_stake_owners.insert(
-        pub_key,
-        (
-            Decimal::one(),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
-        ),
-    );
+    validator_set_and_stake_owners.insert(pub_key, (Decimal::one(), validator_account_address));
     let genesis = create_genesis(
         validator_set_and_stake_owners,
         BTreeMap::new(),
@@ -242,6 +233,7 @@ fn unregister_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
+        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -359,7 +351,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key);
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, rule!(allow_all));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account_by_amount(account_address, Decimal::one(), RADIX_TOKEN)
@@ -419,16 +411,12 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_account_address =
+        ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let mut validator_set_and_stake_owners = BTreeMap::new();
     validator_set_and_stake_owners.insert(
         validator_pub_key,
-        (
-            Decimal::one(),
-            ComponentAddress::virtual_account_from_public_key(&account_pub_key),
-        ),
+        (Decimal::one(), validator_account_address),
     );
     let genesis = create_genesis(
         validator_set_and_stake_owners,
@@ -440,6 +428,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
+        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -683,8 +672,12 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
+        OLYMPIA_VALIDATOR_TOKEN,
+    )));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
             component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
@@ -717,8 +710,12 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
+        OLYMPIA_VALIDATOR_TOKEN,
+    )));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
             component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,

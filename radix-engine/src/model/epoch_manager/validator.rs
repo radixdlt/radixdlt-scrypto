@@ -2,7 +2,7 @@ use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
     RENodeInit, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
-use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate};
+use crate::model::{AccessRulesChainSubstate, GlobalAddressSubstate, MetadataSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -550,15 +550,23 @@ impl ValidatorCreator {
         Ok(unstake_resource_manager.0)
     }
 
-    fn build_access_rules(key: EcdsaSecp256k1PublicKey) -> AccessRules {
+    fn build_access_rules(owner_access_rule: AccessRule) -> AccessRules {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            owner_access_rule.clone(),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            rule!(allow_all),
+        );
+        access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
+            owner_access_rule.clone(),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleGlobalId::from_public_key(&key))),
+            owner_access_rule.clone(),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
@@ -579,6 +587,7 @@ impl ValidatorCreator {
     pub fn create_with_initial_stake<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
@@ -607,8 +616,11 @@ impl ValidatorCreator {
                 pending_xrd_withdraw_vault_id: unstake_vault.0,
                 is_registered,
             },
+            MetadataSubstate {
+                metadata: BTreeMap::new(),
+            },
             AccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(key)],
+                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             },
         );
         api.create_node(node_id, node)?;
@@ -623,6 +635,7 @@ impl ValidatorCreator {
     pub fn create<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
         is_registered: bool,
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
@@ -647,8 +660,11 @@ impl ValidatorCreator {
                 pending_xrd_withdraw_vault_id: unstake_vault.0,
                 is_registered,
             },
+            MetadataSubstate {
+                metadata: BTreeMap::new(),
+            },
             AccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(key)],
+                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             },
         );
         api.create_node(node_id, node)?;

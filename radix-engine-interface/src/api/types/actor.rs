@@ -362,7 +362,8 @@ impl EpochManagerPackage {
                         NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
                             EpochManagerCreateValidatorInvocation {
                                 receiver,
-                                key: args.validator,
+                                key: args.key,
+                                owner_access_rule: args.owner_access_rule,
                             },
                         ))
                     }
