@@ -160,6 +160,7 @@ where
         }
 
         // Start resources usage measurement
+        #[cfg(feature = "std")]
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
         // Prepare state track and execution trace
@@ -216,11 +217,19 @@ where
             track.finalize(invoke_result, events)
         };
 
+        // Finish resources usage measurement and get results
+        let resources_usage = match () {
+            #[cfg(feature = "std")]
+            () => resources_tracker.end_measurement(),
+            #[cfg(not(feature = "std"))]
+            () => ResourcesUsage::default(),
+        };
+
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
-                resources_usage: resources_tracker.end_measurement(),
+                resources_usage,
             },
             result: track_receipt.result,
         };

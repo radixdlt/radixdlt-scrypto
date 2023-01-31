@@ -238,6 +238,7 @@ fn transfer_test(c: &mut Criterion) {
                     .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
+            #[cfg(feature = "std")]
             fwk.add_measurement(&receipt.execution.resources_usage);
 
             receipt.expect_commit_success();

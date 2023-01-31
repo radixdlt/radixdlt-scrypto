@@ -1,6 +1,8 @@
 use crate::transaction::ResourcesUsage;
-use std::alloc::{GlobalAlloc, Layout};
-use std::sync::atomic::{AtomicIsize, Ordering};
+use crate::types::{
+    alloc::{GlobalAlloc, Layout, System},
+    sync::atomic::{AtomicIsize, Ordering},
+};
 
 #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 use perfcnt::{
@@ -8,7 +10,7 @@ use perfcnt::{
     AbstractPerfCounter, PerfCounter,
 };
 #[global_allocator]
-static INFO_ALLOC: InfoAlloc<std::alloc::System> = InfoAlloc::new(std::alloc::System);
+static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
 
 /// Heap allocations tracker
 ///

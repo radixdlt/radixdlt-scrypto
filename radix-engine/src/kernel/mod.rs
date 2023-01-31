@@ -13,6 +13,7 @@ mod kernel_static_invoke_facade; // statically linked
 mod module;
 mod node;
 mod node_properties;
+#[cfg(feature = "std")]
 mod resources_tracker;
 mod track;
 
@@ -30,5 +31,6 @@ pub use kernel_static_invoke_facade::*;
 pub use module::*;
 pub use node::*;
 pub use node_properties::*;
+#[cfg(feature = "std")]
 pub use resources_tracker::*;
 pub use track::*;

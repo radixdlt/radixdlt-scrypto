@@ -59,6 +59,7 @@ harness = false
 [[bench]]
 name = "resources_usage"
 harness = false
+required-features = ["std"]
 
 [features]
 # You should enable either `std` or `alloc`
