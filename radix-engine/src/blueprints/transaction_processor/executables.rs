@@ -22,6 +22,7 @@ use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -212,6 +213,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateValidator { .. }
             | BasicInstruction::CreateAccessController { .. }
             | BasicInstruction::CreateIdentity { .. }
             | BasicInstruction::AssertAccessRule { .. }
@@ -778,6 +780,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         index: index.clone(),
                         key: key.clone(),
                         rule: rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        key: key.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

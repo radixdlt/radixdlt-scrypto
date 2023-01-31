@@ -229,8 +229,37 @@ where
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {
-                println!("{:<30}: {:>8}", k, v);
+                println!("{:<30}: {:>10}", k, v);
             }
+
+            println!("{:-^80}", "Cost Totals");
+            println!(
+                "{:<30}: {:>10}",
+                "Total Cost Units Consumed", receipt.execution.fee_summary.cost_unit_consumed
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Cost Unit Limit", receipt.execution.fee_summary.cost_unit_limit
+            );
+            // NB - we use "to_string" to ensure they align correctly
+            println!(
+                "{:<30}: {:>10}",
+                "Execution XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_execution_cost_xrd
+                    .to_string()
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Royalty XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_royalty_cost_xrd
+                    .to_string()
+            );
 
             match &receipt.result {
                 TransactionResult::Commit(commit) => {

@@ -97,6 +97,7 @@ $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superad
 
 # Test - publishing a large package
 $resim publish ./tests/large_package.wasm --owner-badge $owner_badge
+$resim publish ./tests/large_package.wasm
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2

@@ -544,6 +544,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateValidator { key } => {
+            f.write_str("CREATE_VALIDATOR")?;
+            format_typed_value(f, context, key)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::CreateAccessController {
             controlled_asset,
             primary_role,

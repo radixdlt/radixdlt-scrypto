@@ -149,9 +149,12 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
         units: u32,
     ) -> Result<(), ModuleError> {
+        // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
+        // These values will be tweaked, alongside the whole fee table.
+        let multiplier = 5;
         track
             .fee_reserve()
-            .consume_execution(units, "run_wasm")
+            .consume_multiplied_execution(units, multiplier, "run_wasm")
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 

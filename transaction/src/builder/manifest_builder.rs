@@ -3,7 +3,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
@@ -359,11 +358,7 @@ impl ManifestBuilder {
     }
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: "create_validator".to_string(),
-            args: args!(key),
-        });
+        self.add_instruction(BasicInstruction::CreateValidator { key });
         self
     }
 

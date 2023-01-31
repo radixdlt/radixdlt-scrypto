@@ -95,14 +95,34 @@ impl NewAccount {
             .map_err(Error::IOError)?;
 
             let mut configs = get_configs()?;
-            if configs.default_account.is_none() {
+            if configs.default_account.is_none()
+                || configs.default_private_key.is_none()
+                || configs.default_owner_badge.is_none()
+            {
+                configs.default_account = Some(account);
+                configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
+                set_configs(&configs)?;
+
+                let nf_global_id = NewSimpleBadge {
+                    symbol: None,
+                    name: Some("Owner badge".to_string()),
+                    description: None,
+                    url: None,
+                    icon_url: None,
+                    network: None,
+                    manifest: None,
+                    signing_keys: None,
+                    trace: false,
+                }
+                .run(out)?;
+                configs.default_owner_badge = Some(nf_global_id.unwrap());
+                set_configs(&configs)?;
+
                 writeln!(
                     out,
-                    "No configuration found on system. will use the above account as default."
+                    "Account configuration in complete. Will use the above account as default."
                 )
                 .map_err(Error::IOError)?;
-                configs.default_account = Some((account, hex::encode(private_key.to_bytes())));
-                set_configs(&configs)?;
             }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
