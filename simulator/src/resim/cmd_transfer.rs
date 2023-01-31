@@ -17,7 +17,7 @@ pub struct Transfer {
     /// The recipient component address.
     recipient: SimulatorComponentAddress,
 
-    /// The proofs to add to the auth zone
+    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
 

@@ -17,10 +17,10 @@ pub struct CallFunction {
     /// The function name
     function_name: String,
 
-    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for non-fungible Bucket
+    /// The call arguments, such as "5", "hello", "<amount>,<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     arguments: Vec<String>,
 
-    /// The proofs to add to the auth zone
+    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
 
