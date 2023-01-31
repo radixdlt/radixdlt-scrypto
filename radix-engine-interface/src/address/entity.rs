@@ -36,6 +36,9 @@ pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
 pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
 
+/// A unique identifier used in the addressing of Account Controller Component Addresses.
+pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0c;
+
 /// An enum which represents the different addressable entities.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
@@ -101,7 +104,7 @@ impl EntityType {
             Self::EddsaEd25519VirtualAccountComponent => {
                 EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
             }
-            Self::AccessControllerComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::AccessControllerComponent => ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID,
             Self::EcdsaSecp256k1VirtualIdentityComponent => {
                 ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID
             }
@@ -137,6 +140,7 @@ impl TryFrom<u8> for EntityType {
             EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID => {
                 Ok(Self::EddsaEd25519VirtualIdentityComponent)
             }
+            ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccessControllerComponent),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }
