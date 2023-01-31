@@ -5,7 +5,7 @@ pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate>;
+    ) -> HashMap<Hash, PersistedSubstate>;
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

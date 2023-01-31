@@ -34,7 +34,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry(offset.clone()).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref())
             }
@@ -67,7 +67,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry(offset.clone()).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref_mut())
             }

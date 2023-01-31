@@ -1,4 +1,3 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalAddressSubstate;
@@ -7,7 +6,6 @@ use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset, VaultId, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -88,20 +86,13 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             }
             RENodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_store.get_kv_store_entries(&kv_store_id);
-                for (key, v) in map.iter() {
+                for (hash, substate) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash.clone())),
                     );
-                    if let PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
-                        Some(entry),
-                    )) = v
-                    {
-                        let value = IndexedScryptoValue::from_slice(entry)
-                            .expect("Key Value Store Entry should be parseable.");
-                        for child_node_id in
-                            value.owned_node_ids().expect("No duplicates should exist")
-                        {
+                    if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
+                        for child_node_id in entry.owned_node_ids() {
                             self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
                                 .expect("Broken Node Store");
                         }

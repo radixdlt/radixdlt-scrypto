@@ -11,7 +11,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::kv_store::*;
-use radix_engine_interface::data::ScryptoValue;
 
 pub struct KeyValueStore;
 
@@ -142,13 +141,6 @@ impl Executor for KeyValueStoreGetMutInvocation {
 
         Ok((handle, CallFrameUpdate::empty()))
     }
-}
-
-pub struct KeyValueStoreInsertExecutable {
-    receiver: RENodeId,
-    hash: Hash,
-    key: ScryptoValue,
-    value: ScryptoValue,
 }
 
 impl ExecutableInvocation for KeyValueStoreInsertInvocation {

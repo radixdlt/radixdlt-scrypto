@@ -42,8 +42,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut env = ScryptoEnv;
-        let offset =
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        let hash = hash(scrypto_encode(key).unwrap()); // TODO: fix performance regression
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash));
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::KeyValueStore(self.own.kv_store_id()),
@@ -65,8 +65,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut env = ScryptoEnv;
-        let offset =
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        let hash = hash(scrypto_encode(key).unwrap()); // TODO: fix performance regression
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash));
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::KeyValueStore(self.own.kv_store_id()),

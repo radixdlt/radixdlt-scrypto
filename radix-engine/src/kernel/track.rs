@@ -361,7 +361,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 
@@ -430,7 +430,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 

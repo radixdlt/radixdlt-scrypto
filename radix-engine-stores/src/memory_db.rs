@@ -46,7 +46,7 @@ impl QueryableSubstateStore for SerializedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
+    ) -> HashMap<Hash, PersistedSubstate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {

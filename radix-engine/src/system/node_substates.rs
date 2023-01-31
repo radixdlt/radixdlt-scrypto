@@ -1147,20 +1147,17 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (
-                        scrypto_value.global_references(),
-                        scrypto_value
-                            .owned_node_ids()
-                            .expect("No duplicates expected"),
-                    )
-                } else {
-                    (HashSet::new(), HashSet::new())
+                let mut owned_nodes = HashSet::new();
+                let mut global_references = HashSet::new();
+                if let KeyValueStoreEntrySubstate::Some(k, v) = substate {
+                    let k = IndexedScryptoValue::from_value(k.clone());
+                    let v = IndexedScryptoValue::from_value(v.clone());
+                    owned_nodes.extend(k.owned_node_ids().expect("No duplicates expected"));
+                    owned_nodes.extend(v.owned_node_ids().expect("No duplicates expected"));
+                    global_references.extend(k.global_references());
+                    global_references.extend(v.global_references());
                 }
+                (global_references, owned_nodes)
             }
             SubstateRef::NonFungible(substate) => {
                 let maybe_scrypto_value = substate

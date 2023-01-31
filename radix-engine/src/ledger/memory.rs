@@ -75,17 +75,17 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<sbor::rust::vec::Vec<u8>, PersistedSubstate> {
+    ) -> HashMap<Hash, PersistedSubstate> {
         self.substates
             .iter()
-            .filter_map(|(key, value)| {
+            .filter_map(|(substate_id, substate_value)| {
                 if let SubstateId(
                     RENodeId::KeyValueStore(id),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) = key
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash)),
+                ) = substate_id
                 {
                     if id == kv_store_id {
-                        Some((key.clone(), value.substate.clone()))
+                        Some((hash.clone(), substate_value.substate.clone()))
                     } else {
                         None
                     }
