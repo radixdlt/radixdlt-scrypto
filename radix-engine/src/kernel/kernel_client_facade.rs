@@ -330,6 +330,24 @@ where
             CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?.into_vec(),
         })
     }
+
+    fn get_type_info(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<(PackageAddress, String), RuntimeError> {
+        let component_node_id = RENodeId::Component(component_id);
+        let handle = self.lock_substate(
+            component_node_id,
+            SubstateOffset::Component(ComponentOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = self.get_ref(handle)?;
+        let info = substate_ref.component_info();
+        let package_address = info.package_address.clone();
+        let blueprint_ident = info.blueprint_name.clone();
+        self.drop_lock(handle)?;
+        Ok((package_address, blueprint_ident))
+    }
 }
 
 impl<'g, 's, W, R, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, R, M>
