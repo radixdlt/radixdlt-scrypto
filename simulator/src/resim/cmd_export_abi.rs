@@ -8,14 +8,14 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct ExportAbi {
     /// The package ID
-    package_address: SimulatorPackageAddress,
+    pub package_address: SimulatorPackageAddress,
 
     /// The blueprint name
-    blueprint_name: String,
+    pub blueprint_name: String,
 
     /// Turn on tracing.
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl ExportAbi {
