@@ -1422,6 +1422,7 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use crate::signing::EcdsaSecp256k1PrivateKey;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
     use radix_engine_interface::node::NetworkDefinition;
@@ -1852,6 +1853,20 @@ mod tests {
                     args!(String::from("Hello World"), Decimal::from("12")),
                     args!(12u8, 19u128)
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_validator_instruction() {
+        generate_instruction_ok!(
+            r#"
+            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            "#,
+            BasicInstruction::CreateValidator {
+                key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
+                    .unwrap()
+                    .public_key()
             },
         );
     }
