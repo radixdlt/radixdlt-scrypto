@@ -210,5 +210,5 @@ fn transfer_test(c: &mut Criterion) {
     fwk.print_report();
 }
 
-criterion_group!(resource_usage, transfer_test);
-criterion_main!(resource_usage);
+criterion_group!(resources_usage, transfer_test);
+criterion_main!(resources_usage);

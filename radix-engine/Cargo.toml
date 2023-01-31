@@ -56,7 +56,7 @@ name = "wasm"
 harness = false
 
 [[bench]]
-name = "resource_usage"
+name = "resources_usage"
 harness = false
 
 [features]
