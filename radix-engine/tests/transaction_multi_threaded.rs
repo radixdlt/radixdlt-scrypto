@@ -1,6 +1,6 @@
 use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::transaction::{execute_transaction, execute_and_commit_transaction};
+use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
@@ -116,7 +116,7 @@ fn test_multithread_transfer() {
 
     // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
     // account2
-    thread::scope (|s| {
+    thread::scope(|s| {
         for _i in 0..20 {
             let si = &scrypto_interpreter;
             let ss = &substate_store;
@@ -130,14 +130,13 @@ fn test_multithread_transfer() {
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
                     &TestTransaction::new(m, n, DEFAULT_COST_UNIT_LIMIT)
-                        .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)])
+                        .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
                 );
                 receipt.expect_commit_success();
                 println!("recept = {:?}", receipt);
             });
             nonce += 1;
         }
-
-    }).unwrap();
+    })
+    .unwrap();
 }
-
