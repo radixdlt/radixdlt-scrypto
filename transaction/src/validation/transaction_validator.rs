@@ -304,6 +304,7 @@ impl NotarizedTransactionValidator {
                 | BasicInstruction::CreateFungibleResourceWithOwner { .. }
                 | BasicInstruction::CreateNonFungibleResource { .. }
                 | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateValidator { .. }
                 | BasicInstruction::CreateIdentity { .. }
                 | BasicInstruction::AssertAccessRule { .. } => {}
             }

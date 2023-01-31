@@ -357,11 +357,7 @@ impl ManifestBuilder {
     }
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: "create_validator".to_string(),
-            args: args!(key),
-        });
+        self.add_instruction(BasicInstruction::CreateValidator { key });
         self
     }
 

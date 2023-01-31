@@ -199,6 +199,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateValidator { .. }
             | BasicInstruction::CreateAccessController { .. }
             | BasicInstruction::CreateIdentity { .. }
             | BasicInstruction::AssertAccessRule { .. } => {}
@@ -763,6 +764,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         index: index.clone(),
                         key: key.clone(),
                         rule: rule.clone(),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        key: key.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

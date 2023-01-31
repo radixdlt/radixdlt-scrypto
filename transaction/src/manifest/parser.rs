@@ -245,6 +245,9 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::CreateValidator => Instruction::CreateValidator {
+                key: self.parse_value()?,
+            },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
                 primary_role: self.parse_value()?,
