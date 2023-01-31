@@ -1,10 +1,11 @@
 use super::ValidatorCreator;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api_main::KernelSubstateApi;
+use crate::kernel::kernel_api_main::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -134,13 +135,16 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(ScryptoInvocation {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_string(),
-                fn_name: "deposit".to_string(),
-                receiver: Some(ScryptoReceiver::Global(account_address)),
-                args: args!(lp_bucket),
-            })?;
+            invoke_scrypto_fn(
+                ScryptoInvocation {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: "Account".to_string(),
+                    fn_name: "deposit".to_string(),
+                    receiver: Some(ScryptoReceiver::Global(account_address)),
+                    args: args!(lp_bucket),
+                },
+                api,
+            )?;
         }
 
         let current_validator_set = ValidatorSetSubstate {

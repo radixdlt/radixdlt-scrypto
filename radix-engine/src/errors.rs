@@ -5,7 +5,7 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
-use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api_main::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
 use crate::system::kernel_modules::auth::auth_module::AuthError;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceError;

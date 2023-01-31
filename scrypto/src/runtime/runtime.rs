@@ -1,8 +1,10 @@
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
 };
-use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
-use radix_engine_interface::api::{ClientActorApi, ClientNodeApi, Invokable};
+use radix_engine_interface::api::{
+    types::*, ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi,
+};
+use radix_engine_interface::api::{ClientActorApi, ClientNodeApi};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
 use radix_engine_interface::blueprints::transaction_hash::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
@@ -21,7 +23,7 @@ impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
         ScryptoEnv
-            .invoke(EpochManagerGetCurrentEpochInvocation {
+            .call_native(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
             })
             .unwrap()
@@ -90,7 +92,7 @@ impl Runtime {
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
-            .invoke(TransactionRuntimeGetHashInvocation {
+            .call_native(TransactionRuntimeGetHashInvocation {
                 receiver: node_id.into(),
             })
             .unwrap()
@@ -105,7 +107,7 @@ impl Runtime {
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
-            .invoke(TransactionRuntimeGenerateUuidInvocation {
+            .call_native(TransactionRuntimeGenerateUuidInvocation {
                 receiver: node_id.into(),
             })
             .unwrap()

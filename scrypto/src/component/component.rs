@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
 use radix_engine_interface::data::{
@@ -58,7 +58,7 @@ impl Component for OwnedComponent {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
         ScryptoEnv
-            .invoke(MetadataSetInvocation {
+            .call_native(MetadataSetInvocation {
                 receiver: RENodeId::Component(self.0),
                 key: name.as_ref().to_owned(),
                 value: value.as_ref().to_owned(),
@@ -68,7 +68,7 @@ impl Component for OwnedComponent {
 
     fn add_access_check(&mut self, access_rules: AccessRules) {
         ScryptoEnv
-            .invoke(AccessRulesAddAccessCheckInvocation {
+            .call_native(AccessRulesAddAccessCheckInvocation {
                 receiver: RENodeId::Component(self.0),
                 access_rules,
             })
@@ -81,7 +81,7 @@ impl Component for OwnedComponent {
 
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
-            .invoke(ComponentSetRoyaltyConfigInvocation {
+            .call_native(ComponentSetRoyaltyConfigInvocation {
                 receiver: RENodeId::Component(self.0),
                 royalty_config,
             })
@@ -103,7 +103,7 @@ impl Component for OwnedComponent {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
-            .invoke(AccessRulesGetLengthInvocation {
+            .call_native(AccessRulesGetLengthInvocation {
                 receiver: RENodeId::Component(self.0),
             })
             .unwrap();
@@ -133,7 +133,7 @@ impl Component for GlobalComponentRef {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
         ScryptoEnv
-            .invoke(MetadataSetInvocation {
+            .call_native(MetadataSetInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
                 key: name.as_ref().to_owned(),
                 value: value.as_ref().to_owned(),
@@ -143,7 +143,7 @@ impl Component for GlobalComponentRef {
 
     fn add_access_check(&mut self, access_rules: AccessRules) {
         let mut env = ScryptoEnv;
-        env.invoke(AccessRulesAddAccessCheckInvocation {
+        env.call_native(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             access_rules,
         })
@@ -161,7 +161,7 @@ impl Component for GlobalComponentRef {
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) {
         let mut env = ScryptoEnv;
 
-        env.invoke(ComponentSetRoyaltyConfigInvocation {
+        env.call_native(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             royalty_config,
         })
@@ -175,7 +175,7 @@ impl Component for GlobalComponentRef {
     fn claim_royalty(&mut self) -> Bucket {
         let mut env = ScryptoEnv;
 
-        env.invoke(ComponentClaimRoyaltyInvocation {
+        env.call_native(ComponentClaimRoyaltyInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
         })
         .unwrap()
@@ -184,7 +184,7 @@ impl Component for GlobalComponentRef {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
-            .invoke(AccessRulesGetLengthInvocation {
+            .call_native(AccessRulesGetLengthInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             })
             .unwrap();

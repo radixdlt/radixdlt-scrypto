@@ -16,9 +16,8 @@ pub trait Invokable<I: Invocation, E> {
     fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
-pub trait ClientStaticInvokeApi<E>:
-    Invokable<ScryptoInvocation, E>
-    + Invokable<EpochManagerCreateInvocation, E>
+pub trait KernelInvokeApi<E>:
+    Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>

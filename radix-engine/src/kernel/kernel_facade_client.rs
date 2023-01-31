@@ -1,6 +1,6 @@
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api_main::LockFlags;
 use crate::kernel::module::BaseModule;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
@@ -336,7 +336,7 @@ where
                 scrypto_encode(invoke_native_fn(native, self)?.as_ref())
                     .expect("Failed to encode native response")
             }
-            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?.into_vec(),
+            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
         })
     }
 

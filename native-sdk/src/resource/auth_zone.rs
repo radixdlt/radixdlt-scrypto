@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
@@ -15,30 +15,30 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneDrainInvocation {
+        env.call_native(AuthZoneDrainInvocation {
             receiver: node_id.into(),
         })
     }
 
     pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneClearInvocation {
+        env.call_native(AuthZoneClearInvocation {
             receiver: node_id.into(),
         })
     }
 
     pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZonePopInvocation {
+        env.call_native(AuthZonePopInvocation {
             receiver: node_id.into(),
         })
     }
@@ -48,10 +48,10 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofInvocation {
+        env.call_native(AuthZoneCreateProofInvocation {
             receiver: node_id.into(),
             resource_address,
         })
@@ -63,12 +63,10 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByAmountInvocation {
+        env.call_native(AuthZoneCreateProofByAmountInvocation {
             receiver: node_id.into(),
             amount,
             resource_address,
@@ -81,12 +79,10 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByIdsInvocation {
+        env.call_native(AuthZoneCreateProofByIdsInvocation {
             receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,
@@ -98,12 +94,12 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         let proof: Proof = proof.into();
 
-        env.invoke(AuthZonePushInvocation {
+        env.call_native(AuthZonePushInvocation {
             receiver: node_id.into(),
             proof,
         })
@@ -111,11 +107,11 @@ impl ComponentAuthZone {
 
     pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, env: &mut Y) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneAssertAccessRuleInvocation {
+        env.call_native(AuthZoneAssertAccessRuleInvocation {
             receiver: node_id.into(),
             access_rule,
         })

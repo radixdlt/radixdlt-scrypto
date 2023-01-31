@@ -1,5 +1,5 @@
 use crate::radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::time::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{KeyValueStoreOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::api::{ClientSubstateApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::kv_store::{
     KeyValueStoreCreateInvocation, KeyValueStoreEntrySubstate, KeyValueStoreInsertInvocation,
 };
@@ -25,7 +25,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
-        let own = env.invoke(KeyValueStoreCreateInvocation {}).unwrap();
+        let own = env.call_native(KeyValueStoreCreateInvocation {}).unwrap();
 
         Self {
             own,
@@ -94,7 +94,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let mut env = ScryptoEnv;
-        env.invoke(KeyValueStoreInsertInvocation {
+        env.call_native(KeyValueStoreInsertInvocation {
             receiver: self.own.kv_store_id(),
             hash: hash(scrypto_encode(&key).unwrap()),
             key: scrypto_decode(&scrypto_encode(&key).unwrap()).unwrap(), // TODO: remove encoding & decoding

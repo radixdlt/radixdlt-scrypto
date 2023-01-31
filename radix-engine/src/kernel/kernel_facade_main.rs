@@ -1,7 +1,7 @@
 use super::module::KernelApiCallOutput;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{
+use crate::kernel::kernel_api_main::{
     KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use crate::kernel::module::BaseModule;

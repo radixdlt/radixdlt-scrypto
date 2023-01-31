@@ -4,7 +4,7 @@ use radix_engine_interface::api::package::{
     PackageClaimRoyaltyInvocation, PackageSetRoyaltyConfigInvocation,
 };
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::data::ScryptoDecode;
 use sbor::rust::collections::BTreeMap;
@@ -24,7 +24,7 @@ impl BorrowedPackage {
 
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
         let mut env = ScryptoEnv;
-        env.invoke(PackageSetRoyaltyConfigInvocation {
+        env.call_native(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
         })
@@ -33,7 +33,7 @@ impl BorrowedPackage {
 
     pub fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
-        env.invoke(PackageClaimRoyaltyInvocation { receiver: self.0 })
+        env.call_native(PackageClaimRoyaltyInvocation { receiver: self.0 })
             .unwrap()
     }
 }

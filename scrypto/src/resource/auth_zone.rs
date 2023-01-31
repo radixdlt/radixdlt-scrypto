@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNodeApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -21,7 +21,7 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        env.invoke(AuthZonePushInvocation {
+        env.call_native(AuthZonePushInvocation {
             receiver: node_id.into(),
             proof,
         })
@@ -31,7 +31,7 @@ impl ComponentAuthZone {
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
         let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZonePopInvocation {
+        env.call_native(AuthZonePopInvocation {
             receiver: node_id.into(),
         })
         .unwrap()
@@ -40,7 +40,7 @@ impl ComponentAuthZone {
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
         let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofInvocation {
+        env.call_native(AuthZoneCreateProofInvocation {
             receiver: node_id.into(),
             resource_address,
         })
@@ -50,7 +50,7 @@ impl ComponentAuthZone {
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
         let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByAmountInvocation {
+        env.call_native(AuthZoneCreateProofByAmountInvocation {
             receiver: node_id.into(),
             amount,
             resource_address,
@@ -64,7 +64,7 @@ impl ComponentAuthZone {
     ) -> Proof {
         let mut env = ScryptoEnv;
         let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByIdsInvocation {
+        env.call_native(AuthZoneCreateProofByIdsInvocation {
             receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,
@@ -75,7 +75,7 @@ impl ComponentAuthZone {
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneAssertAccessRuleInvocation {
+        env.call_native(AuthZoneAssertAccessRuleInvocation {
             receiver: node_id.into(),
             access_rule,
         })

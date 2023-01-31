@@ -1,4 +1,4 @@
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::clock::{
     ClockCompareCurrentTimeInvocation, ClockGetCurrentTimeInvocation, TimePrecision,
 };
@@ -20,7 +20,7 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoEnv;
-        env.invoke(ClockGetCurrentTimeInvocation {
+        env.call_native(ClockGetCurrentTimeInvocation {
             receiver: CLOCK,
             precision: precision,
         })
@@ -60,7 +60,7 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoEnv;
-        env.invoke(ClockCompareCurrentTimeInvocation {
+        env.call_native(ClockCompareCurrentTimeInvocation {
             receiver: CLOCK,
             instant: instant,
             precision: precision,

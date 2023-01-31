@@ -1,10 +1,9 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::package::PackageInfoSubstate;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::{types::*, ClientNativeInvokeApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
-    Invokable,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -190,8 +189,8 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ScryptoEnv {
-    pub fn call_native<N: SerializableInvocation>(
+impl ClientNativeInvokeApi<ClientApiError> for ScryptoEnv {
+    fn call_native<N: SerializableInvocation>(
         &mut self,
         invocation: N,
     ) -> Result<N::Output, ClientApiError> {
@@ -217,12 +216,6 @@ impl ScryptoEnv {
         });
 
         scrypto_decode(&return_data).map_err(ClientApiError::DecodeError)
-    }
-}
-
-impl<N: SerializableInvocation> Invokable<N, ClientApiError> for ScryptoEnv {
-    fn invoke(&mut self, invocation: N) -> Result<N::Output, ClientApiError> {
-        self.call_native(invocation)
     }
 }
 
@@ -302,7 +295,7 @@ macro_rules! scrypto_env_native_fn {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
                 let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                radix_engine_interface::api::Invokable::invoke(&mut env, $arg).unwrap()
+                env.call_native($arg).unwrap()
             }
         )+
     };

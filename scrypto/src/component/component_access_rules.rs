@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::types::{
     ComponentAddress, ComponentId, GlobalAddress, RENodeId, ToString,
 };
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleKey};
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
@@ -39,7 +39,7 @@ impl ComponentAccessRules {
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .invoke(AccessRulesSetMethodAccessRuleInvocation {
+            .call_native(AccessRulesSetMethodAccessRuleInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
@@ -51,7 +51,7 @@ impl ComponentAccessRules {
     pub fn lock_method_auth(&mut self, method_name: &str) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .invoke(AccessRulesSetMethodMutabilityInvocation {
+            .call_native(AccessRulesSetMethodMutabilityInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),

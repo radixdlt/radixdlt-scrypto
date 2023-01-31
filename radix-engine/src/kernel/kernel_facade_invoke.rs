@@ -1,6 +1,6 @@
 use super::module::KernelApiCallOutput;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi};
+use crate::kernel::kernel_api_main::{KernelSubstateApi, KernelWasmApi};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
