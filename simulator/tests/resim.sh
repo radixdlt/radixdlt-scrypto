@@ -13,6 +13,20 @@ temp=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
 account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
+# Test - set epoch & time
+$resim set-current-epoch 858585
+$resim set-current-time 2023-01-27T13:01:16Z
+$resim show-configs
+ledger_state=`$resim show-ledger`
+if [[ ${ledger_state} != *"858585"* ]];then
+    echo "Epoch not set!"
+    exit 1
+fi
+if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
+    echo "Time not set!"
+    exit 1
+fi
+
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
 

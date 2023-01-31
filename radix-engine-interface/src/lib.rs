@@ -22,14 +22,12 @@ pub mod crypto;
 pub mod data;
 /// RE math library.
 pub mod math;
-
-/// RE node models.
-pub mod model;
-pub mod modules;
-pub mod node;
-
+/// RE network abstraction.
+pub mod network;
 /// RE time library.
 pub mod time;
+
+pub mod blueprints;
 
 mod macros;
 pub use macros::*;

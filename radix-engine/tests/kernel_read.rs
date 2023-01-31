@@ -1,4 +1,5 @@
-use radix_engine::engine::{KernelError, ResolvedActor, RuntimeError};
+use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::kernel::ResolvedActor;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
@@ -7,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_not_be_able_to_read_global_substate() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 

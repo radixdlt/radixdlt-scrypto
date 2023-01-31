@@ -1,11 +1,16 @@
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
+};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataGetInvocation, MetadataSetInvocation,
+};
 use radix_engine_interface::api::types::{
     GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
-use radix_engine_interface::model::*;
-
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -65,7 +70,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Withdraw,
+            method: VaultMethodAuthKey::Withdraw,
             access_rule,
         })
         .unwrap()
@@ -75,7 +80,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Deposit,
+            method: VaultMethodAuthKey::Deposit,
             access_rule,
         })
         .unwrap()
@@ -85,7 +90,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Recall,
+            method: VaultMethodAuthKey::Recall,
             access_rule,
         })
         .unwrap()
@@ -165,7 +170,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Withdraw,
+            method: VaultMethodAuthKey::Withdraw,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -175,7 +180,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Deposit,
+            method: VaultMethodAuthKey::Deposit,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -185,7 +190,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Recall,
+            method: VaultMethodAuthKey::Recall,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()

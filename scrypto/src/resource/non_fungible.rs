@@ -1,4 +1,4 @@
-use radix_engine_interface::model::*;
+use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::marker::PhantomData;
 
 use crate::borrow_resource_manager;

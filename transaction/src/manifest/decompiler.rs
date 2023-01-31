@@ -1,12 +1,10 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleLocalId;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::*;
 use utils::ContextualDisplay;
 
 use crate::errors::*;
@@ -546,6 +544,20 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
+        } => {
+            f.write_str("CREATE_ACCESS_CONTROLLER")?;
+            format_typed_value(f, context, controlled_asset)?;
+            format_typed_value(f, context, primary_role)?;
+            format_typed_value(f, context, recovery_role)?;
+            format_typed_value(f, context, confirmation_role)?;
+            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
+        }
         BasicInstruction::CreateIdentity { access_rule } => {
             f.write_str("CREATE_IDENTITY")?;
             format_typed_value(f, context, access_rule)?;
@@ -554,6 +566,11 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;
             format_typed_value(f, context, access_rule)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::CreateAccount { withdraw_rule } => {
+            f.write_str("CREATE_ACCOUNT")?;
+            format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
     }

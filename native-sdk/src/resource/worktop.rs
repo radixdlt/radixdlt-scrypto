@@ -1,9 +1,9 @@
 use crate::sys_env_native_fn;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 pub struct Worktop;
 

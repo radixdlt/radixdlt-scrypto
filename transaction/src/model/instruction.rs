@@ -1,4 +1,7 @@
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+};
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -193,12 +196,24 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    CreateAccessController {
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    },
+
     CreateIdentity {
         access_rule: AccessRule,
     },
 
     AssertAccessRule {
         access_rule: AccessRule,
+    },
+
+    CreateAccount {
+        withdraw_rule: AccessRule,
     },
 
     ///

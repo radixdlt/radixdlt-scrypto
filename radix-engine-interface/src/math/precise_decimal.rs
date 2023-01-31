@@ -194,15 +194,15 @@ impl PreciseDecimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one_768 = BnumI768::from(Self::ONE.0);
-        let base_768 = BnumI768::from(self.0);
+        let one_768 = BnumI768::try_from(Self::ONE.0).unwrap();
+        let base_768 = BnumI768::try_from(self.0).unwrap();
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
             let sub_768 = one_768 * one_768 / base_768;
-            let sub_512 = BnumI512::from(sub_768);
+            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
             return PreciseDecimal(sub_512).powi(mul(exp, -1));
         }
         if exp == 0 {
@@ -213,11 +213,11 @@ impl PreciseDecimal {
         }
         if exp % 2 == 0 {
             let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI512::from(sub_768);
+            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
             PreciseDecimal(sub_512).powi(div(exp, 2))
         } else {
             let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI512::from(sub_768);
+            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
             let sub_pdec = PreciseDecimal(sub_512);
             *self * sub_pdec.powi(div(sub(exp, 1), 2))
         }
@@ -235,8 +235,8 @@ impl PreciseDecimal {
         // The BnumI512 i associated to a Decimal d is : i = d*10^64.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
-        let self_768 = BnumI768::from(self.0);
-        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+        let self_768 = BnumI768::try_from(self.0).unwrap();
+        let correct_nb = self_768 * BnumI768::try_from(PreciseDecimal::one().0).unwrap();
         let sqrt = BnumI512::try_from(correct_nb.sqrt()).unwrap();
         Some(PreciseDecimal(sqrt))
     }
@@ -357,11 +357,11 @@ where
 
     fn mul(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::from(self.0);
+        let a = BnumI768::try_from(self.0).unwrap();
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
-        let c = a * b / BnumI768::from(Self::ONE.0);
-        let c_512 = BnumI512::try_from(c).unwrap();
+        let b = BnumI768::try_from(b_dec.0).unwrap();
+        let c = a * b / BnumI768::try_from(Self::ONE.0).unwrap();
+        let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
@@ -374,11 +374,11 @@ where
 
     fn div(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::from(self.0);
+        let a = BnumI768::try_from(self.0).unwrap();
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
-        let c = a * BnumI768::from(Self::ONE.0) / b;
-        let c_512 = BnumI512::try_from(c).unwrap();
+        let b = BnumI768::try_from(b_dec.0).unwrap();
+        let c = a * BnumI768::try_from(Self::ONE.0).unwrap() / b;
+        let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
@@ -554,7 +554,8 @@ impl fmt::Display for ParsePreciseDecimalError {
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
         Self(
-            BnumI512::from(val.0) * BnumI512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32),
+            BnumI512::try_from(val.0).unwrap()
+                * BnumI512::from(10i8).pow(Self::SCALE - Decimal::SCALE),
         )
     }
 }
@@ -581,7 +582,7 @@ macro_rules! from_integer {
         $(
             impl From<$t> for PreciseDecimal {
                 fn from(val: $t) -> Self {
-                    Self(BnumI512::from(val) * Self::ONE.0)
+                    Self(BnumI512::try_from(val).unwrap() * Self::ONE.0)
                 }
             }
         )*
@@ -597,6 +598,7 @@ mod tests {
     use crate::dec;
     use crate::math::precise_decimal::RoundingMode;
     use crate::pdec;
+    use paste::paste;
     use sbor::rust::vec;
 
     #[test]
@@ -1144,11 +1146,36 @@ mod tests {
         assert_eq!(pdec, Err(ParsePreciseDecimalError::InvalidDigit));
     }
 
-    #[test]
-    fn test_from_decimal_precise_decimal() {
-        let dec = dec!(5);
-        let pdec = PreciseDecimal::from(dec);
-        assert_eq!(pdec.to_string(), "5");
+    macro_rules! test_from_into_decimal_precise_decimal {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_into_decimal_precise_decimal_ $suffix>]() {
+                    let dec = dec!($from);
+                    let pdec = PreciseDecimal::from(dec);
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec = PreciseDecimal::try_from(dec).unwrap();
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec: PreciseDecimal = dec.into();
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec: PreciseDecimal = dec.try_into().unwrap();
+                    assert_eq!(pdec.to_string(), $expected);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_into_decimal_precise_decimal! {
+        ("12345678.123456789012345678", "12345678.123456789012345678", 1),
+        ("0.000000000000000001", "0.000000000000000001", 2),
+        ("-0.000000000000000001", "-0.000000000000000001", 3),
+        ("5", "5", 4),
+        ("12345678.1", "12345678.1", 5)
     }
 
     #[test]

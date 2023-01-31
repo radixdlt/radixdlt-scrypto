@@ -1,5 +1,5 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -10,14 +10,11 @@ use radix_engine_interface::data::{
     ScryptoValue, ScryptoValueKind,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
-use sbor::value_kind::*;
-use sbor::*;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -536,11 +533,42 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+        ast::Instruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
+        } => BasicInstruction::CreateAccessController {
+            controlled_asset: generate_typed_value(
+                controlled_asset,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+            primary_role: generate_typed_value(primary_role, resolver, bech32_decoder, blobs)?,
+            recovery_role: generate_typed_value(recovery_role, resolver, bech32_decoder, blobs)?,
+            confirmation_role: generate_typed_value(
+                confirmation_role,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+            timed_recovery_delay_in_minutes: generate_typed_value(
+                timed_recovery_delay_in_minutes,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+        },
         ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CreateIdentity {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CreateAccount {
+            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
         },
     })
 }
@@ -1393,7 +1421,10 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+    };
+    use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]

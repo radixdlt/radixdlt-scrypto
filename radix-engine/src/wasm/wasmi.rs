@@ -1,6 +1,6 @@
-use radix_engine_interface::api::wasm::Buffer;
-use radix_engine_interface::api::wasm::BufferId;
-use radix_engine_interface::api::wasm::Slice;
+use radix_engine_interface::api::types::Buffer;
+use radix_engine_interface::api::types::BufferId;
+use radix_engine_interface::api::types::Slice;
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
@@ -8,7 +8,7 @@ use wasmi::*;
 
 use super::InstrumentedCode;
 use super::MeteredCodeKey;
-use crate::model::InvokeError;
+use crate::errors::InvokeError;
 use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;

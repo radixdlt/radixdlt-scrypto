@@ -1,14 +1,13 @@
-use radix_engine::fee::u128_to_decimal;
-use radix_engine::types::*;
+use radix_engine::{system::kernel_modules::fee::u128_to_decimal, types::*};
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_component_royalty() {
     // Basic setup
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -54,7 +53,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

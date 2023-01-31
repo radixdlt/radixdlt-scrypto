@@ -1,12 +1,12 @@
-use radix_engine::engine::{InterpreterError, RuntimeError, ScryptoFnResolvingError};
+use radix_engine::errors::{InterpreterError, RuntimeError, ScryptoFnResolvingError};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_component() {
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
@@ -51,7 +51,7 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act

@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -7,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -38,7 +38,7 @@ fn create_non_fungible_mutable() {
 #[test]
 fn can_burn_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
@@ -96,7 +96,7 @@ fn can_burn_non_fungible() {
 #[test]
 fn test_take_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -124,7 +124,7 @@ fn test_take_non_fungible() {
 #[test]
 fn test_take_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -151,7 +151,7 @@ fn test_take_non_fungibles() {
 
 #[test]
 fn test_non_fungible() {
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -214,7 +214,7 @@ fn test_non_fungible() {
 
 #[test]
 fn test_singleton_non_fungible() {
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -243,7 +243,7 @@ fn test_singleton_non_fungible() {
 // by a proof in a vault was accidentally committed/persisted, and locked in future transactions
 #[test]
 fn test_mint_update_and_withdraw() {
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -323,7 +323,7 @@ fn test_mint_update_and_withdraw() {
 #[test]
 fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -354,7 +354,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 #[test]
 fn create_bytes_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -382,7 +382,7 @@ fn create_bytes_non_fungible() {
 #[test]
 fn create_string_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -410,7 +410,7 @@ fn create_string_non_fungible() {
 #[test]
 fn create_uuid_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -441,7 +441,7 @@ fn create_uuid_non_fungible() {
 #[test]
 fn can_mint_uuid_non_fungible_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
@@ -479,7 +479,7 @@ pub struct Sandwich {
 #[test]
 fn can_mint_uuid_non_fungible_in_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
@@ -520,7 +520,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
 #[test]
 fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()

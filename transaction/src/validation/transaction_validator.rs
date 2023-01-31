@@ -1,23 +1,21 @@
 use radix_engine_constants::*;
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
-
 pub trait TransactionValidator<T: ScryptoDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
     ) -> Result<T, TransactionValidationError> {
-        if transaction.len() > MAX_PAYLOAD_SIZE {
+        if transaction.len() > MAX_TRANSACTION_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
@@ -285,22 +283,30 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::RecallResource { .. } => {}
-                BasicInstruction::SetMetadata { .. } => {}
-                BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
-                BasicInstruction::SetComponentRoyaltyConfig { .. } => {}
-                BasicInstruction::ClaimPackageRoyalty { .. } => {}
-                BasicInstruction::ClaimComponentRoyalty { .. } => {}
-                BasicInstruction::SetMethodAccessRule { .. } => {}
-                BasicInstruction::MintFungible { .. } => {}
-                BasicInstruction::MintNonFungible { .. } => {}
-                BasicInstruction::MintUuidNonFungible { .. } => {}
-                BasicInstruction::CreateFungibleResource { .. } => {}
-                BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
-                BasicInstruction::CreateNonFungibleResource { .. } => {}
-                BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
-                BasicInstruction::CreateIdentity { .. } => {}
-                BasicInstruction::AssertAccessRule { .. } => {}
+                BasicInstruction::CreateAccessController {
+                    controlled_asset, ..
+                } => {
+                    id_validator
+                        .drop_bucket(controlled_asset)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::RecallResource { .. }
+                | BasicInstruction::SetMetadata { .. }
+                | BasicInstruction::SetPackageRoyaltyConfig { .. }
+                | BasicInstruction::SetComponentRoyaltyConfig { .. }
+                | BasicInstruction::ClaimPackageRoyalty { .. }
+                | BasicInstruction::ClaimComponentRoyalty { .. }
+                | BasicInstruction::SetMethodAccessRule { .. }
+                | BasicInstruction::MintFungible { .. }
+                | BasicInstruction::MintNonFungible { .. }
+                | BasicInstruction::MintUuidNonFungible { .. }
+                | BasicInstruction::CreateFungibleResource { .. }
+                | BasicInstruction::CreateFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateNonFungibleResource { .. }
+                | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateIdentity { .. }
+                | BasicInstruction::AssertAccessRule { .. }
+                | BasicInstruction::CreateAccount { .. } => {}
             }
         }
 
@@ -412,7 +418,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
 
     use super::*;
     use crate::{

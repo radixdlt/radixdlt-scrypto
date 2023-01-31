@@ -2,7 +2,7 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 
 use crate::address::entity::EntityType;
-use crate::node::NetworkDefinition;
+use crate::network::NetworkDefinition;
 
 /// Represents an HRP set (typically corresponds to a network).
 #[derive(Debug, Clone)]
@@ -35,6 +35,7 @@ impl HrpSet {
             EntityType::EddsaEd25519VirtualAccountComponent => &self.account_component,
             EntityType::EcdsaSecp256k1VirtualIdentityComponent => &self.identity_component,
             EntityType::EddsaEd25519VirtualIdentityComponent => &self.identity_component,
+            EntityType::AccessControllerComponent => &self.normal_component,
         }
     }
 }

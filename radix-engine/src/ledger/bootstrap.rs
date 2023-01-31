@@ -1,16 +1,17 @@
-use crate::engine::ScryptoInterpreter;
+use crate::kernel::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::types::{
-    GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
-};
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::package::PackagePublishInvocation;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
@@ -27,6 +28,7 @@ pub struct GenesisReceipt {
 
 pub fn create_genesis(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -156,23 +158,6 @@ pub fn create_genesis(
     }
 
     {
-        let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
-        let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let package_address = ACCOUNT_PACKAGE.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::Publish(PackagePublishInvocation {
-                package_address: Some(package_address),
-                code: account_code, // TODO: Use blob here instead?
-                abi: account_abi,   // TODO: Use blob here instead?
-                royalty_config: BTreeMap::new(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }),
-        )));
-    }
-
-    {
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         instructions.push(Instruction::System(NativeInvocation::Clock(
@@ -205,6 +190,28 @@ pub fn create_genesis(
                 num_unstake_epochs,
             }),
         )));
+    }
+
+    for (public_key, amount) in account_xrd_allocations.into_iter() {
+        let bucket_id = id_allocator.new_bucket_id().unwrap();
+        instructions.push(
+            BasicInstruction::TakeFromWorktopByAmount {
+                resource_address: RADIX_TOKEN,
+                amount,
+            }
+            .into(),
+        );
+        let component_address = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(public_key),
+        );
+        instructions.push(
+            BasicInstruction::CallMethod {
+                component_address: component_address,
+                method_name: "deposit".to_string(),
+                args: args!(bucket_id),
+            }
+            .into(),
+        );
     }
 
     // Faucet
@@ -251,6 +258,7 @@ where
         substate_store,
         scrypto_interpreter,
         BTreeMap::new(),
+        BTreeMap::new(),
         1u64,
         1u64,
         1u64,
@@ -260,7 +268,8 @@ where
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -272,12 +281,13 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .is_none()
     {
         let genesis_transaction = create_genesis(
-            validator_set,
+            validator_set_and_stake_owners,
+            account_xrd_allocations,
             initial_epoch,
             rounds_per_epoch,
             num_unstake_epochs,
@@ -303,10 +313,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
     use transaction::signing::EcdsaSecp256k1PrivateKey;
-
-    use super::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -319,7 +328,8 @@ mod tests {
             EcdsaSecp256k1PublicKey([0; 33]),
             (Decimal::one(), account_address),
         );
-        let genesis_transaction = create_genesis(initial_validator_set, 1u64, 1u64, 1u64);
+        let genesis_transaction =
+            create_genesis(initial_validator_set, BTreeMap::new(), 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -333,5 +343,47 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+    }
+
+    #[test]
+    fn test_genesis_xrd_allocation_to_accounts() {
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let account_component_address = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
+        );
+        let allocation_amount = dec!("100");
+        let mut account_xrd_allocations = BTreeMap::new();
+        account_xrd_allocations.insert(account_public_key, allocation_amount);
+        let genesis_transaction =
+            create_genesis(BTreeMap::new(), account_xrd_allocations, 1u64, 1u64, 1u64);
+
+        let transaction_receipt = execute_transaction(
+            &substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = transaction_receipt.result.expect_commit();
+        commit_result.state_updates.commit(&mut substate_store);
+
+        let global_substate = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::Global(GlobalAddress::Component(account_component_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+        let derefed_component_id: ComponentId = global_substate.global().node_deref().into();
+
+        assert!(commit_result
+            .resource_changes
+            .iter()
+            .any(|rc| rc.resource_address == RADIX_TOKEN
+                && rc.amount == allocation_amount
+                && rc.component_id == derefed_component_id));
     }
 }

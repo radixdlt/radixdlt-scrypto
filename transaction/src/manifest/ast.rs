@@ -193,12 +193,23 @@ pub enum Instruction {
         initial_supply: Value,
     },
 
+    CreateAccessController {
+        controlled_asset: Value,
+        primary_role: Value,
+        recovery_role: Value,
+        confirmation_role: Value,
+        timed_recovery_delay_in_minutes: Value,
+    },
     CreateIdentity {
         access_rule: Value,
     },
 
     AssertAccessRule {
         access_rule: Value,
+    },
+
+    CreateAccount {
+        withdraw_rule: Value,
     },
 }
 

@@ -1,8 +1,8 @@
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
-use radix_engine::engine::{
+use radix_engine::errors::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
-use radix_engine::model::AccessRulesChainError;
+use radix_engine::system::node_modules::auth::AccessRulesChainError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use serde::Serialize;
@@ -23,7 +23,7 @@ pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 #[test]
 fn test_export_abi() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     let abi = test_runner.export_abi(package_address, "Simple");
@@ -155,7 +155,7 @@ fn test_export_abi() {
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
@@ -189,7 +189,7 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act

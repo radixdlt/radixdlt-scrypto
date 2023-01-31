@@ -1,11 +1,13 @@
 use radix_engine_interface::abi::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
+use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -721,27 +723,9 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new".to_string(),
-            args: args!(withdraw_auth.clone()),
-        })
-        .0
-    }
-
-    /// Creates an account with some initial resource.
-    pub fn new_account_with_resource(
-        &mut self,
-        withdraw_auth: &AccessRule,
-        bucket_id: ManifestBucket,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new_with_resource".to_string(),
-            args: args!(withdraw_auth.clone(), bucket_id),
+    pub fn new_account(&mut self, withdraw_auth: &AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccount {
+            withdraw_rule: withdraw_auth.clone(),
         })
         .0
     }
@@ -903,6 +887,24 @@ impl ManifestBuilder {
             method_name: "create_proof_by_ids".to_string(),
 
             args: args!(ids.clone(), resource_address),
+        })
+        .0
+    }
+
+    pub fn create_access_controller(
+        &mut self,
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
         })
         .0
     }

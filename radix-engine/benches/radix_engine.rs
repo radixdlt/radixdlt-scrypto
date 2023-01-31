@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
@@ -7,8 +7,8 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
-use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
@@ -28,40 +28,51 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(
-                &rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
-                bucket_id,
+    let accounts = (0..2)
+        .map(|_| {
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .new_account(&rule!(require(NonFungibleGlobalId::from_public_key(
+                    &public_key
+                ))))
+                .build();
+            let account = execute_and_commit_transaction(
+                &mut substate_store,
+                &mut scrypto_interpreter,
+                &FeeReserveConfig::default(),
+                &ExecutionConfig::default(),
+                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    args!(ManifestExpression::EntireWorktop),
+                )
+                .build();
+            execute_and_commit_transaction(
+                &mut substate_store,
+                &mut scrypto_interpreter,
+                &FeeReserveConfig::default(),
+                &ExecutionConfig::default(),
+                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+            )
+            .expect_commit();
+
+            account
         })
-        .build();
+        .collect::<Vec<ComponentAddress>>();
 
-    let account1 = execute_and_commit_transaction(
-        &mut substate_store,
-        &mut scrypto_interpreter,
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::default(),
-        &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-            .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
-    )
-    .expect_commit()
-    .entity_changes
-    .new_component_addresses[0];
-
-    let account2 = execute_and_commit_transaction(
-        &mut substate_store,
-        &mut scrypto_interpreter,
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::default(),
-        &TestTransaction::new(manifest, 2, DEFAULT_COST_UNIT_LIMIT)
-            .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
-    )
-    .expect_commit()
-    .entity_changes
-    .new_component_addresses[0];
+    let account1 = accounts[0];
+    let account2 = accounts[1];
 
     // Fill first account
     let manifest = ManifestBuilder::new()

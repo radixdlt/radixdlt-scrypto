@@ -449,3 +449,39 @@ op_impl_signed! { BnumI256 }
 op_impl_signed! { BnumI384 }
 op_impl_signed! { BnumI512 }
 op_impl_signed! { BnumI768 }
+
+macro_rules! error {
+    ($($t:ident),*) => {
+        paste! {
+            $(
+                #[derive(Debug, Clone, PartialEq, Eq)]
+                pub enum [<Parse $t Error>] {
+                    NegativeToUnsigned,
+                    Overflow,
+                    InvalidLength,
+                    InvalidDigit,
+                }
+
+                #[cfg(not(feature = "alloc"))]
+                impl std::error::Error for [<Parse $t Error>] {}
+
+                #[cfg(not(feature = "alloc"))]
+                impl fmt::Display for [<Parse $t Error>] {
+                    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+            )*
+        }
+    };
+}
+error! {
+    BnumI256,
+    BnumI384,
+    BnumI512,
+    BnumI768,
+    BnumU256,
+    BnumU384,
+    BnumU512,
+    BnumU768
+}

@@ -1,5 +1,8 @@
 use super::*;
-use crate::model::*;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::NonFungibleLocalId;
+use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
@@ -35,6 +38,7 @@ pub enum RENodeType {
     GlobalEpochManager,
     GlobalValidator,
     GlobalClock,
+    GlobalAccessController,
     GlobalIdentity,
     KeyValueStore,
     NonFungibleStore,
@@ -48,6 +52,8 @@ pub enum RENodeType {
     Identity,
     TransactionRuntime,
     Logger,
+    Account,
+    AccessController,
 }
 
 #[derive(
@@ -82,6 +88,8 @@ pub enum RENodeId {
     Clock(ClockId),
     Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
+    Account(AccountId),
+    AccessController(AccessControllerId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -97,6 +105,8 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
+            RENodeId::Account(id) => id,
+            RENodeId::AccessController(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -301,6 +311,16 @@ pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccountOffset {
+    Account,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccessControllerOffset {
+    AccessController,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(
     Debug,
@@ -335,6 +355,8 @@ pub enum SubstateOffset {
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+    Account(AccountOffset),
+    AccessController(AccessControllerOffset),
 }
 
 /// TODO: separate space addresses?

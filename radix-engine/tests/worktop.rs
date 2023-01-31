@@ -1,15 +1,15 @@
-use radix_engine::engine::KernelError;
-use radix_engine::engine::RuntimeError;
+use radix_engine::errors::KernelError;
+use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_worktop_resource_leak() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act

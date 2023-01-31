@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::manifest::*;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
 
     #[test]
@@ -563,6 +563,21 @@ CALL_METHOD
     Decimal("10");
 ASSERT_ACCESS_RULE
     Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))));
+"##,
+        );
+    }
+
+    #[test]
+    fn test_create_account() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/account/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_ACCOUNT
+    Enum(0u8);
 "##,
         );
     }

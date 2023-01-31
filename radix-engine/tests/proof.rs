@@ -1,8 +1,8 @@
-use radix_engine::engine::node_move_module::NodeMoveError;
-use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -11,7 +11,7 @@ use utils::ContextualDisplay;
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -47,7 +47,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -81,7 +81,7 @@ fn can_create_clone_and_drop_vault_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -116,7 +116,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -155,7 +155,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 #[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -194,7 +194,7 @@ fn can_use_bucket_for_authorization() {
 #[test]
 fn can_use_vault_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -234,7 +234,7 @@ fn can_use_vault_for_authorization() {
 #[test]
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -265,7 +265,7 @@ fn can_create_proof_from_account_and_pass_on() {
 #[test]
 fn cant_move_restricted_proof() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -303,7 +303,7 @@ fn cant_move_restricted_proof() {
 #[test]
 fn cant_move_locked_bucket() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -341,7 +341,7 @@ fn cant_move_locked_bucket() {
 #[test]
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -381,7 +381,7 @@ fn can_compose_bucket_and_vault_proof() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -421,7 +421,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -480,7 +480,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 #[test]
 fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -513,7 +513,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");

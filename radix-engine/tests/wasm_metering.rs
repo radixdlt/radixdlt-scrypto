@@ -1,11 +1,12 @@
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_loop() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
@@ -37,7 +38,7 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_cost_unit() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
@@ -67,7 +68,7 @@ fn test_loop_out_of_cost_unit() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     // In this test case, each call frame costs 4 stack units
@@ -98,7 +99,7 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
@@ -128,7 +129,7 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
@@ -158,7 +159,7 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_cost_unit() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
