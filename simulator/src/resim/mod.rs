@@ -132,7 +132,7 @@ pub fn run() -> Result<(), Error> {
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
-        Command::NewSimpleBadge(cmd) => cmd.run(&mut out),
+        Command::NewSimpleBadge(cmd) => cmd.run(&mut out).map(|_| ()),
         Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
         Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
         Command::NewTokenFixed(cmd) => cmd.run(&mut out),

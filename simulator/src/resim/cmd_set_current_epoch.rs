@@ -8,11 +8,11 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetCurrentEpoch {
     /// The new epoch number
-    epoch: u64,
+    pub epoch: u64,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl SetCurrentEpoch {

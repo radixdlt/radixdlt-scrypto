@@ -8,11 +8,11 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetCurrentTime {
     /// UTC date time in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'.
-    date_time: UtcDateTime,
+    pub date_time: UtcDateTime,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl SetCurrentTime {

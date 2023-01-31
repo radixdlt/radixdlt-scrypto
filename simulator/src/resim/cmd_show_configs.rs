@@ -16,7 +16,7 @@ impl ShowConfigs {
             "{}: {}",
             "Account Address".green().bold(),
             match configs.default_account {
-                Some((component, _)) =>
+                Some(component) =>
                     format!("{}", component.display(&Bech32Encoder::for_simulator()),),
                 None => "None".to_owned(),
             }
@@ -26,8 +26,19 @@ impl ShowConfigs {
             out,
             "{}: {}",
             "Account Private Key".green().bold(),
-            match configs.default_account {
-                Some((_, sk)) => sk,
+            match configs.default_private_key {
+                Some(private_key) => private_key,
+                None => "None".to_owned(),
+            }
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Account Owner Badge".green().bold(),
+            match configs.default_owner_badge {
+                Some(owner_badge) =>
+                    format!("{}", owner_badge.display(&Bech32Encoder::for_simulator())),
                 None => "None".to_owned(),
             }
         )
