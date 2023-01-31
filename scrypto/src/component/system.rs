@@ -42,11 +42,11 @@ impl ComponentSystem {
     }
 
     /// Instantiates a component.
-    pub fn create_component<T: ComponentState<C>, C: LocalComponent>(
+    pub fn create_component<T: ComponentState>(
         &self,
         blueprint_name: &str,
         state: T,
-    ) -> Component {
+    ) -> OwnedComponent {
         let mut env = ScryptoEnv;
         let node_id = env
             .instantiate_component(
@@ -59,7 +59,7 @@ impl ComponentSystem {
                 BTreeMap::new(),
             )
             .unwrap();
-        Component(node_id.into())
+        OwnedComponent(node_id.into())
     }
 }
 

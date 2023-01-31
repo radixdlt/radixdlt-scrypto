@@ -1,5 +1,5 @@
 use crate::engine::wasm_api::*;
-use crate::prelude::ComponentInfoSubstate;
+use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
