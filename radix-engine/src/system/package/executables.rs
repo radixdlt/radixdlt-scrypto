@@ -1,6 +1,3 @@
-use super::PackageInfoSubstate;
-use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
-
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
@@ -11,10 +8,11 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
+use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::{package::*, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };

@@ -7,7 +7,7 @@ use radix_engine::ledger::*;
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
-use radix_engine::system::package::PackageInfoSubstate;
+use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::RENodeId;

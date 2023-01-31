@@ -13,15 +13,13 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::package::PackageInfoSubstate;
-use crate::system::package::PackageRoyaltyAccumulatorSubstate;
-use crate::system::package::PackageRoyaltyConfigSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
 };
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientMeteringApi,

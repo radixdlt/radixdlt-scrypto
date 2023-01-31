@@ -3,9 +3,6 @@ use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
 use super::node_modules::fee::FeeReserveSubstate;
 use super::node_modules::metadata::MetadataSubstate;
-use super::package::PackageInfoSubstate;
-use super::package::PackageRoyaltyAccumulatorSubstate;
-use super::package::PackageRoyaltyConfigSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
@@ -23,6 +20,7 @@ use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,

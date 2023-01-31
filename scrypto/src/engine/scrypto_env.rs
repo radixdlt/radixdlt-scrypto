@@ -1,4 +1,5 @@
 use crate::engine::wasm_api::*;
+use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
@@ -115,18 +116,35 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_code(
-        &mut self,
-        _package_address: PackageAddress,
-    ) -> Result<PackageCode, ClientApiError> {
-        todo!()
+    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.sys_lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::Info),
+            false,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let package: PackageInfoSubstate =
+            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
+        self.sys_drop_lock(handle)?;
+        Ok(PackageCode::Wasm(package.code))
     }
 
     fn get_abi(
         &mut self,
-        _package_address: PackageAddress,
+        package_address: PackageAddress,
     ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
-        todo!()
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.sys_lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::Info),
+            false,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let package: PackageInfoSubstate =
+            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
+        self.sys_drop_lock(handle)?;
+        Ok(package.blueprint_abis)
     }
 
     // Slightly different from ClientPackageApi::call_function, for the return type.
