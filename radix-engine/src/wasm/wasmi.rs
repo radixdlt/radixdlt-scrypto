@@ -1,3 +1,5 @@
+use radix_engine_interface::api::types::rust::mem::transmute;
+use radix_engine_interface::api::types::rust::mem::MaybeUninit;
 use radix_engine_interface::api::types::Buffer;
 use radix_engine_interface::api::types::BufferId;
 use radix_engine_interface::api::types::Slice;
@@ -24,8 +26,8 @@ type HostState = WasmiInstanceEnv;
 /// It is correctly `Send + Sync` - which is good, because this is the thing which is cached in the
 /// ScryptoInterpreter caches.
 pub struct WasmiModule {
-    store: Store<FakeHostState>,
-    instance: Instance,
+    template_store: Store<FakeHostState>,
+    template_instance: Instance,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
@@ -38,14 +40,20 @@ pub struct WasmiInstance {
 
 #[derive(Clone)]
 pub struct FakeWasmiInstanceEnv {
-    runtime_ptr: usize,
+    #[allow(dead_code)]
+    runtime_ptr: MaybeUninit<*mut Box<dyn WasmRuntime>>,
 }
 
 impl FakeWasmiInstanceEnv {
     pub fn new() -> Self {
-        Self { runtime_ptr: 0 }
+        Self {
+            runtime_ptr: MaybeUninit::uninit(),
+        }
     }
 }
+
+unsafe impl Send for FakeWasmiInstanceEnv {}
+unsafe impl Sync for FakeWasmiInstanceEnv {}
 
 /// WasmiInstanceEnv stores masked runtime pointer to a `Box<dyn WasmRuntime>`.
 /// We mask it for below reasons:
@@ -57,17 +65,15 @@ impl FakeWasmiInstanceEnv {
 ///   - Store also shall be `Send + Sync` because of `WasmiModule`, which is cached.
 /// - WasmiInstanceEnv must be clonable (it is a user data for the Store, which is cloned when
 ///   WasmiModule is instantiated)
-#[derive(Clone)]
 pub struct WasmiInstanceEnv {
-    runtime_ptr: usize,
-    _not_send_sync: PhantomData<*const ()>, // TODO: replace with negative impl, https://github.com/rust-lang/rust/issues/68318
+    runtime_ptr: MaybeUninit<*mut Box<dyn WasmRuntime>>,
+    //    runtime_ptr: MaybeUninit<usize>,
 }
 
 impl WasmiInstanceEnv {
     pub fn new() -> Self {
         Self {
-            runtime_ptr: 0,
-            _not_send_sync: PhantomData,
+            runtime_ptr: MaybeUninit::uninit(),
         }
     }
 }
@@ -75,8 +81,7 @@ impl WasmiInstanceEnv {
 macro_rules! grab_runtime {
     ($caller: expr) => {{
         let runtime: &mut Box<dyn WasmRuntime> =
-            unsafe { &mut *($caller.data().runtime_ptr as *mut _) };
-
+            unsafe { &mut *$caller.data().runtime_ptr.assume_init() };
         let memory = match $caller.get_export(EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
@@ -252,8 +257,8 @@ impl WasmiModule {
             .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(Self {
-            store: unsafe { std::mem::transmute(store) },
-            instance,
+            template_store: unsafe { transmute(store) },
+            template_instance: instance,
             code_size_bytes: code.len(),
         })
     }
@@ -415,8 +420,8 @@ impl WasmiModule {
     }
 
     fn instantiate(&self) -> WasmiInstance {
-        let instance = self.instance.clone();
-        let mut store = self.store.clone();
+        let instance = self.template_instance.clone();
+        let mut store = self.template_store.clone();
         let memory = match instance.get_export(store.as_context_mut(), EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
@@ -424,7 +429,7 @@ impl WasmiModule {
 
         WasmiInstance {
             instance,
-            store: unsafe { std::mem::transmute(store) },
+            store: unsafe { transmute(store) },
             memory,
         }
     }
@@ -515,7 +520,11 @@ impl WasmInstance for WasmiInstance {
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
             // set up runtime pointer
-            self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
+            //            self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
+            self.store
+                .data_mut()
+                .runtime_ptr
+                .write(runtime as *mut _ as usize as *mut _);
         }
 
         let func = self.get_export_func(func_name).unwrap();
