@@ -712,7 +712,7 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::{
-            constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
+            constants::{EPOCH_MANAGER, FAUCET_COMPONENT},
             crypto::{
                 EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
@@ -724,7 +724,6 @@ mod tests {
         };
 
         let encoder = Bech32Encoder::for_simulator();
-        let account_package_address = ACCOUNT_PACKAGE.display(&encoder).to_string();
         let faucet_address = FAUCET_COMPONENT.display(&encoder).to_string();
         let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
         let epoch_manager_address = EPOCH_MANAGER.display(&encoder).to_string();
@@ -771,9 +770,6 @@ mod tests {
                 },
                 Value::Tuple {
                     fields: vec![
-                        Value::Custom {
-                            value: ScryptoCustomValue::PackageAddress(ACCOUNT_PACKAGE),
-                        },
                         Value::Custom {
                             value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
                         },
@@ -879,7 +875,6 @@ mod tests {
             { "variant": 2, "fields": [153, true] },
             [[153, 62]],
             [
-                account_package_address,
                 faucet_address,
                 radix_token_address,
                 epoch_manager_address,
@@ -934,7 +929,6 @@ mod tests {
                 {
                     "type": "Tuple",
                     "value": [
-                        { "type": "PackageAddress", "value": account_package_address },
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "ComponentAddress", "value": epoch_manager_address },

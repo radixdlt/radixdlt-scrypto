@@ -72,8 +72,19 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
-            | ComponentAddress::Normal(..)
             | ComponentAddress::Account(..) => {
+                let invocation =
+                    AccountPackage::resolve_method_invocation(component_address, method_name, args)
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::ResolveError(e),
+                                ),
+                            )
+                        })?;
+                CallTableInvocation::Native(NativeInvocation::Account(invocation))
+            }
+            ComponentAddress::Normal(..) => {
                 let component_node_id =
                     RENodeId::Global(GlobalAddress::Component(component_address));
                 let component_info = {
@@ -550,6 +561,72 @@ where
                 Ok(Box::new(rtn))
             }
             TransactionRuntimeInvocation::GenerateUuid(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeInvocation::Account(account_method) => match account_method {
+            AccountInvocation::Create(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::New(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::LockFee(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::Balance(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::LockContingentFee(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::Deposit(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::DepositBatch(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::Withdraw(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::WithdrawByAmount(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::WithdrawByIds(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::LockFeeAndWithdraw(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::LockFeeAndWithdrawByAmount(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::LockFeeAndWithdrawByIds(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::CreateProof(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::CreateProofByAmount(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountInvocation::CreateProofByIds(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

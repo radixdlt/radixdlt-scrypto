@@ -5,6 +5,7 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
@@ -54,6 +55,7 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+    Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
 }
 
@@ -242,6 +244,32 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum AccountInvocation {
+    Create(AccountCreateInvocation),
+    New(AccountNewInvocation),
+
+    Balance(AccountBalanceInvocation),
+
+    LockFee(AccountLockFeeInvocation),
+    LockContingentFee(AccountLockContingentFeeInvocation),
+
+    Deposit(AccountDepositInvocation),
+    DepositBatch(AccountDepositBatchInvocation),
+
+    Withdraw(AccountWithdrawInvocation),
+    WithdrawByAmount(AccountWithdrawByAmountInvocation),
+    WithdrawByIds(AccountWithdrawByIdsInvocation),
+
+    LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation),
+    LockFeeAndWithdrawByAmount(AccountLockFeeAndWithdrawByAmountInvocation),
+    LockFeeAndWithdrawByIds(AccountLockFeeAndWithdrawByIdsInvocation),
+
+    CreateProof(AccountCreateProofInvocation),
+    CreateProofByAmount(AccountCreateProofByAmountInvocation),
+    CreateProofByIds(AccountCreateProofByIdsInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -538,6 +566,51 @@ impl NativeInvocation {
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::Get(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
+            },
+            NativeInvocation::Account(account_method) => match account_method {
+                AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
+                AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
+                | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
+                | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::Deposit(AccountDepositInvocation { receiver, .. })
+                | AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::Withdraw(AccountWithdrawInvocation { receiver, .. })
+                | AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdrawByAmount(
+                    AccountLockFeeAndWithdrawByAmountInvocation { receiver, .. },
+                )
+                | AccountInvocation::LockFeeAndWithdrawByIds(
+                    AccountLockFeeAndWithdrawByIdsInvocation { receiver, .. },
+                )
+                | AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
+                    receiver,
+                    ..
+                }) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
+                }
             },
             NativeInvocation::AccessController(method) => match method {
                 AccessControllerInvocation::CreateGlobal(..) => {}

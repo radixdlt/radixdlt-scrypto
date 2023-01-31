@@ -231,6 +231,32 @@ impl FeeTable {
                     TransactionProcessorFn::Run => self.fixed_high,
                 }
             }
+            // TODO: Investigate what sensible costing for native components looks like
+            NativeFn::Account(account_fn) => match account_fn {
+                AccountFn::Create => self.fixed_low,
+
+                AccountFn::New => self.fixed_low,
+
+                AccountFn::Balance => self.fixed_low,
+
+                AccountFn::LockFee => self.fixed_low,
+                AccountFn::LockContingentFee => self.fixed_low,
+
+                AccountFn::Deposit => self.fixed_low,
+                AccountFn::DepositBatch => self.fixed_low,
+
+                AccountFn::Withdraw => self.fixed_low,
+                AccountFn::WithdrawByAmount => self.fixed_low,
+                AccountFn::WithdrawByIds => self.fixed_low,
+
+                AccountFn::LockFeeAndWithdraw => self.fixed_low,
+                AccountFn::LockFeeAndWithdrawByAmount => self.fixed_low,
+                AccountFn::LockFeeAndWithdrawByIds => self.fixed_low,
+
+                AccountFn::CreateProof => self.fixed_low,
+                AccountFn::CreateProofByAmount => self.fixed_low,
+                AccountFn::CreateProofByIds => self.fixed_low,
+            },
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
                 AccessControllerFn::CreateGlobal => self.fixed_low,
 

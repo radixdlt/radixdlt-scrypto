@@ -13,8 +13,7 @@ use crate::system::substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset,
-    VaultId,
+    GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
@@ -184,49 +183,8 @@ where
                 RENodeId::Global(GlobalAddress::Component(..)),
                 RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
             ) => {}
-            (
-                RENodeId::Global(address),
-                RENodeInit::Global(GlobalAddressSubstate::Component(component)),
-            ) => {
-                // TODO: Get rid of this logic
-                let (package_address, blueprint_name) = self
-                    .execute_in_mode::<_, _, RuntimeError>(
-                        ExecutionMode::Globalize,
-                        |system_api| {
-                            let handle = system_api.lock_substate(
-                                RENodeId::Component(*component),
-                                SubstateOffset::Component(ComponentOffset::Info),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = system_api.get_ref(handle)?;
-                            let info = substate_ref.component_info();
-                            let package_blueprint =
-                                (info.package_address, info.blueprint_name.clone());
-                            system_api.drop_lock(handle)?;
-                            Ok(package_blueprint)
-                        },
-                    )?;
-
-                match address {
-                    GlobalAddress::Component(ComponentAddress::Account(..)) => {
-                        if !(package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT))
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    GlobalAddress::Component(ComponentAddress::Normal(..)) => {
-                        if package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT)
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                    }
-                }
-            }
+            (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
+            (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
@@ -244,6 +202,7 @@ where
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

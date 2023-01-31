@@ -21,6 +21,7 @@ use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -213,7 +214,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateAccessController { .. }
             | BasicInstruction::CreateIdentity { .. }
-            | BasicInstruction::AssertAccessRule { .. } => {}
+            | BasicInstruction::AssertAccessRule { .. }
+            | BasicInstruction::CreateAccount { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -253,7 +255,6 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         let actor =
             ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
@@ -809,6 +810,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
+                    let rtn = api.invoke(AccountNewInvocation {
+                        withdraw_rule: withdraw_rule.clone(),
+                    })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::System(invocation) => {

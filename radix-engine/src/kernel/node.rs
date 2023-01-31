@@ -1,4 +1,5 @@
 use crate::blueprints::access_controller::AccessControllerSubstate;
+use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::kv_store::KeyValueStore;
@@ -65,6 +66,7 @@ pub enum RENodeInit {
     ),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
+    Account(AccountSubstate, AccessRulesChainSubstate),
     AccessController(AccessControllerSubstate, AccessRulesChainSubstate),
 }
 
@@ -279,6 +281,16 @@ impl RENodeInit {
                     transaction_hash.into(),
                 );
             }
+            RENodeInit::Account(account_substate, access_rules_substate) => {
+                substates.insert(
+                    SubstateOffset::Account(AccountOffset::Account),
+                    account_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules_substate.into(),
+                );
+            }
             RENodeInit::AccessController(access_controller, access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
@@ -289,7 +301,7 @@ impl RENodeInit {
                     access_rules.into(),
                 );
             }
-        }
+        };
 
         substates
     }

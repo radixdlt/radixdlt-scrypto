@@ -52,6 +52,7 @@ pub enum RENodeType {
     Identity,
     TransactionRuntime,
     Logger,
+    Account,
     AccessController,
 }
 
@@ -87,6 +88,7 @@ pub enum RENodeId {
     Clock(ClockId),
     Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
+    Account(AccountId),
     AccessController(AccessControllerId),
 }
 
@@ -103,6 +105,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
+            RENodeId::Account(id) => id,
             RENodeId::AccessController(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -309,6 +312,11 @@ pub enum TransactionRuntimeOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccountOffset {
+    Account,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessControllerOffset {
     AccessController,
 }
@@ -347,6 +355,7 @@ pub enum SubstateOffset {
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+    Account(AccountOffset),
     AccessController(AccessControllerOffset),
 }
 

@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "account",
     "faucet",
 ]
 

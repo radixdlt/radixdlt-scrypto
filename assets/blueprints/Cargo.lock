@@ -3,17 +3,6 @@
 version = 3
 
 [[package]]
-name = "account"
-version = "0.1.0"
-dependencies = [
- "radix-engine",
- "sbor",
- "scrypto",
- "scrypto-unit",
- "transaction",
-]
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
