@@ -448,6 +448,68 @@ impl Executor for ValidatorClaimXrdExecutable {
     }
 }
 
+pub struct ValidatorUpdateKeyExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+
+impl ExecutableInvocation for ValidatorUpdateKeyInvocation {
+    type Exec = ValidatorUpdateKeyExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let actor = ResolvedActor::method(
+            NativeFn::Validator(ValidatorFn::UpdateKey),
+            resolved_receiver,
+        );
+        let executor = ValidatorUpdateKeyExecutable(resolved_receiver.receiver, self.key);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorUpdateKeyExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let mut substate = api.get_ref_mut(handle)?;
+        let mut validator = substate.validator();
+        validator.key = self.1;
+        let key = validator.key;
+        let manager = validator.manager;
+        let validator_address = validator.address;
+
+        // Update Epoch Manager
+        {
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            if validator.is_registered {
+                let stake_amount = stake_vault.sys_amount(api)?;
+                if !stake_amount.is_zero() {
+                    let update = UpdateValidator::Register(key, stake_amount);
+                    let invocation = EpochManagerUpdateValidatorInvocation {
+                        receiver: manager,
+                        validator_address,
+                        update,
+                    };
+                    api.invoke(invocation)?;
+                }
+            }
+        };
+
+        let update = CallFrameUpdate::empty();
+        Ok(((), update))
+    }
+}
+
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
@@ -566,6 +628,10 @@ impl ValidatorCreator {
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
+            owner_access_rule.clone(),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateKey)),
             owner_access_rule.clone(),
         );
         access_rules.set_method_access_rule(

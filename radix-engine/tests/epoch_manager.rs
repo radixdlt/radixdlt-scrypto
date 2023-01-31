@@ -464,6 +464,77 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 }
 
 #[test]
+fn updated_validator_keys_gets_updated_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account_address =
+        ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(
+        validator_pub_key,
+        (Decimal::one(), validator_account_address),
+    );
+    let genesis = create_genesis(
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let next_validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(3u64)
+        .unwrap()
+        .public_key();
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .call_method(
+            validator_address,
+            "update_key",
+            args!(next_validator_pub_key),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
+    ))];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(vec![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let result = receipt.expect_commit();
+    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(
+        next_epoch.0.get(&validator_address).unwrap().key,
+        next_validator_pub_key
+    );
+}
+
+#[test]
 fn cannot_claim_unstake_immediately() {
     // Arrange
     let initial_epoch = 5u64;

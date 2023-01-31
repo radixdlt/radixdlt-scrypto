@@ -134,6 +134,7 @@ pub enum ValidatorInvocation {
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
     ClaimXrd(ValidatorClaimXrdInvocation),
+    UpdateKey(ValidatorUpdateKeyInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -475,6 +476,11 @@ impl NativeInvocation {
                     )));
                 }
                 ValidatorInvocation::ClaimXrd(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::UpdateKey(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
                     )));

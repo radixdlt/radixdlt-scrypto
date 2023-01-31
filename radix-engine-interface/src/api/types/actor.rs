@@ -304,6 +304,7 @@ pub enum ValidatorFn {
     Stake,
     Unstake,
     ClaimXrd,
+    UpdateKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -429,6 +430,17 @@ impl EpochManagerPackage {
                             ValidatorClaimXrdInvocation {
                                 receiver,
                                 unstake_nft: args.bucket,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::UpdateKey => {
+                        let args: ValidatorUpdateKeyMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(
+                            ValidatorUpdateKeyInvocation {
+                                receiver,
+                                key: args.key,
                             },
                         ))
                     }

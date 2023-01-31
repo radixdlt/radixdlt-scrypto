@@ -342,3 +342,28 @@ impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
         NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
     }
 }
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateKeyMethodArgs {
+    pub key: EcdsaSecp256k1PublicKey,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateKeyInvocation {
+    pub receiver: ComponentAddress,
+    pub key: EcdsaSecp256k1PublicKey,
+}
+
+impl Invocation for ValidatorUpdateKeyInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorUpdateKeyInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(self)).into()
+    }
+}
