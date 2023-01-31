@@ -22,10 +22,8 @@ use sbor::rust::vec::Vec;
 
 use super::ComponentAccessRules;
 
-/// Represents the state of a component.
-pub trait ComponentState: ScryptoEncode + ScryptoDecode {
-    /// Instantiates a component from this data structure.
-    fn instantiate(self) -> OwnedComponent;
+pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
+    fn instantiate(self) -> T;
 }
 
 pub trait Component {

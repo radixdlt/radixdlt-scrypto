@@ -59,12 +59,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> OwnedComponent {
-                    ::scrypto::component::component_system().create_component(
+            impl ::scrypto::component::ComponentState<#component_ident> for #bp_ident {
+                fn instantiate(self) -> #component_ident {
+                    let component = ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
-                    )
+                    );
+                    #component_ident {
+                        component
+                    }
                 }
             }
         }
