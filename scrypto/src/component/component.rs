@@ -1,24 +1,29 @@
-use radix_engine_derive::LegacyDescribe;
-use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
-    SubstateOffset,
-};
-use radix_engine_interface::data::{
-    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
-};
-use radix_engine_interface::model::*;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use sbor::*;
-
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
+use radix_engine_derive::LegacyDescribe;
+use radix_engine_interface::api::component::{
+    ComponentClaimRoyaltyInvocation, ComponentGlobalizeInvocation,
+    ComponentGlobalizeWithOwnerInvocation, ComponentSetRoyaltyConfigInvocation,
+};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
+};
+use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset,
+};
+use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
+use radix_engine_interface::data::{
+    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+};
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 use super::ComponentAccessRules;
 
@@ -50,7 +55,7 @@ pub trait LocalComponent {
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
-    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -75,17 +80,10 @@ pub struct Component(pub ComponentId);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let buffer = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Component(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+        let output = ScryptoEnv
+            .invoke_method(ScryptoReceiver::Component(self.0), method, args)
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -110,12 +108,12 @@ impl Component {
 
     /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let mut env = ScryptoEnv;
-        env.invoke(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Component(self.0),
-            access_rules,
-        })
-        .unwrap();
+        ScryptoEnv
+            .invoke(AccessRulesAddAccessCheckInvocation {
+                receiver: RENodeId::Component(self.0),
+                access_rules,
+            })
+            .unwrap();
         self
     }
 
@@ -151,7 +149,7 @@ impl Component {
 
     /// Globalize with owner badge. This will add additional access rules to protect native
     /// methods, such as metadata and royalty.
-    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
         ScryptoEnv
             .invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
@@ -181,17 +179,10 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let raw = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+        let output = ScryptoEnv
+            .invoke_method(ScryptoReceiver::Global(self.0), method, args)
             .unwrap();
-        scrypto_decode(&raw).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {

@@ -1,9 +1,9 @@
 use crate::sys_env_native_fn;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 pub struct Worktop;
 
@@ -34,7 +34,7 @@ impl Worktop {
     }
 
     sys_env_native_fn! {
-        pub fn sys_take_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleId>) -> Bucket {
+        pub fn sys_take_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleLocalId>) -> Bucket {
             WorktopTakeNonFungiblesInvocation {
                 resource_address, ids,
             }
@@ -58,7 +58,7 @@ impl Worktop {
     }
 
     sys_env_native_fn! {
-        pub fn sys_assert_contains_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleId>) -> () {
+        pub fn sys_assert_contains_non_fungibles(resource_address: ResourceAddress, ids: BTreeSet<NonFungibleLocalId>) -> () {
             WorktopAssertContainsNonFungiblesInvocation {
                 resource_address, ids,
             }

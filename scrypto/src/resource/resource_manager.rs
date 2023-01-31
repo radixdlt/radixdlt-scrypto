@@ -1,11 +1,16 @@
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
+};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataGetInvocation, MetadataSetInvocation,
+};
 use radix_engine_interface::api::types::{
     GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
+use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
-use radix_engine_interface::model::*;
-
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -65,7 +70,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Withdraw,
+            method: VaultMethodAuthKey::Withdraw,
             access_rule,
         })
         .unwrap()
@@ -75,7 +80,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Deposit,
+            method: VaultMethodAuthKey::Deposit,
             access_rule,
         })
         .unwrap()
@@ -85,7 +90,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateVaultAuthInvocation {
             receiver: self.0,
-            method: Recall,
+            method: VaultMethodAuthKey::Recall,
             access_rule,
         })
         .unwrap()
@@ -165,7 +170,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Withdraw,
+            method: VaultMethodAuthKey::Withdraw,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -175,7 +180,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Deposit,
+            method: VaultMethodAuthKey::Deposit,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -185,13 +190,13 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
             receiver: self.0,
-            method: Recall,
+            method: VaultMethodAuthKey::Recall,
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
             id,
@@ -201,7 +206,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> [Vec<u8>; 2] {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -221,7 +226,7 @@ impl ResourceManager {
                 receiver: self.0,
             }
         }
-        pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+        pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
             ResourceManagerNonFungibleExistsInvocation {
                 receiver: self.0,
                 id: id.clone()
@@ -246,7 +251,11 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleLocalId,
+        data: T,
+    ) -> Bucket {
         let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),
@@ -276,7 +285,7 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         let non_fungible = self.get_non_fungible_data_internal(id.clone());
         T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
@@ -287,7 +296,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &mut self,
-        id: &NonFungibleId,
+        id: &NonFungibleLocalId,
         new_data: T,
     ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())

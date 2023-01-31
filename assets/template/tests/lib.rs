@@ -1,4 +1,4 @@
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Create an account
     let (public_key, _private_key, account_component) = test_runner.new_allocated_account();
@@ -20,7 +20,7 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
@@ -40,7 +40,7 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();

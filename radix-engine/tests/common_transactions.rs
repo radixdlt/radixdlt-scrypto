@@ -1,9 +1,8 @@
 use radix_engine::types::{
-    hash, require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey,
-    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    FAUCET_COMPONENT, RADIX_TOKEN,
+    hash, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, NetworkDefinition,
+    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
 };
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
@@ -97,7 +96,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -133,7 +132,7 @@ fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
             initial_supply = initial_supply,
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -161,7 +160,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
                 account_component_address.display(bech32_encoder),
-                non_fungible_id = "1u64"
+                non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -177,7 +176,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds()
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -191,8 +190,8 @@ fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64",
-            non_fungible_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#",
+            non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -205,8 +204,8 @@ fn publish_package_succeeds() {
         // TODO: Update the code.blob and abi.blob files that are used for testing.
         // Using the WASM and ABI from the account blueprint here as they are up to date. The
         // abi.blob and code.blob files from the transaction crate are not.
-        let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
-        let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
+        let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
+        let abi_blob = include_bytes!("../../assets/faucet.abi").to_vec();
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish.rtm"),
@@ -214,7 +213,7 @@ fn publish_package_succeeds() {
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            auth_badge_non_fungible_id = "1u64"
+            auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -227,8 +226,8 @@ fn publish_package_with_owner_succeeds() {
         // TODO: Update the code.blob and abi.blob files that are used for testing.
         // Using the WASM and ABI from the account blueprint here as they are up to date. The
         // abi.blob and code.blob files from the transaction crate are not.
-        let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
-        let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
+        let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
+        let abi_blob = include_bytes!("../../assets/faucet.abi").to_vec();
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
@@ -236,7 +235,7 @@ fn publish_package_with_owner_succeeds() {
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -271,7 +270,7 @@ fn minting_of_fungible_resource_succeeds() {
 fn minting_of_non_fungible_resource_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdTypeId::Number,
+            id_type: NonFungibleIdType::Integer,
         },
         |account_component_address,
          minter_badge_resource_address,
@@ -283,7 +282,7 @@ fn minting_of_non_fungible_resource_succeeds() {
                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
                 minter_badge_resource_address =
                     minter_badge_resource_address.display(bech32_encoder),
-                non_fungible_id = "1u64"
+                non_fungible_local_id = "#1#"
             );
             (manifest, Vec::new())
         },
@@ -295,11 +294,11 @@ where
     F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -311,7 +310,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 
@@ -327,11 +326,11 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -358,7 +357,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 id_type,
                 BTreeMap::new(),
                 access_rules,
-                None::<BTreeMap<NonFungibleId, SampleNonFungibleData>>,
+                None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )
             .build(),
     };
@@ -378,7 +377,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 
@@ -387,11 +386,11 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunner::new(false);
+    let mut test_runner = TestRunner::builder().without_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Creating the required accounts
     let accounts = (0..accounts_required)
@@ -409,7 +408,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }
 

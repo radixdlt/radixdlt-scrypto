@@ -22,16 +22,12 @@ pub mod crypto;
 pub mod data;
 /// RE math library.
 pub mod math;
-
-/// RE node models.
-pub mod model;
-pub mod modules;
-pub mod node;
-
+/// RE network abstraction.
+pub mod network;
 /// RE time library.
 pub mod time;
 
-pub mod wasm;
+pub mod blueprints;
 
 mod macros;
 pub use macros::*;
@@ -43,7 +39,8 @@ pub use sbor::{Categorize, Decode, Encode};
 // Re-export Engine derive.
 extern crate radix_engine_derive;
 pub use radix_engine_derive::{
-    LegacyDescribe, ScryptoCategorize, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
+    LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoDescribe,
+    ScryptoEncode, ScryptoSbor,
 };
 
 // This is to make derives work within this crate.

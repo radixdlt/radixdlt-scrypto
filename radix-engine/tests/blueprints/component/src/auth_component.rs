@@ -2,11 +2,11 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct AuthComponent {
-        some_non_fungible: NonFungibleAddress,
+        some_non_fungible: NonFungibleGlobalId,
     }
 
     impl AuthComponent {
-        pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
+        pub fn create_component(some_non_fungible: NonFungibleGlobalId) -> ComponentAddress {
             let mut component = Self { some_non_fungible }.instantiate();
             component.add_access_check(
                 AccessRules::new()
@@ -24,7 +24,7 @@ blueprint! {
             "Secret".to_owned()
         }
 
-        pub fn update_auth(&mut self, some_non_fungible: NonFungibleAddress) {
+        pub fn update_auth(&mut self, some_non_fungible: NonFungibleGlobalId) {
             self.some_non_fungible = some_non_fungible;
         }
     }

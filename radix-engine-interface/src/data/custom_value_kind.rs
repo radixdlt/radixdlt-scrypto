@@ -3,7 +3,6 @@ use sbor::*;
 pub const VALUE_KIND_PACKAGE_ADDRESS: u8 = 0x80;
 pub const VALUE_KIND_COMPONENT_ADDRESS: u8 = 0x81;
 pub const VALUE_KIND_RESOURCE_ADDRESS: u8 = 0x82;
-pub const VALUE_KIND_SYSTEM_ADDRESS: u8 = 0x83;
 pub const VALUE_KIND_OWN: u8 = 0x90;
 
 pub const VALUE_KIND_BUCKET: u8 = 0xa0;
@@ -18,7 +17,7 @@ pub const VALUE_KIND_EDDSA_ED25519_PUBLIC_KEY: u8 = 0xb3;
 pub const VALUE_KIND_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
 pub const VALUE_KIND_DECIMAL: u8 = 0xb5;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0xb6;
-pub const VALUE_KIND_NON_FUNGIBLE_ID: u8 = 0xb7;
+pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
 
 #[cfg_attr(
     feature = "serde",
@@ -31,7 +30,6 @@ pub enum ScryptoCustomValueKind {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
     Own,
 
     // TX interpreted types
@@ -48,7 +46,7 @@ pub enum ScryptoCustomValueKind {
     EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
-    NonFungibleId,
+    NonFungibleLocalId,
 }
 
 impl From<ScryptoCustomValueKind> for ValueKind<ScryptoCustomValueKind> {
@@ -63,7 +61,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::PackageAddress => VALUE_KIND_PACKAGE_ADDRESS,
             Self::ComponentAddress => VALUE_KIND_COMPONENT_ADDRESS,
             Self::ResourceAddress => VALUE_KIND_RESOURCE_ADDRESS,
-            Self::SystemAddress => VALUE_KIND_SYSTEM_ADDRESS,
             Self::Own => VALUE_KIND_OWN,
             Self::Bucket => VALUE_KIND_BUCKET,
             Self::Proof => VALUE_KIND_PROOF,
@@ -76,7 +73,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::EddsaEd25519Signature => VALUE_KIND_EDDSA_ED25519_SIGNATURE,
             Self::Decimal => VALUE_KIND_DECIMAL,
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
-            Self::NonFungibleId => VALUE_KIND_NON_FUNGIBLE_ID,
+            Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
         }
     }
 
@@ -85,7 +82,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             VALUE_KIND_PACKAGE_ADDRESS => Some(ScryptoCustomValueKind::PackageAddress),
             VALUE_KIND_COMPONENT_ADDRESS => Some(ScryptoCustomValueKind::ComponentAddress),
             VALUE_KIND_RESOURCE_ADDRESS => Some(ScryptoCustomValueKind::ResourceAddress),
-            VALUE_KIND_SYSTEM_ADDRESS => Some(ScryptoCustomValueKind::SystemAddress),
             VALUE_KIND_OWN => Some(ScryptoCustomValueKind::Own),
             VALUE_KIND_BUCKET => Some(ScryptoCustomValueKind::Bucket),
             VALUE_KIND_PROOF => Some(ScryptoCustomValueKind::Proof),
@@ -106,7 +102,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             }
             VALUE_KIND_DECIMAL => Some(ScryptoCustomValueKind::Decimal),
             VALUE_KIND_PRECISE_DECIMAL => Some(ScryptoCustomValueKind::PreciseDecimal),
-            VALUE_KIND_NON_FUNGIBLE_ID => Some(ScryptoCustomValueKind::NonFungibleId),
+            VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => Some(ScryptoCustomValueKind::NonFungibleLocalId),
             _ => None,
         }
     }

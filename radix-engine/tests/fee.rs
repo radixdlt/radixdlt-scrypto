@@ -1,9 +1,13 @@
-use radix_engine::engine::{ApplicationError, KernelError, TrackError};
-use radix_engine::engine::{RejectionError, RuntimeError};
-use radix_engine::model::WorktopError;
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::blueprints::resource::WorktopError;
+use radix_engine::errors::{ApplicationError, KernelError};
+use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::kernel::TrackError;
+use radix_engine::transaction::{
+    AbortReason, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -12,8 +16,16 @@ fn run_manifest<F>(f: F) -> TransactionReceipt
 where
     F: FnOnce(ComponentAddress) -> TransactionManifest,
 {
+    let (mut test_runner, component_address) = setup_test_runner();
+
+    // Run the provided manifest
+    let manifest = f(component_address);
+    test_runner.execute_manifest(manifest, vec![])
+}
+
+fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -27,16 +39,46 @@ where
                 builder
             })
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let component_address = receipt1
         .expect_commit()
         .entity_changes
         .new_component_addresses[0];
 
-    // Run the provided manifest
-    let manifest = f(component_address);
-    test_runner.execute_manifest(manifest, vec![])
+    (test_runner, component_address)
+}
+
+#[test]
+fn should_be_aborted_when_loan_repaid() {
+    let (mut test_runner, component_address) = setup_test_runner();
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", args!())
+        .build();
+
+    let test_transaction = TestTransaction::new(
+        manifest,
+        test_runner.next_transaction_nonce(),
+        DEFAULT_COST_UNIT_LIMIT,
+    );
+    let executable = test_transaction.get_executable(vec![]);
+
+    let receipt = test_runner.execute_transaction_with_config(
+        executable,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig::up_to_loan_repayment_with_debug(),
+    );
+
+    let abort_reason = receipt.expect_abortion().clone();
+
+    assert_eq!(
+        abort_reason,
+        AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
+    );
 }
 
 #[test]
@@ -178,7 +220,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -204,7 +246,7 @@ fn test_fee_accounting_success() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -233,7 +275,7 @@ fn test_fee_accounting_success() {
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -260,7 +302,7 @@ fn test_fee_accounting_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -295,7 +337,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
@@ -309,7 +351,7 @@ fn test_fee_accounting_rejection() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -325,7 +367,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -347,8 +389,8 @@ fn test_contingent_fee_accounting_success() {
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 
@@ -378,7 +420,7 @@ fn test_contingent_fee_accounting_success() {
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -401,8 +443,8 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 

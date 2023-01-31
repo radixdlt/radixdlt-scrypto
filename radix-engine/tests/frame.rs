@@ -1,5 +1,5 @@
-use radix_engine::engine::{ModuleError, RuntimeError};
-use radix_engine::model::CostingError;
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::fee::CostingError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_max_call_depth_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
@@ -32,7 +32,7 @@ fn test_max_call_depth_success() {
 #[test]
 fn test_max_call_depth_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act

@@ -1,5 +1,5 @@
-use radix_engine::engine::RejectionError;
-use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::errors::RejectionError;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
@@ -7,7 +7,6 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -42,7 +41,7 @@ fn low_cost_unit_limit_should_result_in_rejection() {
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     const CURRENT_EPOCH: u64 = 150;
     const VALID_FROM_EPOCH: u64 = 151;
@@ -78,7 +77,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     const CURRENT_EPOCH: u64 = 157;
     const VALID_FROM_EPOCH: u64 = 151;

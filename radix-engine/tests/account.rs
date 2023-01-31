@@ -1,13 +1,13 @@
-use radix_engine::model::ResourceChange;
+use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let (_, _, other_account) = test_runner.new_account(use_virtual);
 
@@ -23,7 +23,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -51,7 +51,7 @@ fn can_withdraw_from_my_virtual_account() {
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let (_, _, other_account) = test_runner.new_account(use_virtual);
     let resource_address = test_runner.create_non_fungible_resource(account);
@@ -67,7 +67,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -86,7 +86,7 @@ fn can_withdraw_non_fungible_from_my_virtual_account() {
 
 fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new()
@@ -102,7 +102,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -121,7 +121,7 @@ fn cannot_withdraw_from_other_virtual_account() {
 
 fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
@@ -139,7 +139,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -159,7 +159,7 @@ fn account_to_bucket_to_virtual_account() {
 
 fn test_account_balance_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_account(use_virtual);
     let (_, _, account2) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new()
@@ -170,7 +170,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     // Act
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let outputs = receipt.expect_commit_success();
 

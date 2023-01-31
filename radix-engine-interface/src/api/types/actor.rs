@@ -1,6 +1,13 @@
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
 use crate::api::types::*;
-use crate::model::*;
+use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
+use crate::blueprints::clock::*;
+use crate::blueprints::epoch_manager::*;
+use crate::data::scrypto_decode;
 use crate::*;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -16,11 +23,14 @@ pub enum NativePackage {
     Package,
     Metadata,
     EpochManager,
+    Identity,
     Resource,
     Clock,
     Logger,
     TransactionRuntime,
     TransactionProcessor,
+    Account,
+    AccessController,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -99,6 +109,7 @@ pub enum NativeFn {
     Package(PackageFn),
     Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
+    Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
@@ -106,9 +117,12 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
+    Identity(IdentityFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
+    Account(AccountFn),
+    AccessController(AccessControllerFn),
 }
 
 impl NativeFn {
@@ -118,7 +132,8 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
+            NativeFn::Identity(..) => NativePackage::Identity,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -128,6 +143,8 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+            NativeFn::Account(..) => NativePackage::Account,
+            NativeFn::AccessController(..) => NativePackage::AccessController,
         }
     }
 }
@@ -264,8 +281,170 @@ pub enum EpochManagerFn {
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
-    RegisterValidator,
-    UnregisterValidator,
+    CreateValidator,
+    UpdateValidator,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum ValidatorFn {
+    Register,
+    Unregister,
+    Stake,
+    Unstake,
+    ClaimXrd,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ResolveError {
+    DecodeError(DecodeError),
+    NotAMethod,
+}
+
+pub struct EpochManagerPackage;
+
+impl EpochManagerPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<NativeInvocation, ResolveError> {
+        let invocation = match receiver {
+            ComponentAddress::EpochManager(..) => {
+                let epoch_manager_fn =
+                    EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match epoch_manager_fn {
+                    EpochManagerFn::Create => {
+                        return Err(ResolveError::NotAMethod);
+                    }
+                    EpochManagerFn::GetCurrentEpoch => {
+                        let _args: EpochManagerGetCurrentEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
+                            EpochManagerGetCurrentEpochInvocation { receiver },
+                        ))
+                    }
+                    EpochManagerFn::NextRound => {
+                        let args: EpochManagerNextRoundMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+                            EpochManagerNextRoundInvocation {
+                                receiver,
+                                round: args.round,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::SetEpoch => {
+                        let args: EpochManagerSetEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
+                            EpochManagerSetEpochInvocation {
+                                receiver,
+                                epoch: args.epoch,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::CreateValidator => {
+                        let args: EpochManagerCreateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
+                            EpochManagerCreateValidatorInvocation {
+                                receiver,
+                                key: args.validator,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::UpdateValidator => {
+                        let args: EpochManagerUpdateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
+                            EpochManagerUpdateValidatorInvocation {
+                                receiver,
+                                validator_address: args.validator_address,
+                                update: args.update,
+                            },
+                        ))
+                    }
+                }
+            }
+            ComponentAddress::Validator(..) => {
+                let validator_fn =
+                    ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match validator_fn {
+                    ValidatorFn::Register => {
+                        let _args: ValidatorRegisterMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Register(
+                            ValidatorRegisterInvocation { receiver },
+                        ))
+                    }
+                    ValidatorFn::Unregister => {
+                        let _args: ValidatorUnregisterValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unregister(
+                            ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+
+                    ValidatorFn::Stake => {
+                        let args: ValidatorStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Stake(
+                            ValidatorStakeInvocation {
+                                receiver,
+                                stake: args.stake,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::Unstake => {
+                        let args: ValidatorUnstakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unstake(
+                            ValidatorUnstakeInvocation {
+                                receiver,
+                                lp_tokens: args.lp_tokens,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::ClaimXrd => {
+                        let args: ValidatorClaimXrdMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(
+                            ValidatorClaimXrdInvocation {
+                                receiver,
+                                unstake_nft: args.bucket,
+                            },
+                        ))
+                    }
+                }
+            }
+            _ => return Err(ResolveError::NotAMethod),
+        };
+
+        Ok(invocation)
+    }
 }
 
 #[derive(
@@ -365,7 +544,7 @@ pub enum BucketFn {
     Take,
     TakeNonFungibles,
     Put,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetAmount,
     GetResourceAddress,
     CreateProof,
@@ -398,7 +577,7 @@ pub enum VaultFn {
     TakeNonFungibles,
     GetAmount,
     GetResourceAddress,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
@@ -429,7 +608,7 @@ pub enum VaultFn {
 pub enum ProofFn {
     Clone,
     GetAmount,
-    GetNonFungibleIds,
+    GetNonFungibleLocalIds,
     GetResourceAddress,
 }
 
@@ -489,6 +668,75 @@ pub enum ClockFn {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+pub struct ClockPackage;
+
+impl ClockPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<ClockInvocation, ResolveError> {
+        let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match clock_fn {
+            ClockFn::Create => {
+                return Err(ResolveError::NotAMethod);
+            }
+            ClockFn::CompareCurrentTime => {
+                let args: ClockCompareCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::CompareCurrentTime(ClockCompareCurrentTimeInvocation {
+                    receiver,
+                    instant: args.instant,
+                    precision: args.precision,
+                    operator: args.operator,
+                })
+            }
+            ClockFn::GetCurrentTime => {
+                let args: ClockGetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                    receiver,
+                    precision: args.precision,
+                })
+            }
+            ClockFn::SetCurrentTime => {
+                let args: ClockSetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                    receiver,
+                    current_time_ms: args.current_time_ms,
+                })
+            }
+        };
+
+        Ok(invocation)
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum IdentityFn {
+    Create,
 }
 
 #[derive(
@@ -562,4 +810,376 @@ pub enum TransactionRuntimeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum AccountFn {
+    Create,
+
+    New,
+
+    Balance,
+
+    LockFee,
+    LockContingentFee,
+
+    Deposit,
+    DepositBatch,
+
+    Withdraw,
+    WithdrawByAmount,
+    WithdrawByIds,
+
+    LockFeeAndWithdraw,
+    LockFeeAndWithdrawByAmount,
+    LockFeeAndWithdrawByIds,
+
+    CreateProof,
+    CreateProofByAmount,
+    CreateProofByIds,
+}
+
+pub struct AccountPackage;
+
+impl AccountPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<AccountInvocation, ResolveError> {
+        let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match account_fn {
+            AccountFn::Create | AccountFn::New => {
+                return Err(ResolveError::NotAMethod);
+            }
+            AccountFn::Balance => {
+                let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Balance(AccountBalanceInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::LockFee => {
+                let args = scrypto_decode::<AccountLockFeeMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFee(AccountLockFeeInvocation {
+                    receiver,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::LockContingentFee => {
+                let args = scrypto_decode::<AccountLockContingentFeeMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                    receiver,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::Deposit => {
+                let args = scrypto_decode::<AccountDepositMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Deposit(AccountDepositInvocation {
+                    receiver,
+                    bucket: args.bucket.0,
+                })
+            }
+            AccountFn::DepositBatch => {
+                let args = scrypto_decode::<AccountDepositBatchMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                    receiver,
+                    buckets: args.buckets.into_iter().map(|x| x.0).collect(),
+                })
+            }
+            AccountFn::Withdraw => {
+                let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Withdraw(AccountWithdrawInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::WithdrawByAmount => {
+                let args = scrypto_decode::<AccountWithdrawByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::WithdrawByIds => {
+                let args = scrypto_decode::<AccountWithdrawByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    ids: args.ids,
+                })
+            }
+            AccountFn::LockFeeAndWithdraw => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
+                    receiver,
+                    amount_to_lock: args.amount_to_lock,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::LockFeeAndWithdrawByAmount => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawByAmount(
+                    AccountLockFeeAndWithdrawByAmountInvocation {
+                        receiver,
+                        amount_to_lock: args.amount_to_lock,
+                        resource_address: args.resource_address,
+                        amount: args.amount,
+                    },
+                )
+            }
+            AccountFn::LockFeeAndWithdrawByIds => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawByIds(
+                    AccountLockFeeAndWithdrawByIdsInvocation {
+                        receiver,
+                        amount_to_lock: args.amount_to_lock,
+                        resource_address: args.resource_address,
+                        ids: args.ids,
+                    },
+                )
+            }
+            AccountFn::CreateProof => {
+                let args = scrypto_decode::<AccountCreateProofMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::CreateProofByAmount => {
+                let args = scrypto_decode::<AccountCreateProofByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::CreateProofByIds => {
+                let args = scrypto_decode::<AccountCreateProofByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    ids: args.ids,
+                })
+            }
+        };
+        Ok(invocation)
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum AccessControllerFn {
+    CreateGlobal,
+
+    CreateProof,
+
+    InitiateRecoveryAsPrimary,
+    InitiateRecoveryAsRecovery,
+
+    QuickConfirmPrimaryRoleRecoveryProposal,
+    QuickConfirmRecoveryRoleRecoveryProposal,
+
+    TimedConfirmRecovery,
+
+    CancelPrimaryRoleRecoveryProposal,
+    CancelRecoveryRoleRecoveryProposal,
+
+    LockPrimaryRole,
+    UnlockPrimaryRole,
+
+    StopTimedRecovery,
+}
+
+pub struct AccessControllerPackage;
+
+impl AccessControllerPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<AccessControllerInvocation, ResolveError> {
+        let access_controller_fn =
+            AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match access_controller_fn {
+            AccessControllerFn::CreateGlobal => {
+                return Err(ResolveError::NotAMethod);
+            }
+            AccessControllerFn::CreateProof => {
+                scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::CreateProof(AccessControllerCreateProofInvocation {
+                    receiver,
+                })
+            }
+            AccessControllerFn::InitiateRecoveryAsPrimary => {
+                let args =
+                    scrypto_decode::<AccessControllerInitiateRecoveryAsPrimaryMethodArgs>(args)
+                        .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::InitiateRecoveryAsPrimary(
+                    AccessControllerInitiateRecoveryAsPrimaryInvocation {
+                        receiver,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::InitiateRecoveryAsRecovery => {
+                let args =
+                    scrypto_decode::<AccessControllerInitiateRecoveryAsRecoveryMethodArgs>(args)
+                        .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::InitiateRecoveryAsRecovery(
+                    AccessControllerInitiateRecoveryAsRecoveryInvocation {
+                        receiver,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => {
+                let args = scrypto_decode::<
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs,
+                >(args)
+                .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
+                        receiver,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => {
+                let args = scrypto_decode::<
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalMethodArgs,
+                >(args)
+                .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
+                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
+                        receiver,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::TimedConfirmRecovery => {
+                let args = scrypto_decode::<AccessControllerTimedConfirmRecoveryMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::TimedConfirmRecovery(
+                    AccessControllerTimedConfirmRecoveryInvocation {
+                        receiver,
+                        proposal_to_confirm: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal => {
+                scrypto_decode::<AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
+                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation { receiver },
+                )
+            }
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal => {
+                scrypto_decode::<AccessControllerCancelRecoveryRoleRecoveryProposalMethodArgs>(
+                    args,
+                )
+                .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(
+                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation { receiver },
+                )
+            }
+            AccessControllerFn::LockPrimaryRole => {
+                scrypto_decode::<AccessControllerLockPrimaryRoleMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::LockPrimaryRole(
+                    AccessControllerLockPrimaryRoleInvocation { receiver },
+                )
+            }
+            AccessControllerFn::UnlockPrimaryRole => {
+                scrypto_decode::<AccessControllerUnlockPrimaryRoleMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::UnlockPrimaryRole(
+                    AccessControllerUnlockPrimaryRoleInvocation { receiver },
+                )
+            }
+            AccessControllerFn::StopTimedRecovery => {
+                let args = scrypto_decode::<AccessControllerStopTimedRecoveryMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccessControllerInvocation::StopTimedRecovery(
+                    AccessControllerStopTimedRecoveryInvocation {
+                        receiver,
+                        proposal: RecoveryProposal {
+                            rule_set: args.rule_set,
+                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
+                        },
+                    },
+                )
+            }
+        };
+
+        Ok(invocation)
+    }
 }

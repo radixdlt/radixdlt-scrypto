@@ -1,19 +1,23 @@
 use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthZoneParams, Executable};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
+    pub pre_allocated_ids: BTreeSet<RENodeId>,
     pub blobs: Vec<Vec<u8>>,
     pub nonce: u64,
 }
 
 impl SystemTransaction {
-    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
+    pub fn get_executable<'a>(
+        &'a self,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+    ) -> Executable<'a> {
         // Fake transaction hash
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
@@ -31,6 +35,7 @@ impl SystemTransaction {
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],
+                pre_allocated_ids: self.pre_allocated_ids.clone(),
             },
         )
     }

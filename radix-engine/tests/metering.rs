@@ -1,195 +1,15 @@
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-#[test]
-fn test_loop() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-// TODO: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
-
-#[test]
-fn test_loop_out_of_cost_unit() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 45.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
-
-    // Assert
-    receipt.expect_specific_failure(is_costing_error)
-}
-
-#[test]
-fn test_recursion() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    // In this test case, each call frame costs 4 stack units
-    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-fn test_recursion_stack_overflow() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(is_wasm_error)
-}
-
-#[test]
-fn test_grow_memory() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-fn test_grow_memory_out_of_cost_unit() {
-    // Arrange
-    let mut test_runner = TestRunner::new(true);
-
-    // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package(
-        code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        AccessRules::new(),
-    );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(is_costing_error)
-}
+// For WASM-specific metering tests, see `wasm_metering.rs`.
 
 #[test]
 fn test_basic_transfer() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -205,7 +25,7 @@ fn test_basic_transfer() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key1)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
     receipt.expect_commit_success();
 
@@ -215,18 +35,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         3000 /* create_node */
-        + 8200 /* drop_lock */
+        + 6800 /* drop_lock */
         + 2000 /* drop_node */
-        + 1300 /* invoke */
-        + 10400 /* lock_substate */
-        + 7000 /* read_owned_nodes */
-        + 32500 /* read_substate */
-        + 4000 /* run_native_method */
-        + 278748 /* run_wasm */
+        + 1200 /* invoke */
+        + 8300 /* lock_substate */
+        + 6500 /* read_owned_nodes */
+        + 23000 /* read_substate */
+        + 4200 /* run_native_method */
+        + 0 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 274 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
-        + 23000, /* write_substate */
+        + 19000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }
@@ -234,7 +54,7 @@ fn test_basic_transfer() {
 #[test]
 fn test_publish_large_package() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -271,7 +91,7 @@ fn test_publish_large_package() {
 #[test]
 fn should_be_able_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -291,7 +111,7 @@ fn should_be_able_run_large_manifest() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -301,7 +121,7 @@ fn should_be_able_run_large_manifest() {
 #[test]
 fn should_be_able_invoke_account_balance_50_times() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -313,7 +133,7 @@ fn should_be_able_invoke_account_balance_50_times() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -323,7 +143,7 @@ fn should_be_able_invoke_account_balance_50_times() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
@@ -336,7 +156,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

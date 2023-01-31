@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
     /// The minter resource address
-    minter_badge: SimulatorResourceOrNonFungibleAddress,
+    minter_badge: SimulatorResourceOrNonFungibleGlobalId,
 
     /// The symbol
     #[clap(long)]

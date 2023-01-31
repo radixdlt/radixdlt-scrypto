@@ -11,7 +11,7 @@ sbor = { path = "../sbor" }
 radix-engine = { path = "../radix-engine" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
-radix-engine-interface = { path = "../radix-engine-interface", features = ["serde", "schema"] }
+radix-engine-interface = { path = "../radix-engine-interface", features = ["serde"] }
 transaction = { path = "../transaction" }
 utils = { path = "../utils" }
 serde = { version = "1.0.137", features = ["derive"] }
@@ -25,9 +25,6 @@ cargo_toml = { version = "0.11.5" }
 rand = { version = "0.8.5" }
 regex = { version = "1.5.5" }
 temp-env = { version = "0.2.0" }
-
-[dev-dependencies]
-serial_test = { version = "0.10.0" }
 
 [[bin]]
 name = "resim"

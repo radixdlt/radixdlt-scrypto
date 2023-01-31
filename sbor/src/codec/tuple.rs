@@ -110,10 +110,8 @@ decode_tuple! { 18 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T
 decode_tuple! { 19 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14 15 T15 16 T16 17 T17 18 T18 }
 decode_tuple! { 20 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14 15 T15 16 T16 17 T17 18 T18 19 T19 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
     macro_rules! describe_tuple {

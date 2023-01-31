@@ -1,7 +1,9 @@
+use radix_engine_interface::api::types::BufferId;
 use wasmi::HostError;
 
-use crate::fee::FeeReserveError;
-use crate::model::InvokeError;
+use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
+use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::transaction::AbortReason;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
@@ -79,37 +81,78 @@ pub enum InvalidTable {
 
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum WasmError {
-    MemoryAllocError,
+pub enum WasmRuntimeError {
+    /// Error when reading wasm memory.
     MemoryAccessError,
-    SborDecodeError(DecodeError),
-    SborEncodeError(EncodeError),
-    WasmError(String),
-    FunctionNotFound,
-    InvalidRadixEngineInput,
-    MissingReturnData,
-    InvalidReturnData,
+
+    /// WASM attempted to call undefined host function, addressed by offset.
+    UnknownHostFunction(usize),
+
+    /// Host attempted to call unknown WASM function, addressed by name.
+    UnknownWasmFunction(String),
+
+    /// WASM interpreter error, such as traps.
+    InterpreterError(String),
+
+    /// WASM function return is not a `u64`, which points to a valid memory range.
+    InvalidExportReturn,
+
+    //=============
+    // SHIM ERRORS
+    //=============
+    /// Not implemented, no-op wasm runtime
+    NotImplemented,
+    /// Buffer not found
+    BufferNotFound(BufferId),
+    /// Invalid scrypto receiver
+    InvalidReceiver(DecodeError),
+    /// Invalid method ident
+    InvalidIdent,
+    /// Invalid invocation
+    InvalidInvocation(DecodeError),
+    /// Invalid RE node data
+    InvalidNode(DecodeError),
+    /// Invalid RE node ID
+    InvalidNodeId(DecodeError),
+    /// Invalid substate offset
+    InvalidOffset(DecodeError),
+    /// Costing error
     CostingError(FeeReserveError),
 }
 
-impl fmt::Display for WasmError {
+impl SelfError for WasmRuntimeError {
+    fn into_runtime_error(self) -> RuntimeError {
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
+    }
+}
+
+impl CanBeAbortion for WasmRuntimeError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            WasmRuntimeError::CostingError(err) => err.abortion(),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for WasmRuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for WasmError {}
+impl HostError for WasmRuntimeError {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmError {}
+impl std::error::Error for WasmRuntimeError {}
 
-impl fmt::Display for InvokeError<WasmError> {
+impl fmt::Display for InvokeError<WasmRuntimeError> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for InvokeError<WasmError> {}
+impl HostError for InvokeError<WasmRuntimeError> {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for InvokeError<WasmError> {}
+impl std::error::Error for InvokeError<WasmRuntimeError> {}

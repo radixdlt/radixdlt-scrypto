@@ -1,6 +1,9 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::package::PackageInfoSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use std::ffi::OsStr;
@@ -20,7 +23,7 @@ pub struct Publish {
 
     /// The owner badge (hex value).
     #[clap(long)]
-    owner_badge: Option<SimulatorNonFungibleAddress>,
+    owner_badge: Option<SimulatorNonFungibleGlobalId>,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
@@ -98,7 +101,7 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let owner_badge_nf_address = self
+            let owner_badge_non_fungible_global_id = self
                 .owner_badge
                 .as_ref()
                 .ok_or(Error::OwnerBadgeNotSpecified)?
@@ -107,7 +110,7 @@ impl Publish {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, owner_badge_nf_address)
+                .publish_package_with_owner(code, abi, owner_badge_non_fungible_global_id)
                 .build();
 
             let receipt = handle_manifest(

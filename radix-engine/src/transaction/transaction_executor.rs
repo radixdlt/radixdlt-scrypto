@@ -1,15 +1,18 @@
-use crate::engine::Track;
-use crate::engine::*;
-use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
+use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
+use crate::errors::*;
+use crate::kernel::Track;
+use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::model::*;
+use crate::system::kernel_modules::fee::{
+    CostingError, FeeReserve, FeeTable, SystemLoanFeeReserve,
+};
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -37,6 +40,7 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
     pub max_sys_call_trace_depth: usize,
+    pub abort_when_loan_repaid: bool,
 }
 
 impl Default for ExecutionConfig {
@@ -51,14 +55,37 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
             max_sys_call_trace_depth: 1,
+            abort_when_loan_repaid: false,
         }
     }
 
     pub fn debug() -> Self {
         Self {
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
-            max_sys_call_trace_depth: 1,
+            ..Self::default()
+        }
+    }
+
+    pub fn with_tracing(trace: bool) -> Self {
+        if trace {
+            Self::debug()
+        } else {
+            Self::standard()
+        }
+    }
+
+    pub fn up_to_loan_repayment() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            ..Self::default()
+        }
+    }
+
+    pub fn up_to_loan_repayment_with_debug() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            trace: true,
+            ..Self::default()
         }
     }
 }
@@ -102,6 +129,7 @@ where
                 *tip_percentage,
                 *cost_unit_limit,
                 fee_reserve_config.system_loan,
+                execution_config.abort_when_loan_repaid,
             ),
             FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
         };
@@ -117,6 +145,7 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
+        let pre_allocated_ids = transaction.pre_allocated_ids();
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
@@ -159,7 +188,8 @@ where
         // Invoke the function/method
         let track_receipt = {
             let mut module = KernelModule::new(execution_config);
-            let mut id_allocator = IdAllocator::new(IdSpace::Application, transaction_hash.clone());
+            let mut id_allocator =
+                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
             let mut kernel = Kernel::new(
                 auth_zone_params.clone(),

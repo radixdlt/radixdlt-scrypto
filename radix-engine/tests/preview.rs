@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -12,7 +12,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -51,11 +51,11 @@ fn test_transaction_preview_cost_estimate() {
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
-    let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&public_key)));
+    let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
     let account = test_runner.new_account_with_auth_rule(&withdraw_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 

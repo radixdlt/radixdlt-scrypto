@@ -213,7 +213,7 @@ macro_rules! access_and_or {
 #[macro_export]
 macro_rules! access_rule_node {
     // Handle leaves
-    ($rule:ident $args:tt) => {{ radix_engine_interface::model::AccessRuleNode::ProofRule($rule $args) }};
+    ($rule:ident $args:tt) => {{ radix_engine_interface::blueprints::resource::AccessRuleNode::ProofRule($rule $args) }};
 
     // Handle group
     (($($tt:tt)+)) => {{ $crate::access_rule_node!($($tt)+) }};
@@ -232,12 +232,12 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        radix_engine_interface::model::AccessRule::AllowAll
+        radix_engine_interface::blueprints::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        radix_engine_interface::model::AccessRule::DenyAll
+        radix_engine_interface::blueprints::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        radix_engine_interface::model::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+        radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }

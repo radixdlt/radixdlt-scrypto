@@ -2,7 +2,7 @@
 
 use sbor::rust::borrow::Cow;
 use sbor::rust::boxed::Box;
-use sbor::rust::collections::{BTreeSet, HashMap, IndexMap};
+use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -29,7 +29,7 @@ pub struct AdvancedSample<T, S> {
     pub h: Vec<u8>,
     pub i: Vec<S>,
     pub j: T,
-    pub k: HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>,
+    pub k: HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>,
 }
 
 #[derive(Categorize, Encode, Decode, Describe)]
@@ -159,7 +159,7 @@ fn create_advanced_sample_schema_works_correctly() {
             LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_ID),
             LocalTypeIndex::SchemaLocalIndex(4), // Vec<S> = Vec<u128>, a non-well-known type
             LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
-            LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>
+            LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>
         ]
     ));
 }

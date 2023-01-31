@@ -1,5 +1,8 @@
 use super::*;
-use crate::model::*;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::NonFungibleLocalId;
+use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
@@ -33,7 +36,10 @@ pub enum RENodeType {
     GlobalResourceManager,
     GlobalPackage,
     GlobalEpochManager,
+    GlobalValidator,
     GlobalClock,
+    GlobalAccessController,
+    GlobalIdentity,
     KeyValueStore,
     NonFungibleStore,
     Component,
@@ -41,9 +47,13 @@ pub enum RENodeType {
     ResourceManager,
     Package,
     EpochManager,
+    Validator,
     Clock,
+    Identity,
     TransactionRuntime,
     Logger,
+    Account,
+    AccessController,
 }
 
 #[derive(
@@ -74,8 +84,12 @@ pub enum RENodeId {
     ResourceManager(ResourceManagerId),
     Package(PackageId),
     EpochManager(EpochManagerId),
+    Identity(IdentityId),
     Clock(ClockId),
+    Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
+    Account(AccountId),
+    AccessController(AccessControllerId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -88,7 +102,11 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
+            RENodeId::Identity(id) => id,
+            RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
+            RENodeId::Account(id) => id,
+            RENodeId::AccessController(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -134,15 +152,6 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-impl Into<SystemAddress> for RENodeId {
-    fn into(self) -> SystemAddress {
-        match self {
-            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
-            _ => panic!("Not a system address"),
-        }
-    }
-}
-
 #[derive(
     Debug,
     Clone,
@@ -160,7 +169,6 @@ pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
-    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {
@@ -248,7 +256,7 @@ pub enum KeyValueStoreOffset {
     ScryptoDecode,
 )]
 pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleId),
+    Entry(NonFungibleLocalId),
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -261,6 +269,11 @@ pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
     PreparingValidatorSet,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ValidatorOffset {
+    Validator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -298,6 +311,16 @@ pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccountOffset {
+    Account,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccessControllerOffset {
+    AccessController,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(
     Debug,
@@ -325,12 +348,15 @@ pub enum SubstateOffset {
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
+    Validator(ValidatorOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+    Account(AccountOffset),
+    AccessController(AccessControllerOffset),
 }
 
 /// TODO: separate space addresses?

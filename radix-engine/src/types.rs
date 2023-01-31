@@ -10,7 +10,6 @@ pub use radix_engine_interface::data::{
 };
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
-pub use radix_engine_interface::model::*;
 pub use radix_engine_interface::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;
@@ -20,6 +19,7 @@ pub use sbor::rust::fmt;
 pub use sbor::rust::fmt::Debug;
 pub use sbor::rust::format;
 pub use sbor::rust::marker::PhantomData;
+pub use sbor::rust::num::NonZeroU32;
 pub use sbor::rust::num::NonZeroUsize;
 pub use sbor::rust::ops::AddAssign;
 pub use sbor::rust::ptr;

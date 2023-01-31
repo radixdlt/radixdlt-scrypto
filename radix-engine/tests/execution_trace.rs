@@ -1,14 +1,15 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
+use radix_engine::blueprints::resource::LockedAmountOrIds;
+use radix_engine::kernel::TrackedEvent;
+use radix_engine::system::kernel_modules::execution_trace::{SysCallTrace, SysCallTraceOrigin};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
@@ -25,7 +26,7 @@ fn test_trace_resource_transfers() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -47,6 +48,7 @@ fn test_trace_resource_transfers() {
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
+    println!("{:?}", receipt.expect_commit().resource_changes);
     assert_eq!(3, receipt.expect_commit().resource_changes.len());
 
     let fee_summary = &receipt.execution.fee_summary;
@@ -85,7 +87,7 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
@@ -143,7 +145,7 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manfiest = ManifestBuilder::new()

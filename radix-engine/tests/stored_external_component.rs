@@ -1,12 +1,12 @@
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
 
     // Act
@@ -22,7 +22,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 #[test]
 fn stored_component_addresses_are_invokable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
     let manifest1 = ManifestBuilder::new()
@@ -47,7 +47,7 @@ fn stored_component_addresses_are_invokable() {
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -60,7 +60,7 @@ fn stored_component_addresses_are_invokable() {
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

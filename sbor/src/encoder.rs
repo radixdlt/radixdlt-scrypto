@@ -258,11 +258,11 @@ mod tests {
     pub fn test_encode_index_map_and_set() {
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes);
-        let mut set = IndexSet::<u8>::new();
+        let mut set = index_set_new::<u8>();
         set.insert(1);
         set.insert(2);
         encoder.encode(&set).unwrap();
-        let mut map = IndexMap::<u8, u8>::new();
+        let mut map = index_map_new::<u8, u8>();
         map.insert(1, 2);
         map.insert(3, 4);
         encoder.encode(&map).unwrap();
@@ -270,7 +270,7 @@ mod tests {
         assert_eq!(
             vec![
                 32, 7, 2, 1, 2, // set
-                32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
+                35, 7, 7, 2, 1, 2, 3, 4, // map
             ],
             bytes
         );

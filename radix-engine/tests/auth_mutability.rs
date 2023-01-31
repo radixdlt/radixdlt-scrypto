@@ -1,10 +1,10 @@
 extern crate core;
 
-use radix_engine::engine::{ApplicationError, RuntimeError};
-use radix_engine::model::{AccessRulesChainError, AuthZoneError};
+use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -19,7 +19,7 @@ enum ResourceAuth {
 
 fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> TransactionReceipt {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
@@ -74,7 +74,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt

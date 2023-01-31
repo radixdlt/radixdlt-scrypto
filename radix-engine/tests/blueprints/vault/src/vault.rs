@@ -130,7 +130,7 @@ blueprint! {
 
         pub fn new_vault_with_take_non_fungible() -> ComponentAddress {
             let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleId::Number(1));
+            let bucket = vault.take_non_fungible(&NonFungibleLocalId::Integer(1));
             vault.put(bucket);
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
@@ -143,9 +143,9 @@ blueprint! {
             .globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_ids() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_ids() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _ids = vault.non_fungible_ids();
+            let _ids = vault.non_fungible_local_ids();
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
@@ -157,9 +157,9 @@ blueprint! {
             .globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_id() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_id() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _id = vault.non_fungible_id();
+            let _id = vault.non_fungible_local_id();
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {

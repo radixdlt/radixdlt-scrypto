@@ -1,12 +1,10 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleId;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::*;
 use utils::ContextualDisplay;
 
 use crate::errors::*;
@@ -143,9 +141,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
+                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -158,7 +156,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "RETURN_TO_WORKTOP\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
@@ -187,9 +185,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone())
+                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone())
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
@@ -211,7 +209,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "PUSH_TO_AUTH_ZONE\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0))
             )?;
@@ -263,8 +261,8 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
-                .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -283,7 +281,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CREATE_PROOF_FROM_BUCKET\n    Bucket({})\n    Proof(\"{}\");",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
                 name
@@ -301,7 +299,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CLONE_PROOF\n    Proof({})\n    Proof(\"{}\");",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
                 name
@@ -313,7 +311,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "DROP_PROOF\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
@@ -382,7 +380,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "BURN_RESOURCE\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;
@@ -546,14 +544,33 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
-        BasicInstruction::RegisterValidator { validator } => {
-            f.write_str("REGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator)?;
+        BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_minutes,
+        } => {
+            f.write_str("CREATE_ACCESS_CONTROLLER")?;
+            format_typed_value(f, context, controlled_asset)?;
+            format_typed_value(f, context, primary_role)?;
+            format_typed_value(f, context, recovery_role)?;
+            format_typed_value(f, context, confirmation_role)?;
+            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
+        }
+        BasicInstruction::CreateIdentity { access_rule } => {
+            f.write_str("CREATE_IDENTITY")?;
+            format_typed_value(f, context, access_rule)?;
             f.write_str(";")?;
         }
-        BasicInstruction::UnregisterValidator { validator } => {
-            f.write_str("UNREGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator)?;
+        BasicInstruction::AssertAccessRule { access_rule } => {
+            f.write_str("ASSERT_ACCESS_RULE")?;
+            format_typed_value(f, context, access_rule)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::CreateAccount { withdraw_rule } => {
+            f.write_str("CREATE_ACCOUNT")?;
+            format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
     }
@@ -599,13 +616,6 @@ pub fn format_entity_address<F: fmt::Write>(
                 &address.display(context.bech32_encoder)
             )?;
         }
-        GlobalAddress::System(address) => {
-            write!(
-                f,
-                "SystemAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
     }
 
     Ok(())
@@ -634,10 +644,10 @@ pub fn format_args<F: fmt::Write>(
 }
 
 fn transform_non_fungible_mint_params(
-    mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, DecodeError> {
+    mint_params: &BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+) -> Result<BTreeMap<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value =
-        BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
+        BTreeMap::<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
         mint_params_scrypto_value.insert(
             id.clone(),

@@ -1,4 +1,5 @@
-use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -6,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn can_call_self_with_package_token() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_token");
 
     // Act
@@ -23,7 +24,7 @@ fn can_call_self_with_package_token() {
 #[test]
 fn cannot_call_package_protected_function_without_package_token() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_token");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())

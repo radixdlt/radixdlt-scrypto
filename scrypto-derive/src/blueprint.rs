@@ -91,7 +91,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let abi_functions = generate_abi(bp_ident, bp_items)?;
         quote! {
             #[no_mangle]
-            pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
+            pub extern "C" fn #abi_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                 use ::sbor::rust::borrow::ToOwned;
                 use ::sbor::rust::vec;
@@ -99,12 +99,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
                 let structure: Type = #module_ident::#bp_ident::describe();
-                let output = BlueprintAbi {
+                let return_data = BlueprintAbi {
                     structure,
                     fns,
                 };
 
-                ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
             }
         }
     };
@@ -230,19 +230,19 @@ fn generate_dispatcher(
                     }
                 }
 
-                // parse input
+                // parse args
                 let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
                 stmts.push(parse_quote!{
-                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
+                    let input: #input_struct_name = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
                 let is_method = get_state.is_some();
 
-                // load state if needed
+                // load component state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
+                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::DataPointer::new(
@@ -253,24 +253,26 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                // call the function
+                // call the function/method
                 let stmt: Stmt = parse_quote! {
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &#module_ident::#bp_ident::#ident(#(#dispatch_args),*)
-                    ).unwrap();
+                    let return_data = #module_ident::#bp_ident::#ident(#(#dispatch_args),*);
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
 
-                // update state
-                stmts.push(Stmt::Expr(parse_quote! { rtn }));
+                // return
+                let stmt: Stmt = parse_quote! {
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                };
+                trace!("Generated stmt: {}", quote! { #stmt });
+                stmts.push(stmt);
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = {
                     if is_method {
                         quote! {
                             #[no_mangle]
-                            pub extern "C" fn #fn_ident(id_ptr: *mut u8, args: *mut u8) -> *mut u8 {
+                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                                 use ::sbor::rust::ops::{Deref, DerefMut};
 
                                 // Set up panic hook
@@ -286,7 +288,7 @@ fn generate_dispatcher(
                     } else {
                         quote! {
                             #[no_mangle]
-                            pub extern "C" fn #fn_ident(args: *mut u8) -> *mut u8 {
+                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                                 use ::sbor::rust::ops::{Deref, DerefMut};
 
                                 // Set up panic hook
@@ -515,7 +517,7 @@ fn generate_stubs(
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
             }
-            fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+            fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                 self.component.globalize_with_owner(owner_badge)
             }
         }
@@ -662,7 +664,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x(id_ptr: *mut u8, args: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -672,20 +674,20 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
+                    let input: Test_x_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     let mut component_data = ::scrypto::runtime::DataPointer::new(
                         radix_engine_interface::api::types::RENodeId::Component(component_id),
                         radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0)).unwrap();
-                    rtn
+                    let return_data = Test_impl::Test::x(state.deref(), input.arg0);
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_y(args: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -695,13 +697,13 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0)).unwrap();
-                    rtn
+                    let input: Test_y_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let return_data = Test_impl::Test::y(input.arg0);
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
                     use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
@@ -723,11 +725,11 @@ mod tests {
                         }
                     ];
                     let structure: Type = Test_impl::Test::describe();
-                    let output = BlueprintAbi {
+                    let return_data = BlueprintAbi {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
@@ -759,7 +761,7 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }
@@ -857,18 +859,18 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
                     use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
                     let structure: Type = Test_impl::Test::describe();
-                    let output = BlueprintAbi {
+                    let return_data = BlueprintAbi {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
@@ -900,7 +902,7 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }

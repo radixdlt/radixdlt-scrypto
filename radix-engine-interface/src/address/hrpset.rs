@@ -2,7 +2,7 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 
 use crate::address::entity::EntityType;
-use crate::node::NetworkDefinition;
+use crate::network::NetworkDefinition;
 
 /// Represents an HRP set (typically corresponds to a network).
 #[derive(Debug, Clone)]
@@ -13,8 +13,9 @@ pub struct HrpSet {
 
     normal_component: String,
     account_component: String,
+    identity_component: String,
 
-    system: String,
+    system_component: String,
 }
 
 impl HrpSet {
@@ -25,10 +26,16 @@ impl HrpSet {
 
             EntityType::NormalComponent => &self.normal_component,
             EntityType::AccountComponent => &self.account_component,
+            EntityType::IdentityComponent => &self.identity_component,
+
+            EntityType::EpochManager => &self.system_component,
+            EntityType::Validator => &self.system_component,
+            EntityType::Clock => &self.system_component,
             EntityType::EcdsaSecp256k1VirtualAccountComponent => &self.account_component,
             EntityType::EddsaEd25519VirtualAccountComponent => &self.account_component,
-            EntityType::EpochManager => &self.system,
-            EntityType::Clock => &self.system,
+            EntityType::EcdsaSecp256k1VirtualIdentityComponent => &self.identity_component,
+            EntityType::EddsaEd25519VirtualIdentityComponent => &self.identity_component,
+            EntityType::AccessControllerComponent => &self.normal_component,
         }
     }
 }
@@ -39,7 +46,8 @@ impl From<&NetworkDefinition> for HrpSet {
         HrpSet {
             normal_component: format!("component_{}", suffix),
             account_component: format!("account_{}", suffix),
-            system: format!("system_{}", suffix),
+            system_component: format!("system_{}", suffix),
+            identity_component: format!("identity_{}", suffix),
             package: format!("package_{}", suffix),
             resource: format!("resource_{}", suffix),
         }

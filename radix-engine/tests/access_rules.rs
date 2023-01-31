@@ -1,8 +1,10 @@
-use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::model::AccessRulesChainError;
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
@@ -111,13 +113,13 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -142,13 +144,13 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -173,17 +175,17 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
     let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
@@ -198,17 +200,17 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
     let receipt = test_runner.lock_method_auth(1, "deposit_funds");
@@ -236,17 +238,17 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     test_runner.lock_default_auth(1);
 
@@ -269,22 +271,22 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let access_rules = vec![AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .method(
             "borrow_funds",
             rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_address.clone())),
+            rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
         .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -321,7 +323,8 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
         let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+        let virtual_badge_non_fungible_global_id =
+            NonFungibleGlobalId::from_public_key(&public_key);
 
         let access_rules = vec![scrypto_decode::<AccessRules>(&args!(
             HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
@@ -334,7 +337,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         .unwrap()];
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-        test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+        test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
         // Act
         let receipt = test_runner.execute_manifest(
@@ -358,18 +361,160 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     }
 }
 
+#[test]
+fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, _account_component) = test_runner.new_account(false);
+
+    let manifest = ManifestBuilder::new()
+        .assert_access_rule(rule!(require(RADIX_TOKEN)))
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error: &RuntimeError| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                AuthZoneError::AssertAccessRuleError(..)
+            ))
+        )
+    })
+}
+
+#[test]
+fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account_component) = test_runner.new_account(false);
+
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account(account_component, RADIX_TOKEN)
+        .assert_access_rule(rule!(require(RADIX_TOKEN)))
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn assert_access_rule_through_component_when_not_fulfilled_fails() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account_component) = test_runner.new_account(false);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "AssertAccessRule".into(), "new", args!())
+            .build();
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        );
+        receipt.expect_commit_success();
+
+        receipt.new_component_addresses()[0]
+    };
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .call_method(
+            component_address,
+            "assert_access_rule",
+            args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error: &RuntimeError| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                AuthZoneError::AssertAccessRuleError(..)
+            ))
+        )
+    })
+}
+
+#[test]
+fn assert_access_rule_through_component_when_fulfilled_succeeds() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account_component) = test_runner.new_account(false);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "AssertAccessRule".into(), "new", args!())
+            .build();
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        );
+        receipt.expect_commit_success();
+
+        receipt.new_component_addresses()[0]
+    };
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            builder.call_method(
+                component_address,
+                "assert_access_rule",
+                args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
+            )
+        })
+        .call_method(
+            account_component,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     package_address: PackageAddress,
     component_address: ComponentAddress,
-    initial_proofs: Vec<NonFungibleAddress>,
+    initial_proofs: Vec<NonFungibleGlobalId>,
 }
 
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn new(access_rules: Vec<AccessRules>) -> Self {
-        let mut test_runner = TestRunner::new(true);
+        let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -391,7 +536,7 @@ impl MutableAccessRulesTestRunner {
         }
     }
 
-    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleAddress) {
+    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleGlobalId) {
         self.initial_proofs.push(initial_proof);
     }
 

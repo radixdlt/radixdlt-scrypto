@@ -1,15 +1,16 @@
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::api::types::*;
+use crate::blueprints::resource::*;
+use crate::data::types::*;
+use crate::data::*;
+use radix_engine_derive::*;
 use sbor::path::{SborPath, SborPathBuf};
 use sbor::rust::collections::HashMap;
 use sbor::rust::collections::HashSet;
 use sbor::rust::convert::Infallible;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
-use sbor::*;
-
-use crate::api::types::*;
-use crate::data::types::*;
-use crate::data::*;
-use radix_engine_derive::*;
 use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
@@ -35,7 +36,6 @@ pub struct IndexedScryptoValue {
     component_addresses: HashSet<ComponentAddress>,
     resource_addresses: HashSet<ResourceAddress>,
     package_addresses: HashSet<PackageAddress>,
-    system_addresses: HashSet<SystemAddress>,
     owned_nodes: Vec<(Own, SborPath)>,
 
     // TX interpreted
@@ -45,6 +45,12 @@ pub struct IndexedScryptoValue {
     blobs: Vec<(ManifestBlobRef, SborPath)>,
     arrays: Vec<(ScryptoValueKind, SborPath)>,
     maps: Vec<(ScryptoValueKind, ScryptoValueKind, SborPath)>,
+}
+
+impl Into<ScryptoValue> for IndexedScryptoValue {
+    fn into(self) -> ScryptoValue {
+        self.value
+    }
 }
 
 impl IndexedScryptoValue {
@@ -63,6 +69,11 @@ impl IndexedScryptoValue {
         Ok(Self::new(slice.to_vec(), value))
     }
 
+    pub fn from_vec(vec: Vec<u8>) -> Result<Self, DecodeError> {
+        let value = scrypto_decode(&vec)?;
+        Ok(Self::new(vec, value))
+    }
+
     pub fn from_value(value: ScryptoValue) -> Self {
         let bytes = scrypto_encode(&value).expect("Failed to decode scrypto value");
         Self::new(bytes, value)
@@ -78,7 +89,6 @@ impl IndexedScryptoValue {
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
             package_addresses: visitor.package_addresses,
-            system_addresses: visitor.system_addresses,
 
             owned_nodes: visitor.owned_nodes,
             blobs: visitor.blobs,
@@ -152,9 +162,6 @@ impl IndexedScryptoValue {
         }
         for package_address in &self.package_addresses {
             node_ids.insert(GlobalAddress::Package(*package_address));
-        }
-        for system_address in &self.system_addresses {
-            node_ids.insert(GlobalAddress::System(*system_address));
         }
 
         node_ids
@@ -355,7 +362,6 @@ pub struct ScryptoValueVisitor {
     pub component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub package_addresses: HashSet<PackageAddress>,
-    pub system_addresses: HashSet<SystemAddress>,
     pub owned_nodes: Vec<(Own, SborPath)>,
     // TX interpreted
     pub buckets: Vec<(ManifestBucket, SborPath)>,
@@ -379,7 +385,6 @@ impl ScryptoValueVisitor {
             component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
             package_addresses: HashSet::new(),
-            system_addresses: HashSet::new(),
 
             owned_nodes: Vec::new(),
             blobs: Vec::new(),
@@ -438,9 +443,6 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             ScryptoCustomValue::ResourceAddress(value) => {
                 self.resource_addresses.insert(value.clone());
             }
-            ScryptoCustomValue::SystemAddress(value) => {
-                self.system_addresses.insert(value.clone());
-            }
             ScryptoCustomValue::Own(value) => {
                 self.owned_nodes.push((value.clone(), path.clone().into()));
             }
@@ -467,7 +469,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             | ScryptoCustomValue::EddsaEd25519Signature(_)
             | ScryptoCustomValue::Decimal(_)
             | ScryptoCustomValue::PreciseDecimal(_)
-            | ScryptoCustomValue::NonFungibleId(_) => {
+            | ScryptoCustomValue::NonFungibleLocalId(_) => {
                 // no-op
             }
         }

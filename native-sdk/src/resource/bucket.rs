@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
@@ -23,9 +23,9 @@ pub trait SysBucket {
     fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleId>, E>
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>;
+        Y: Invokable<BucketGetNonFungibleLocalIdsInvocation, E>;
 
     fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -45,7 +45,7 @@ pub trait SysBucket {
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &mut self,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -53,13 +53,13 @@ pub trait SysBucket {
 
     fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<(), E>
     where
         Y: Invokable<ResourceManagerBurnInvocation, E>
             + Invokable<BucketGetResourceAddressInvocation, E>;
 
-    fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
+    fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: Invokable<BucketGetResourceAddressInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode;
@@ -103,11 +103,11 @@ impl SysBucket for Bucket {
     fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleId>, E>
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
+        Y: Invokable<BucketGetNonFungibleLocalIdsInvocation, E>,
     {
-        api.invoke(BucketGetNonFungibleIdsInvocation { receiver: self.0 })
+        api.invoke(BucketGetNonFungibleLocalIdsInvocation { receiver: self.0 })
     }
 
     fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -140,7 +140,7 @@ impl SysBucket for Bucket {
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &mut self,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -152,34 +152,34 @@ impl SysBucket for Bucket {
         })
     }
 
-    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>
+    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: Invokable<ResourceManagerBurnInvocation, E>
             + Invokable<BucketGetResourceAddressInvocation, E>,
     {
-        let receiver = self.sys_resource_address(env)?;
-        env.invoke(ResourceManagerBurnInvocation {
+        let receiver = self.sys_resource_address(api)?;
+        api.invoke(ResourceManagerBurnInvocation {
             receiver,
             bucket: Bucket(self.0),
         })
     }
 
-    fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
+    fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: Invokable<BucketGetResourceAddressInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        env.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
+        api.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
     }
 
     fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: Invokable<BucketCreateProofInvocation, E>,
     {
-        sys_calls.invoke(BucketCreateProofInvocation { receiver: self.0 })
+        api.invoke(BucketCreateProofInvocation { receiver: self.0 })
     }
 
     fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

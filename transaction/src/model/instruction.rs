@@ -1,8 +1,9 @@
-use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+};
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -23,7 +24,7 @@ pub enum BasicInstruction {
 
     /// Takes resource from worktop by the given non-fungible IDs.
     TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -45,7 +46,7 @@ pub enum BasicInstruction {
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -74,7 +75,7 @@ pub enum BasicInstruction {
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
     CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
 
@@ -109,7 +110,7 @@ pub enum BasicInstruction {
     PublishPackageWithOwner {
         code: ManifestBlobRef,
         abi: ManifestBlobRef,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     },
 
     BurnResource {
@@ -159,7 +160,7 @@ pub enum BasicInstruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
     },
 
     MintUuidNonFungible {
@@ -177,25 +178,44 @@ pub enum BasicInstruction {
     CreateFungibleResourceWithOwner {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
         initial_supply: Option<Decimal>,
     },
 
     CreateNonFungibleResource {
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdTypeId,
+        id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        owner_badge: NonFungibleGlobalId,
+        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
-    /// Calls a scrypto function.
+    CreateAccessController {
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        recovery_role: AccessRule,
+        confirmation_role: AccessRule,
+        timed_recovery_delay_in_minutes: Option<u32>,
+    },
+
+    CreateIdentity {
+        access_rule: AccessRule,
+    },
+
+    AssertAccessRule {
+        access_rule: AccessRule,
+    },
+
+    CreateAccount {
+        withdraw_rule: AccessRule,
+    },
+
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
@@ -205,21 +225,13 @@ pub enum BasicInstruction {
         args: Vec<u8>,
     },
 
-    /// Calls a scrypto method.
+    /// Calls a method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
         args: Vec<u8>,
-    },
-
-    // TODO: Integrate this with CallMethod
-    RegisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
-    },
-    UnregisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
     },
 }
 

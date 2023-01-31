@@ -1,13 +1,15 @@
-use radix_engine::engine::*;
-use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError},
+    types::*,
+};
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_state_track_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -23,7 +25,7 @@ fn test_state_track_success() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -37,40 +39,28 @@ fn test_state_track_success() {
     }
     assert_eq!(
         state_updates.down_substate_ids().len(),
-        4 /* Global(Global */
-        + 2 /* Component(Info) */
-        + 2 /* Component(State) */
-        + 2 /* Component(RoyaltyConfig) */
-        + 2 /* Component(RoyaltyAccumulator) */
+        3 /* Global(Global) */
         + 2 /* AccessRulesChain(AccessRulesChain) */
         + 1 /* VaultAccessRulesChain(AccessRulesChain) */
-        + 1 /* Package(Info) */
-        + 1 /* Package(RoyaltyConfig) */
-        + 1 /* Package(RoyaltyAccumulator) */
-        + 2 /* KeyValueStore(Entry([92, 130, 0, 83, 241, 195, 226, 12, 194, 56, 53, 94, 35, 176, 29, 236, 187, 0, 167, 136, 92, 42, 130, 100, 141, 94, 133, 157, 79])) */
-        + 5 /* Vault(Vault) */
+        + 2 /* KeyValueStore(Entry([92, 130, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
+        + 2 /* Vault(Vault) */
+        + 2 /* Account(Account) */
     );
     assert_eq!(
         state_updates.up_substate_ids().len(),
-        4 /* Global(Global */
-        + 2 /* Component(Info) */
-        + 2 /* Component(State) */
-        + 2 /* Component(RoyaltyConfig) */
-        + 2 /* Component(RoyaltyAccumulator) */
+        3 /* Global(Global) */
         + 2 /* AccessRulesChain(AccessRulesChain) */
         + 1 /* VaultAccessRulesChain(AccessRulesChain) */
-        + 1 /* Package(Info) */
-        + 1 /* Package(RoyaltyConfig) */
-        + 1 /* Package(RoyaltyAccumulator) */
-        + 2 /* KeyValueStore(Entry([92, 130, 0, 83, 241, 195, 226, 12, 194, 56, 53, 94, 35, 176, 29, 236, 187, 0, 167, 136, 92, 42, 130, 100, 141, 94, 133, 157, 79])) */
-        + 5 /* Vault(Vault) */
+        + 2 /* KeyValueStore(Entry([92, 130, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
+        + 2 /* Vault(Vault) */
+        + 2 /* Account(Account) */
     );
 }
 
 #[test]
 fn test_state_track_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -87,7 +77,7 @@ fn test_state_track_failure() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert

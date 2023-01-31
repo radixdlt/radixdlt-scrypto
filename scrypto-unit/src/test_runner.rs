@@ -4,31 +4,37 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::errors::*;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
-};
-use radix_engine::state_manager::StagedSubstateStoreManager;
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::*;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
-    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt,
+    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
+    PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::constants::EPOCH_MANAGER;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::{
-    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleAddress, NonFungibleIdTypeId,
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::types::{
+    ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
 };
-use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::clock::{
+    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
+};
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
+use radix_engine_stores::hash_tree::put_at_next_version;
+use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -102,6 +108,56 @@ impl Compile {
     }
 }
 
+pub struct TestRunnerBuilder {
+    custom_genesis: Option<SystemTransaction>,
+    trace: bool,
+    state_hashing: bool,
+}
+
+impl TestRunnerBuilder {
+    pub fn without_trace(mut self) -> Self {
+        self.trace = false;
+        self
+    }
+
+    pub fn with_state_hashing(mut self) -> Self {
+        self.state_hashing = true;
+        self
+    }
+
+    pub fn with_custom_genesis(mut self, genesis: SystemTransaction) -> Self {
+        self.custom_genesis = Some(genesis);
+        self
+    }
+
+    pub fn build(self) -> TestRunner {
+        let mut runner = TestRunner {
+            scrypto_interpreter: ScryptoInterpreter {
+                wasm_metering_config: WasmMeteringConfig::V0,
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+            },
+            substate_store: TypedInMemorySubstateStore::new(),
+            state_hash_support: Some(self.state_hashing)
+                .filter(|x| *x)
+                .map(|_| StateHashSupport::new()),
+            intent_hash_manager: TestIntentHashManager::new(),
+            next_private_key: 1, // 0 is invalid
+            next_transaction_nonce: 0,
+            trace: self.trace,
+        };
+        let genesis = self
+            .custom_genesis
+            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
+        runner.execute_transaction_with_config(
+            genesis.get_executable(vec![AuthAddresses::system_role()]),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+        );
+        runner
+    }
+}
+
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
     substate_store: TypedInMemorySubstateStore,
@@ -109,37 +165,15 @@ pub struct TestRunner {
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
+    state_hash_support: Option<StateHashSupport>,
 }
 
 impl TestRunner {
-    pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(HashSet::new(), 1u64, 1u64))
-    }
-
-    pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
-        let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_config: WasmMeteringConfig::V0,
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-        };
-        let mut substate_store = TypedInMemorySubstateStore::new();
-        let transaction_receipt = execute_transaction(
-            &mut substate_store,
-            &scrypto_interpreter,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
-            &genesis.get_executable(vec![AuthAddresses::system_role()]),
-        );
-        let commit_result = transaction_receipt.expect_commit();
-        commit_result.outcome.expect_success();
-        commit_result.state_updates.commit(&mut substate_store);
-        Self {
-            scrypto_interpreter,
-            substate_store,
-            intent_hash_manager: TestIntentHashManager::new(),
-            next_private_key: 1, // 0 is invalid
-            next_transaction_nonce: 0,
-            trace,
+    pub fn builder() -> TestRunnerBuilder {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            trace: true,
+            state_hashing: false,
         }
     }
 
@@ -149,18 +183,6 @@ impl TestRunner {
 
     pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
         &mut self.substate_store
-    }
-
-    pub fn new_staged_substate_store_manager(
-        &mut self,
-    ) -> (
-        StagedSubstateStoreManager<TypedInMemorySubstateStore>,
-        &ScryptoInterpreter<DefaultWasmEngine>,
-    ) {
-        (
-            StagedSubstateStoreManager::new(&mut self.substate_store),
-            &self.scrypto_interpreter,
-        )
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -185,13 +207,13 @@ impl TestRunner {
     ) -> (
         EcdsaSecp256k1PublicKey,
         EcdsaSecp256k1PrivateKey,
-        NonFungibleAddress,
+        NonFungibleGlobalId,
     ) {
         let key_pair = self.new_allocated_account();
         (
             key_pair.0,
             key_pair.1,
-            NonFungibleAddress::from_public_key(&key_pair.0),
+            NonFungibleGlobalId::from_public_key(&key_pair.0),
         )
     }
 
@@ -312,8 +334,8 @@ impl TestRunner {
         vault_finder.to_vaults()
     }
 
-    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleId>> {
-        self.substate_store
+    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
+        self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
@@ -345,21 +367,25 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.new_account_with_resource(withdraw_auth, bucket)
-            })
-            .build();
-
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-
-        receipt
+        let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let account_component = receipt
             .expect_commit()
             .entity_changes
-            .new_component_addresses[0]
+            .new_component_addresses[0];
+
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(
+                account_component,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
+        account_component
     }
 
     pub fn new_virtual_account(
@@ -403,6 +429,44 @@ impl TestRunner {
         substate.node_deref()
     }
 
+    pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
+        let node_id = self.deref_component_address(system_address);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
+        let substate: ValidatorSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
+    }
+
+    pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+        let node_id = self.deref_component_address(EPOCH_MANAGER);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+        );
+        let substate: ValidatorSetSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
+            .validator_set
+            .iter()
+            .find(|(_, v)| v.key.eq(key))
+            .unwrap()
+            .0
+            .clone()
+    }
+
     pub fn new_allocated_account(
         &mut self,
     ) -> (
@@ -411,7 +475,7 @@ impl TestRunner {
         ComponentAddress,
     ) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
@@ -429,6 +493,29 @@ impl TestRunner {
         } else {
             self.new_allocated_account()
         }
+    }
+
+    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
+        let (pub_key, _) = self.new_key_pair();
+        let address = self.new_validator_with_pub_key(pub_key);
+        (pub_key, address)
+    }
+
+    pub fn new_validator_with_pub_key(
+        &mut self,
+        pub_key: EcdsaSecp256k1PublicKey,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_validator(pub_key)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let address = receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+        address
     }
 
     pub fn publish_package(
@@ -453,7 +540,7 @@ impl TestRunner {
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -479,7 +566,7 @@ impl TestRunner {
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let (code, abi) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, abi, owner_badge)
@@ -488,7 +575,7 @@ impl TestRunner {
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
@@ -504,7 +591,7 @@ impl TestRunner {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         self.execute_manifest_with_cost_unit_limit(
             manifest,
@@ -516,7 +603,7 @@ impl TestRunner {
     pub fn execute_manifest_with_cost_unit_limit(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
         cost_unit_limit: u32,
     ) -> TransactionReceipt {
         let transactions =
@@ -544,13 +631,20 @@ impl TestRunner {
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        execute_and_commit_transaction(
+        let transaction_receipt = execute_transaction(
             &mut self.substate_store,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
             &executable,
-        )
+        );
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            let commit_receipt = commit.state_updates.commit(&mut self.substate_store);
+            if let Some(state_hash_support) = &mut self.state_hash_support {
+                state_hash_support.update_with(commit_receipt.outputs);
+            }
+        }
+        transaction_receipt
     }
 
     pub fn preview(
@@ -597,7 +691,7 @@ impl TestRunner {
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -624,7 +718,7 @@ impl TestRunner {
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -771,14 +865,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleId::Number(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::Number(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::Number(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::Integer(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdTypeId::Number,
+                NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),
@@ -852,7 +946,7 @@ impl TestRunner {
 
     pub fn instantiate_component<F>(
         &mut self,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
         handler: F,
     ) -> ComponentAddress
     where
@@ -883,6 +977,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::system_role()]),
         );
@@ -903,10 +998,18 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
         receipt.output(0)
+    }
+
+    pub fn get_state_hash(&self) -> Hash {
+        self.state_hash_support
+            .as_ref()
+            .expect("state hashing not enabled")
+            .get_current()
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
@@ -924,6 +1027,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
@@ -945,10 +1049,44 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
         receipt.output(0)
+    }
+}
+
+pub struct StateHashSupport {
+    tree_store: MemoryTreeStore,
+    current_version: Version,
+    current_hash: Hash,
+}
+
+impl StateHashSupport {
+    fn new() -> Self {
+        StateHashSupport {
+            tree_store: MemoryTreeStore::new(),
+            current_version: 0,
+            current_hash: Hash([0; Hash::LENGTH]),
+        }
+    }
+
+    pub fn update_with(&mut self, transaction_outputs: Vec<OutputId>) {
+        let hash_changes = transaction_outputs
+            .iter()
+            .map(|output_id| (output_id.substate_id.clone(), Some(output_id.substate_hash)))
+            .collect::<Vec<(SubstateId, Option<Hash>)>>();
+        self.current_hash = put_at_next_version(
+            &mut self.tree_store,
+            Some(self.current_version).filter(|version| *version > 0),
+            &hash_changes,
+        );
+        self.current_version += 1;
+    }
+
+    pub fn get_current(&self) -> Hash {
+        self.current_hash
     }
 }
 
@@ -961,15 +1099,17 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
             .replace("${memmove}", include_str!("snippets/memmove.wat"))
-            .replace("${memset}", include_str!("snippets/memset.wat"))
-            .replace("${buffer}", include_str!("snippets/buffer.wat")),
+            .replace("${memset}", include_str!("snippets/memset.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }

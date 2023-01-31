@@ -245,11 +245,21 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
-            TokenKind::RegisterValidator => Instruction::RegisterValidator {
-                validator: self.parse_value()?,
+            TokenKind::CreateAccessController => Instruction::CreateAccessController {
+                controlled_asset: self.parse_value()?,
+                primary_role: self.parse_value()?,
+                recovery_role: self.parse_value()?,
+                confirmation_role: self.parse_value()?,
+                timed_recovery_delay_in_minutes: self.parse_value()?,
             },
-            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
-                validator: self.parse_value()?,
+            TokenKind::CreateIdentity => Instruction::CreateIdentity {
+                access_rule: self.parse_value()?,
+            },
+            TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
+                access_rule: self.parse_value()?,
+            },
+            TokenKind::CreateAccount => Instruction::CreateAccount {
+                withdraw_rule: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -289,7 +299,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleGlobalId => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -297,7 +307,6 @@ impl Parser {
 
             /* Global address */
             TokenKind::PackageAddress |
-            TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
             /* RE types */
@@ -315,7 +324,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
             TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleId => self.parse_scrypto_types(),
+            TokenKind::NonFungibleLocalId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -372,13 +381,9 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
-            TokenKind::NonFungibleAddress => {
-                let tuple = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(
-                    Box::new(tuple.0),
-                    Box::new(tuple.1),
-                ))
-            }
+            TokenKind::NonFungibleGlobalId => Ok(Value::NonFungibleGlobalId(Box::new(
+                self.parse_values_one()?,
+            ))),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -388,7 +393,6 @@ impl Parser {
         match token.kind {
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
@@ -419,7 +423,9 @@ impl Parser {
             )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleLocalId => {
+                Ok(Value::NonFungibleLocalId(self.parse_values_one()?.into()))
+            }
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -453,19 +459,6 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
-        }
-    }
-
-    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
-        let values =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        if values.len() != 2 {
-            Err(ParserError::InvalidNumberOfValues {
-                actual: values.len(),
-                expected: 2,
-            })
-        } else {
-            Ok((values[0].clone(), values[1].clone()))
         }
     }
 
@@ -511,13 +504,12 @@ impl Parser {
 
             // Alias
             TokenKind::Bytes => Ok(Type::Bytes),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+            TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
 
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::Own => Ok(Type::Own),
 
             // TX interpreted types
@@ -534,7 +526,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
-            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::NonFungibleLocalId => Ok(Type::NonFungibleLocalId),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }
