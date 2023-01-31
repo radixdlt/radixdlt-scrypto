@@ -1,4 +1,5 @@
 use crate::engine::wasm_api::*;
+use crate::prelude::ComponentInfoSubstate;
 use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
@@ -60,8 +61,6 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    // Slightly different from ClientComponentApi::call_method, for the return type.
-    // This is to avoid duplicated encoding and decoding.
     fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
@@ -82,6 +81,24 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         });
 
         Ok(return_data)
+    }
+
+    fn get_type_info(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<(PackageAddress, String), ClientApiError> {
+        let component_node_id = RENodeId::Component(component_id);
+        let handle = self.sys_lock_substate(
+            component_node_id,
+            SubstateOffset::Component(ComponentOffset::Info),
+            true,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let info: ComponentInfoSubstate = scrypto_decode(&substate).unwrap();
+        let package_address = info.package_address.clone();
+        let blueprint_ident = info.blueprint_name.clone();
+        self.sys_drop_lock(handle)?;
+        Ok((package_address, blueprint_ident))
     }
 }
 
@@ -147,8 +164,6 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         Ok(package.blueprint_abis)
     }
 
-    // Slightly different from ClientPackageApi::call_function, for the return type.
-    // This is to avoid duplicated encoding and decoding.
     fn call_function(
         &mut self,
         package_address: PackageAddress,
