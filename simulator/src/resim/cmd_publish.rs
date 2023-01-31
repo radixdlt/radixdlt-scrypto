@@ -100,10 +100,9 @@ impl Publish {
         } else {
             let owner_badge_non_fungible_global_id = self
                 .owner_badge
-                .as_ref()
-                .ok_or(Error::OwnerBadgeNotSpecified)?
-                .0
-                .clone();
+                .clone()
+                .map(|owner_badge| owner_badge.0)
+                .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
