@@ -26,7 +26,7 @@ pub(super) trait Transition<I> {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>;
+            + ClientNativeInvokeApi<RuntimeError>;
 }
 
 /// A trait which defines the interface for an access controller transition for a given trigger or
@@ -40,7 +40,7 @@ pub(super) trait TransitionMut<I> {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>;
+            + ClientNativeInvokeApi<RuntimeError>;
 }
 
 //=================================================
@@ -70,7 +70,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // Proofs can only be created when the primary role is unlocked - regardless of whether the
         // controller is in recovery or normal operations.
@@ -102,7 +102,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match self.state {
             (_, ref mut primary_operations_state @ PrimaryOperationState::Normal, _) => {
@@ -140,7 +140,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match self.state {
             (_, _, ref mut recovery_operations_state @ RecoveryOperationState::Normal) => {
@@ -198,7 +198,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateM
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match self.state {
             (_, PrimaryOperationState::Recovery(ref proposal), _) => {
@@ -241,7 +241,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalState
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match self.state {
             (
@@ -291,7 +291,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // Timed confirm recovery can only be performed by the recovery role (this is checked
         // through access rules on the invocation itself) and can be performed in recovery mode
@@ -349,7 +349,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachine
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
@@ -387,7 +387,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachin
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
@@ -423,7 +423,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessC
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // Primary can only be locked when it's unlocked
         match self.state {
@@ -453,7 +453,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // Primary can only be unlocked when it's locked
         match self.state {
@@ -485,7 +485,7 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter
         // if primary is locked or unlocked

@@ -89,7 +89,7 @@ impl Executor for AccessControllerCreateGlobalInvocation {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -173,7 +173,7 @@ impl Executor for AccessControllerCreateProofExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let proof = transition(
             self.receiver,
@@ -237,7 +237,7 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -298,7 +298,7 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -361,7 +361,7 @@ impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecuta
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -428,7 +428,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecut
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -498,7 +498,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -566,7 +566,7 @@ impl Executor for AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -621,7 +621,7 @@ impl Executor for AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -680,7 +680,7 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -739,7 +739,7 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -800,7 +800,7 @@ impl Executor for AccessControllerStopTimedRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -939,7 +939,7 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -968,7 +968,7 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -1003,10 +1003,10 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
 {
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        api.invoke(AccessRulesSetGroupAccessRuleInvocation {
+        api.call_native(AccessRulesSetGroupAccessRuleInvocation {
             receiver: receiver,
             index: 0,
             name: group_name.into(),
@@ -1016,7 +1016,7 @@ where
     for (method_key, entry) in access_rules.get_all_method_auth().iter() {
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
-                api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                api.call_native(AccessRulesSetMethodAccessRuleInvocation {
                     receiver: receiver,
                     index: 0,
                     key: method_key.clone(),

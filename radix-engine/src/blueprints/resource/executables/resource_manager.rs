@@ -24,7 +24,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::{ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -65,7 +65,7 @@ impl Executor for ResourceManagerBurnBucketInvocation {
 
     fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
@@ -608,7 +608,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -865,7 +865,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -892,7 +892,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
             }
             .clone();
 
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
+            api.call_native(AuthZoneAssertAccessRuleInvocation {
                 receiver: auth_zone_id.into(),
                 access_rule,
             })?;
@@ -956,7 +956,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -983,7 +983,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
             }
             .clone();
 
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
+            api.call_native(AuthZoneAssertAccessRuleInvocation {
                 receiver: auth_zone_id.into(),
                 access_rule,
             })?;
@@ -1299,7 +1299,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;

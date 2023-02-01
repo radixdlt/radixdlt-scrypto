@@ -1,7 +1,7 @@
 use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api_main::{KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate; // TODO: possible clean-up
@@ -20,7 +20,6 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
-use radix_engine_interface::api::ClientNativeInvokeApi; // TODO: possible clean-up
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;

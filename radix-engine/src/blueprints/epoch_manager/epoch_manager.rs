@@ -1,11 +1,10 @@
 use super::ValidatorCreator;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api_main::KernelSubstateApi;
-use crate::kernel::kernel_api_main::LockFlags;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -16,7 +15,7 @@ use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -107,7 +106,7 @@ impl Executor for EpochManagerCreateInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(
@@ -135,15 +134,10 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            invoke_scrypto_fn(
-                ScryptoInvocation {
-                    package_address: ACCOUNT_PACKAGE,
-                    blueprint_name: "Account".to_string(),
-                    fn_name: "deposit".to_string(),
-                    receiver: Some(ScryptoReceiver::Global(account_address)),
-                    args: args!(lp_bucket),
-                },
-                api,
+            api.call_method(
+                ScryptoReceiver::Global(account_address),
+                "deposit",
+                args!(lp_bucket),
             )?;
         }
 
@@ -425,7 +419,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -480,7 +474,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;

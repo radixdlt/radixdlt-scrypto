@@ -6,7 +6,7 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::api::{ClientActorApi, ClientNodeApi};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
-use radix_engine_interface::blueprints::transaction_hash::{
+use radix_engine_interface::blueprints::transaction_runtime::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};

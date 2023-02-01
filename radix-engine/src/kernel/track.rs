@@ -2,7 +2,7 @@ use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
-use crate::kernel::kernel_api_main::LockFlags;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;

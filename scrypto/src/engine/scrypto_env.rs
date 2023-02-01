@@ -203,9 +203,17 @@ impl ClientNativeInvokeApi<ClientApiError> for ScryptoEnv {
             FnIdentifier::Native(ident) => ident,
         };
 
-        let fn_identifier = scrypto_encode(&fn_identifier).unwrap();
         let invocation = scrypto_encode(&invocation).unwrap();
+        let output = self.call_native_raw(fn_identifier, invocation)?;
+        scrypto_decode(&output).map_err(ClientApiError::DecodeError)
+    }
 
+    fn call_native_raw(
+        &mut self,
+        fn_identifier: NativeFn,
+        invocation: Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let fn_identifier = scrypto_encode(&fn_identifier).unwrap();
         let return_data = copy_buffer(unsafe {
             call_native(
                 fn_identifier.as_ptr(),

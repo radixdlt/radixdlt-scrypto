@@ -1,5 +1,5 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
-use crate::kernel::kernel_api_main::{LockFlags, LockInfo};
+use crate::kernel::kernel_api::{LockFlags, LockInfo};
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;

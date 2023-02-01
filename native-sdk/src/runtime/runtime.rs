@@ -2,7 +2,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::transaction_hash::*;
+use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::time::*;

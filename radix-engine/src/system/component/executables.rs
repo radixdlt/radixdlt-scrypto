@@ -40,7 +40,7 @@ impl Executor for ComponentGlobalizeInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -102,7 +102,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api: &mut Y,
     ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -149,7 +149,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
-        api.invoke(AccessRulesAddAccessCheckInvocation {
+        api.call_native(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules,
         })?;
@@ -246,7 +246,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -256,11 +256,11 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
-        let amount = api.invoke(VaultGetAmountInvocation {
+        let amount = api.call_native(VaultGetAmountInvocation {
             receiver: royalty_vault.vault_id(),
         })?;
 
-        let bucket = api.invoke(VaultTakeInvocation {
+        let bucket = api.call_native(VaultTakeInvocation {
             receiver: royalty_vault.vault_id(),
             amount,
         })?;

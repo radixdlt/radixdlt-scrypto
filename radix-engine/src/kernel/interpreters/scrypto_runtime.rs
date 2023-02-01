@@ -1,13 +1,12 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::system::invocation::resolve_native::resolve_and_invoke_native_fn;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientPackageApi,
-    ClientStaticInvokeApi, ClientSubstateApi,
+    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNativeInvokeApi, ClientNodeApi,
+    ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
@@ -21,7 +20,7 @@ where
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -36,7 +35,7 @@ where
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
@@ -55,7 +54,7 @@ where
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -122,16 +121,13 @@ where
 
     fn call_native(
         &mut self,
-        native_fn_identifier: Vec<u8>,
+        native_fn: Vec<u8>,
         invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let native_fn_identifier = scrypto_decode::<NativeFn>(&native_fn_identifier)
+        let native_fn = scrypto_decode::<NativeFn>(&native_fn)
             .map_err(WasmRuntimeError::InvalidNativeFnIdentifier)?;
 
-        let return_data = scrypto_encode(
-            resolve_and_invoke_native_fn(native_fn_identifier, invocation, self.api)?.as_ref(),
-        )
-        .expect("Failed to encode native output");
+        let return_data = self.api.call_native_raw(native_fn, invocation)?;
 
         self.allocate_buffer(return_data)
     }

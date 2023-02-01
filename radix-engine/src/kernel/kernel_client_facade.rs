@@ -1,13 +1,13 @@
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api_main::LockFlags;
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::BaseModule;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;
-use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
+use crate::system::invocation::resolve_native::resolve_native;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -23,7 +23,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientMeteringApi,
-    ClientNodeApi, ClientPackageApi, ClientStaticInvokeApi, ClientSubstateApi, Invokable,
+    ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -31,6 +31,8 @@ use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+
+use super::Invokable;
 
 impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
@@ -125,12 +127,46 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientStaticInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn call_native_raw(
+        &mut self,
+        fn_identifier: NativeFn,
+        invocation: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let call_table_invocation = resolve_native(fn_identifier, invocation)?;
+        match call_table_invocation {
+            CallTableInvocation::Native(native_invocation) => {
+                invoke_native_fn(native_invocation, self)
+                    .map(|r| scrypto_encode(r.as_ref()).unwrap())
+            }
+            CallTableInvocation::Scrypto(_) => {
+                panic!("TODO: better interface")
+            }
+        }
+    }
+
+    fn call_native<N: SerializableInvocation>(
+        &mut self,
+        invocation: N,
+    ) -> Result<N::Output, RuntimeError> {
+        // FIXME error propagation
+        match invocation.fn_identifier() {
+            FnIdentifier::Scrypto(_) => {
+                panic!("TODO: better interface")
+            }
+            FnIdentifier::Native(fn_ident) => {
+                let invocation_encoded =
+                    scrypto_encode(&invocation).expect("Failed to encode native");
+                let return_data = self.call_native_raw(fn_ident, invocation_encoded)?;
+                scrypto_decode(&return_data).expect("Failed to decode return data")
+            }
+        }
+    }
 }
 
 impl<'g, 's, W, R, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, R, M>
@@ -199,13 +235,15 @@ where
             args,
             self,
         )?;
-        Ok(match invocation {
-            CallTableInvocation::Native(native) => {
-                scrypto_encode(invoke_native_fn(native, self)?.as_ref())
-                    .expect("Failed to encode native response")
-            }
-            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?.to_vec(),
-        })
+        match invocation {
+            CallTableInvocation::Native(native_invocation) => Ok(scrypto_encode(
+                invoke_native_fn(native_invocation, self)?.as_ref(),
+            )
+            .expect("Failed to encode native fn return")),
+            CallTableInvocation::Scrypto(scrypto_invocation) => self
+                .invoke(scrypto_invocation)
+                .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
+        }
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
@@ -331,13 +369,15 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        Ok(match invocation {
-            CallTableInvocation::Native(native) => {
-                scrypto_encode(invoke_native_fn(native, self)?.as_ref())
-                    .expect("Failed to encode native response")
-            }
-            CallTableInvocation::Scrypto(scrypto) => invoke_scrypto_fn(scrypto, self)?,
-        })
+        match invocation {
+            CallTableInvocation::Native(native_invocation) => Ok(scrypto_encode(
+                invoke_native_fn(native_invocation, self)?.as_ref(),
+            )
+            .expect("Failed to encode native fn return")),
+            CallTableInvocation::Scrypto(scrypto_invocation) => self
+                .invoke(scrypto_invocation)
+                .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
+        }
     }
 
     fn get_type_info(
