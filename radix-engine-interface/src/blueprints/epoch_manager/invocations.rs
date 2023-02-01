@@ -43,6 +43,10 @@ impl Invocation for EpochManagerCreateInvocation {
 
 impl SerializableInvocation for EpochManagerCreateInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::Create)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
@@ -69,6 +73,10 @@ impl Invocation for EpochManagerGetCurrentEpochInvocation {
 
 impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
     type ScryptoOutput = u64;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
@@ -98,6 +106,10 @@ impl Invocation for EpochManagerSetEpochInvocation {
 
 impl SerializableInvocation for EpochManagerSetEpochInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::SetEpoch)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
@@ -127,6 +139,10 @@ impl Invocation for EpochManagerNextRoundInvocation {
 
 impl SerializableInvocation for EpochManagerNextRoundInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::NextRound)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
@@ -156,6 +172,10 @@ impl Invocation for EpochManagerCreateValidatorInvocation {
 
 impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::CreateValidator)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
@@ -194,6 +214,10 @@ impl Invocation for EpochManagerUpdateValidatorInvocation {
 // TODO: Should we have this or not?
 impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::UpdateValidator)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
@@ -220,6 +244,10 @@ impl Invocation for ValidatorRegisterInvocation {
 
 impl SerializableInvocation for ValidatorRegisterInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Register)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
@@ -246,6 +274,10 @@ impl Invocation for ValidatorUnregisterInvocation {
 
 impl SerializableInvocation for ValidatorUnregisterInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Unregister)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
@@ -284,6 +316,10 @@ impl Invocation for ValidatorStakeInvocation {
 
 impl SerializableInvocation for ValidatorStakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Stake)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorStakeInvocation {
@@ -322,6 +358,10 @@ impl Invocation for ValidatorUnstakeInvocation {
 
 impl SerializableInvocation for ValidatorUnstakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Unstake)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
@@ -360,6 +400,10 @@ impl Invocation for ValidatorClaimXrdInvocation {
 
 impl SerializableInvocation for ValidatorClaimXrdInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::ClaimXrd)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {

@@ -24,6 +24,10 @@ impl Invocation for ProofGetAmountInvocation {
 
 impl SerializableInvocation for ProofGetAmountInvocation {
     type ScryptoOutput = Decimal;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Proof(ProofFn::GetAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for ProofGetAmountInvocation {
@@ -47,6 +51,10 @@ impl Invocation for ProofGetNonFungibleLocalIdsInvocation {
 
 impl SerializableInvocation for ProofGetNonFungibleLocalIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Proof(ProofFn::GetNonFungibleLocalIds)
+    }
 }
 
 impl Into<CallTableInvocation> for ProofGetNonFungibleLocalIdsInvocation {
@@ -70,6 +78,10 @@ impl Invocation for ProofGetResourceAddressInvocation {
 
 impl SerializableInvocation for ProofGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Proof(ProofFn::GetResourceAddress)
+    }
 }
 
 impl Into<CallTableInvocation> for ProofGetResourceAddressInvocation {
@@ -93,6 +105,10 @@ impl Invocation for ProofCloneInvocation {
 
 impl SerializableInvocation for ProofCloneInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Proof(ProofFn::Clone)
+    }
 }
 
 impl Into<CallTableInvocation> for ProofCloneInvocation {

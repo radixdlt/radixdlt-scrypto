@@ -42,6 +42,10 @@ impl Invocation for LoggerLogInvocation {
 
 impl SerializableInvocation for LoggerLogInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Logger(LoggerFn::Log)
+    }
 }
 
 impl Into<CallTableInvocation> for LoggerLogInvocation {

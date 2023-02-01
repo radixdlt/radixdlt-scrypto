@@ -21,6 +21,10 @@ impl Invocation for KeyValueStoreCreateInvocation {
 
 impl SerializableInvocation for KeyValueStoreCreateInvocation {
     type ScryptoOutput = Own;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::KeyValueStore(KeyValueStoreFn::Create)
+    }
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreCreateInvocation {
@@ -50,6 +54,10 @@ impl Invocation for KeyValueStoreGetInvocation {
 
 impl SerializableInvocation for KeyValueStoreGetInvocation {
     type ScryptoOutput = LockHandle;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::KeyValueStore(KeyValueStoreFn::Get)
+    }
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
@@ -79,6 +87,10 @@ impl Invocation for KeyValueStoreGetMutInvocation {
 
 impl SerializableInvocation for KeyValueStoreGetMutInvocation {
     type ScryptoOutput = LockHandle;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::KeyValueStore(KeyValueStoreFn::GetMut)
+    }
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreGetMutInvocation {
@@ -114,6 +126,10 @@ impl Invocation for KeyValueStoreInsertInvocation {
 
 impl SerializableInvocation for KeyValueStoreInsertInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::KeyValueStore(KeyValueStoreFn::Insert)
+    }
 }
 
 impl Into<CallTableInvocation> for KeyValueStoreInsertInvocation {

@@ -20,6 +20,10 @@ impl Invocation for IdentityCreateInvocation {
 
 impl SerializableInvocation for IdentityCreateInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Identity(IdentityFn::Create)
+    }
 }
 
 impl Into<CallTableInvocation> for IdentityCreateInvocation {

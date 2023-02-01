@@ -25,6 +25,10 @@ impl Invocation for PackagePublishInvocation {
 
 impl SerializableInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::Publish)
+    }
 }
 
 impl Into<CallTableInvocation> for PackagePublishInvocation {
@@ -49,6 +53,10 @@ impl Invocation for PackageSetRoyaltyConfigInvocation {
 
 impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::SetRoyaltyConfig)
+    }
 }
 
 impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
@@ -78,6 +86,10 @@ impl Invocation for PackageClaimRoyaltyInvocation {
 
 impl SerializableInvocation for PackageClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::ClaimRoyalty)
+    }
 }
 
 impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {

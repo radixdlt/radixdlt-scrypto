@@ -25,6 +25,10 @@ impl Invocation for AccessControllerCreateGlobalInvocation {
 
 impl SerializableInvocation for AccessControllerCreateGlobalInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CreateGlobal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
@@ -55,6 +59,10 @@ impl Invocation for AccessControllerCreateProofInvocation {
 
 impl SerializableInvocation for AccessControllerCreateProofInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CreateProof)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCreateProofInvocation {
@@ -91,6 +99,10 @@ impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -130,6 +142,10 @@ impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInvocation {
@@ -169,6 +185,10 @@ impl Invocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvoc
 
 impl SerializableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation>
@@ -210,6 +230,10 @@ impl Invocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvo
 
 impl SerializableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation>
@@ -251,6 +275,10 @@ impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
 
 impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocation {
@@ -284,6 +312,10 @@ impl Invocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation 
 
 impl SerializableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CancelPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
@@ -319,6 +351,10 @@ impl Invocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation
 
 impl SerializableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CancelRecoveryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
@@ -354,6 +390,10 @@ impl Invocation for AccessControllerLockPrimaryRoleInvocation {
 
 impl SerializableInvocation for AccessControllerLockPrimaryRoleInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::LockPrimaryRole)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerLockPrimaryRoleInvocation {
@@ -386,6 +426,10 @@ impl Invocation for AccessControllerUnlockPrimaryRoleInvocation {
 
 impl SerializableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::UnlockPrimaryRole)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerUnlockPrimaryRoleInvocation {
@@ -423,6 +467,10 @@ impl Invocation for AccessControllerStopTimedRecoveryInvocation {
 
 impl SerializableInvocation for AccessControllerStopTimedRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::StopTimedRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerStopTimedRecoveryInvocation {

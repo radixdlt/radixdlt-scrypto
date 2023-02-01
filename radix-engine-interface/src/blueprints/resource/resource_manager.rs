@@ -78,6 +78,10 @@ impl Invocation for ResourceManagerCreateNonFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type ScryptoOutput = ResourceAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleInvocation {
@@ -103,6 +107,10 @@ impl Invocation for ResourceManagerCreateFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerCreateFungibleInvocation {
     type ScryptoOutput = ResourceAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateFungibleInvocation {
@@ -131,6 +139,10 @@ impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation 
 
 impl SerializableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type ScryptoOutput = (ResourceAddress, Bucket);
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungibleWithInitialSupply)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
@@ -161,6 +173,10 @@ impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocat
 
 impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type ScryptoOutput = (ResourceAddress, Bucket);
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
@@ -193,6 +209,10 @@ impl Invocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
 
 impl SerializableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type ScryptoOutput = (ResourceAddress, Bucket);
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateFungibleWithInitialSupply)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
@@ -225,6 +245,10 @@ impl Invocation for ResourceManagerBurnBucketInvocation {
 
 impl SerializableInvocation for ResourceManagerBurnBucketInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::BurnBucket)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerBurnBucketInvocation {
@@ -258,6 +282,10 @@ impl Invocation for ResourceManagerBurnInvocation {
 
 impl SerializableInvocation for ResourceManagerBurnInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::Burn)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerBurnInvocation {
@@ -285,6 +313,10 @@ impl Invocation for ResourceManagerUpdateVaultAuthInvocation {
 
 impl SerializableInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::UpdateVaultAuth)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerUpdateVaultAuthInvocation {
@@ -312,6 +344,10 @@ impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
 
 impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::SetVaultAuthMutability)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
@@ -335,6 +371,10 @@ impl Invocation for ResourceManagerCreateVaultInvocation {
 
 impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
     type ScryptoOutput = Own;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateVault)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateVaultInvocation {
@@ -358,6 +398,10 @@ impl Invocation for ResourceManagerCreateBucketInvocation {
 
 impl SerializableInvocation for ResourceManagerCreateBucketInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::CreateBucket)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerCreateBucketInvocation {
@@ -384,6 +428,10 @@ impl Invocation for ResourceManagerMintNonFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerMintNonFungibleInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerMintNonFungibleInvocation {
@@ -410,6 +458,10 @@ impl Invocation for ResourceManagerMintUuidNonFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::MintUuidNonFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerMintUuidNonFungibleInvocation {
@@ -434,6 +486,10 @@ impl Invocation for ResourceManagerMintFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerMintFungibleInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::MintFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerMintFungibleInvocation {
@@ -459,6 +515,10 @@ impl Invocation for ResourceManagerGetResourceTypeInvocation {
 
 impl SerializableInvocation for ResourceManagerGetResourceTypeInvocation {
     type ScryptoOutput = ResourceType;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::GetResourceType)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerGetResourceTypeInvocation {
@@ -482,6 +542,10 @@ impl Invocation for ResourceManagerGetTotalSupplyInvocation {
 
 impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type ScryptoOutput = Decimal;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerGetTotalSupplyInvocation {
@@ -509,6 +573,10 @@ impl Invocation for ResourceManagerUpdateNonFungibleDataInvocation {
 
 impl SerializableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::UpdateNonFungibleData)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
@@ -535,6 +603,10 @@ impl Invocation for ResourceManagerNonFungibleExistsInvocation {
 
 impl SerializableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type ScryptoOutput = bool;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::NonFungibleExists)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerNonFungibleExistsInvocation {
@@ -559,6 +631,10 @@ impl Invocation for ResourceManagerGetNonFungibleInvocation {
 
 impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
     type ScryptoOutput = [Vec<u8>; 2];
+
+    fn native_fn() -> NativeFn {
+        NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)
+    }
 }
 
 impl Into<CallTableInvocation> for ResourceManagerGetNonFungibleInvocation {
