@@ -59,7 +59,6 @@ struct ResourceInfoFramework {
     counter: Bytes,
     sum_allocations: Vec<Bytes>,
     peak_allocations: Vec<Bytes>,
-    #[cfg(feature = "resource-usage-with-cpu")]
     cpu_cycles: Vec<u64>,
 }
 impl ResourceInfoFramework {
@@ -68,7 +67,6 @@ impl ResourceInfoFramework {
             counter: Bytes(0),
             sum_allocations: Vec::new(),
             peak_allocations: Vec::new(),
-            #[cfg(feature = "resource-usage-with-cpu")]
             cpu_cycles: Vec::new(),
         }
     }
@@ -76,7 +74,6 @@ impl ResourceInfoFramework {
         self.counter += Bytes(value.heap_allocations_sum);
         self.sum_allocations.push(Bytes(value.heap_allocations_sum));
         self.peak_allocations.push(Bytes(value.heap_peak_memory));
-        #[cfg(feature = "resource-usage-with-cpu")]
         self.cpu_cycles.push(value.cpu_cycles);
     }
 
@@ -104,17 +101,14 @@ impl ResourceInfoFramework {
 
         println!("Iterations: {}", self.sum_allocations.len());
 
-        #[cfg(feature = "resource-usage-with-cpu")]
-        {
-            let avg_cpu_cycles: u64 =
-                self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
-            let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
-            let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
-            println!(
-                "Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})",
-                avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles
-            );
-        }
+        let avg_cpu_cycles: u64 =
+            self.cpu_cycles.iter().sum::<u64>() / self.cpu_cycles.len() as u64;
+        let max_cpu_cycles: u64 = *self.cpu_cycles.iter().max().unwrap_or(&0);
+        let min_cpu_cycles: u64 = *self.cpu_cycles.iter().min().unwrap_or(&0);
+        println!(
+            "Cpu cycles stats for all iterations (average, max, min): ({}, {}, {})",
+            avg_cpu_cycles, max_cpu_cycles, min_cpu_cycles
+        );
 
         println!(
             "Sum of allocated heap memory in all iterations: {}",
@@ -238,7 +232,6 @@ fn transfer_test(c: &mut Criterion) {
                     .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
-            #[cfg(feature = "std")]
             fwk.add_measurement(&receipt.execution.resources_usage);
 
             receipt.expect_commit_success();

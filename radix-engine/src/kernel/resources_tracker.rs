@@ -3,12 +3,11 @@ use crate::types::{
     alloc::{GlobalAlloc, Layout, System},
     sync::atomic::{AtomicIsize, Ordering},
 };
-
-#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 use perfcnt::{
     linux::{HardwareEventType, PerfCounterBuilderLinux},
     AbstractPerfCounter, PerfCounter,
 };
+
 #[global_allocator]
 static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
 
@@ -103,12 +102,10 @@ unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
 /// CPU cycles tracker
 ///
 /// Performance counters are used to read Reference CPU cycles.
-#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 pub struct InfoCpu {
     perf: PerfCounter,
 }
 
-#[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
 impl InfoCpu {
     pub fn new() -> Self {
         Self {
@@ -135,33 +132,27 @@ impl InfoCpu {
 }
 
 pub struct ResourcesTracker {
-    #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
     cpu: InfoCpu,
 }
 
 impl ResourcesTracker {
     pub fn start_measurement() -> Self {
         let ret = Self {
-            #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
             cpu: InfoCpu::new(),
         };
 
-        #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
         ret.cpu.start_measurement();
-
         INFO_ALLOC.reset_counters();
         ret
     }
 
     pub fn end_measurement(&mut self) -> ResourcesUsage {
-        #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
         let cpu_cycles = self.cpu.end_measurement();
         let (heap_allocations_sum, _heap_current_level, heap_peak_memory) =
             INFO_ALLOC.get_counters_value();
         ResourcesUsage {
             heap_allocations_sum,
             heap_peak_memory,
-            #[cfg(all(target_os = "linux", feature = "resource-usage-with-cpu"))]
             cpu_cycles,
         }
     }

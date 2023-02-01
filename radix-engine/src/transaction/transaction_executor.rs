@@ -160,7 +160,7 @@ where
         }
 
         // Start resources usage measurement
-        #[cfg(feature = "std")]
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
         // Prepare state track and execution trace
@@ -219,10 +219,10 @@ where
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
-            #[cfg(feature = "std")]
-            () => resources_tracker.end_measurement(),
-            #[cfg(not(feature = "std"))]
+            #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
             () => ResourcesUsage::default(),
+            #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+            () => resources_tracker.end_measurement(),
         };
 
         let receipt = TransactionReceipt {

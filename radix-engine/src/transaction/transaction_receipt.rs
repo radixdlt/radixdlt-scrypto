@@ -14,13 +14,6 @@ use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
 use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
-#[cfg(not(feature = "resource-usage-with-cpu"))]
-#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
-pub struct ResourcesUsage {
-    pub heap_allocations_sum: usize,
-    pub heap_peak_memory: usize,
-}
-#[cfg(feature = "resource-usage-with-cpu")]
 #[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
