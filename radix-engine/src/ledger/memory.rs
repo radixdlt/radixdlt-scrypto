@@ -75,7 +75,7 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Hash, PersistedSubstate> {
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
         self.substates
             .iter()
             .filter_map(|(substate_id, substate_value)| {

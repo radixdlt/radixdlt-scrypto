@@ -166,17 +166,10 @@ impl QueryableSubstateStore for RadixEngineDB {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Hash, PersistedSubstate> {
-        let unit = Hash([0u8; 32]);
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(kv_store_id.clone()),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(unit)),
-        ))
-        .unwrap();
-
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
         let mut iter = self
             .db
-            .iterator(IteratorMode::From(&id, Direction::Forward));
+            .iterator(IteratorMode::From(&[], Direction::Forward));
         let mut items = HashMap::new();
         while let Some(kv) = iter.next() {
             let (key, value) = kv.unwrap();

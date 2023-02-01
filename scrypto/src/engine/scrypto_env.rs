@@ -214,8 +214,7 @@ impl ClientNativeInvokeApi<ClientApiError> for ScryptoEnv {
                 invocation.len(),
             )
         });
-
-        scrypto_decode(&return_data).map_err(ClientApiError::DecodeError)
+        Ok(return_data)
     }
 }
 

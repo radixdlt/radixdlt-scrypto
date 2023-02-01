@@ -33,14 +33,14 @@ impl Into<CallTableInvocation> for KeyValueStoreCreateInvocation {
     }
 }
 
-//=============================================================
-// KeyValueStore::insert(&self, hash: Hash, key: ScryptoValue, value: ScryptoValue)
-//=============================================================
+//===========================================================================================
+// KeyValueStore::insert(&self, entry_id: Vec<u8>, key: ScryptoValue, value: ScryptoValue)
+//===========================================================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreInsertInvocation {
     pub receiver: KeyValueStoreId,
-    pub hash: Hash,
+    pub entry_id: Vec<u8>,
     pub key: ScryptoValue,
     pub value: ScryptoValue,
 }

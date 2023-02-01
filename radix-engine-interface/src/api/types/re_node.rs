@@ -241,7 +241,7 @@ pub enum ResourceManagerOffset {
     Ord,
 )]
 pub enum KeyValueStoreOffset {
-    Entry(Hash),
+    Entry(Vec<u8>),
 }
 
 #[derive(

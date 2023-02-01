@@ -157,10 +157,10 @@ fn records_stale_tree_node_keys() {
 
 fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
-    let fake_kvs_entry_hash = Hash([substate_offset_seed as u8; 32]);
+    let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateId(
         RENodeId::Global(GlobalAddress::Package(fake_pkg_address)),
-        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_hash)),
+        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
     )
 }
 

@@ -105,7 +105,7 @@ impl Executor for KeyValueStoreInsertInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(self.hash));
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(self.entry_id));
         let handle = api.lock_substate(
             RENodeId::KeyValueStore(self.receiver),
             offset,
