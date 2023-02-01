@@ -19,11 +19,16 @@ use crate::wasm::traits::*;
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
 
-/// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined) and Store,
-/// which keeps user data.
+/// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined)
+/// and Store, which keeps user data.
 /// "Template" (Store, Instance) tuple are cached together, and never to be invoked.
 /// Upon instantiation Instance and Store are cloned, so the state is not shared between instances.
-/// It is correctly `Send + Sync` - which is good, because this is the thing which is cached in the
+/// It is safe to clone an `Instance` and a `Store`, since they don't use pointers, but `Arena`
+/// allocator. `Instance` is owned by `Store`, it is basically some offset within `Store`'s vector
+/// of `Instance`s. So after clone we receive the same `Store`, where we are able to set different
+/// data, more specifically a `runtime_ptr`.
+/// Also, it is correctly `Send + Sync` (under the assumption that the data in the Store is set to
+/// a valid value upon invocation , because this is the thing which is cached in the
 /// ScryptoInterpreter caches.
 pub struct WasmiModule {
     template_store: Store<FakeHostState>,
@@ -38,6 +43,13 @@ pub struct WasmiInstance {
     memory: Memory,
 }
 
+/// This is to construct a stub `Store<FakeWasmiInstanceEnv>`, which is a part of
+/// `WasmiModule` struct and serves as a placeholder for the real `Store<WasmiInstanceEnv>`.
+/// The real store is set (prior being transumted) when the `WasmiModule` is being instantiated.
+/// In fact the only difference between a stub and real Store is the `Send + Sync` manually
+/// implemented for the former one, which is required by `WasmiModule` cache (for `std`
+/// configuration) but shall not be implemented for the latter one to prevent sharing it between
+/// the threads since pointer might point to volatile data.
 #[derive(Clone)]
 pub struct FakeWasmiInstanceEnv {
     #[allow(dead_code)]
@@ -55,19 +67,9 @@ impl FakeWasmiInstanceEnv {
 unsafe impl Send for FakeWasmiInstanceEnv {}
 unsafe impl Sync for FakeWasmiInstanceEnv {}
 
-/// WasmiInstanceEnv stores masked runtime pointer to a `Box<dyn WasmRuntime>`.
-/// We mask it for below reasons:
-/// - Store must be `Send + Sync`
-///   - According to the `wasmi` documentation
-///     At the moment `&'a mut System API` which is wrapped into `RadixEngineWasmRuntime` and boxed
-///     is not `Sync`
-///     (the same reason as in alternative `wasmer` implementation)
-///   - Store also shall be `Send + Sync` because of `WasmiModule`, which is cached.
-/// - WasmiInstanceEnv must be clonable (it is a user data for the Store, which is cloned when
-///   WasmiModule is instantiated)
+/// This is to construct a real `Store<WasmiInstanceEnv>
 pub struct WasmiInstanceEnv {
     runtime_ptr: MaybeUninit<*mut Box<dyn WasmRuntime>>,
-    //    runtime_ptr: MaybeUninit<usize>,
 }
 
 impl WasmiInstanceEnv {
@@ -520,7 +522,9 @@ impl WasmInstance for WasmiInstance {
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
             // set up runtime pointer
-            //            self.store.data_mut().runtime_ptr = runtime as *mut _ as usize;
+            // FIXME: Triple casting to workaround this error message:
+            // error[E0521]: borrowed data escapes outside of associated function
+            //  `runtime` escapes the associated function body here argument requires that `'r` must outlive `'static`
             self.store
                 .data_mut()
                 .runtime_ptr
