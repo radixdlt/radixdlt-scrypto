@@ -59,7 +59,11 @@ pub enum RENodeInit {
         ValidatorSetSubstate,
         AccessRulesChainSubstate,
     ),
-    Validator(ValidatorSubstate, AccessRulesChainSubstate),
+    Validator(
+        ValidatorSubstate,
+        MetadataSubstate,
+        AccessRulesChainSubstate,
+    ),
     Clock(
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
@@ -216,10 +220,14 @@ impl RENodeInit {
                     vault_access_rules.into(),
                 );
             }
-            RENodeInit::Validator(validator, access_rules) => {
+            RENodeInit::Validator(validator, metadata, access_rules) => {
                 substates.insert(
                     SubstateOffset::Validator(ValidatorOffset::Validator),
                     validator.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),

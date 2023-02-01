@@ -533,8 +533,17 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
-        ast::Instruction::CreateValidator { key } => BasicInstruction::CreateValidator {
+        ast::Instruction::CreateValidator {
+            key,
+            owner_access_rule,
+        } => BasicInstruction::CreateValidator {
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+            owner_access_rule: generate_typed_value(
+                owner_access_rule,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
@@ -1864,12 +1873,13 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
             BasicInstruction::CreateValidator {
                 key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                     .unwrap()
-                    .public_key()
+                    .public_key(),
+                owner_access_rule: AccessRule::AllowAll,
             },
         );
     }
