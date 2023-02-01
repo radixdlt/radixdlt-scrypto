@@ -3,18 +3,18 @@ use crate::errors::RuntimeError;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use crate::system::node_modules::metadata::MetadataSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorSubstate {
@@ -71,7 +71,12 @@ impl Executor for ValidatorRegisterExecutable {
             + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.0,
+            NodeModuleId::SELF,
+            offset.clone(),
+            LockFlags::MUTABLE,
+        )?;
 
         // Update state
         {
@@ -139,7 +144,12 @@ impl Executor for ValidatorUnregisterExecutable {
         Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            self.0,
+            NodeModuleId::SELF,
+            offset.clone(),
+            LockFlags::MUTABLE,
+        )?;
 
         // Update state
         {
@@ -207,7 +217,8 @@ impl Executor for ValidatorStakeExecutable {
             + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         // Stake
         let lp_token_bucket = {
@@ -301,7 +312,8 @@ impl Executor for ValidatorUnstakeExecutable {
             + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         // Unstake
         let unstake_bucket = {
@@ -328,6 +340,7 @@ impl Executor for ValidatorUnstakeExecutable {
 
             let manager_handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
+                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -418,7 +431,8 @@ impl Executor for ValidatorClaimXrdExecutable {
             + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let handle =
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
         let validator = substate.validator();
         let mut nft_resman = ResourceManager(validator.unstake_nft);
@@ -437,6 +451,7 @@ impl Executor for ValidatorClaimXrdExecutable {
         let current_epoch = {
             let mgr_handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
+                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -495,12 +510,12 @@ impl Executor for ValidatorUpdateKeyExecutable {
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate = api.get_ref_mut(handle)?;
         let mut validator = substate.validator();
         validator.key = self.1;
@@ -563,9 +578,9 @@ impl Executor for ValidatorUpdateAcceptDelegatedStakeExecutable {
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
     {
         let rule = if self.1 {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)
@@ -774,28 +789,37 @@ impl ValidatorCreator {
         let unstake_nft = Self::create_unstake_nft(api)?;
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
-        let node = RENodeInit::Validator(
-            ValidatorSubstate {
-                manager,
-                key,
-                address,
-                liquidity_token,
-                unstake_nft,
-                stake_xrd_vault_id: stake_vault.0,
-                pending_xrd_withdraw_vault_id: unstake_vault.0,
-                is_registered,
-            },
-            MetadataSubstate {
+
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate {
                 metadata: BTreeMap::new(),
-            },
-            AccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
-            },
+            }),
         );
-        api.create_node(node_id, node)?;
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
+            }),
+        );
+
+        let node = RENodeInit::Validator(ValidatorSubstate {
+            manager,
+            key,
+            address,
+            liquidity_token,
+            unstake_nft,
+            stake_xrd_vault_id: stake_vault.0,
+            pending_xrd_withdraw_vault_id: unstake_vault.0,
+            is_registered,
+        });
+
+        api.create_node(node_id, node, node_modules)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            BTreeMap::new(),
         )?;
 
         Ok((global_node_id.into(), liquidity_bucket))
@@ -821,28 +845,36 @@ impl ValidatorCreator {
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
-        let node = RENodeInit::Validator(
-            ValidatorSubstate {
-                manager,
-                key,
-                address,
-                liquidity_token,
-                unstake_nft,
-                stake_xrd_vault_id: stake_vault.0,
-                pending_xrd_withdraw_vault_id: unstake_vault.0,
-                is_registered,
-            },
-            MetadataSubstate {
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate {
                 metadata: BTreeMap::new(),
-            },
-            AccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
-            },
+            }),
         );
-        api.create_node(node_id, node)?;
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
+            }),
+        );
+
+        let node = RENodeInit::Validator(ValidatorSubstate {
+            manager,
+            key,
+            address,
+            liquidity_token,
+            unstake_nft,
+            stake_xrd_vault_id: stake_vault.0,
+            pending_xrd_withdraw_vault_id: unstake_vault.0,
+            is_registered,
+        });
+
+        api.create_node(node_id, node, node_modules)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            BTreeMap::new(),
         )?;
 
         Ok(global_node_id.into())

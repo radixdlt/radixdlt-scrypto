@@ -59,7 +59,7 @@ pub enum RENodeVisibilityOrigin {
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
-    pub substate_pointer: (RENodeLocation, RENodeId, SubstateOffset),
+    pub substate_pointer: (RENodeLocation, RENodeId, NodeModuleId, SubstateOffset),
     pub global_references: HashSet<GlobalAddress>,
     pub substate_owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
@@ -108,6 +108,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -118,7 +119,7 @@ impl CallFrame {
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
-            let substate_id = SubstateId(node_id, offset.clone());
+            let substate_id = SubstateId(node_id, module_id, offset.clone());
             match location {
                 RENodeLocation::Store => track
                     .acquire_lock(substate_id, flags)
@@ -135,7 +136,7 @@ impl CallFrame {
             }?;
         }
 
-        let substate_ref = self.get_substate(heap, track, location, node_id, &offset)?;
+        let substate_ref = self.get_substate(heap, track, location, node_id, module_id, &offset)?;
         let (global_references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
@@ -160,7 +161,7 @@ impl CallFrame {
             lock_handle,
             SubstateLock {
                 global_references,
-                substate_pointer: (location, node_id, offset),
+                substate_pointer: (location, node_id, module_id, offset),
                 substate_owned_nodes,
                 flags,
             },
@@ -187,10 +188,12 @@ impl CallFrame {
 
         let location = substate_lock.substate_pointer.0;
         let node_id = substate_lock.substate_pointer.1;
-        let offset = substate_lock.substate_pointer.2;
+        let module_id = substate_lock.substate_pointer.2;
+        let offset = substate_lock.substate_pointer.3;
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
-            let substate_ref = self.get_substate(heap, track, location, node_id, &offset)?;
+            let substate_ref =
+                self.get_substate(heap, track, location, node_id, module_id, &offset)?;
 
             let (new_global_references, mut new_children) =
                 substate_ref.references_and_owned_nodes();
@@ -251,7 +254,7 @@ impl CallFrame {
             match location {
                 RENodeLocation::Store => track
                     .release_lock(
-                        SubstateId(node_id, offset.clone()),
+                        SubstateId(node_id, module_id, offset.clone()),
                         flags.contains(LockFlags::FORCE_WRITE),
                     )
                     .map_err(KernelError::TrackError),
@@ -269,7 +272,7 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
         Ok(LockInfo {
-            offset: substate_lock.substate_pointer.2.clone(),
+            offset: substate_lock.substate_pointer.3.clone(),
         })
     }
 
@@ -385,13 +388,23 @@ impl CallFrame {
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
+        node_modules: BTreeMap<NodeModuleId, RENodeModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s, R>,
         push_to_store: bool,
     ) -> Result<(), RuntimeError> {
-        let substates = re_node.to_substates();
+        let mut substates = BTreeMap::new();
+        let self_substates = re_node.to_substates();
+        for (offset, substate) in self_substates {
+            substates.insert((NodeModuleId::SELF, offset), substate);
+        }
+        for (node_module_id, module_init) in node_modules {
+            for (offset, substate) in module_init.to_substates() {
+                substates.insert((node_module_id, offset), substate);
+            }
+        }
 
-        for (offset, substate) in &substates {
+        for ((_module_id, offset), substate) in &substates {
             let substate_ref = substate.to_ref();
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
@@ -404,8 +417,8 @@ impl CallFrame {
         }
 
         if push_to_store {
-            for (offset, substate) in substates {
-                track.insert_substate(SubstateId(node_id, offset), substate);
+            for ((module_id, offset), substate) in substates {
+                track.insert_substate(SubstateId(node_id, module_id, offset), substate);
             }
 
             self.add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
@@ -457,11 +470,12 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
         location: RENodeLocation,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match location {
-            RENodeLocation::Heap => heap.get_substate(node_id, offset)?,
-            RENodeLocation::Store => track.get_substate(node_id, offset),
+            RENodeLocation::Heap => heap.get_substate(node_id, module_id, offset)?,
+            RENodeLocation::Store => track.get_substate(node_id, module_id, offset),
         };
 
         Ok(substate_ref)
@@ -474,14 +488,14 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let SubstateLock {
-            substate_pointer: (node_location, node_id, offset),
+            substate_pointer: (node_location, node_id, module_id, offset),
             ..
         } = self
             .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        self.get_substate(heap, track, node_location, node_id, &offset)
+        self.get_substate(heap, track, node_location, node_id, module_id, &offset)
     }
 
     pub fn get_ref_mut<'f, 's, R: FeeReserve>(
@@ -491,7 +505,7 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRefMut<'f>, RuntimeError> {
         let SubstateLock {
-            substate_pointer: (node_location, node_id, offset),
+            substate_pointer: (node_location, node_id, module_id, offset),
             flags,
             ..
         } = self
@@ -506,8 +520,8 @@ impl CallFrame {
         }
 
         let ref_mut = match node_location {
-            RENodeLocation::Heap => heap.get_substate_mut(node_id, &offset).unwrap(),
-            RENodeLocation::Store => track.get_substate_mut(node_id, &offset),
+            RENodeLocation::Heap => heap.get_substate_mut(node_id, module_id, &offset).unwrap(),
+            RENodeLocation::Store => track.get_substate_mut(node_id, module_id, &offset),
         };
 
         Ok(ref_mut)

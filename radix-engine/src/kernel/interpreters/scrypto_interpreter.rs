@@ -34,6 +34,7 @@ impl Executor for ScryptoExecutor {
         let package = {
             let handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;

@@ -23,6 +23,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
     let global_substate: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(package_address)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate.to_runtime())
@@ -31,6 +32,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
     let package_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             global_substate.global().node_deref(),
+            NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         ))
         .map(|s| s.substate.to_runtime())
@@ -56,6 +58,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let global = substate_store
         .get_substate(&SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate.to_runtime())
@@ -65,6 +68,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
+            NodeModuleId::SELF,
             SubstateOffset::Component(ComponentOffset::Info),
         ))
         .map(|s| s.substate.to_runtime())

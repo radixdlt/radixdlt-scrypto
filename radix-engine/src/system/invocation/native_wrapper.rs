@@ -90,6 +90,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 let component_info = {
                     let handle = api.lock_substate(
                         component_node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Component(ComponentOffset::Info),
                         LockFlags::read_only(),
                     )?;
@@ -115,6 +116,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             let component_info = {
                 let handle = api.lock_substate(
                     component_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::Info),
                     LockFlags::read_only(),
                 )?;

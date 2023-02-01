@@ -6,8 +6,8 @@ use crate::system::kernel_modules::fee::{
     CostingError, ExecutionFeeReserve, FeeReserve, RoyaltyReceiver,
 };
 use radix_engine_interface::api::types::{
-    ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
-    SubstateId, SubstateOffset, VaultOffset,
+    FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
+    SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::*;
 
@@ -35,13 +35,21 @@ macro_rules! preload_vault {
         let vault_node_id = RENodeId::Vault($royalty_vault.vault_id());
         $track
             .acquire_lock(
-                SubstateId(vault_node_id, SubstateOffset::Vault(VaultOffset::Vault)),
+                SubstateId(
+                    vault_node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ),
                 LockFlags::MUTABLE,
             )
             .map_err(RoyaltyError::from)?;
         $track
             .release_lock(
-                SubstateId(vault_node_id, SubstateOffset::Vault(VaultOffset::Vault)),
+                SubstateId(
+                    vault_node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ),
                 false,
             )
             .map_err(RoyaltyError::from)?;
@@ -86,25 +94,34 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             ));
             let offset = SubstateOffset::Global(GlobalOffset::Global);
             track
-                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                .acquire_lock(
+                    SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
+                    LockFlags::read_only(),
+                )
                 .map_err(RoyaltyError::from)?;
-            let substate = track.get_substate(node_id, &offset);
+            let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
             let package_id = match substate.global_address() {
                 GlobalAddressSubstate::Package(id) => *id,
                 _ => panic!("Unexpected global address substate type"),
             };
             track
-                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .release_lock(
+                    SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
+                    false,
+                )
                 .map_err(RoyaltyError::from)?;
             package_id
         };
 
         let node_id = RENodeId::Package(package_id);
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         track
-            .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+            .acquire_lock(
+                SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
+                LockFlags::read_only(),
+            )
             .map_err(RoyaltyError::from)?;
-        let substate = track.get_substate(node_id, &offset);
+        let substate = track.get_substate(node_id, NodeModuleId::PackageRoyalty, &offset);
         let royalty = substate
             .package_royalty_config()
             .royalty_config
@@ -119,24 +136,33 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             )
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
         track
-            .release_lock(SubstateId(node_id, offset.clone()), false)
+            .release_lock(
+                SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
+                false,
+            )
             .map_err(RoyaltyError::from)?;
 
         // Pre-load accumulator and royalty vault substate to avoid additional substate loading
         // during track finalization.
         // TODO: refactor to defer substate loading to finalization.
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         track
-            .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
+            .acquire_lock(
+                SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
+                LockFlags::MUTABLE,
+            )
             .map_err(RoyaltyError::from)?;
         let royalty_vault = track
-            .get_substate(node_id, &offset)
+            .get_substate(node_id, NodeModuleId::PackageRoyalty, &offset)
             .package_royalty_accumulator()
             .royalty
             .clone();
         preload_vault!(track, royalty_vault);
         track
-            .release_lock(SubstateId(node_id, offset.clone()), false)
+            .release_lock(
+                SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
+                false,
+            )
             .map_err(RoyaltyError::from)?;
 
         //========================
@@ -148,25 +174,34 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
                 let offset = SubstateOffset::Global(GlobalOffset::Global);
                 track
-                    .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                    .acquire_lock(
+                        SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
+                        LockFlags::read_only(),
+                    )
                     .map_err(RoyaltyError::from)?;
-                let substate = track.get_substate(node_id, &offset);
+                let substate = track.get_substate(node_id, NodeModuleId::SELF, &offset);
                 let component_id = match substate.global_address() {
                     GlobalAddressSubstate::Component(id) => *id,
                     _ => panic!("Unexpected global address substate type"),
                 };
                 track
-                    .release_lock(SubstateId(node_id, offset.clone()), false)
+                    .release_lock(
+                        SubstateId(node_id, NodeModuleId::SELF, offset.clone()),
+                        false,
+                    )
                     .map_err(RoyaltyError::from)?;
                 component_id
             };
 
             let node_id = RENodeId::Component(component_id);
-            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
             track
-                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                .acquire_lock(
+                    SubstateId(node_id, NodeModuleId::ComponentRoyalty, offset.clone()),
+                    LockFlags::read_only(),
+                )
                 .map_err(RoyaltyError::from)?;
-            let substate = track.get_substate(node_id, &offset);
+            let substate = track.get_substate(node_id, NodeModuleId::ComponentRoyalty, &offset);
             let royalty = substate
                 .component_royalty_config()
                 .royalty_config
@@ -180,24 +215,33 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             track
-                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .release_lock(
+                    SubstateId(node_id, NodeModuleId::ComponentRoyalty, offset.clone()),
+                    false,
+                )
                 .map_err(RoyaltyError::from)?;
 
             // Pre-load accumulator and royalty vault substate to avoid additional substate loading
             // during track finalization.
             // TODO: refactor to defer substate loading to finalization.
-            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
             track
-                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
+                .acquire_lock(
+                    SubstateId(node_id, NodeModuleId::ComponentRoyalty, offset.clone()),
+                    LockFlags::MUTABLE,
+                )
                 .map_err(RoyaltyError::from)?;
             let royalty_vault = track
-                .get_substate(node_id, &offset)
+                .get_substate(node_id, NodeModuleId::ComponentRoyalty, &offset)
                 .component_royalty_accumulator()
                 .royalty
                 .clone();
             preload_vault!(track, royalty_vault);
             track
-                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .release_lock(
+                    SubstateId(node_id, NodeModuleId::ComponentRoyalty, offset.clone()),
+                    false,
+                )
                 .map_err(RoyaltyError::from)?;
         }
 

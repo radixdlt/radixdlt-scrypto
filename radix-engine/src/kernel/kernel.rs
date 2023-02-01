@@ -13,6 +13,7 @@ use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate}; // TODO: possible clean-up
+use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
@@ -93,7 +94,11 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
                 let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(node_id, RENodeInit::AuthZoneStack(auth_zone))?;
+                api.create_node(
+                    node_id,
+                    RENodeInit::AuthZoneStack(auth_zone),
+                    BTreeMap::new(),
+                )?;
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
@@ -147,7 +152,7 @@ where
             let kv_store_id = {
                 let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-                self.create_node(node_id, node)?;
+                self.create_node(node_id, node, BTreeMap::new())?;
                 node_id
             };
 
@@ -172,16 +177,27 @@ where
             };
 
             let node_id = {
-                let account_substate = AccountSubstate {
-                    vaults: Own::KeyValueStore(kv_store_id.into()),
-                };
+                let mut node_modules = BTreeMap::new();
+                node_modules.insert(
+                    NodeModuleId::Metadata,
+                    RENodeModuleInit::Metadata(MetadataSubstate {
+                        metadata: BTreeMap::new(),
+                    }),
+                );
                 let access_rules_substate = AccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
+                node_modules.insert(
+                    NodeModuleId::AccessRules,
+                    RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                );
+                let account_substate = AccountSubstate {
+                    vaults: Own::KeyValueStore(kv_store_id.into()),
+                };
 
                 let node_id = self.allocate_node_id(RENodeType::Account)?;
-                let node = RENodeInit::Account(account_substate, access_rules_substate);
-                self.create_node(node_id, node)?;
+                let node = RENodeInit::Account(account_substate);
+                self.create_node(node_id, node, node_modules)?;
                 node_id
             };
             node_id
@@ -194,6 +210,7 @@ where
         self.current_frame.create_node(
             node_id,
             RENodeInit::Global(global_substate),
+            BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
             true,
@@ -216,6 +233,7 @@ where
         self.current_frame.create_node(
             node_id,
             RENodeInit::Global(global_substate),
+            BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
             true,
@@ -282,6 +300,7 @@ where
                 RENodeId::AuthZoneStack(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
@@ -294,6 +313,7 @@ where
                 RENodeId::Proof(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
@@ -307,6 +327,7 @@ where
                 RENodeId::Worktop => {
                     let handle = system_api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Worktop(WorktopOffset::Worktop),
                         LockFlags::MUTABLE,
                     )?;
@@ -502,7 +523,12 @@ where
             let derefed =
                 self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::empty(),
+                    )?;
                     let substate_ref = system_api.get_ref(handle)?;
                     Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
@@ -525,6 +551,7 @@ where
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
+                            NodeModuleId::SELF,
                             SubstateOffset::Global(GlobalOffset::Global),
                             LockFlags::empty(),
                         )?;
@@ -595,14 +622,18 @@ where
                             }
 
                             let offset = SubstateOffset::Global(GlobalOffset::Global);
+
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
-                                .release_lock(SubstateId(*node_id, offset), false)
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    false,
+                                )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
@@ -613,12 +644,15 @@ where
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
-                                .release_lock(SubstateId(*node_id, offset), false)
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    false,
+                                )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame

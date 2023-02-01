@@ -9,7 +9,9 @@ use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
-use radix_engine_interface::blueprints::epoch_manager::{EpochManagerCreateInvocation, ValidatorInit};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateInvocation, ValidatorInit,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -294,6 +296,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .is_none()
@@ -386,6 +389,7 @@ mod tests {
         let global_substate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(account_component_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())

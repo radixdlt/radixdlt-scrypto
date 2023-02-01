@@ -3,7 +3,7 @@ use super::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
-    KernelSubstateApi, LockFlags, RENodeInit, ResolvedActor,
+    KernelSubstateApi, LockFlags, RENodeInit, RENodeModuleInit, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -17,6 +17,7 @@ use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerError {
@@ -102,23 +103,30 @@ impl Executor for AccessControllerCreateGlobalInvocation {
             vault
         };
 
-        // Constructing the Access Controller RENode and Substates
-        let access_controller = RENodeInit::AccessController(
-            AccessControllerSubstate::new(vault.0, self.timed_recovery_delay_in_minutes),
-            AccessRulesChainSubstate {
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
                 access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
-            },
+            }),
         );
+
+        // Constructing the Access Controller RENode and Substates
+        let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
+            vault.0,
+            self.timed_recovery_delay_in_minutes,
+        ));
 
         // Allocating an RENodeId and creating the access controller RENode
         let node_id = api.allocate_node_id(RENodeType::AccessController)?;
-        api.create_node(node_id, access_controller)?;
+        api.create_node(node_id, access_controller, node_modules)?;
 
         // Creating a global component address for the access controller RENode
         let global_node_id = api.allocate_node_id(RENodeType::GlobalAccessController)?;
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::AccessController(node_id.into())),
+            BTreeMap::new(),
         )?;
 
         Ok((global_node_id.into(), CallFrameUpdate::empty()))
@@ -942,7 +950,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
         let substate = api.get_ref(handle)?;
@@ -971,7 +979,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
         let substate = api.get_ref(handle)?;

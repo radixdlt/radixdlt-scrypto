@@ -4,8 +4,8 @@ use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
-    AccountOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId,
-    SubstateId, SubstateOffset, VaultId, VaultOffset,
+    AccountOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NodeModuleId,
+    RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -63,7 +63,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
             RENodeId::Global(GlobalAddress::Component(..)) => {
-                let substate_id = SubstateId(node_id, SubstateOffset::Global(GlobalOffset::Global));
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                );
                 let substate = self
                     .substate_store
                     .get_substate(&substate_id)
@@ -76,6 +80,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Vault(vault_id) => {
                 let substate_id = SubstateId(
                     RENodeId::Vault(vault_id),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 );
                 if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
@@ -91,6 +96,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 for (key, v) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
+                        NodeModuleId::SELF,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
@@ -109,8 +115,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 }
             }
             RENodeId::Component(..) => {
-                let substate_id =
-                    SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::State),
+                );
                 let output_value = self
                     .substate_store
                     .get_substate(&substate_id)
@@ -124,8 +133,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 }
             }
             RENodeId::Account(..) => {
-                let substate_id =
-                    SubstateId(node_id, SubstateOffset::Account(AccountOffset::Account));
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Account(AccountOffset::Account),
+                );
                 let output_value = self
                     .substate_store
                     .get_substate(&substate_id)
