@@ -305,6 +305,7 @@ pub enum ValidatorFn {
     Unstake,
     ClaimXrd,
     UpdateKey,
+    UpdateAcceptDelegatedStake,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -441,6 +442,17 @@ impl EpochManagerPackage {
                             ValidatorUpdateKeyInvocation {
                                 receiver,
                                 key: args.key,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::UpdateAcceptDelegatedStake => {
+                        let args: ValidatorUpdateAcceptDelegatedStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(
+                            ValidatorUpdateAcceptDelegatedStakeInvocation {
+                                receiver,
+                                accept_delegated_stake: args.accept_delegated_stake,
                             },
                         ))
                     }

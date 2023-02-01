@@ -510,6 +510,55 @@ impl Executor for ValidatorUpdateKeyExecutable {
     }
 }
 
+pub struct ValidatorUpdateAcceptDelegatedStakeExecutable(RENodeId, bool);
+
+impl ExecutableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    type Exec = ValidatorUpdateAcceptDelegatedStakeExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+        where
+            Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let actor = ResolvedActor::method(
+            NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake),
+            resolved_receiver,
+        );
+        let executor = ValidatorUpdateAcceptDelegatedStakeExecutable(resolved_receiver.receiver, self.accept_delegated_stake);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorUpdateAcceptDelegatedStakeExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let rule = if self.1 {
+            AccessRuleEntry::AccessRule(AccessRule::AllowAll)
+        } else {
+            AccessRuleEntry::Group("owner".to_string())
+        };
+
+        api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: self.0,
+            index: 0u32,
+            key: AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)),
+            rule,
+        })?;
+
+        let update = CallFrameUpdate::empty();
+        Ok(((), update))
+    }
+}
+
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
@@ -614,25 +663,27 @@ impl ValidatorCreator {
 
     fn build_access_rules(owner_access_rule: AccessRule) -> AccessRules {
         let mut access_rules = AccessRules::new();
-        access_rules.set_method_access_rule(
+        access_rules.set_group_access_rule_and_mutability("owner".to_string(), owner_access_rule, AccessRule::DenyAll);
+        access_rules.set_method_access_rule_to_group(
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
-            owner_access_rule.clone(),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
-            rule!(allow_all),
+            "owner".to_string(),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            owner_access_rule.clone(),
+            "owner".to_string(),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            owner_access_rule.clone(),
+            "owner".to_string(),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateKey)),
-            owner_access_rule.clone(),
+            "owner".to_string(),
+        );
+
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            rule!(allow_all),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),

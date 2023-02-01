@@ -367,3 +367,28 @@ impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
         NativeInvocation::Validator(ValidatorInvocation::UpdateKey(self)).into()
     }
 }
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateAcceptDelegatedStakeMethodArgs {
+    pub accept_delegated_stake: bool,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateAcceptDelegatedStakeInvocation {
+    pub receiver: ComponentAddress,
+    pub accept_delegated_stake: bool,
+}
+
+impl Invocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(self)).into()
+    }
+}

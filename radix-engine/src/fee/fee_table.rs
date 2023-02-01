@@ -125,6 +125,7 @@ impl FeeTable {
                 ValidatorFn::Unstake => self.fixed_low,
                 ValidatorFn::ClaimXrd => self.fixed_low,
                 ValidatorFn::UpdateKey => self.fixed_low,
+                ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
