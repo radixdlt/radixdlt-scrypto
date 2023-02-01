@@ -1,4 +1,4 @@
-use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::model::{Validator, ValidatorError};
 use radix_engine::types::*;
@@ -284,6 +284,88 @@ fn unregister_validator_without_auth_fails() {
     receipt.expect_specific_failure(|e| {
         matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
+}
+
+fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let num_unstake_epochs = 1u64;
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    validator_set_and_stake_owners.insert(pub_key, (Decimal::one(), validator_account_address));
+    let genesis = create_genesis(
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .call_method(
+            validator_address,
+            "update_accept_delegated_stake",
+            args!(false),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let mut builder = ManifestBuilder::new();
+    builder.lock_fee(FAUCET_COMPONENT, 10.into());
+
+    if owner {
+        builder.create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN);
+    }
+
+    let manifest = builder
+        .call_method(FAUCET_COMPONENT, "free", args!())
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            builder.call_method(validator_address, "stake", args!(bucket))
+        })
+        .call_method(
+            validator_account_address,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
+
+    // Assert
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+            )
+        });
+    }
+}
+
+#[test]
+fn not_allowing_delegated_stake_should_still_let_owner_stake() {
+    test_disabled_delegated_stake(true, true);
+}
+
+#[test]
+fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
+    test_disabled_delegated_stake(false, false);
 }
 
 #[test]

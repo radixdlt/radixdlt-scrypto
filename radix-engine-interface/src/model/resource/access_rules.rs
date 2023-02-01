@@ -154,9 +154,12 @@ impl AccessRules {
         &self.default_auth
     }
 
-    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(&mut self, key: AccessRuleKey, access_rule_entry: E) {
-        self.method_auth
-            .insert(key, access_rule_entry.into());
+    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
+        &mut self,
+        key: AccessRuleKey,
+        access_rule_entry: E,
+    ) {
+        self.method_auth.insert(key, access_rule_entry.into());
     }
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {

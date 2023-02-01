@@ -122,6 +122,7 @@ impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
             RENodeId::Component(..)
             | RENodeId::Package(..)
             | RENodeId::ResourceManager(..)
+            | RENodeId::Validator(..)
             | RENodeId::AccessController(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(

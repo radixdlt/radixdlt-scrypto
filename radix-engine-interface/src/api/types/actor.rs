@@ -449,12 +449,14 @@ impl EpochManagerPackage {
                     ValidatorFn::UpdateAcceptDelegatedStake => {
                         let args: ValidatorUpdateAcceptDelegatedStakeMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(
-                            ValidatorUpdateAcceptDelegatedStakeInvocation {
-                                receiver,
-                                accept_delegated_stake: args.accept_delegated_stake,
-                            },
-                        ))
+                        NativeInvocation::Validator(
+                            ValidatorInvocation::UpdateAcceptDelegatedStake(
+                                ValidatorUpdateAcceptDelegatedStakeInvocation {
+                                    receiver,
+                                    accept_delegated_stake: args.accept_delegated_stake,
+                                },
+                            ),
+                        )
                     }
                 }
             }
