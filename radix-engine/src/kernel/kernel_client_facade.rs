@@ -1,3 +1,4 @@
+use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
@@ -13,8 +14,10 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
+use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use crate::wasm::WasmValidator;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
@@ -175,6 +178,16 @@ where
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
+        // Validate code
+        WasmValidator::default()
+            .validate(&code, &abi)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidWasm(e),
+                ))
+            })?;
+
+        // Allocate node id
         let node_id = self.allocate_node_id(RENodeType::Package)?;
 
         // Create a royalty vault
@@ -284,6 +297,7 @@ where
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, RuntimeError> {
+        // Allocate node id
         let node_id = self.allocate_node_id(RENodeType::Component)?;
 
         // Create a royalty vault
