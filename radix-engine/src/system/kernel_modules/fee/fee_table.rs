@@ -65,14 +65,14 @@ pub struct FeeTable {
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_base_fee: 10_000,
-            tx_payload_cost_per_byte: 1,
-            tx_signature_verification_per_sig: 3750,
-            tx_blob_price_per_byte: 1,
-            wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
-            fixed_low: 100,
-            fixed_medium: 500,
-            fixed_high: 1000,
+            tx_base_fee: 50_000,
+            tx_payload_cost_per_byte: 5,
+            tx_signature_verification_per_sig: 100_000,
+            tx_blob_price_per_byte: 5,
+            wasm_instantiation_per_byte: 1, // TODO: Re-enable WASM instantiation cost if it's unavoidable
+            fixed_low: 500,
+            fixed_medium: 2500,
+            fixed_high: 5000,
         }
     }
 
@@ -124,6 +124,8 @@ impl FeeTable {
                 ValidatorFn::Stake => self.fixed_low,
                 ValidatorFn::Unstake => self.fixed_low,
                 ValidatorFn::ClaimXrd => self.fixed_low,
+                ValidatorFn::UpdateKey => self.fixed_low,
+                ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
@@ -231,6 +233,32 @@ impl FeeTable {
                     TransactionProcessorFn::Run => self.fixed_high,
                 }
             }
+            // TODO: Investigate what sensible costing for native components looks like
+            NativeFn::Account(account_fn) => match account_fn {
+                AccountFn::Create => self.fixed_low,
+
+                AccountFn::New => self.fixed_low,
+
+                AccountFn::Balance => self.fixed_low,
+
+                AccountFn::LockFee => self.fixed_low,
+                AccountFn::LockContingentFee => self.fixed_low,
+
+                AccountFn::Deposit => self.fixed_low,
+                AccountFn::DepositBatch => self.fixed_low,
+
+                AccountFn::Withdraw => self.fixed_low,
+                AccountFn::WithdrawByAmount => self.fixed_low,
+                AccountFn::WithdrawByIds => self.fixed_low,
+
+                AccountFn::LockFeeAndWithdraw => self.fixed_low,
+                AccountFn::LockFeeAndWithdrawByAmount => self.fixed_low,
+                AccountFn::LockFeeAndWithdrawByIds => self.fixed_low,
+
+                AccountFn::CreateProof => self.fixed_low,
+                AccountFn::CreateProofByAmount => self.fixed_low,
+                AccountFn::CreateProofByIds => self.fixed_low,
+            },
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
                 AccessControllerFn::CreateGlobal => self.fixed_low,
 

@@ -19,27 +19,27 @@ use crate::utils::*;
 #[derive(Parser, Debug)]
 pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
-    path: PathBuf,
+    pub path: PathBuf,
 
     /// The owner badge (hex value).
     #[clap(long)]
-    owner_badge: Option<SimulatorNonFungibleGlobalId>,
+    pub owner_badge: Option<SimulatorNonFungibleGlobalId>,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
-    package_address: Option<SimulatorPackageAddress>,
+    pub package_address: Option<SimulatorPackageAddress>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl Publish {
@@ -106,10 +106,9 @@ impl Publish {
         } else {
             let owner_badge_non_fungible_global_id = self
                 .owner_badge
-                .as_ref()
-                .ok_or(Error::OwnerBadgeNotSpecified)?
-                .0
-                .clone();
+                .clone()
+                .map(|owner_badge| owner_badge.0)
+                .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())

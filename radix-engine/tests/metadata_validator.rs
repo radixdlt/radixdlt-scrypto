@@ -6,10 +6,14 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
-fn create_validator(test_runner: &mut TestRunner, pk: EcdsaSecp256k1PublicKey) -> ComponentAddress {
+fn create_validator(
+    test_runner: &mut TestRunner,
+    pk: EcdsaSecp256k1PublicKey,
+    owner_access_rule: AccessRule,
+) -> ComponentAddress {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_validator(pk)
+        .create_validator(pk, owner_access_rule)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -27,7 +31,11 @@ fn can_set_validator_metadata_with_owner() {
     let mut test_runner = TestRunner::builder().build();
     let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-    let component_address = create_validator(&mut test_runner, pk.clone());
+    let component_address = create_validator(
+        &mut test_runner,
+        pk.clone(),
+        rule!(require(owner_id.clone())),
+    );
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -51,7 +59,9 @@ fn cannot_set_validator_metadata_without_owner() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let component_address = create_validator(&mut test_runner, pk.clone());
+    let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+    let component_address =
+        create_validator(&mut test_runner, pk.clone(), rule!(require(owner_id)));
 
     // Act
     let manifest = ManifestBuilder::new()

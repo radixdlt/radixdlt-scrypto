@@ -193,6 +193,10 @@ pub enum Instruction {
         initial_supply: Value,
     },
 
+    CreateValidator {
+        key: Value,
+        owner_access_rule: Value,
+    },
     CreateAccessController {
         controlled_asset: Value,
         primary_role: Value,
@@ -206,6 +210,10 @@ pub enum Instruction {
 
     AssertAccessRule {
         access_rule: Value,
+    },
+
+    CreateAccount {
+        withdraw_rule: Value,
     },
 }
 

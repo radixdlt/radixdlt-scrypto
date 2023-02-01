@@ -1,4 +1,6 @@
+use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
+use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
@@ -10,18 +12,18 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
-use crate::system::node_modules::auth::AuthZoneStackSubstate; // TODO: possible clean-up
+use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate}; // TODO: possible clean-up
+use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::types::ScryptoInvocation;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
-use radix_engine_interface::api::Invokable; // TODO: possible clean-up
-use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::data::*;
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket,
+};
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
@@ -132,10 +134,6 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
@@ -150,24 +148,64 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
-        let result = self.invoke(ScryptoInvocation {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: "Account".to_string(),
-            fn_name: "create".to_string(),
-            receiver: None,
-            args: args!(access_rule),
-        })?;
-        let component_id = IndexedScryptoValue::from_value(result)
-            .owned_node_ids()
-            .expect("No duplicates expected")
-            .into_iter()
-            .next()
-            .unwrap()
-            .into();
+        let component_id = {
+            let kv_store_id = {
+                let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+                let node = RENodeInit::KeyValueStore(KeyValueStore::new());
+                self.create_node(node_id, node, BTreeMap::new())?;
+                node_id
+            };
+
+            let access_rules = {
+                let mut access_rules = AccessRules::new();
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Balance)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_access_rule_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Account(AccountFn::DepositBatch)),
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.default(access_rule.clone(), access_rule)
+            };
+
+            let node_id = {
+                let mut node_modules = BTreeMap::new();
+                node_modules.insert(
+                    NodeModuleId::Metadata,
+                    RENodeModuleInit::Metadata(MetadataSubstate {
+                        metadata: BTreeMap::new(),
+                    }),
+                );
+                let access_rules_substate = AccessRulesChainSubstate {
+                    access_rules_chain: vec![access_rules],
+                };
+                node_modules.insert(
+                    NodeModuleId::AccessRules,
+                    RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                );
+                let account_substate = AccountSubstate {
+                    vaults: Own::KeyValueStore(kv_store_id.into()),
+                };
+
+                let node_id = self.allocate_node_id(RENodeType::Account)?;
+                let node = RENodeInit::Account(account_substate);
+                self.create_node(node_id, node, node_modules)?;
+                node_id
+            };
+            node_id
+        };
 
         // TODO: Use system_api to globalize component when create_node is refactored
         // TODO: to allow for address selection
-        let global_substate = GlobalAddressSubstate::Component(component_id);
+        let global_substate = GlobalAddressSubstate::Account(component_id.into());
 
         self.current_frame.create_node(
             node_id,

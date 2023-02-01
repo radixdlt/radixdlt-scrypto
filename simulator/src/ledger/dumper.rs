@@ -6,12 +6,11 @@ use radix_engine::blueprints::resource::{
 use radix_engine::ledger::*;
 use radix_engine::system::component::{ComponentInfoSubstate, ComponentStateSubstate};
 use radix_engine::system::global::GlobalAddressSubstate;
-use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::PackageInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::blueprints::resource::ResourceType;
+use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -71,6 +70,15 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     Ok(())
 }
 
+struct ComponentStateDump {
+    pub raw_state: Option<IndexedScryptoValue>,
+    pub owned_vaults: Option<HashSet<VaultId>>,
+    pub package_address: Option<PackageAddress>, // Native components have no package address.
+    pub blueprint_name: String,                  // All components have a blueprint, native or not.
+    pub access_rules: Option<Vec<AccessRules>>,  // Virtual Components don't have access rules.
+    pub metadata: Option<BTreeMap<String, String>>,
+}
+
 /// Dump a component into console.
 pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
@@ -79,60 +87,42 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-    let component_id = substate_store
-        .get_substate(&SubstateId(
-            node_id,
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().global().node_deref())
-        .ok_or(DisplayError::ComponentNotFound)?;
+    // Dereference the global component address to get the component id
+    let component_id = {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        substate_store
+            .get_substate(&SubstateId(
+                node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().global().node_deref())
+            .ok_or(DisplayError::ComponentNotFound)?
+    };
 
-    let component_info: Option<ComponentInfoSubstate> = substate_store
-        .get_substate(&SubstateId(
-            component_id,
-            NodeModuleId::SELF,
-            SubstateOffset::Component(ComponentOffset::Info),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
-    match component_info {
-        Some(c) => {
-            writeln!(
-                output,
-                "{}: {}",
-                "Component".green().bold(),
-                component_address.display(&bech32_encoder),
-            );
-
-            writeln!(
-                output,
-                "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
-                "Blueprint".green().bold(),
-                c.package_address.display(&bech32_encoder),
-                c.blueprint_name
-            );
-
-            let substate: AccessRulesChainSubstate = substate_store
+    // Some branching logic is needed here to deal well with native components. Only `Normal`
+    // components have a `ComponentInfoSubstate`. Other components require some special handling.
+    let component_state_dump = match component_address {
+        ComponentAddress::Normal(..) => {
+            let component_info_substate: ComponentInfoSubstate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-                .unwrap();
-
-            writeln!(output, "{}", "Access Rules".green().bold());
-            for (_, auth) in substate.access_rules_chain.iter().identify_last() {
-                for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
-                    writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
-                }
-                writeln!(output, "Default: {:?}", auth.get_default());
-            }
-
+                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
@@ -142,19 +132,24 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
+            let metadata_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::Metadata,
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().metadata().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
 
-            let state_data = IndexedScryptoValue::from_slice(&state.raw).unwrap();
-            let value_display_context =
-                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
-            writeln!(
-                output,
-                "{}: {}",
-                "State".green().bold(),
-                state_data.display(value_display_context)
-            );
+            let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
+            let package_address = component_info_substate.package_address;
+            let blueprint_name = component_info_substate.blueprint_name;
+            let access_rules = access_rules_chain_substate.access_rules_chain;
+            let metadata = metadata_substate.metadata;
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = state_data
+            let mut vaults_found: HashSet<VaultId> = raw_state
                 .owned_node_ids()
                 .unwrap()
                 .iter()
@@ -164,7 +159,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     _ => None,
                 })
                 .collect();
-            let mut queue: VecDeque<KeyValueStoreId> = state_data
+            let mut queue: VecDeque<KeyValueStoreId> = raw_state
                 .owned_node_ids()
                 .unwrap()
                 .iter()
@@ -182,11 +177,206 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 vaults_found.extend(vaults);
             }
 
-            // Dump resources
-            dump_resources(&vaults_found, substate_store, output)
+            ComponentStateDump {
+                raw_state: Some(raw_state),
+                blueprint_name,
+                package_address: Some(package_address),
+                metadata: Some(metadata),
+                access_rules: Some(access_rules),
+                owned_vaults: Some(vaults_found),
+            }
         }
-        None => Err(DisplayError::ComponentNotFound),
+        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+        | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
+            // Just an account with no vaults.
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(HashSet::new()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Account".into(),
+                access_rules: None,
+                metadata: None,
+            }
+        }
+        ComponentAddress::Account(..) => {
+            let account_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Account(AccountOffset::Account),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().account().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            // Getting the vaults in the key-value store of the account
+            let vaults = dump_kv_store(
+                component_address,
+                &account_substate.vaults.key_value_store_id(),
+                substate_store,
+                output,
+            )
+            .map(|(_, vault_ids)| vault_ids)?
+            .into_iter()
+            .collect();
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(vaults),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Account".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                metadata: None,
+            }
+        }
+        ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+        | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(HashSet::new()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Identity".into(),
+                access_rules: None,
+                metadata: None,
+            }
+        }
+        ComponentAddress::Identity(..) => {
+            let metadata_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::Metadata,
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().metadata().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: None,
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Identity".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                metadata: Some(metadata_substate.metadata),
+            }
+        }
+        ComponentAddress::AccessController(..) => {
+            let access_controller_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::Metadata,
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().access_controller().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    component_id,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some([access_controller_substate.controlled_asset].into()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "AccessController".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                metadata: None,
+            }
+        }
+        // For the time being, the above component types are the only "dump-able" ones. We should
+        // add more as we go.
+        _ => Err(DisplayError::ComponentNotFound)?,
+    };
+
+    writeln!(
+        output,
+        "{}: {}",
+        "Component".green().bold(),
+        component_address.display(&bech32_encoder),
+    );
+
+    if let Some(package_address) = component_state_dump.package_address {
+        writeln!(
+            output,
+            "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
+            "Blueprint".green().bold(),
+            package_address.display(&bech32_encoder),
+            component_state_dump.blueprint_name
+        );
+    } else {
+        writeln!(
+            output,
+            "{}: {{ Native Package, blueprint_name: \"{}\" }}",
+            "Blueprint".green().bold(),
+            component_state_dump.blueprint_name
+        );
     }
+
+    if let Some(access_rules) = component_state_dump.access_rules {
+        writeln!(output, "{}", "Access Rules".green().bold());
+        for (_, auth) in access_rules.iter().identify_last() {
+            for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
+                writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
+            }
+            writeln!(output, "Default: {:?}", auth.get_default());
+        }
+    }
+
+    if let Some(raw_state) = component_state_dump.raw_state {
+        let value_display_context =
+            ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+        writeln!(
+            output,
+            "{}: {}",
+            "State".green().bold(),
+            raw_state.display(value_display_context)
+        );
+    }
+
+    if let Some(metadata) = component_state_dump.metadata {
+        if !metadata.is_empty() {
+            writeln!(output, "{}", "Metadata".green().bold());
+            for (last, (key, value)) in metadata.iter().identify_last() {
+                writeln!(
+                    output,
+                    "{} {:?} => {:?}",
+                    list_item_prefix(last),
+                    key,
+                    value
+                );
+            }
+        }
+    }
+
+    if let Some(vaults) = component_state_dump.owned_vaults {
+        dump_resources(&vaults, substate_store, output);
+    }
+
+    Ok(())
 }
 
 fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(

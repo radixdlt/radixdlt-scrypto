@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
@@ -149,11 +149,12 @@ impl TestRunnerBuilder {
         let genesis = self
             .custom_genesis
             .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
-        runner.execute_transaction_with_config(
+        let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
         );
+        receipt.expect_commit_success();
         runner
     }
 }
@@ -376,21 +377,25 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.new_account_with_resource(withdraw_auth, bucket)
-            })
-            .build();
-
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-
-        receipt
+        let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let account_component = receipt
             .expect_commit()
             .entity_changes
-            .new_component_addresses[0]
+            .new_component_addresses[0];
+
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(
+                account_component,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
+        account_component
     }
 
     pub fn new_virtual_account(
@@ -506,17 +511,19 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
-        let address = self.new_validator_with_pub_key(pub_key);
+        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
+        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
         (pub_key, address)
     }
 
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();

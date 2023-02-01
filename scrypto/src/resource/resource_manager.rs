@@ -61,7 +61,7 @@ impl ResourceManager {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
-            rule: access_rule,
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }
@@ -102,7 +102,7 @@ impl ResourceManager {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
-            rule: access_rule,
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }
@@ -115,7 +115,7 @@ impl ResourceManager {
             key: AccessRuleKey::Native(NativeFn::ResourceManager(
                 ResourceManagerFn::UpdateNonFungibleData,
             )),
-            rule: access_rule,
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }

@@ -1027,7 +1027,7 @@ where
                     receiver: receiver,
                     index: 0,
                     key: method_key.clone(),
-                    rule: access_rule.clone(),
+                    rule: AccessRuleEntry::AccessRule(access_rule.clone()),
                 })?;
             }
             AccessRuleEntry::Group(..) => {} // Already updated above

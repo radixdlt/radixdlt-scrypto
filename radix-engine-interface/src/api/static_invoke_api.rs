@@ -4,6 +4,7 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
@@ -61,6 +62,8 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
     + Invokable<ValidatorClaimXrdInvocation, E>
+    + Invokable<ValidatorUpdateKeyInvocation, E>
+    + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
@@ -157,5 +160,21 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
+    + Invokable<AccountCreateInvocation, E>
+    + Invokable<AccountNewInvocation, E>
+    + Invokable<AccountBalanceInvocation, E>
+    + Invokable<AccountLockFeeInvocation, E>
+    + Invokable<AccountLockContingentFeeInvocation, E>
+    + Invokable<AccountDepositInvocation, E>
+    + Invokable<AccountDepositBatchInvocation, E>
+    + Invokable<AccountWithdrawInvocation, E>
+    + Invokable<AccountWithdrawByAmountInvocation, E>
+    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountCreateProofInvocation, E>
+    + Invokable<AccountCreateProofByAmountInvocation, E>
+    + Invokable<AccountCreateProofByIdsInvocation, E>
 {
 }

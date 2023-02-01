@@ -43,11 +43,7 @@ impl ExecutableInvocation for ScryptoInvocation {
         let (receiver, actor) = if let Some(receiver) = self.receiver {
             let original_node_id = match receiver {
                 ScryptoReceiver::Global(component_address) => match component_address {
-                    ComponentAddress::Normal(..)
-                    | ComponentAddress::Account(..)
-                    | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                    | ComponentAddress::EddsaEd25519VirtualAccount(..)
-                    | ComponentAddress::AccessController(..) => {
+                    ComponentAddress::Normal(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
                     ComponentAddress::Clock(..)
@@ -55,7 +51,11 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::Validator(..)
                     | ComponentAddress::Identity(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                    | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+                    | ComponentAddress::EddsaEd25519VirtualIdentity(..)
+                    | ComponentAddress::Account(..)
+                    | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                    | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                    | ComponentAddress::AccessController(..) => {
                         return Err(RuntimeError::InterpreterError(
                             InterpreterError::InvalidInvocation,
                         ));
@@ -187,7 +187,6 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
             actor,

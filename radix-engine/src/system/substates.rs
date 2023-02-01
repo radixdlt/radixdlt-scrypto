@@ -11,6 +11,7 @@ use super::package::PackageInfoSubstate;
 use super::package::PackageRoyaltyAccumulatorSubstate;
 use super::package::PackageRoyaltyConfigSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
+use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
@@ -53,6 +54,7 @@ pub enum PersistedSubstate {
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 }
 
@@ -151,6 +153,7 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
+            PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
         }
     }
@@ -187,6 +190,7 @@ pub enum RuntimeSubstate {
     Logger(LoggerSubstate),
     FeeReserve(FeeReserveSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
+    Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 }
 
@@ -234,6 +238,7 @@ impl RuntimeSubstate {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::Account(value) => PersistedSubstate::Account(value.clone()),
             RuntimeSubstate::AccessController(value) => {
                 PersistedSubstate::AccessController(value.clone())
             }
@@ -286,6 +291,7 @@ impl RuntimeSubstate {
                     .expect("Vault should be liquid at end of successful transaction");
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
             RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
@@ -366,6 +372,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
+            RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
         }
     }
@@ -407,6 +414,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
+            RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
         }
     }
@@ -496,6 +504,30 @@ impl RuntimeSubstate {
             validator_set
         } else {
             panic!("Not a validator set");
+        }
+    }
+
+    pub fn account(&self) -> &AccountSubstate {
+        if let RuntimeSubstate::Account(account) = self {
+            account
+        } else {
+            panic!("Not an account");
+        }
+    }
+
+    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+        if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
+            access_rules_chain
+        } else {
+            panic!("Not an access rules chain");
+        }
+    }
+
+    pub fn access_controller(&self) -> &AccessControllerSubstate {
+        if let RuntimeSubstate::AccessController(access_controller) = self {
+            access_controller
+        } else {
+            panic!("Not an access controller");
         }
     }
 }
@@ -611,6 +643,12 @@ impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
 impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::TransactionRuntime(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for AccountSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Account(self)
     }
 }
 
@@ -846,6 +884,7 @@ pub enum SubstateRef<'a> {
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
+    Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
 }
 
@@ -1030,6 +1069,20 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        match self {
+            SubstateRef::KeyValueStoreEntry(value) => *value,
+            _ => panic!("Not a key value store entry"),
+        }
+    }
+
+    pub fn account(&self) -> &AccountSubstate {
+        match self {
+            SubstateRef::Account(value) => *value,
+            _ => panic!("Not an account"),
+        }
+    }
+
     pub fn access_controller(&self) -> &AccessControllerSubstate {
         match self {
             SubstateRef::AccessController(substate) => *substate,
@@ -1062,6 +1115,9 @@ impl<'a> SubstateRef<'a> {
                     }
                     GlobalAddressSubstate::Validator(validator_id) => {
                         owned_nodes.insert(RENodeId::Validator(*validator_id))
+                    }
+                    GlobalAddressSubstate::Account(account_id) => {
+                        owned_nodes.insert(RENodeId::Account(*account_id))
                     }
                     GlobalAddressSubstate::AccessController(access_controller_id) => {
                         owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
@@ -1171,6 +1227,13 @@ impl<'a> SubstateRef<'a> {
                     (HashSet::new(), HashSet::new())
                 }
             }
+            SubstateRef::Account(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::KeyValueStore(
+                    substate.vaults.key_value_store_id(),
+                ));
+                (HashSet::new(), owned_nodes)
+            }
             _ => (HashSet::new(), HashSet::new()),
         }
     }
@@ -1203,6 +1266,7 @@ pub enum SubstateRefMut<'a> {
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
+    Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
 }
 

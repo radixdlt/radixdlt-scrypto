@@ -8,7 +8,7 @@ on:
       - docs
       - alphanet
       - betanet
-      - release/*
+      - release\/*
   pull_request:
     branches:
       - main
@@ -16,7 +16,7 @@ on:
       - docs
       - alphanet
       - betanet
-      - release/*
+      - release\/*
 
 env:
   CARGO_TERM_COLOR: always
@@ -158,9 +158,6 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
       run: rustup +nightly target add wasm32-unknown-unknown
-    - name: Build account
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/blueprints/account
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet

@@ -1,4 +1,5 @@
 use crate::blueprints::access_controller::AccessControllerError;
+use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
@@ -327,6 +328,8 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+
+    AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
 }

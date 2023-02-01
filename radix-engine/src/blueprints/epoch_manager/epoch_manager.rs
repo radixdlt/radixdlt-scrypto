@@ -9,12 +9,13 @@ use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysBucket;
+use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -75,23 +76,21 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        for (bucket, account_address) in self.validator_set.values() {
+        for (_key, validator_init) in &self.validator_set {
             call_frame_update
                 .nodes_to_move
-                .push(RENodeId::Bucket(bucket.0));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                .push(RENodeId::Bucket(validator_init.initial_stake.0));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_init.stake_account_address,
+            )));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_init.validator_account_address,
+            )));
         }
 
         Ok((actor, call_frame_update, self))
     }
-}
-
-// TODO: Cleanup once native accounts implemented
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccountDepositInput {
-    bucket: Bucket,
 }
 
 impl Executor for EpochManagerCreateInvocation {
@@ -120,25 +119,58 @@ impl Executor for EpochManagerCreateInvocation {
             num_unstake_epochs: self.num_unstake_epochs,
         };
 
+        let mut olympia_validator_token_resman: ResourceManager = {
+            let metadata: BTreeMap<String, String> = BTreeMap::new();
+            let mut access_rules = BTreeMap::new();
+
+            // TODO: remove mint and premint all tokens
+            {
+                let non_fungible_local_id = NonFungibleLocalId::Bytes(
+                    scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
+                        .unwrap(),
+                );
+                let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+                access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+            }
+
+            access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+            let resource_address: ResourceAddress =
+                api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                    resource_address: Some(self.olympia_validator_token_address),
+                    id_type: NonFungibleIdType::Bytes,
+                    metadata,
+                    access_rules,
+                })?;
+            ResourceManager(resource_address)
+        };
+
         let mut validator_set = BTreeMap::new();
 
-        for (key, (initial_stake, account_address)) in self.validator_set {
-            let stake = initial_stake.sys_amount(api)?;
+        for (key, validator_init) in self.validator_set {
+            let local_id = NonFungibleLocalId::Bytes(key.to_vec());
+            let global_id =
+                NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
+            let owner_token_bucket =
+                olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
+            api.invoke(AccountDepositInvocation {
+                receiver: validator_init.validator_account_address,
+                bucket: owner_token_bucket.0,
+            })?;
+
+            let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
-                initial_stake,
+                rule!(require(global_id)),
+                validator_init.initial_stake,
                 true,
                 api,
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(ScryptoInvocation {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_string(),
-                fn_name: "deposit".to_string(),
-                receiver: Some(ScryptoReceiver::Global(account_address)),
-                args: args!(lp_bucket),
+            api.invoke(AccountDepositInvocation {
+                receiver: validator_init.stake_account_address,
+                bucket: lp_bucket.0,
             })?;
         }
 
@@ -406,7 +438,7 @@ impl Executor for EpochManagerSetEpochExecutable {
     }
 }
 
-pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey, AccessRule);
 
 impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
     type Exec = EpochManagerCreateValidatorExecutable;
@@ -427,7 +459,11 @@ impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),
             resolved_receiver,
         );
-        let executor = EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
+        let executor = EpochManagerCreateValidatorExecutable(
+            resolved_receiver.receiver,
+            self.key,
+            self.owner_access_rule,
+        );
 
         Ok((actor, call_frame_update, executor))
     }
@@ -455,7 +491,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = ValidatorCreator::create(manager, self.1, false, api)?;
+        let validator_address = ValidatorCreator::create(manager, self.1, self.2, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(
