@@ -24,6 +24,10 @@ impl Invocation for BucketTakeInvocation {
 
 impl SerializableInvocation for BucketTakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::Take)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketTakeInvocation {
@@ -57,6 +61,10 @@ impl Invocation for BucketPutInvocation {
 
 impl SerializableInvocation for BucketPutInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::Put)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketPutInvocation {
@@ -81,6 +89,10 @@ impl Invocation for BucketTakeNonFungiblesInvocation {
 
 impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::TakeNonFungibles)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketTakeNonFungiblesInvocation {
@@ -104,6 +116,10 @@ impl Invocation for BucketGetNonFungibleLocalIdsInvocation {
 
 impl SerializableInvocation for BucketGetNonFungibleLocalIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::GetNonFungibleLocalIds)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketGetNonFungibleLocalIdsInvocation {
@@ -127,6 +143,10 @@ impl Invocation for BucketGetAmountInvocation {
 
 impl SerializableInvocation for BucketGetAmountInvocation {
     type ScryptoOutput = Decimal;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::GetAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketGetAmountInvocation {
@@ -150,6 +170,10 @@ impl Invocation for BucketGetResourceAddressInvocation {
 
 impl SerializableInvocation for BucketGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::GetResourceAddress)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketGetResourceAddressInvocation {
@@ -173,6 +197,10 @@ impl Invocation for BucketCreateProofInvocation {
 
 impl SerializableInvocation for BucketCreateProofInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Bucket(BucketFn::CreateProof)
+    }
 }
 
 impl Into<CallTableInvocation> for BucketCreateProofInvocation {

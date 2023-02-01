@@ -49,10 +49,6 @@ impl Invocation for ScryptoInvocation {
     }
 }
 
-impl SerializableInvocation for ScryptoInvocation {
-    type ScryptoOutput = ScryptoValue;
-}
-
 impl Into<CallTableInvocation> for ScryptoInvocation {
     fn into(self) -> CallTableInvocation {
         CallTableInvocation::Scrypto(self)

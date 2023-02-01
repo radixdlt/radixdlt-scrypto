@@ -18,6 +18,10 @@ impl Invocation for ComponentGlobalizeInvocation {
 
 impl SerializableInvocation for ComponentGlobalizeInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Component(ComponentFn::Globalize)
+    }
 }
 
 impl Into<CallTableInvocation> for ComponentGlobalizeInvocation {
@@ -42,6 +46,10 @@ impl Invocation for ComponentGlobalizeWithOwnerInvocation {
 
 impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Component(ComponentFn::GlobalizeWithOwner)
+    }
 }
 
 impl Into<CallTableInvocation> for ComponentGlobalizeWithOwnerInvocation {
@@ -67,6 +75,10 @@ impl Invocation for ComponentSetRoyaltyConfigInvocation {
 
 impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Component(ComponentFn::SetRoyaltyConfig)
+    }
 }
 
 impl Into<CallTableInvocation> for ComponentSetRoyaltyConfigInvocation {
@@ -91,6 +103,10 @@ impl Invocation for ComponentClaimRoyaltyInvocation {
 
 impl SerializableInvocation for ComponentClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Component(ComponentFn::ClaimRoyalty)
+    }
 }
 
 impl Into<CallTableInvocation> for ComponentClaimRoyaltyInvocation {

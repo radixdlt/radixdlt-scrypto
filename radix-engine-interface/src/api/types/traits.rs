@@ -14,4 +14,6 @@ pub trait SerializableInvocation:
     Invocation<Output = Self::ScryptoOutput> + ScryptoEncode + Into<CallTableInvocation>
 {
     type ScryptoOutput: ScryptoDecode;
+
+    fn native_fn() -> NativeFn;
 }

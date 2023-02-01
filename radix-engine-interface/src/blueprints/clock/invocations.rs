@@ -20,6 +20,10 @@ impl Invocation for ClockCreateInvocation {
 
 impl SerializableInvocation for ClockCreateInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::Create)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockCreateInvocation {
@@ -49,6 +53,10 @@ impl Invocation for ClockGetCurrentTimeInvocation {
 
 impl SerializableInvocation for ClockGetCurrentTimeInvocation {
     type ScryptoOutput = Instant;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::GetCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockGetCurrentTimeInvocation {
@@ -82,6 +90,10 @@ impl Invocation for ClockCompareCurrentTimeInvocation {
 
 impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
     type ScryptoOutput = bool;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::CompareCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockCompareCurrentTimeInvocation {
@@ -111,6 +123,10 @@ impl Invocation for ClockSetCurrentTimeInvocation {
 
 impl SerializableInvocation for ClockSetCurrentTimeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::SetCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockSetCurrentTimeInvocation {

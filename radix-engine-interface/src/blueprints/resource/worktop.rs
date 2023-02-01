@@ -28,6 +28,10 @@ impl Invocation for WorktopPutInvocation {
 
 impl SerializableInvocation for WorktopPutInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::Put)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopPutInvocation {
@@ -52,6 +56,10 @@ impl Invocation for WorktopTakeAmountInvocation {
 
 impl SerializableInvocation for WorktopTakeAmountInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::TakeAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopTakeAmountInvocation {
@@ -76,6 +84,10 @@ impl Invocation for WorktopTakeNonFungiblesInvocation {
 
 impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::TakeNonFungibles)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopTakeNonFungiblesInvocation {
@@ -99,6 +111,10 @@ impl Invocation for WorktopTakeAllInvocation {
 
 impl SerializableInvocation for WorktopTakeAllInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::TakeAll)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopTakeAllInvocation {
@@ -122,6 +138,10 @@ impl Invocation for WorktopAssertContainsInvocation {
 
 impl SerializableInvocation for WorktopAssertContainsInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::AssertContains)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopAssertContainsInvocation {
@@ -145,6 +165,10 @@ impl Invocation for WorktopAssertContainsAmountInvocation {
 
 impl SerializableInvocation for WorktopAssertContainsAmountInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::AssertContainsAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopAssertContainsAmountInvocation {
@@ -169,6 +193,10 @@ impl Invocation for WorktopAssertContainsNonFungiblesInvocation {
 
 impl SerializableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::AssertContainsNonFungibles)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopAssertContainsNonFungiblesInvocation {
@@ -190,6 +218,10 @@ impl Invocation for WorktopDrainInvocation {
 
 impl SerializableInvocation for WorktopDrainInvocation {
     type ScryptoOutput = Vec<Bucket>;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Worktop(WorktopFn::Drain)
+    }
 }
 
 impl Into<CallTableInvocation> for WorktopDrainInvocation {
