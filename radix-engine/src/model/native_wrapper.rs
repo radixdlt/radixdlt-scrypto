@@ -465,6 +465,14 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ValidatorInvocation::UpdateKey(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
         },
         NativeInvocation::Clock(clock_method) => match clock_method {
             ClockInvocation::Create(invocation) => {

@@ -67,13 +67,13 @@ fn test_basic_transfer() {
         15000 /* create_node */
         + 44000 /* drop_lock */
         + 10000 /* drop_node */
-        + 902454 /* instantiate_wasm */
+        + 917919 /* instantiate_wasm */
         + 6500 /* invoke */
         + 59500 /* lock_substate */
         + 35000 /* read_owned_nodes */
         + 200000 /* read_substate */
         + 20000 /* run_native_method */
-        + 929070 /* run_wasm */
+        + 929185 /* run_wasm */
         + 50000 /* tx_base_fee */
         + 1370 /* tx_payload_cost */
         + 100000 /* tx_signature_verification */

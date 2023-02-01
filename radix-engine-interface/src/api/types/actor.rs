@@ -304,6 +304,8 @@ pub enum ValidatorFn {
     Stake,
     Unstake,
     ClaimXrd,
+    UpdateKey,
+    UpdateAcceptDelegatedStake,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -362,7 +364,8 @@ impl EpochManagerPackage {
                         NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
                             EpochManagerCreateValidatorInvocation {
                                 receiver,
-                                key: args.validator,
+                                key: args.key,
+                                owner_access_rule: args.owner_access_rule,
                             },
                         ))
                     }
@@ -430,6 +433,30 @@ impl EpochManagerPackage {
                                 unstake_nft: args.bucket,
                             },
                         ))
+                    }
+
+                    ValidatorFn::UpdateKey => {
+                        let args: ValidatorUpdateKeyMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(
+                            ValidatorUpdateKeyInvocation {
+                                receiver,
+                                key: args.key,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::UpdateAcceptDelegatedStake => {
+                        let args: ValidatorUpdateAcceptDelegatedStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(
+                            ValidatorInvocation::UpdateAcceptDelegatedStake(
+                                ValidatorUpdateAcceptDelegatedStakeInvocation {
+                                    receiver,
+                                    accept_delegated_stake: args.accept_delegated_stake,
+                                },
+                            ),
+                        )
                     }
                 }
             }

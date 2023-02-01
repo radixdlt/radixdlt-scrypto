@@ -41,13 +41,13 @@ impl NativeInvocation {
     ) -> Result<(), ReplaceManifestValuesError> {
         match self {
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, (bucket, _)) in &mut invocation.validator_set {
+                for (_, validator_init) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
-                        .remove(&ManifestBucket(bucket.0))
+                        .remove(&ManifestBucket(validator_init.initial_stake.0))
                         .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
-                            bucket.0,
+                            validator_init.initial_stake.0,
                         )))?;
-                    bucket.0 = next_id;
+                    validator_init.initial_stake.0 = next_id;
                 }
             }
             _ => {} // TODO: Expand this
@@ -134,6 +134,8 @@ pub enum ValidatorInvocation {
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
     ClaimXrd(ValidatorClaimXrdInvocation),
+    UpdateKey(ValidatorUpdateKeyInvocation),
+    UpdateAcceptDelegatedStake(ValidatorUpdateAcceptDelegatedStakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -418,8 +420,13 @@ impl NativeInvocation {
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(invocation) => {
-                    for (_key, (_bucket, account_address)) in &invocation.validator_set {
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                    for (_key, validator_init) in &invocation.validator_set {
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.stake_account_address,
+                        )));
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.validator_account_address,
+                        )));
                     }
                 }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
@@ -470,6 +477,16 @@ impl NativeInvocation {
                     )));
                 }
                 ValidatorInvocation::ClaimXrd(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::UpdateKey(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
                     )));

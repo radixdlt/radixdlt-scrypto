@@ -181,7 +181,7 @@ pub fn create_genesis(
 
     {
         let mut validators = BTreeMap::new();
-        for (key, (amount, account_address)) in validator_set_and_stake_owners {
+        for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
             let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
             instructions.push(
                 BasicInstruction::TakeFromWorktopByAmount {
@@ -190,13 +190,26 @@ pub fn create_genesis(
                 }
                 .into(),
             );
-            validators.insert(key, (bucket, account_address));
+            let validator_account_address = ComponentAddress::virtual_account_from_public_key(&key);
+            validators.insert(
+                key,
+                ValidatorInit {
+                    validator_account_address,
+                    initial_stake: bucket,
+                    stake_account_address,
+                },
+            );
         }
 
         let component_address = EPOCH_MANAGER.raw();
+        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
+            OLYMPIA_VALIDATOR_TOKEN,
+        )));
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
         instructions.push(Instruction::System(NativeInvocation::EpochManager(
             EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+                olympia_validator_token_address,
                 component_address,
                 validator_set: validators,
                 initial_epoch,

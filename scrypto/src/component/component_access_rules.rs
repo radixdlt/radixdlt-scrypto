@@ -4,7 +4,7 @@ use radix_engine_derive::*;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId, ToString};
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
+    AccessRule, AccessRuleEntry, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
     AccessRulesSetMethodMutabilityInvocation, ComponentAddress,
 };
 
@@ -41,7 +41,7 @@ impl ComponentAccessRules {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
-                rule: access_rule,
+                rule: AccessRuleEntry::AccessRule(access_rule),
             })
             .unwrap();
     }

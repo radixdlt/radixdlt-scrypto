@@ -356,8 +356,15 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateValidator { key });
+    pub fn create_validator(
+        &mut self,
+        key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateValidator {
+            key,
+            owner_access_rule,
+        });
         self
     }
 

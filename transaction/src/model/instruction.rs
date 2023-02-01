@@ -196,6 +196,7 @@ pub enum BasicInstruction {
 
     CreateValidator {
         key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
     },
 
     CreateAccessController {

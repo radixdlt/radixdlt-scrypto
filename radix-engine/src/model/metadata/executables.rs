@@ -24,6 +24,7 @@ impl ExecutableInvocation for MetadataSetInvocation {
             RENodeId::Package(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::Component(..)
+            | RENodeId::Validator(..)
             | RENodeId::Identity(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
@@ -76,6 +77,7 @@ impl ExecutableInvocation for MetadataGetInvocation {
             RENodeId::Package(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::Component(..)
+            | RENodeId::Validator(..)
             | RENodeId::Identity(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(

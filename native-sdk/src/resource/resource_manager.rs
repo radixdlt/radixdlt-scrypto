@@ -68,6 +68,27 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
+    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        local_id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: EngineApi<E> + Invokable<ResourceManagerMintNonFungibleInvocation, E>,
+    {
+        let mut entries = BTreeMap::new();
+        entries.insert(
+            local_id,
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+        );
+
+        api.invoke(ResourceManagerMintNonFungibleInvocation {
+            entries,
+            receiver: self.0,
+        })
+    }
+
+    /// Mints non-fungible resources
     pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &mut self,
         data: T,

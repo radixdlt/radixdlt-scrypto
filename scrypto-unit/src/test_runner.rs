@@ -145,11 +145,12 @@ impl TestRunnerBuilder {
         let genesis = self
             .custom_genesis
             .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
-        runner.execute_transaction_with_config(
+        let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
         );
+        receipt.expect_commit_success();
         runner
     }
 }
@@ -489,17 +490,19 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
-        let address = self.new_validator_with_pub_key(pub_key);
+        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
+        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
         (pub_key, address)
     }
 
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
