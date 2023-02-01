@@ -135,10 +135,10 @@ where
 {
     fn call_native_raw(
         &mut self,
-        fn_identifier: NativeFn,
+        native_fn: NativeFn,
         invocation: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_table_invocation = resolve_native(fn_identifier, invocation)?;
+        let call_table_invocation = resolve_native(native_fn, invocation)?;
         match call_table_invocation {
             CallTableInvocation::Native(native_invocation) => {
                 invoke_native_fn(native_invocation, self)
@@ -154,18 +154,10 @@ where
         &mut self,
         invocation: N,
     ) -> Result<N::Output, RuntimeError> {
-        // FIXME error propagation
-        match invocation.fn_identifier() {
-            FnIdentifier::Scrypto(_) => {
-                panic!("TODO: better interface")
-            }
-            FnIdentifier::Native(fn_ident) => {
-                let invocation_encoded =
-                    scrypto_encode(&invocation).expect("Failed to encode native");
-                let return_data = self.call_native_raw(fn_ident, invocation_encoded)?;
-                scrypto_decode(&return_data).expect("Failed to decode return data")
-            }
-        }
+        let native_fn = N::native_fn();
+        let invocation = scrypto_encode(&invocation).expect("Failed to encode native invocation");
+        let return_data = self.call_native_raw(native_fn, invocation)?;
+        Ok(scrypto_decode(&return_data).expect("Failed to decode native return data"))
     }
 }
 
