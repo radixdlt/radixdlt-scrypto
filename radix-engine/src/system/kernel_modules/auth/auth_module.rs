@@ -110,7 +110,7 @@ impl AuthModule {
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
                         let handle = system_api.lock_substate(
                             node_id,
-                            NodeModuleId::SELF1,
+                            NodeModuleId::AccessRules1,
                             SubstateOffset::AccessRulesChain(
                                 AccessRulesChainOffset::AccessRulesChain,
                             ),
