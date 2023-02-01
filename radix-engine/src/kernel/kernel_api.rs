@@ -232,8 +232,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
     + Invokable<KeyValueStoreCreateInvocation, E>
-    + Invokable<KeyValueStoreGetInvocation, E>
-    + Invokable<KeyValueStoreGetMutInvocation, E>
     + Invokable<KeyValueStoreInsertInvocation, E>
 {
 }

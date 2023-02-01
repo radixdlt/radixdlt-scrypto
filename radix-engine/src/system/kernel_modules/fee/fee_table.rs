@@ -254,8 +254,6 @@ impl FeeTable {
             },
             NativeFn::KeyValueStore(kv_store_fn) => match kv_store_fn {
                 KeyValueStoreFn::Create => self.fixed_high,
-                KeyValueStoreFn::Get => self.fixed_low,
-                KeyValueStoreFn::GetMut => self.fixed_medium,
                 KeyValueStoreFn::Insert => self.fixed_medium,
             },
         }

@@ -628,16 +628,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            KeyValueStoreFn::Get => {
-                let invocation = scrypto_decode::<KeyValueStoreGetInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            KeyValueStoreFn::GetMut => {
-                let invocation = scrypto_decode::<KeyValueStoreGetMutInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             KeyValueStoreFn::Insert => {
                 let invocation = scrypto_decode::<KeyValueStoreInsertInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

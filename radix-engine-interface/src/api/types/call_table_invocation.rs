@@ -222,8 +222,6 @@ pub enum ResourceInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum KeyValueStoreInvocation {
     Create(KeyValueStoreCreateInvocation),
-    Get(KeyValueStoreGetInvocation),
-    GetMut(KeyValueStoreGetMutInvocation),
     Insert(KeyValueStoreInsertInvocation),
 }
 
@@ -399,12 +397,6 @@ impl NativeInvocation {
             },
             NativeInvocation::KeyValueStore(kv_store_method) => match kv_store_method {
                 KeyValueStoreInvocation::Create(_) => {}
-                KeyValueStoreInvocation::Get(invocation) => {
-                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
-                }
-                KeyValueStoreInvocation::GetMut(invocation) => {
-                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
-                }
                 KeyValueStoreInvocation::Insert(invocation) => {
                     refs.insert(RENodeId::KeyValueStore(invocation.receiver));
                 }
@@ -757,8 +749,6 @@ impl NativeInvocation {
             },
             NativeInvocation::KeyValueStore(i) => match i {
                 KeyValueStoreInvocation::Create(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                KeyValueStoreInvocation::Get(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                KeyValueStoreInvocation::GetMut(i) => (i.fn_identifier(), scrypto_encode(&i)),
                 KeyValueStoreInvocation::Insert(i) => (i.fn_identifier(), scrypto_encode(&i)),
             },
             NativeInvocation::Bucket(i) => match i {

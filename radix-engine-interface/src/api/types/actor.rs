@@ -541,8 +541,6 @@ pub enum ResourceManagerFn {
 #[strum(serialize_all = "snake_case")]
 pub enum KeyValueStoreFn {
     Create,
-    Get,
-    GetMut,
     Insert,
 }
 

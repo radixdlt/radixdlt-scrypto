@@ -33,80 +33,9 @@ impl Into<CallTableInvocation> for KeyValueStoreCreateInvocation {
     }
 }
 
-//=====================================================
-// KeyValueStore::get(&self, hash: Hash) -> LockHandle
-// (Not active yet)
-//=====================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KeyValueStoreGetInvocation {
-    pub receiver: KeyValueStoreId,
-    pub hash: Hash,
-}
-
-impl Invocation for KeyValueStoreGetInvocation {
-    type Output = LockHandle;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::Get))
-    }
-}
-
-impl SerializableInvocation for KeyValueStoreGetInvocation {
-    type ScryptoOutput = LockHandle;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::KeyValueStore(KeyValueStoreFn::Get)
-    }
-}
-
-impl Into<CallTableInvocation> for KeyValueStoreGetInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::KeyValueStore(KeyValueStoreInvocation::Get(self)).into()
-    }
-}
-
-//=======================================================================
-// KeyValueStore::get_mut(&self, hash: Hash) -> LockHandle
-// (Not active yet)
-//=======================================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KeyValueStoreGetMutInvocation {
-    pub receiver: KeyValueStoreId,
-    pub hash: Hash,
-}
-
-impl Invocation for KeyValueStoreGetMutInvocation {
-    type Output = LockHandle;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::KeyValueStore(KeyValueStoreFn::GetMut))
-    }
-}
-
-impl SerializableInvocation for KeyValueStoreGetMutInvocation {
-    type ScryptoOutput = LockHandle;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::KeyValueStore(KeyValueStoreFn::GetMut)
-    }
-}
-
-impl Into<CallTableInvocation> for KeyValueStoreGetMutInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::KeyValueStore(KeyValueStoreInvocation::GetMut(self)).into()
-    }
-}
-
 //=============================================================
-// KeyValueStore::insert(&self, key: ScryptoValue, value: ScryptoValue)
+// KeyValueStore::insert(&self, hash: Hash, key: ScryptoValue, value: ScryptoValue)
 //=============================================================
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KeyValueStoreInsertMethodArgs {
-    pub current_time_ms: i64,
-}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KeyValueStoreInsertInvocation {
