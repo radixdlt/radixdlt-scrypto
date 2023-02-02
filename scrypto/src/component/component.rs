@@ -12,10 +12,13 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
-use radix_engine_interface::blueprints::resource::{AccessRules, Bucket};
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket,
+};
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
+use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -31,14 +34,41 @@ pub trait Component {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V);
     fn add_access_check(&mut self, access_rules: AccessRules);
-    fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId);
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig);
     fn claim_royalty(&mut self) -> Bucket;
 
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules>;
-    // fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
+    // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
+
+    /// Protects this component with owner badge
+    fn with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId) {
+        let mut access_rules =
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            AccessRule::AllowAll,
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+
+        self.add_access_check(access_rules);
+    }
 }
 
 pub trait LocalComponent {
@@ -73,10 +103,6 @@ impl Component for OwnedComponent {
                 access_rules,
             })
             .unwrap();
-    }
-
-    fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId) {
-        todo!()
     }
 
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) {
@@ -166,10 +192,6 @@ impl Component for GlobalComponentRef {
             royalty_config,
         })
         .unwrap();
-    }
-
-    fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId) {
-        todo!()
     }
 
     fn claim_royalty(&mut self) -> Bucket {
