@@ -1,10 +1,38 @@
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TransactionManifest;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
+
+#[cfg(feature = "std")]
+fn execute_with_time_logging(
+    test_runner: &mut TestRunner,
+    manifest: TransactionManifest,
+    proofs: Vec<NonFungibleGlobalId>,
+) -> (TransactionReceipt, u32) {
+    let start = std::time::Instant::now();
+    let receipt = test_runner.execute_manifest(manifest, proofs);
+    let duration = start.elapsed();
+    println!(
+        "Time elapsed is: {:?} - NOTE: this is a very bad measure. Use benchmarks instead.",
+        duration
+    );
+    (receipt, duration.as_millis().try_into().unwrap())
+}
+
+#[cfg(feature = "alloc")]
+fn execute_with_time_logging(
+    test_runner: &mut TestRunner,
+    manifest: TransactionManifest,
+    proofs: Vec<NonFungibleGlobalId>,
+) -> (TransactionReceipt, u32) {
+    let receipt = test_runner.execute_manifest(manifest, proofs);
+    (receipt, 0)
+}
 
 #[test]
 fn test_basic_transfer() {
@@ -23,10 +51,13 @@ fn test_basic_transfer() {
             args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
+
     receipt.expect_commit_success();
 
     // Assert
@@ -34,20 +65,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        3000 /* create_node */
-        + 8800 /* drop_lock */
-        + 2000 /* drop_node */
-        + 0 /* instantiate_wasm */
-        + 1300 /* invoke */
-        + 11900 /* lock_substate */
-        + 7000 /* read_owned_nodes */
-        + 40000 /* read_substate */
-        + 4000 /* run_native */
-        + 187672 /* run_wasm */
-        + 10000 /* tx_base_cost */
-        + 274 /* tx_payload_cost */
-        + 3750 /* tx_signature_verification */
-        + 23000, /* write_substate */
+        15000 /* CreateNode */
+        + 32500 /* DropLock */
+        + 0 /* DropNode */
+        + 30000 /* GetVisibleNodes */
+        + 489676 /* InstantiateWasm */
+        + 5500 /* Invoke */
+        + 45500 /* LockSubstate */
+        + 147500 /* ReadSubstate */
+        + 17500 /* RunNative */
+        + 732315 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 995 /* TxPayloadCost */
+        + 0 /* TxSignatureVerification */
+        + 85000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -79,13 +110,15 @@ fn test_publish_large_package() {
             AccessRules::new(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
+
     receipt.expect_commit_success();
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 4000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 5000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 20000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 30000000
     );
 }
 
@@ -110,7 +143,9 @@ fn should_be_able_run_large_manifest() {
         args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -120,7 +155,7 @@ fn should_be_able_run_large_manifest() {
 }
 
 #[test]
-fn should_be_able_invoke_account_balance_50_times() {
+fn should_be_able_invoke_account_balance_100_times() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -128,11 +163,13 @@ fn should_be_able_invoke_account_balance_50_times() {
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
-    for _ in 0..50 {
+    for _ in 0..100 {
         builder.call_method(account, "balance", args!(RADIX_TOKEN));
     }
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -155,11 +192,57 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
     receipt.expect_commit_success();
+}
+
+fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package and instantiate component
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
+    let receipt1 = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.call_function(package_address, "Fee", "new", args!(bucket_id));
+                builder
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let component_address = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    (test_runner, component_address)
+}
+
+#[test]
+fn spin_loop_should_end_in_reasonable_amount_of_time() {
+    let (mut test_runner, component_address) = setup_test_runner_with_fee_blueprint_component();
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", args!())
+        .build();
+
+    let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
+
+    // No assertion here - this is just a sanity-test
+    println!("{:?}", receipt);
+    receipt.expect_commit_failure();
 }

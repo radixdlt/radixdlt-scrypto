@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct Show {
     /// The address of a package, component or resource manager
-    address: String,
+    pub address: String,
 }
 
 impl Show {

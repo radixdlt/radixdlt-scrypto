@@ -25,6 +25,7 @@ impl NodeMoveModule {
             RENodeId::Bucket(..) => {
                 let handle = api.lock_substate(
                     node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
@@ -46,6 +47,7 @@ impl NodeMoveModule {
                 if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
                     let handle = api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
@@ -85,6 +87,7 @@ impl NodeMoveModule {
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..)
+            | RENodeId::Account(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
@@ -99,6 +102,7 @@ impl NodeMoveModule {
             RENodeId::Bucket(..) => {
                 let handle = system_api.lock_substate(
                     node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
@@ -130,6 +134,7 @@ impl NodeMoveModule {
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..)
+            | RENodeId::Account(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),

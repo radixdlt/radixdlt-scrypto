@@ -3,6 +3,7 @@ use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::BaseModule;
+use crate::kernel::RENodeModuleInit;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi, RENodeInit};
 use crate::system::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
@@ -38,7 +39,7 @@ where
     M: BaseModule<R>,
 {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
-        let (node_id, node) = match node {
+        let (node_id, node_init, module_init) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
 
@@ -80,26 +81,29 @@ where
                 let node = RENodeInit::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    royalty_config,
-                    royalty_accumulator,
-                    MetadataSubstate {
-                        metadata: BTreeMap::new(),
-                    },
-                    AccessRulesChainSubstate {
-                        access_rules_chain: vec![access_rules],
-                    },
                 );
 
-                (node_id, node)
+                let module_init = btreemap!(
+                   NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                        access_rules_chain: vec![access_rules],
+                    }),
+                    NodeModuleId::Metadata => RENodeModuleInit::Metadata(MetadataSubstate {
+                        metadata: BTreeMap::new(),
+                    }),
+                    NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(royalty_config, royalty_accumulator),
+
+                );
+
+                (node_id, node, module_init)
             }
             ScryptoRENode::KeyValueStore => {
                 let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-                (node_id, node)
+                (node_id, node, btreemap!())
             }
         };
 
-        self.create_node(node_id, node)?;
+        self.create_node(node_id, node_init, module_init)?;
 
         Ok(node_id)
     }
@@ -133,7 +137,7 @@ where
             LockFlags::read_only()
         };
 
-        self.lock_substate(node_id, offset, flags)
+        self.lock_substate(node_id, NodeModuleId::SELF, offset, flags)
     }
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -223,6 +227,7 @@ where
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.lock_substate(
             package_global,
+            NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -240,6 +245,7 @@ where
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.lock_substate(
             package_global,
+            NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;

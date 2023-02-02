@@ -1,4 +1,5 @@
 use crate::blueprints::access_controller::AccessControllerError;
+use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
@@ -253,7 +254,7 @@ impl From<ExecutionTraceError> for ModuleError {
 /// This enum is to help with designing intuitive error abstractions.
 /// Each engine module can have its own [`SelfError`], but can also wrap arbitrary downstream errors.
 /// Ultimately these errors get flattened out to a [`RuntimeError`] anyway.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InvokeError<E: SelfError> {
     SelfError(E),
     Downstream(RuntimeError),
@@ -327,6 +328,8 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+
+    AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
 }

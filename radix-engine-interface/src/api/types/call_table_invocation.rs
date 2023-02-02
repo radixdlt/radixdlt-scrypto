@@ -5,6 +5,7 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
@@ -69,6 +70,7 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+    Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
 }
 
@@ -80,13 +82,13 @@ impl NativeInvocation {
     ) -> Result<(), ReplaceManifestValuesError> {
         match self {
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, (bucket, _)) in &mut invocation.validator_set {
+                for (_, validator_init) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
-                        .remove(&ManifestBucket(bucket.0))
+                        .remove(&ManifestBucket(validator_init.initial_stake.0))
                         .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
-                            bucket.0,
+                            validator_init.initial_stake.0,
                         )))?;
-                    bucket.0 = next_id;
+                    validator_init.initial_stake.0 = next_id;
                 }
             }
             _ => {} // TODO: Expand this
@@ -173,6 +175,8 @@ pub enum ValidatorInvocation {
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
     ClaimXrd(ValidatorClaimXrdInvocation),
+    UpdateKey(ValidatorUpdateKeyInvocation),
+    UpdateAcceptDelegatedStake(ValidatorUpdateAcceptDelegatedStakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -257,6 +261,32 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum AccountInvocation {
+    Create(AccountCreateInvocation),
+    New(AccountNewInvocation),
+
+    Balance(AccountBalanceInvocation),
+
+    LockFee(AccountLockFeeInvocation),
+    LockContingentFee(AccountLockContingentFeeInvocation),
+
+    Deposit(AccountDepositInvocation),
+    DepositBatch(AccountDepositBatchInvocation),
+
+    Withdraw(AccountWithdrawInvocation),
+    WithdrawByAmount(AccountWithdrawByAmountInvocation),
+    WithdrawByIds(AccountWithdrawByIdsInvocation),
+
+    LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation),
+    LockFeeAndWithdrawByAmount(AccountLockFeeAndWithdrawByAmountInvocation),
+    LockFeeAndWithdrawByIds(AccountLockFeeAndWithdrawByIdsInvocation),
+
+    CreateProof(AccountCreateProofInvocation),
+    CreateProofByAmount(AccountCreateProofByAmountInvocation),
+    CreateProofByIds(AccountCreateProofByIdsInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -457,8 +487,13 @@ impl NativeInvocation {
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(invocation) => {
-                    for (_key, (_bucket, account_address)) in &invocation.validator_set {
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                    for (_key, validator_init) in &invocation.validator_set {
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.stake_account_address,
+                        )));
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.validator_account_address,
+                        )));
                     }
                 }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
@@ -513,6 +548,16 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
+                ValidatorInvocation::UpdateKey(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
@@ -553,6 +598,51 @@ impl NativeInvocation {
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::Get(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
+            },
+            NativeInvocation::Account(account_method) => match account_method {
+                AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
+                AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
+                | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
+                | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::Deposit(AccountDepositInvocation { receiver, .. })
+                | AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::Withdraw(AccountWithdrawInvocation { receiver, .. })
+                | AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdrawByAmount(
+                    AccountLockFeeAndWithdrawByAmountInvocation { receiver, .. },
+                )
+                | AccountInvocation::LockFeeAndWithdrawByIds(
+                    AccountLockFeeAndWithdrawByIdsInvocation { receiver, .. },
+                )
+                | AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
+                    receiver,
+                    ..
+                }) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
+                }
             },
             NativeInvocation::AccessController(method) => match method {
                 AccessControllerInvocation::CreateGlobal(..) => {}

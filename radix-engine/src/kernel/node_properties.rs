@@ -4,10 +4,11 @@ use crate::{
     system::global::GlobalAddressSubstate,
 };
 use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset,
-    ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset,
-    ProofOffset, RENodeId, ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset,
-    TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
+    AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
+    BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn,
+    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset,
+    ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
+    WorktopOffset,
 };
 
 use super::LockFlags;
@@ -141,15 +142,13 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
-                SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
-                    flags == LockFlags::read_only()
-                }
                 _ => false,
             },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 _ => false,
             },
             (ExecutionMode::Application, offset) => {
@@ -246,8 +245,8 @@ impl SubstateProperties {
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
+            SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,
-            SubstateOffset::VaultAccessRulesChain(..) => true,
             SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
@@ -262,6 +261,7 @@ impl SubstateProperties {
             SubstateOffset::Logger(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::TransactionRuntime(..) => false,
+            SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
         }
     }
@@ -294,14 +294,7 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
-            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => match node_id {
                 RENodeId::Vault(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
@@ -324,6 +317,13 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::Account(AccountOffset::Account) => match node_id {
+                RENodeId::KeyValueStore(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
@@ -332,6 +332,7 @@ impl SubstateProperties {
                 | RENodeId::Validator(..)
                 | RENodeId::Clock(..)
                 | RENodeId::Identity(..)
+                | RENodeId::Account(..)
                 | RENodeId::AccessController(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
