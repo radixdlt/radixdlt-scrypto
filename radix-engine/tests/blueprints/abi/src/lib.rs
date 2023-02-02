@@ -11,7 +11,7 @@ blueprint! {
         }
 
         pub fn create_invalid_abi_component() -> ComponentAddress {
-            let mut component = Self {}.instantiate();
+            let component = Self {}.instantiate();
             component.add_access_check(
                 AccessRules::new()
                     .method("no_method", rule!(require("something")), rule!(deny_all))

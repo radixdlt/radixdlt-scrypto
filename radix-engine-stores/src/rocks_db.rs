@@ -177,11 +177,11 @@ impl QueryableSubstateStore for RadixEngineDB {
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
             ) = substate_id
             {
                 if id == *kv_store_id {
-                    items.insert(key, substate.substate)
+                    items.insert(entry_id, substate.substate)
                 } else {
                     break;
                 }

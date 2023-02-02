@@ -211,7 +211,7 @@ where
         // Create metadata substates
         let metadata_substate = MetadataSubstate { metadata };
 
-        // Create auth substates (TODO: set up auth in client space)
+        // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
         let node = RENodeInit::Package(
@@ -321,7 +321,7 @@ where
         // Create metadata substates
         let metadata_substate = MetadataSubstate { metadata };
 
-        // Create auth substates (TODO: set up auth in client space)
+        // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
@@ -410,7 +410,9 @@ where
     }
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self.allocate_node_id(RENodeType::Component)?;
+        let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+
+        self.create_node(node_id, RENodeInit::KeyValueStore)?;
 
         Ok(node_id.into())
     }

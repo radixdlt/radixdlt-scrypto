@@ -5,7 +5,7 @@ blueprint! {
 
     impl MutableAccessRulesComponent {
         pub fn new(access_rules: Vec<AccessRules>) -> ComponentAddress {
-            let mut component = Self {}.instantiate();
+            let component = Self {}.instantiate();
             for access_rule in access_rules {
                 component.add_access_check(access_rule);
             }

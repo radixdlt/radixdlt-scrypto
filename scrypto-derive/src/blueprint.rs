@@ -496,16 +496,16 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
             }
-            fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                 self.component.add_access_check(access_rules);
             }
-            fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+            fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
-            fn claim_royalty(&mut self) -> Bucket {
+            fn claim_royalty(&self) -> Bucket {
                 self.component.claim_royalty()
             }
 
@@ -550,16 +550,16 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
             }
-            fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                 self.component.add_access_check(access_rules);
             }
-            fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+            fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
-            fn claim_royalty(&mut self) -> Bucket {
+            fn claim_royalty(&self) -> Bucket {
                 self.component.claim_royalty()
             }
 
@@ -740,13 +740,13 @@ mod tests {
                 }
 
                 impl ::scrypto::component::Component for TestComponent {
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
 
@@ -791,16 +791,16 @@ mod tests {
                 }
 
                 impl ::scrypto::component::Component for TestGlobalComponentRef {
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                         }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
                         }
-                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                         }
-                    fn claim_royalty(&mut self) -> Bucket {
+                    fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
@@ -880,13 +880,13 @@ mod tests {
                 }
 
                 impl ::scrypto::component::Component for TestComponent {
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn globalize(self) -> ComponentAddress {
@@ -918,16 +918,16 @@ mod tests {
                 }
 
                 impl ::scrypto::component::Component for TestGlobalComponentRef {
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
-                    fn claim_royalty(&mut self) -> Bucket {
+                    fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 

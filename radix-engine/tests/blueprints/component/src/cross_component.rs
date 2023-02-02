@@ -8,7 +8,7 @@ blueprint! {
 
     impl CrossComponent {
         pub fn create_component_with_auth(access_rules: AccessRules) -> ComponentAddress {
-            let mut component = Self {
+            let component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }

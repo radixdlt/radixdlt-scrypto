@@ -5,13 +5,11 @@ blueprint! {
 
     impl DeepAuthRulesOnCreate {
         pub fn new(resource_address: ResourceAddress, access_rules_depth: u8) -> ComponentAddress {
-            let mut component = Self {}.instantiate();
-
+            let component = Self {}.instantiate();
             component.add_access_check(generate_deep_access_rules(
                 resource_address,
                 access_rules_depth,
             ));
-
             component.globalize()
         }
     }

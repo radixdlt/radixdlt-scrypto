@@ -1,6 +1,6 @@
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::Invokable;
+use scrypto::radix_engine_interface::api::ClientNativeInvokeApi;
 
 #[derive(NonFungibleData)]
 pub struct Sandwich {
@@ -301,7 +301,7 @@ blueprint! {
 
             // creating non-fungible id with id type set to default (UUID)
             let (_, bucket) = ScryptoEnv
-                .invoke(
+                .call_native(
                     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),

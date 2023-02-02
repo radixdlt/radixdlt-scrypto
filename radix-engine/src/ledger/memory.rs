@@ -81,11 +81,11 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
             .filter_map(|(substate_id, substate_value)| {
                 if let SubstateId(
                     RENodeId::KeyValueStore(id),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash)),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
                 ) = substate_id
                 {
                     if id == kv_store_id {
-                        Some((hash.clone(), substate_value.substate.clone()))
+                        Some((entry_id.clone(), substate_value.substate.clone()))
                     } else {
                         None
                     }

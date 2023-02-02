@@ -1,3 +1,4 @@
+use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::ClientSubstateApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
@@ -25,14 +26,18 @@ blueprint! {
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
-            let substate = KeyValueStoreEntrySubstate(Some(
-                scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: kv_store0_id,
-                    key: PhantomData,
-                    value: PhantomData,
-                })
+            let substate = KeyValueStoreEntrySubstate::Some(
+                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
+                scrypto_decode(
+                    &scrypto_encode(&KeyValueStore::<(), ()> {
+                        id: kv_store0_id,
+                        key: PhantomData,
+                        value: PhantomData,
+                    })
+                    .unwrap(),
+                )
                 .unwrap(),
-            ));
+            );
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv
@@ -50,14 +55,18 @@ blueprint! {
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
-            let substate = KeyValueStoreEntrySubstate(Some(
-                scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: kv_store_id,
-                    key: PhantomData,
-                    value: PhantomData,
-                })
+            let substate = KeyValueStoreEntrySubstate::Some(
+                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
+                scrypto_decode(
+                    &scrypto_encode(&KeyValueStore::<(), ()> {
+                        id: kv_store_id,
+                        key: PhantomData,
+                        value: PhantomData,
+                    })
+                    .unwrap(),
+                )
                 .unwrap(),
-            ));
+            );
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv

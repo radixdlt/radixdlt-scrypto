@@ -17,7 +17,7 @@ blueprint! {
         }
 
         pub fn create_component_with_royalty_enabled() -> ComponentAddress {
-            let mut local_component = Self {}.instantiate();
+            let local_component = Self {}.instantiate();
 
             local_component.set_royalty_config(
                 RoyaltyConfigBuilder::new()

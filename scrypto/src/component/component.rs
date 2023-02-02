@@ -29,13 +29,19 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
     fn instantiate(self) -> T;
 }
 
+// TODO: I've temporarily disabled &mut requirement on the Component trait.
+// If not, I will have to overhaul the `ComponentSystem` infra, which will be likely be removed anyway.
+//
+// Since there is no mutability semantics in the system and kernel, there is no technical benefits
+// with &mut, other than to frustrate developers.
+
 pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
 
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V);
-    fn add_access_check(&mut self, access_rules: AccessRules);
-    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig);
-    fn claim_royalty(&mut self) -> Bucket;
+    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
+    fn add_access_check(&self, access_rules: AccessRules);
+    fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
+    fn claim_royalty(&self) -> Bucket;
 
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
@@ -43,7 +49,7 @@ pub trait Component {
     // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 
     /// Protects this component with owner badge
-    fn with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId) {
+    fn with_owner_badge(&self, owner_badge: NonFungibleGlobalId) {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
@@ -86,7 +92,7 @@ impl Component for OwnedComponent {
         scrypto_decode(&output).unwrap()
     }
 
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_native(MetadataSetInvocation {
                 receiver: RENodeId::Component(self.0),
@@ -96,7 +102,7 @@ impl Component for OwnedComponent {
             .unwrap();
     }
 
-    fn add_access_check(&mut self, access_rules: AccessRules) {
+    fn add_access_check(&self, access_rules: AccessRules) {
         ScryptoEnv
             .call_native(AccessRulesAddAccessCheckInvocation {
                 receiver: RENodeId::Component(self.0),
@@ -105,7 +111,7 @@ impl Component for OwnedComponent {
             .unwrap();
     }
 
-    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) {
+    fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
             .call_native(ComponentSetRoyaltyConfigInvocation {
                 receiver: RENodeId::Component(self.0),
@@ -114,7 +120,7 @@ impl Component for OwnedComponent {
             .unwrap();
     }
 
-    fn claim_royalty(&mut self) -> Bucket {
+    fn claim_royalty(&self) -> Bucket {
         todo!()
     }
 
@@ -157,7 +163,7 @@ impl Component for GlobalComponentRef {
         scrypto_decode(&output).unwrap()
     }
 
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) {
+    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_native(MetadataSetInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
@@ -167,7 +173,7 @@ impl Component for GlobalComponentRef {
             .unwrap();
     }
 
-    fn add_access_check(&mut self, access_rules: AccessRules) {
+    fn add_access_check(&self, access_rules: AccessRules) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
@@ -184,7 +190,7 @@ impl Component for GlobalComponentRef {
         todo!()
     }
 
-    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) {
+    fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         let mut env = ScryptoEnv;
 
         env.call_native(ComponentSetRoyaltyConfigInvocation {
@@ -194,7 +200,7 @@ impl Component for GlobalComponentRef {
         .unwrap();
     }
 
-    fn claim_royalty(&mut self) -> Bucket {
+    fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
 
         env.call_native(ComponentClaimRoyaltyInvocation {

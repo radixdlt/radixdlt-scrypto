@@ -21,7 +21,7 @@ blueprint! {
         pub fn try_to_read_local_component_with_auth(
             some_non_fungible: NonFungibleGlobalId,
         ) -> ComponentAddress {
-            let mut local_component = Self::new(12345);
+            let local_component = Self::new(12345);
             local_component.add_access_check(
                 AccessRules::new().default(rule!(require(some_non_fungible)), rule!(deny_all)),
             );

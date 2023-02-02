@@ -86,10 +86,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             }
             RENodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_store.get_kv_store_entries(&kv_store_id);
-                for (hash, substate) in map.iter() {
+                for (entry_id, substate) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(hash.clone())),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
                         for child_node_id in entry.owned_node_ids() {

@@ -309,7 +309,7 @@ impl WasmerModule {
         }
 
         pub fn new_key_value_store(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
+            let (_, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .new_key_value_store()

@@ -13,7 +13,7 @@ blueprint! {
 
         pub fn next_round(epoch_manager: ComponentAddress, round: u64) {
             ScryptoEnv
-                .invoke(EpochManagerNextRoundInvocation {
+                .call_native(EpochManagerNextRoundInvocation {
                     receiver: epoch_manager,
                     round,
                 })
