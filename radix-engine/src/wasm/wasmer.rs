@@ -365,7 +365,7 @@ impl WasmerModule {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
-                CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke),
+                CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_native),
                 CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
                 GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
