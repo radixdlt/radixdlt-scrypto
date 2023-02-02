@@ -646,12 +646,15 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> OwnedComponent {
-                            ::scrypto::component::component_system().create_component(
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
+                            let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
-                            )
+                            );
+                            TestComponent {
+                                component
+                            }
                         }
                     }
                 }
@@ -740,6 +743,9 @@ mod tests {
                 }
 
                 impl ::scrypto::component::Component for TestComponent {
+                    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+                        self.component.call(method, args)
+                    }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
@@ -748,6 +754,9 @@ mod tests {
                     }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
+                    }
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
                     }
 
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
@@ -783,23 +792,26 @@ mod tests {
                 }
 
                 impl From<ComponentAddress> for TestGlobalComponentRef {
-                    fn from(component: ComponentAddress) -> Self {
+                    fn from(address: ComponentAddress) -> Self {
                         Self {
-                            component: ::scrypto::component::GlobalComponentRef(component)
+                            component: ::scrypto::component::GlobalComponentRef(address)
                         }
                     }
                 }
 
                 impl ::scrypto::component::Component for TestGlobalComponentRef {
+                    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+                        self.component.call(method, args)
+                    }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
-                        }
+                    }
                     fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
-                        }
+                    }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
-                        }
+                    }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
@@ -844,7 +856,7 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
                         fn instantiate(self) -> TestComponent {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
@@ -876,10 +888,13 @@ mod tests {
                 #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct TestComponent {
-                    pub component: ::scrypto::component::Component,
+                    pub component: ::scrypto::component::OwnedComponent,
                 }
 
                 impl ::scrypto::component::Component for TestComponent {
+                    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+                        self.component.call(method, args)
+                    }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
@@ -889,8 +904,8 @@ mod tests {
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
                     }
 
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
@@ -898,6 +913,15 @@ mod tests {
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
+                    }
+                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                        self.component.access_rules_chain()
+                    }
+                }
+
+                impl ::scrypto::component::LocalComponent for TestComponent {
+                    fn globalize(self) -> ComponentAddress {
+                        self.component.globalize()
                     }
                 }
 
@@ -910,14 +934,17 @@ mod tests {
                 }
 
                 impl From<ComponentAddress> for TestGlobalComponentRef {
-                    fn from(component: ComponentAddress) -> Self {
+                    fn from(address: ComponentAddress) -> Self {
                         Self {
-                            component: ::scrypto::component::GlobalComponentRef(component)
+                            component: ::scrypto::component::GlobalComponentRef(address)
                         }
                     }
                 }
 
                 impl ::scrypto::component::Component for TestGlobalComponentRef {
+                    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+                        self.component.call(method, args)
+                    }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }

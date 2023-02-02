@@ -822,7 +822,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Native(Box::new(result.as_value().clone()))
                 }
             };
             outputs.push(result);
