@@ -38,11 +38,6 @@ wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 [dev-dependencies]
 wabt = { version = "0.10.0" }
 
-[[bench]]
-name = "resources_usage"
-harness = false
-required-features = ["cpu_ram_metrics"]
-
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]

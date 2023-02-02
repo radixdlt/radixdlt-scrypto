@@ -35,6 +35,11 @@ harness = false
 name = "wasm"
 harness = false
 
+[[bench]]
+name = "resources_usage"
+harness = false
+required-features = ["cpu_ram_metrics"]
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
