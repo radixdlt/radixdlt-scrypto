@@ -52,10 +52,6 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 CREATE_NODE_FUNCTION_ID,
             )),
-            GET_VISIBLE_NODES_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
-                signature.clone(),
-                GET_VISIBLE_NODES_FUNCTION_ID,
-            )),
             DROP_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
                 DROP_NODE_FUNCTION_ID,
@@ -215,11 +211,6 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 let buffer = self
                     .runtime
                     .create_node(self.read_memory(node_ptr, node_len)?)?;
-
-                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
-            }
-            GET_VISIBLE_NODES_FUNCTION_ID => {
-                let buffer = self.runtime.get_visible_nodes()?;
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }

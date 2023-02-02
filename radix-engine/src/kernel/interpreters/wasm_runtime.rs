@@ -124,13 +124,6 @@ where
         self.allocate_buffer(node_id_encoded)
     }
 
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_ids = self.api.sys_get_visible_nodes()?;
-        let node_ids_encoded = scrypto_encode(&node_ids).expect("Failed to encode node id list");
-
-        self.allocate_buffer(node_ids_encoded)
-    }
-
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
@@ -236,10 +229,6 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
