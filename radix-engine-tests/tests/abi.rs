@@ -1,4 +1,4 @@
-use radix_engine::engine::{
+use radix_engine::errors::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
 use radix_engine::system::node_modules::auth::AccessRulesChainError;
