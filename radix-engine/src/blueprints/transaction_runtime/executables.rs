@@ -45,13 +45,12 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle =
-            api.lock_substate(
-                RENodeId::TransactionRuntime,
-                NodeModuleId::SELF,
-                SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::TransactionRuntime,
+            NodeModuleId::SELF,
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
+            LockFlags::read_only(),
+        )?;
         let substate = api.get_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
@@ -92,8 +91,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle =
-        api.lock_substate(
+        let handle = api.lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),

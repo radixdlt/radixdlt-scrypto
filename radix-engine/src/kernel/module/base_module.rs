@@ -12,7 +12,6 @@ pub enum SysCallInput<'a> {
         input_size: u32,
         depth: usize,
     },
-    ReadOwnedNodes,
     DropNode {
         node_id: &'a RENodeId,
     },
@@ -41,7 +40,6 @@ pub enum SysCallInput<'a> {
 #[derive(Debug, Clone)]
 pub enum SysCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
-    ReadOwnedNodes,
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
     LockSubstate { lock_handle: LockHandle },

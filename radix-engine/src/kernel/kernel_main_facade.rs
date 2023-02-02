@@ -43,30 +43,6 @@ where
         Ok(fee)
     }
 
-    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadOwnedNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let node_ids = self.current_frame.get_visible_nodes();
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadOwnedNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(node_ids)
-    }
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,

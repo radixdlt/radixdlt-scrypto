@@ -244,7 +244,9 @@ impl AuthModule {
         actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        call_frame_update.node_refs_to_copy.insert(RENodeId::AuthZoneStack);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::AuthZoneStack);
 
         if !matches!(
             actor.identifier,

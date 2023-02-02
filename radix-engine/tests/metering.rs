@@ -70,7 +70,6 @@ fn test_basic_transfer() {
         + 10000 /* drop_node */
         + 6000 /* invoke */
         + 41500 /* lock_substate */
-        + 13000 /* read_owned_nodes */
         + 115000 /* read_substate */
         + 21000 /* run_native_method */
         + 50000 /* tx_base_fee */

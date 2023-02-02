@@ -23,9 +23,6 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
             SysCallInput::Invoke { fn_identifier, .. } => {
                 log!(call_frame, "Invoking: {}", fn_identifier);
             }
-            SysCallInput::ReadOwnedNodes => {
-                log!(call_frame, "Reading owned nodes");
-            }
             SysCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
@@ -77,7 +74,6 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
             SysCallOutput::Invoke { rtn, .. } => {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
-            SysCallOutput::ReadOwnedNodes { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::LockSubstate { lock_handle } => {

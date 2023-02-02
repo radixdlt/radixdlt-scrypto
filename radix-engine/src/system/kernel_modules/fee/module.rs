@@ -70,9 +70,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     consume_api_cost(track, "invoke", CostingEntry::Invoke { input_size })?;
                 }
             }
-            SysCallInput::ReadOwnedNodes => {
-                consume_api_cost(track, "read_owned_nodes", CostingEntry::ReadOwnedNodes)?;
-            }
             SysCallInput::DropNode { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(track, "drop_node", CostingEntry::DropNode { size: 0 })?;
