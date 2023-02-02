@@ -76,6 +76,8 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
+    pub fn new_key_value_store() -> Buffer;
+
     //===============
     // Package API
     //===============
@@ -184,6 +186,11 @@ pub unsafe fn globalize_component(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
 ) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_key_value_store() -> Buffer {
     todo!()
 }
 

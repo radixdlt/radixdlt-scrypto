@@ -22,12 +22,14 @@ pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
 pub use substate_api::ClientSubstateApi;
 
-// Interface of the system, for blueprints and Node modules.
+/// Interface of the system, for blueprints and Node modules.
+///
+/// For WASM blueprints, only a subset of the API is exposed at the moment.
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientComponentApi<E>
     + ClientPackageApi<E>
-    + ClientNativeInvokeApi<E>
+    + ClientNativeInvokeApi<E>  // TODO: restrict and protect native invocations
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
     + ClientDerefApi<E>

@@ -101,7 +101,8 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     }
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, ClientApiError> {
-        todo!()
+        let bytes = copy_buffer(unsafe { new_key_value_store() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 }
 

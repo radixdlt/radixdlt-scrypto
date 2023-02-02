@@ -392,6 +392,18 @@ impl WasmModule {
                                 }
                             }
                         }
+                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
                         _ => {}
                     };
                 }

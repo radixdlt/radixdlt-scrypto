@@ -64,6 +64,10 @@ impl ModuleImportResolver for WasmiEnvModule {
                 signature.clone(),
                 GLOBALIZE_COMPONENT_FUNCTION_ID,
             )),
+            NEW_KEY_VALUE_STORE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                NEW_KEY_VALUE_STORE_FUNCTION_ID,
+            )),
             GET_VISIBLE_NODES_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
                 GET_VISIBLE_NODES_FUNCTION_ID,
@@ -293,6 +297,11 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 let buffer = self
                     .runtime
                     .globalize_component(self.read_memory(component_id_ptr, component_id_len)?)?;
+
+                Ok(Some(RuntimeValue::I64(buffer.as_i64())))
+            }
+            NEW_KEY_VALUE_STORE_FUNCTION_ID => {
+                let buffer = self.runtime.new_key_value_store()?;
 
                 Ok(Some(RuntimeValue::I64(buffer.as_i64())))
             }

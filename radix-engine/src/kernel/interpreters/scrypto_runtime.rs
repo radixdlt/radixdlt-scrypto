@@ -206,6 +206,14 @@ where
         self.allocate_buffer(component_address_encoded)
     }
 
+    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let key_value_store_id = self.api.new_key_value_store()?;
+        let key_value_store_id_encoded =
+            scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
+
+        self.allocate_buffer(key_value_store_id_encoded)
+    }
+
     fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_ids = self.api.sys_get_visible_nodes()?;
         let node_ids_encoded = scrypto_encode(&node_ids).expect("Failed to encode node id list");
@@ -357,6 +365,10 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

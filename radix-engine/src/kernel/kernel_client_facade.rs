@@ -410,7 +410,9 @@ where
     }
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        todo!()
+        let node_id = self.allocate_node_id(RENodeType::Component)?;
+
+        Ok(node_id.into())
     }
 }
 

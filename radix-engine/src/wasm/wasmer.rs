@@ -308,6 +308,16 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        pub fn new_key_value_store(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .new_key_value_store()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
@@ -425,6 +435,7 @@ impl WasmerModule {
                 INSTANTIATE_PACKAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), instantiate_package),
                 INSTANTIATE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), instantiate_component),
                 GLOBALIZE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_component),
+                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
                 GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),

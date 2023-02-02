@@ -11,7 +11,6 @@ use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine_interface::blueprints::resource::ResourceType;
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
 use radix_engine_interface::network::NetworkDefinition;

@@ -59,6 +59,8 @@ pub trait WasmRuntime {
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;

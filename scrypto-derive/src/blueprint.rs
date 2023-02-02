@@ -502,9 +502,6 @@ fn generate_stubs(
             fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
                 self.component.add_access_check(access_rules);
             }
-            fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId)  {
-                self.component.protect_with_owner_badge(owner_badge);
-            }
             fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
@@ -561,9 +558,6 @@ fn generate_stubs(
             }
             fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
-            }
-            fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId)  {
-                self.component.protect_with_owner_badge(owner_badge);
             }
             fn claim_royalty(&mut self) -> Bucket {
                 self.component.claim_royalty()
@@ -752,9 +746,6 @@ mod tests {
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId)  {
-                        self.component.protect_with_owner_badge(owner_badge);
-                    }
                     fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
@@ -894,9 +885,6 @@ mod tests {
                     }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) {
                         self.component.add_access_check(access_rules);
-                    }
-                    fn protect_with_owner_badge(&mut self, owner_badge: NonFungibleGlobalId)  {
-                        self.component.protect_with_owner_badge(owner_badge);
                     }
                     fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
