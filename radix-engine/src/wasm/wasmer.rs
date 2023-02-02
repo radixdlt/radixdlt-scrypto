@@ -236,7 +236,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn instantiate_package(
+        pub fn new_package(
             env: &WasmerInstanceEnv,
             code_ptr: u32,
             code_len: u32,
@@ -252,7 +252,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .instantiate_package(
+                .new_package(
                     read_memory(&instance, code_ptr, code_len)?,
                     read_memory(&instance, abi_ptr, abi_len)?,
                     read_memory(&instance, access_rules_ptr, access_rules_len)?,
@@ -264,7 +264,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn instantiate_component(
+        pub fn new_component(
             env: &WasmerInstanceEnv,
             blueprint_ident_ptr: u32,
             blueprint_ident_len: u32,
@@ -280,7 +280,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .instantiate_component(
+                .new_component(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
                     read_memory(&instance, app_states_ptr, app_states_len)?,
                     read_memory(&instance, access_rules_ptr, access_rules_len)?,
@@ -432,8 +432,8 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_native),
-                INSTANTIATE_PACKAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), instantiate_package),
-                INSTANTIATE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), instantiate_component),
+                NEW_PACKAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_package),
+                NEW_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_component),
                 GLOBALIZE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_component),
                 NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
                 GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),

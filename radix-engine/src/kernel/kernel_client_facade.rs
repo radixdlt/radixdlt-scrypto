@@ -170,7 +170,7 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
@@ -294,7 +294,7 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,

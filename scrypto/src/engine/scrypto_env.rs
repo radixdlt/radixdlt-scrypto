@@ -40,7 +40,7 @@ impl ScryptoEnv {
 }
 
 impl ClientComponentApi<ClientApiError> for ScryptoEnv {
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
@@ -54,7 +54,7 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         let metadata = scrypto_encode(&metadata).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            instantiate_component(
+            new_component(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
                 app_states.as_ptr(),
@@ -128,7 +128,7 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientPackageApi<ClientApiError> for ScryptoEnv {
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
@@ -142,7 +142,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let metadata = scrypto_encode(&metadata).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            instantiate_package(
+            new_package(
                 code.as_ptr(),
                 code.len(),
                 abi.as_ptr(),

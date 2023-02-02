@@ -132,7 +132,7 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
@@ -147,20 +147,16 @@ where
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let package_address = self.api.instantiate_package(
-            code,
-            abi,
-            access_rules_chain,
-            royalty_config,
-            metadata,
-        )?;
+        let package_address =
+            self.api
+                .new_package(code, abi, access_rules_chain, royalty_config, metadata)?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 
         self.allocate_buffer(package_address_encoded)
     }
 
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -179,7 +175,7 @@ where
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let component_id = self.api.instantiate_component(
+        let component_id = self.api.new_component(
             blueprint_ident.as_ref(),
             app_states,
             access_rules_chain,
@@ -339,7 +335,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
@@ -350,7 +346,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,

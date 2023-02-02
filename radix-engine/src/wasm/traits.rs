@@ -36,7 +36,7 @@ pub trait WasmRuntime {
         invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
@@ -45,7 +45,7 @@ pub trait WasmRuntime {
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,

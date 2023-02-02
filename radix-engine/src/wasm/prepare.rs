@@ -334,7 +334,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        INSTANTIATE_PACKAGE_FUNCTION_NAME => {
+                        NEW_PACKAGE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -357,7 +357,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        INSTANTIATE_COMPONENT_FUNCTION_NAME => {
+                        NEW_COMPONENT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,

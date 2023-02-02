@@ -7,7 +7,7 @@ blueprint! {
 
     impl Account {
         pub fn create(withdraw_rule: AccessRule) -> AccountComponent {
-            let mut account = Self {
+            let account = Self {
                 vaults: KeyValueStore::new(),
             }
             .instantiate();
@@ -23,7 +23,7 @@ blueprint! {
         }
 
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
-            let mut account = Self {
+            let account = Self {
                 vaults: KeyValueStore::new(),
             }
             .instantiate();

@@ -51,7 +51,7 @@ extern "C" {
     // Component API
     //===============
 
-    pub fn instantiate_component(
+    pub fn new_component(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
         app_states_ptr: *const u8,
@@ -82,7 +82,7 @@ extern "C" {
     // Package API
     //===============
 
-    pub fn instantiate_package(
+    pub fn new_package(
         code_ptr: *const u8,
         code_len: usize,
         abi_ptr: *const u8,
@@ -166,7 +166,7 @@ pub unsafe fn call_native(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn instantiate_component(
+pub unsafe fn new_component(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
     _app_states_ptr: *const u8,
@@ -207,7 +207,7 @@ pub unsafe fn call_method(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn instantiate_package(
+pub unsafe fn new_package(
     _code_ptr: *const u8,
     _code_len: usize,
     _abi_ptr: *const u8,

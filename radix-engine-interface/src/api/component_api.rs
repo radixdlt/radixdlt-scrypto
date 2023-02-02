@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 
 pub trait ClientComponentApi<E> {
     // TODO: refine the interface
-    fn instantiate_component(
+    fn new_component(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,

@@ -5,7 +5,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub trait ClientPackageApi<E> {
-    fn instantiate_package(
+    fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
