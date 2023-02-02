@@ -191,7 +191,8 @@ jobs:
         cargo nextest run \
           -p radix-engine-derive \
           -p radix-engine-interface \
-          -p radix-engine
+          -p radix-engine \
+          -p radix-engine-tests
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
@@ -215,7 +216,8 @@ jobs:
       run: |
         cargo nextest run \
           --no-default-features --features alloc \
-          -p radix-engine
+          -p radix-engine \
+          -p radix-engine-tests
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
@@ -239,7 +241,8 @@ jobs:
       run: |
         cargo nextest run \
           --features wasmer \
-          -p radix-engine
+          -p radix-engine \
+          -p radix-engine-tests
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
@@ -259,7 +262,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
       run: cargo bench
-      working-directory: radix-engine
+      working-directory: radix-engine-tests
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}

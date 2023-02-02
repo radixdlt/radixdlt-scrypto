@@ -20,6 +20,7 @@ test_crates_features \
     radix-engine-derive \
     radix-engine-interface \
     radix-engine \
+    radix-engine-tests \
     transaction"
 
 echo "Testing scrypto packages..."
@@ -38,6 +39,6 @@ test_cli \
 echo "Running benchmark..."
 test_benchmark  \
     "sbor-tests \
-    radix-engine"
+    radix-engine-tests"
 
 echo "Congrats! All tests passed."
