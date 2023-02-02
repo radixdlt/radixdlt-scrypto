@@ -32,7 +32,7 @@ impl VisibilityProperties {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
-                RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                RENodeId::AuthZoneStack => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },

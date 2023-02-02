@@ -297,7 +297,7 @@ where
     ) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
             match node_id {
-                RENodeId::AuthZoneStack(..) => {
+                RENodeId::AuthZoneStack => {
                     let handle = system_api.lock_substate(
                         node_id,
                         NodeModuleId::SELF,

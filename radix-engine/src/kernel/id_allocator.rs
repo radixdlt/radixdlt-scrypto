@@ -2,7 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress,
+    AccessControllerId, BucketId, ComponentId, FeeReserveId, GlobalAddress,
     KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType,
     ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
 };
@@ -61,9 +61,7 @@ impl IdAllocator {
 
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
-            RENodeType::AuthZoneStack => self
-                .new_auth_zone_id()
-                .map(|id| RENodeId::AuthZoneStack(id)),
+            RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
             RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
             RENodeType::TransactionRuntime => self
@@ -233,10 +231,6 @@ impl IdAllocator {
         let next_id = self.next_entity_id(EntityType::Resource)?;
         data.extend(next_id.to_le_bytes());
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
-    }
-
-    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
-        Ok(self.next()?)
     }
 
     pub fn new_fee_reserve_id(&mut self) -> Result<FeeReserveId, IdAllocationError> {

@@ -72,7 +72,7 @@ pub enum RENodeType {
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
-    AuthZoneStack(AuthZoneStackId),
+    AuthZoneStack,
     FeeReserve(FeeReserveId),
     Worktop,
     Logger,
@@ -117,7 +117,7 @@ impl Into<u32> for RENodeId {
         match self {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
-            RENodeId::AuthZoneStack(id) => id,
+            RENodeId::AuthZoneStack => 0x100u32,
             RENodeId::FeeReserve(id) => id,
             RENodeId::TransactionRuntime(id) => id,
             _ => panic!("Not a transient id"),

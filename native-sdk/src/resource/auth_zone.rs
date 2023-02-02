@@ -17,9 +17,8 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneDrainInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
         })
     }
 
@@ -27,9 +26,8 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneClearInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
         })
     }
 
@@ -37,9 +35,8 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZonePopInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
         })
     }
 
@@ -50,9 +47,8 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
             resource_address,
         })
     }
@@ -67,9 +63,8 @@ impl ComponentAuthZone {
             + ClientSubstateApi<E>
             + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByAmountInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
             amount,
             resource_address,
         })
@@ -85,9 +80,8 @@ impl ComponentAuthZone {
             + ClientSubstateApi<E>
             + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneCreateProofByIdsInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
             ids: ids.clone(),
             resource_address,
         })
@@ -100,11 +94,10 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         let proof: Proof = proof.into();
 
         env.invoke(AuthZonePushInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
             proof,
         })
     }
@@ -114,21 +107,9 @@ impl ComponentAuthZone {
         Y: ClientNodeApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let node_id = Self::auth_zone_node_id(env).expect("Auth Zone doesn't exist");
         env.invoke(AuthZoneAssertAccessRuleInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::AuthZoneStack.into(),
             access_rule,
         })
-    }
-
-    fn auth_zone_node_id<Y, E>(api: &mut Y) -> Option<RENodeId>
-    where
-        Y: ClientNodeApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
-        let owned_node_ids = api.sys_get_visible_nodes().unwrap();
-        owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
     }
 }
