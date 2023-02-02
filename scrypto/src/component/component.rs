@@ -121,7 +121,11 @@ impl Component for OwnedComponent {
     }
 
     fn claim_royalty(&self) -> Bucket {
-        todo!()
+        ScryptoEnv
+            .call_native(ComponentClaimRoyaltyInvocation {
+                receiver: RENodeId::Component(self.0),
+            })
+            .unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
@@ -182,17 +186,8 @@ impl Component for GlobalComponentRef {
         .unwrap();
     }
 
-    fn package_address(&self) -> PackageAddress {
-        todo!()
-    }
-
-    fn blueprint_name(&self) -> String {
-        todo!()
-    }
-
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         let mut env = ScryptoEnv;
-
         env.call_native(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             royalty_config,
@@ -202,11 +197,18 @@ impl Component for GlobalComponentRef {
 
     fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
-
         env.call_native(ComponentClaimRoyaltyInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
         })
         .unwrap()
+    }
+
+    fn package_address(&self) -> PackageAddress {
+        ScryptoEnv.get_global_component_type_info(self.0).unwrap().0
+    }
+
+    fn blueprint_name(&self) -> String {
+        ScryptoEnv.get_global_component_type_info(self.0).unwrap().1
     }
 
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {

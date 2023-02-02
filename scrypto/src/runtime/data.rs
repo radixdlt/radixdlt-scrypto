@@ -121,7 +121,6 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
 
     pub fn get(&self) -> DataRef<V> {
         let mut env = ScryptoEnv;
-
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),
@@ -139,7 +138,6 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let mut env = ScryptoEnv;
-
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),

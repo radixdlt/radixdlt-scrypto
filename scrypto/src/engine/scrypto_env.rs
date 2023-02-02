@@ -18,6 +18,27 @@ pub enum ClientApiError {
 
 pub struct ScryptoEnv;
 
+impl ScryptoEnv {
+    // TODO: replace with ClientDerefApi::resolve + ClientComponentApi:type_info
+    pub fn get_global_component_type_info(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<(PackageAddress, String), ClientApiError> {
+        let component_node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let handle = self.sys_lock_substate(
+            component_node_id,
+            SubstateOffset::Component(ComponentOffset::Info),
+            false,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let info: ComponentInfoSubstate = scrypto_decode(&substate).unwrap();
+        let package_address = info.package_address.clone();
+        let blueprint_ident = info.blueprint_name.clone();
+        self.sys_drop_lock(handle)?;
+        Ok((package_address, blueprint_ident))
+    }
+}
+
 impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     fn instantiate_component(
         &mut self,
@@ -90,7 +111,7 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         let handle = self.sys_lock_substate(
             component_node_id,
             SubstateOffset::Component(ComponentOffset::Info),
-            true,
+            false,
         )?;
         let substate = self.sys_read_substate(handle)?;
         let info: ComponentInfoSubstate = scrypto_decode(&substate).unwrap();
