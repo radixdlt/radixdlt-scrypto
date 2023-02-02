@@ -1,6 +1,7 @@
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 
+// TODO: more thinking on whether should be part of the ClientApi.
 pub trait ClientMeteringApi<E> {
     fn lock_fee(
         &mut self,
