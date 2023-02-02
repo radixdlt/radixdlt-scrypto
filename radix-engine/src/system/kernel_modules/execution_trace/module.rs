@@ -255,22 +255,23 @@ impl ExecutionTraceModule {
     }
 
     fn get_instruction_index(call_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        let maybe_runtime_id = call_frame
-            .get_visible_nodes()
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::TransactionRuntime));
-        maybe_runtime_id.map(|runtime_id| {
+        if call_frame
+            .get_node_visibility(RENodeId::TransactionRuntime)
+            .is_ok()
+        {
             let substate_ref = heap
                 .get_substate(
-                    runtime_id,
+                    RENodeId::TransactionRuntime,
                     NodeModuleId::SELF,
                     &SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
                 )
                 .unwrap();
-            substate_ref.transaction_runtime().instruction_index
-        })
+            Some(substate_ref.transaction_runtime().instruction_index)
+        } else {
+            None
+        }
     }
 
     fn handle_pre_sys_call(
