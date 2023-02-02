@@ -350,7 +350,7 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionRuntime(..) => Ok(()),
+                RENodeId::TransactionRuntime => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),

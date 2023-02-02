@@ -2,7 +2,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
 };
-use radix_engine_interface::api::{ClientActorApi, ClientNodeApi, Invokable};
+use radix_engine_interface::api::{ClientActorApi, Invokable};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
 use radix_engine_interface::blueprints::transaction_hash::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
@@ -85,30 +85,18 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
-        let node_id = visible_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
-            .expect("TransactionHash does not exist");
-
         ScryptoEnv
             .invoke(TransactionRuntimeGetHashInvocation {
-                receiver: node_id.into(),
+                receiver: RENodeId::TransactionRuntime.into(),
             })
             .unwrap()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
-        let node_id = visible_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
-            .expect("TransactionHash does not exist");
-
         ScryptoEnv
             .invoke(TransactionRuntimeGenerateUuidInvocation {
-                receiver: node_id.into(),
+                receiver: RENodeId::TransactionRuntime.into(),
             })
             .unwrap()
     }

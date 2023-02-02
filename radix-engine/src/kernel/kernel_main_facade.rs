@@ -191,7 +191,7 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
-            (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}

@@ -76,6 +76,7 @@ pub enum RENodeId {
     FeeReserve(FeeReserveId),
     Worktop,
     Logger,
+    TransactionRuntime,
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -87,7 +88,6 @@ pub enum RENodeId {
     Identity(IdentityId),
     Clock(ClockId),
     Validator(ValidatorId),
-    TransactionRuntime(TransactionRuntimeId),
     Account(AccountId),
     AccessController(AccessControllerId),
 }
@@ -119,7 +119,7 @@ impl Into<u32> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack => 0x100u32,
             RENodeId::FeeReserve(id) => id,
-            RENodeId::TransactionRuntime(id) => id,
+            RENodeId::TransactionRuntime => 0x200u32,
             _ => panic!("Not a transient id"),
         }
     }

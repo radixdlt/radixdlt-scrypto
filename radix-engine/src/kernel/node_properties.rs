@@ -36,7 +36,7 @@ impl VisibilityProperties {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
-                RENodeId::TransactionRuntime(..) => match &actor.identifier {
+                RENodeId::TransactionRuntime => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
