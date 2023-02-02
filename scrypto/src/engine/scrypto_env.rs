@@ -99,13 +99,17 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         self.sys_drop_lock(handle)?;
         Ok((package_address, blueprint_ident))
     }
+
+    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, ClientApiError> {
+        todo!()
+    }
 }
 
 impl ClientPackageApi<ClientApiError> for ScryptoEnv {
     fn instantiate_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, scrypto_abi::BlueprintAbi>,
+        abi: Vec<u8>,
         access_rules_chain: Vec<AccessRules>,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,

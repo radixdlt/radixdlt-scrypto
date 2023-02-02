@@ -4,10 +4,10 @@ use crate::kernel::Track;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

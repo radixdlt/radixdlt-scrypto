@@ -111,7 +111,6 @@ pub enum NativeFn {
     Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
-    KeyValueStore(KeyValueStoreFn),
     Bucket(BucketFn),
     Vault(VaultFn),
     Proof(ProofFn),
@@ -133,7 +132,6 @@ impl NativeFn {
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::Identity(..) => NativePackage::Identity,
-            NativeFn::KeyValueStore(..) => NativePackage::KeyValueStore,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)

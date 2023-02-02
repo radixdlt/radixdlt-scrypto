@@ -25,7 +25,6 @@ use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
 };
-use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

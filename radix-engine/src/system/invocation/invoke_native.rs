@@ -471,15 +471,5 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::KeyValueStore(method) => match method {
-            KeyValueStoreInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            KeyValueStoreInvocation::Insert(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
     }
 }

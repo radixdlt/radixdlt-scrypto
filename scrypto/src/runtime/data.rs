@@ -1,7 +1,6 @@
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::kv_store::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };

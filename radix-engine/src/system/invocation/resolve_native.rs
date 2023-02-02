@@ -4,7 +4,6 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::kv_store::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
     clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_runtime::*,
@@ -619,18 +618,6 @@ pub fn resolve_native(
                 let invocation =
                     scrypto_decode::<AccessControllerStopTimedRecoveryInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::KeyValueStore(kv_store_fn) => match kv_store_fn {
-            KeyValueStoreFn::Create => {
-                let invocation = scrypto_decode::<KeyValueStoreCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            KeyValueStoreFn::Insert => {
-                let invocation = scrypto_decode::<KeyValueStoreInsertInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

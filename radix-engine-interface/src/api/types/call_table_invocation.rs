@@ -8,7 +8,6 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
-use crate::blueprints::kv_store::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeGenerateUuidInvocation;
@@ -70,7 +69,6 @@ pub enum NativeInvocation {
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
-    KeyValueStore(KeyValueStoreInvocation),
     Bucket(BucketInvocation),
     Vault(VaultInvocation),
     Proof(ProofInvocation),
@@ -217,12 +215,6 @@ pub enum ResourceInvocation {
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum KeyValueStoreInvocation {
-    Create(KeyValueStoreCreateInvocation),
-    Insert(KeyValueStoreInsertInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -393,12 +385,6 @@ impl NativeInvocation {
                 }
                 MetadataInvocation::Get(invocation) => {
                     refs.insert(invocation.receiver);
-                }
-            },
-            NativeInvocation::KeyValueStore(kv_store_method) => match kv_store_method {
-                KeyValueStoreInvocation::Create(_) => {}
-                KeyValueStoreInvocation::Insert(invocation) => {
-                    refs.insert(RENodeId::KeyValueStore(invocation.receiver));
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
@@ -746,10 +732,6 @@ impl NativeInvocation {
                 }
                 ResourceInvocation::GetNonFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
                 ResourceInvocation::NonFungibleExists(i) => (i.fn_identifier(), scrypto_encode(&i)),
-            },
-            NativeInvocation::KeyValueStore(i) => match i {
-                KeyValueStoreInvocation::Create(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                KeyValueStoreInvocation::Insert(i) => (i.fn_identifier(), scrypto_encode(&i)),
             },
             NativeInvocation::Bucket(i) => match i {
                 BucketInvocation::Take(i) => (i.fn_identifier(), scrypto_encode(&i)),

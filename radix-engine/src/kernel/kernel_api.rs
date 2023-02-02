@@ -17,7 +17,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::kv_store::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::blueprints::resource::*;
@@ -231,8 +230,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    + Invokable<KeyValueStoreCreateInvocation, E>
-    + Invokable<KeyValueStoreInsertInvocation, E>
 {
 }
 

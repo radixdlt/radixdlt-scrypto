@@ -14,6 +14,8 @@ pub trait ClientComponentApi<E> {
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, E>;
 
+    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
+
     fn globalize_component(&mut self, component_id: ComponentId) -> Result<ComponentAddress, E>;
 
     fn get_type_info(&mut self, component_id: ComponentId) -> Result<(PackageAddress, String), E>;

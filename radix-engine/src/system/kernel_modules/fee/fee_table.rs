@@ -252,10 +252,6 @@ impl FeeTable {
 
                 AccessControllerFn::StopTimedRecovery => self.fixed_low,
             },
-            NativeFn::KeyValueStore(kv_store_fn) => match kv_store_fn {
-                KeyValueStoreFn::Create => self.fixed_high,
-                KeyValueStoreFn::Insert => self.fixed_medium,
-            },
         }
     }
 

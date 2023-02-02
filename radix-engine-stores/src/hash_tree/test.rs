@@ -3,10 +3,10 @@ use super::types::{Nibble, NibblePath, NodeKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::put_at_next_version;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{scrypto_decode, PackageAddress};
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::collections::HashSet;

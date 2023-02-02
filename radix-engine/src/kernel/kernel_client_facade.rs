@@ -173,12 +173,17 @@ where
     fn instantiate_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        abi: Vec<u8>,
         access_rules_chain: Vec<AccessRules>,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
         // Validate code
+        let abi = scrypto_decode(&abi).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidAbi(e),
+            ))
+        })?;
         WasmValidator::default()
             .validate(&code, &abi)
             .map_err(|e| {
@@ -402,6 +407,10 @@ where
         let blueprint_ident = info.blueprint_name.clone();
         self.drop_lock(handle)?;
         Ok((package_address, blueprint_ident))
+    }
+
+    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
+        todo!()
     }
 }
 
