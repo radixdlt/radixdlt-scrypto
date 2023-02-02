@@ -1,4 +1,5 @@
-use radix_engine::engine::{ExecutionMode, KernelError, ResolvedActor, RuntimeError};
+use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::kernel::{ExecutionMode, ResolvedActor};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;

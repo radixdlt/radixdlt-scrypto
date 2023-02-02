@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use radix_engine_interface::args;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::FAUCET_COMPONENT;
-use radix_engine_interface::model::{FromPublicKey, NonFungibleGlobalId};
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

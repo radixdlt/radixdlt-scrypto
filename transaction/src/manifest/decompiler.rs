@@ -1,12 +1,10 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::NonFungibleLocalId;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::*;
 use utils::ContextualDisplay;
 
 use crate::errors::*;
@@ -546,6 +544,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateValidator {
+            key,
+            owner_access_rule,
+        } => {
+            f.write_str("CREATE_VALIDATOR")?;
+            format_typed_value(f, context, key)?;
+            format_typed_value(f, context, owner_access_rule)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::CreateAccessController {
             controlled_asset,
             primary_role,
@@ -568,6 +575,11 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;
             format_typed_value(f, context, access_rule)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::CreateAccount { withdraw_rule } => {
+            f.write_str("CREATE_ACCOUNT")?;
+            format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
     }

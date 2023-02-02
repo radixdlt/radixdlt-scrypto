@@ -4,13 +4,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::errors::*;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
-    ValidatorSetSubstate, ValidatorSubstate,
-};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
@@ -18,15 +18,19 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::constants::EPOCH_MANAGER;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::{
-    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleGlobalId, NonFungibleIdType,
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::types::{
+    ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
 };
-use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::clock::{
+    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
+};
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::put_at_next_version;
@@ -144,12 +148,13 @@ impl TestRunnerBuilder {
         };
         let genesis = self
             .custom_genesis
-            .unwrap_or_else(|| create_genesis(BTreeMap::new(), 1u64, 1u64, 1u64));
-        runner.execute_transaction_with_config(
+            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
+        let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
         );
+        receipt.expect_commit_success();
         runner
     }
 }
@@ -219,6 +224,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())
@@ -230,6 +236,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 underlying_node,
+                NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate.to_runtime())
@@ -245,6 +252,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -257,6 +265,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -271,7 +280,8 @@ impl TestRunner {
 
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             node_id,
-            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
             let royalty_vault: Own = output
                 .substate
@@ -282,6 +292,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -295,7 +306,8 @@ impl TestRunner {
 
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             node_id,
-            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+            NodeModuleId::PackageRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
             let royalty_vault: Own = output
                 .substate
@@ -306,6 +318,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -334,6 +347,7 @@ impl TestRunner {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|output| output.substate.vault().0.ids().clone())
@@ -363,21 +377,25 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.new_account_with_resource(withdraw_auth, bucket)
-            })
-            .build();
-
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-
-        receipt
+        let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let account_component = receipt
             .expect_commit()
             .entity_changes
-            .new_component_addresses[0]
+            .new_component_addresses[0];
+
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(
+                account_component,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
+        account_component
     }
 
     pub fn new_virtual_account(
@@ -400,6 +418,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -413,6 +432,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -425,6 +445,7 @@ impl TestRunner {
         let node_id = self.deref_component_address(system_address);
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
         let substate: ValidatorSubstate = self
@@ -441,6 +462,7 @@ impl TestRunner {
         let node_id = self.deref_component_address(EPOCH_MANAGER);
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
         let substate: ValidatorSetSubstate = self
@@ -489,17 +511,19 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
-        let address = self.new_validator_with_pub_key(pub_key);
+        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
+        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
         (pub_key, address)
     }
 
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();

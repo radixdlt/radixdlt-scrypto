@@ -1,6 +1,9 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::{modules::auth::AuthAddresses, time::UtcDateTime};
+use radix_engine_interface::{
+    api::kernel_modules::auth::AuthAddresses, blueprints::clock::ClockSetCurrentTimeInvocation,
+    time::UtcDateTime,
+};
 
 use crate::resim::*;
 
@@ -8,11 +11,11 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetCurrentTime {
     /// UTC date time in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'.
-    date_time: UtcDateTime,
+    pub date_time: UtcDateTime,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl SetCurrentTime {

@@ -1,5 +1,5 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -10,14 +10,11 @@ use radix_engine_interface::data::{
     ScryptoValue, ScryptoValueKind,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
-use sbor::value_kind::*;
-use sbor::*;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -536,6 +533,18 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+        ast::Instruction::CreateValidator {
+            key,
+            owner_access_rule,
+        } => BasicInstruction::CreateValidator {
+            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+            owner_access_rule: generate_typed_value(
+                owner_access_rule,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+        },
         ast::Instruction::CreateAccessController {
             controlled_asset,
             primary_role,
@@ -569,6 +578,9 @@ pub fn generate_instruction(
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CreateAccount {
+            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
         },
     })
 }
@@ -1419,9 +1431,13 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use crate::signing::EcdsaSecp256k1PrivateKey;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+    };
+    use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]
@@ -1849,6 +1865,21 @@ mod tests {
                     args!(String::from("Hello World"), Decimal::from("12")),
                     args!(12u8, 19u128)
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_validator_instruction() {
+        generate_instruction_ok!(
+            r#"
+            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
+            "#,
+            BasicInstruction::CreateValidator {
+                key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
+                    .unwrap()
+                    .public_key(),
+                owner_access_rule: AccessRule::AllowAll,
             },
         );
     }

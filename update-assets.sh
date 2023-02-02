@@ -11,19 +11,9 @@ scrypto="scrypto"
 cd "$(dirname "$0")/assets/blueprints"
 
 echo "Building packages..."
-(cd account; $scrypto build)
 (cd faucet; $scrypto build)
 
 echo "Publishing artifacts..."
-npx wasm-opt@1.3 \
-  -Os -g \
-  --strip-debug --strip-dwarf --strip-producers \
-  -o ../account.wasm \
-  ./target/wasm32-unknown-unknown/release/account.wasm
-cp \
-  ./target/wasm32-unknown-unknown/release/account.abi \
-  ../account.abi
-
 npx wasm-opt@1.3 \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \

@@ -1,5 +1,8 @@
 use super::*;
-use crate::model::*;
+use crate::api::component::ComponentAddress;
+use crate::api::package::PackageAddress;
+use crate::blueprints::resource::NonFungibleLocalId;
+use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
@@ -49,6 +52,7 @@ pub enum RENodeType {
     Identity,
     TransactionRuntime,
     Logger,
+    Account,
     AccessController,
 }
 
@@ -84,6 +88,7 @@ pub enum RENodeId {
     Clock(ClockId),
     Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
+    Account(AccountId),
     AccessController(AccessControllerId),
 }
 
@@ -100,6 +105,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
+            RENodeId::Account(id) => id,
             RENodeId::AccessController(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -192,6 +198,28 @@ impl Into<ResourceAddress> for GlobalAddress {
     }
 }
 
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
+pub enum NodeModuleId {
+    SELF,
+    Metadata,
+    AccessRules,
+    AccessRules1,
+    ComponentRoyalty,
+    PackageRoyalty,
+}
+
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
     AuthZoneStack,
@@ -208,18 +236,20 @@ pub enum MetadataOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentOffset {
-    Info,
-    State,
+pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     Info,
-    RoyaltyConfig,
-    RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -306,6 +336,11 @@ pub enum TransactionRuntimeOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccountOffset {
+    Account,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessControllerOffset {
     AccessController,
 }
@@ -328,9 +363,6 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
-    AccessRulesChain(AccessRulesChainOffset),
-    VaultAccessRulesChain(AccessRulesChainOffset),
-    Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
@@ -344,7 +376,12 @@ pub enum SubstateOffset {
     Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
+    Account(AccountOffset),
     AccessController(AccessControllerOffset),
+
+    AccessRulesChain(AccessRulesChainOffset),
+    Metadata(MetadataOffset),
+    Royalty(RoyaltyOffset),
 }
 
 /// TODO: separate space addresses?
@@ -360,4 +397,4 @@ pub enum SubstateOffset {
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub struct SubstateId(pub RENodeId, pub SubstateOffset);
+pub struct SubstateId(pub RENodeId, pub NodeModuleId, pub SubstateOffset);

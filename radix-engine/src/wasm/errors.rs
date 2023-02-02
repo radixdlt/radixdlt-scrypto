@@ -1,9 +1,7 @@
-use radix_engine_interface::api::wasm::BufferId;
-use wasmi::HostError;
+use radix_engine_interface::api::types::BufferId;
 
-use crate::engine::{CanBeAbortion, KernelError, RuntimeError, SelfError};
-use crate::fee::FeeReserveError;
-use crate::model::InvokeError;
+use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
+use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
@@ -142,8 +140,6 @@ impl fmt::Display for WasmRuntimeError {
     }
 }
 
-impl HostError for WasmRuntimeError {}
-
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for WasmRuntimeError {}
 
@@ -152,8 +148,6 @@ impl fmt::Display for InvokeError<WasmRuntimeError> {
         write!(f, "{:?}", self)
     }
 }
-
-impl HostError for InvokeError<WasmRuntimeError> {}
 
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for InvokeError<WasmRuntimeError> {}

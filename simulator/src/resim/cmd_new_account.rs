@@ -1,7 +1,8 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;
@@ -34,10 +35,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(&withdraw_auth, bucket_id)
-            })
+            .new_account(&withdraw_auth)
             .build();
 
         let receipt = handle_manifest(
@@ -52,13 +50,34 @@ impl NewAccount {
 
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-        if let Some(receipt) = receipt {
+        if let Some(ref receipt) = receipt {
             let commit_result = receipt.result.expect_commit();
             commit_result
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
             let account = commit_result.entity_changes.new_component_addresses[0];
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    args!(ManifestExpression::EntireWorktop),
+                )
+                .build();
+            handle_manifest(
+                manifest,
+                &Some("".to_string()), // explicit empty signer public keys
+                &self.network,
+                &None,
+                self.trace,
+                false,
+                out,
+            )?
+            .unwrap()
+            .expect_commit_success();
+
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
@@ -76,14 +95,34 @@ impl NewAccount {
             .map_err(Error::IOError)?;
 
             let mut configs = get_configs()?;
-            if configs.default_account.is_none() {
+            if configs.default_account.is_none()
+                || configs.default_private_key.is_none()
+                || configs.default_owner_badge.is_none()
+            {
+                configs.default_account = Some(account);
+                configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
+                set_configs(&configs)?;
+
+                let nf_global_id = NewSimpleBadge {
+                    symbol: None,
+                    name: Some("Owner badge".to_string()),
+                    description: None,
+                    url: None,
+                    icon_url: None,
+                    network: None,
+                    manifest: None,
+                    signing_keys: None,
+                    trace: false,
+                }
+                .run(out)?;
+                configs.default_owner_badge = Some(nf_global_id.unwrap());
+                set_configs(&configs)?;
+
                 writeln!(
                     out,
-                    "No configuration found on system. will use the above account as default."
+                    "Account configuration in complete. Will use the above account as default."
                 )
                 .map_err(Error::IOError)?;
-                configs.default_account = Some((account, hex::encode(private_key.to_bytes())));
-                set_configs(&configs)?;
             }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
@@ -96,6 +135,7 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
         }
+
         Ok(())
     }
 }

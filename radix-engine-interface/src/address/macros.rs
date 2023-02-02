@@ -2,22 +2,22 @@
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::Resource, $($bytes:expr),*) => {
-        radix_engine_interface::model::ResourceAddress::Normal([$($bytes),*])
+        radix_engine_interface::blueprints::resource::ResourceAddress::Normal([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
-        radix_engine_interface::model::PackageAddress::Normal([$($bytes),*])
+        radix_engine_interface::api::package::PackageAddress::Normal([$($bytes),*])
     };
     (EntityType::NormalComponent, $($bytes:expr),*) => {
-        radix_engine_interface::model::ComponentAddress::Normal([$($bytes),*])
+        radix_engine_interface::api::component::ComponentAddress::Normal([$($bytes),*])
     };
     (EntityType::AccountComponent, $($bytes:expr),*) => {
-        radix_engine_interface::model::ComponentAddress::Account([$($bytes),*])
+        radix_engine_interface::api::component::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
-        radix_engine_interface::model::ComponentAddress::EpochManager([$($bytes),*])
+        radix_engine_interface::api::component::ComponentAddress::EpochManager([$($bytes),*])
     };
     (EntityType::Clock, $($bytes:expr),*) => {
-        radix_engine_interface::model::ComponentAddress::Clock([$($bytes),*])
+        radix_engine_interface::api::component::ComponentAddress::Clock([$($bytes),*])
     };
 }
 

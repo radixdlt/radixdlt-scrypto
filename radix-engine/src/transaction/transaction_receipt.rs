@@ -1,21 +1,31 @@
+use crate::blueprints::epoch_manager::Validator;
+use crate::blueprints::transaction_processor::InstructionOutput;
+use crate::errors::*;
+use crate::kernel::TrackedEvent;
+use crate::state_manager::StateDiff;
+use crate::system::kernel_modules::execution_trace::ResourceChange;
+use crate::system::kernel_modules::fee::FeeSummary;
+use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
-use radix_engine_interface::api::types::{GlobalAddress, Level};
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
-use radix_engine_interface::model::*;
 use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
-use crate::engine::{RejectionError, RuntimeError, TrackedEvent};
-use crate::fee::FeeSummary;
-use crate::model::*;
-use crate::state_manager::StateDiff;
-use crate::types::*;
+#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
+pub struct ResourcesUsage {
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64,
+}
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
+    pub resources_usage: ResourcesUsage,
 }
 
 /// Captures whether a transaction should be committed, and its other results

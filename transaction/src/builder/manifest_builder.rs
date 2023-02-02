@@ -1,11 +1,12 @@
 use radix_engine_interface::abi::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::constants::*;
+use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -356,11 +357,14 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: "create_validator".to_string(),
-            args: args!(key),
+    pub fn create_validator(
+        &mut self,
+        key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateValidator {
+            key,
+            owner_access_rule,
         });
         self
     }
@@ -721,27 +725,9 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new".to_string(),
-            args: args!(withdraw_auth.clone()),
-        })
-        .0
-    }
-
-    /// Creates an account with some initial resource.
-    pub fn new_account_with_resource(
-        &mut self,
-        withdraw_auth: &AccessRule,
-        bucket_id: ManifestBucket,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-            function_name: "new_with_resource".to_string(),
-            args: args!(withdraw_auth.clone(), bucket_id),
+    pub fn new_account(&mut self, withdraw_auth: &AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccount {
+            withdraw_rule: withdraw_auth.clone(),
         })
         .0
     }

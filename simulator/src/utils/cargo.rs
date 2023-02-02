@@ -7,8 +7,7 @@ use std::process::Command;
 use std::process::ExitStatus;
 
 use cargo_toml::Manifest;
-use radix_engine::model::extract_abi;
-use radix_engine::model::ExtractAbiError;
+use radix_engine::system::package::*;
 use radix_engine::types::*;
 
 #[derive(Debug)]

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::manifest::*;
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
 
     #[test]
@@ -203,8 +203,11 @@ CALL_METHOD
     "with_all_scrypto_custom_types"
     PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r")
     ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace")
+    ComponentAddress("epochmanager_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvygtcq")
+    ComponentAddress("clock_sim1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqagpd30")
+    ComponentAddress("validator_sim1q5qszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqsvkh36j")
+    ComponentAddress("accesscontroller_sim1pspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqq397jz")
     ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
-    ComponentAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635")
     Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
     Bucket("bucket1")
     Proof("proof1")
@@ -563,6 +566,21 @@ CALL_METHOD
     Decimal("10");
 ASSERT_ACCESS_RULE
     Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))));
+"##,
+        );
+    }
+
+    #[test]
+    fn test_create_account() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/account/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_ACCOUNT
+    Enum(0u8);
 "##,
         );
     }

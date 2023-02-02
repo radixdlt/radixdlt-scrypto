@@ -3,6 +3,7 @@ use super::types::ManifestExpression;
 use super::types::ManifestProof;
 use crate::address::Bech32Encoder;
 use crate::api::types::*;
+use crate::blueprints::resource::*;
 use crate::data::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;

@@ -1,7 +1,6 @@
-use radix_engine_interface::api::types::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::EngineApi;
+use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
 blueprint! {
     struct DataAccess {}

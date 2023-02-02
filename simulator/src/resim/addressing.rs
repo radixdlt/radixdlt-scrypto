@@ -1,10 +1,13 @@
-use radix_engine_interface::rule;
+use radix_engine_interface::{
+    blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
+    rule,
+};
 use sbor::rust::fmt;
 use std::str::FromStr;
 
 use radix_engine::types::{
-    require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleGlobalId, PackageAddress, ParseNonFungibleGlobalIdError, ResourceAddress,
+    AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId,
+    PackageAddress, ResourceAddress,
 };
 use utils::ContextualDisplay;
 

@@ -1,5 +1,7 @@
-use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

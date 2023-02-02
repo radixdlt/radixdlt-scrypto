@@ -1,7 +1,8 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
+use radix_engine::blueprints::resource::LockedAmountOrIds;
+use radix_engine::kernel::TrackedEvent;
+use radix_engine::system::kernel_modules::execution_trace::{SysCallTrace, SysCallTraceOrigin};
 use radix_engine::types::*;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -47,6 +48,7 @@ fn test_trace_resource_transfers() {
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
+    println!("{:?}", receipt.expect_commit().resource_changes);
     assert_eq!(3, receipt.expect_commit().resource_changes.len());
 
     let fee_summary = &receipt.execution.fee_summary;

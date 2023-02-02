@@ -1,6 +1,12 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::{
+    api::{
+        kernel_modules::auth::AuthAddresses,
+        types::{EpochManagerInvocation, NativeInvocation},
+    },
+    blueprints::epoch_manager::EpochManagerSetEpochInvocation,
+};
 
 use crate::resim::*;
 
@@ -8,11 +14,11 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetCurrentEpoch {
     /// The new epoch number
-    epoch: u64,
+    pub epoch: u64,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl SetCurrentEpoch {

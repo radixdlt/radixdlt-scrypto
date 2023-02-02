@@ -1,7 +1,7 @@
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 
@@ -53,6 +53,7 @@ impl QueryableSubstateStore for SerializedInMemorySubstateStore {
                 let substate_id: SubstateId = scrypto_decode(key).unwrap();
                 if let SubstateId(
                     RENodeId::KeyValueStore(id),
+                    NodeModuleId::SELF,
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
                 ) = substate_id
                 {
