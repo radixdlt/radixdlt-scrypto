@@ -835,6 +835,7 @@ dependencies = [
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
+ "strum",
  "transaction",
  "utils",
  "wasm-instrument",

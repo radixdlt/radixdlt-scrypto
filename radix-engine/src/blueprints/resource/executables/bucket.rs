@@ -1,4 +1,3 @@
-use crate::blueprints::resource::ResourceOperationError;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -11,13 +10,8 @@ use crate::kernel::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
-};
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::resource::*;
-
-use super::ProofError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketError {

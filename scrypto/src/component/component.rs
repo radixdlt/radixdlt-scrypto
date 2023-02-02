@@ -81,7 +81,7 @@ impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(ScryptoReceiver::Component(self.0), method, args)
+            .call_method(ScryptoReceiver::Component(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
@@ -180,7 +180,7 @@ impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .invoke_method(ScryptoReceiver::Global(self.0), method, args)
+            .call_method(ScryptoReceiver::Global(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }

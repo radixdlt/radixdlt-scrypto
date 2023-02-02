@@ -105,6 +105,8 @@ pub enum WasmRuntimeError {
     BufferNotFound(BufferId),
     /// Invalid scrypto receiver
     InvalidReceiver(DecodeError),
+    /// Invalid package address
+    InvalidPackageAddress(DecodeError),
     /// Invalid method ident
     InvalidIdent,
     /// Invalid invocation
@@ -113,6 +115,8 @@ pub enum WasmRuntimeError {
     InvalidNode(DecodeError),
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
+    /// Invalid RE module ID
+    InvalidModuleId(DecodeError),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
     /// Costing error

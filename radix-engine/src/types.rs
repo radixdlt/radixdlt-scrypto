@@ -11,8 +11,6 @@ pub use radix_engine_interface::data::{
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
 pub use radix_engine_interface::*;
-#[cfg(feature = "std")]
-pub use sbor::rust::alloc;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;
 pub use sbor::rust::cell::{Ref, RefCell, RefMut};
@@ -33,3 +31,5 @@ pub use sbor::rust::sync;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{Categorize, Decode, DecodeError, Encode, SborPath, SborPathBuf, Value, ValueKind};
+#[cfg(feature = "std")]
+pub use std::alloc;

@@ -110,7 +110,7 @@ fn consume_buffer(
     }
 }
 
-fn invoke_method(
+fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
@@ -126,7 +126,40 @@ fn invoke_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .invoke_method(receiver, ident, args)
+        .call_method(receiver, ident, args)
+        .map(|buffer| buffer.0)
+}
+
+fn call_function(
+    mut caller: Caller<'_, HostState>,
+    package_address_ptr: u32,
+    package_address_len: u32,
+    blueprint_ident_ptr: u32,
+    blueprint_ident_len: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let package_address = read_memory(
+        caller.as_context_mut(),
+        memory,
+        package_address_ptr,
+        package_address_len,
+    )?;
+    let blueprint_ident = read_memory(
+        caller.as_context_mut(),
+        memory,
+        blueprint_ident_ptr,
+        blueprint_ident_len,
+    )?;
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    runtime
+        .call_function(package_address, blueprint_ident, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -279,7 +312,7 @@ impl WasmiModule {
             },
         );
 
-        let host_invoke_method = Func::wrap(
+        let host_call_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
@@ -289,10 +322,37 @@ impl WasmiModule {
              args_ptr: u32,
              args_len: u32|
              -> Result<u64, Trap> {
-                invoke_method(
+                call_method(
                     caller,
                     receiver_ptr,
                     receiver_len,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_call_function = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             package_address_ptr: u32,
+             package_address_len: u32,
+             blueprint_ident_ptr: u32,
+             blueprint_ident_len: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                call_function(
+                    caller,
+                    package_address_ptr,
+                    package_address_len,
+                    blueprint_ident_ptr,
+                    blueprint_ident_len,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -398,7 +458,8 @@ impl WasmiModule {
 
         let mut linker = <Linker<HostState>>::new();
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
-        linker_define!(linker, INVOKE_METHOD_FUNCTION_NAME, host_invoke_method);
+        linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
+        linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, INVOKE_FUNCTION_NAME, host_invoke);
         linker_define!(linker, CREATE_NODE_FUNCTION_NAME, host_create_node);
         linker_define!(

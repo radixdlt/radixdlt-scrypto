@@ -166,7 +166,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn invoke_method(
+        pub fn call_method(
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
             receiver_len: u32,
@@ -182,7 +182,32 @@ impl WasmerModule {
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .invoke_method(receiver, ident, args)
+                .call_method(receiver, ident, args)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn call_function(
+            env: &WasmerInstanceEnv,
+            package_address_ptr: u32,
+            package_address_len: u32,
+            blueprint_ident_ptr: u32,
+            blueprint_ident_len: u32,
+            ident_ptr: u32,
+            ident_len: u32,
+            args_ptr: u32,
+            args_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let package_address = read_memory(&instance, package_address_ptr, package_address_len)?;
+            let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
+            let ident = read_memory(&instance, ident_ptr, ident_len)?;
+            let args = read_memory(&instance, args_ptr, args_len)?;
+
+            let buffer = runtime
+                .call_function(package_address, blueprint_ident, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -331,7 +356,8 @@ impl WasmerModule {
         let import_object = imports! {
             MODULE_ENV_NAME => {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
-                INVOKE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke_method),
+                CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
+                CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 INVOKE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke),
                 CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
                 GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),

@@ -3,7 +3,7 @@ use crate::data::IndexedScryptoValue;
 use sbor::rust::vec::Vec;
 
 pub trait ClientComponentApi<E> {
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,

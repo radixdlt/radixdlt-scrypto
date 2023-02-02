@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::transaction_hash::{
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -55,16 +54,15 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let buffer = ScryptoEnv
-            .invoke(ScryptoInvocation {
+        let output = ScryptoEnv
+            .call_function(
                 package_address,
-                blueprint_name: blueprint_name.as_ref().to_owned(),
-                fn_name: function_name.as_ref().to_owned(),
-                receiver: None,
+                blueprint_name.as_ref(),
+                function_name.as_ref(),
                 args,
-            })
+            )
             .unwrap();
-        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Invokes a method on a component.
@@ -74,7 +72,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv
-            .invoke_method(
+            .call_method(
                 ScryptoReceiver::Global(component_address),
                 method.as_ref(),
                 args,

@@ -12,27 +12,27 @@ macro_rules! log {
 
 #[allow(unused_variables)] // for no_std
 impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
-    fn pre_sys_call(
+    fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        input: SysCallInput,
+        input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke { fn_identifier, .. } => {
+            KernelApiCallInput::Invoke { fn_identifier, .. } => {
                 log!(call_frame, "Invoking: {}", fn_identifier);
             }
-            SysCallInput::ReadOwnedNodes => {
+            KernelApiCallInput::GetVisibleNodes => {
                 log!(call_frame, "Reading owned nodes");
             }
-            SysCallInput::DropNode { node_id } => {
+            KernelApiCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
-            SysCallInput::CreateNode { node } => {
+            KernelApiCallInput::CreateNode { node } => {
                 log!(call_frame, "Creating node: node = {:?}", node);
             }
-            SysCallInput::LockSubstate {
+            KernelApiCallInput::LockSubstate {
                 node_id,
                 offset,
                 flags,
@@ -45,52 +45,48 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
                     flags
                 );
             }
-            SysCallInput::GetRef { lock_handle } => {
+            KernelApiCallInput::GetRef { lock_handle } => {
                 log!(
                     call_frame,
                     "Reading substate: lock_handle = {:?}",
                     lock_handle
                 );
             }
-            SysCallInput::GetRefMut { lock_handle } => {
+            KernelApiCallInput::GetRefMut { lock_handle } => {
                 log!(call_frame, "Get Mut: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::DropLock { lock_handle } => {
+            KernelApiCallInput::DropLock { lock_handle } => {
                 log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
-            }
-            SysCallInput::ReadBlob { blob_hash } => {
-                log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
         }
 
         Ok(())
     }
 
-    fn post_sys_call(
+    fn post_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        output: SysCallOutput,
+        output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::Invoke { rtn, .. } => {
+            KernelApiCallOutput::Invoke { rtn, .. } => {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
-            SysCallOutput::ReadOwnedNodes { .. } => {}
-            SysCallOutput::DropNode { .. } => {}
-            SysCallOutput::CreateNode { .. } => {}
-            SysCallOutput::LockSubstate { lock_handle } => {
+            KernelApiCallOutput::GetVisibleNodes { .. } => {}
+            KernelApiCallOutput::DropNode { .. } => {}
+            KernelApiCallOutput::CreateNode { .. } => {}
+            KernelApiCallOutput::LockSubstate { lock_handle } => {
                 log!(
                     call_frame,
                     "Lock acquired: lock_handle = {:?} ",
                     lock_handle
                 );
             }
-            SysCallOutput::GetRef { .. } => {}
-            SysCallOutput::GetRefMut { .. } => {}
-            SysCallOutput::DropLock { .. } => {}
-            SysCallOutput::ReadBlob { .. } => {}
+            KernelApiCallOutput::GetRef { .. } => {}
+            KernelApiCallOutput::GetRefMut { .. } => {}
+            KernelApiCallOutput::DropLock { .. } => {}
         }
 
         Ok(())
