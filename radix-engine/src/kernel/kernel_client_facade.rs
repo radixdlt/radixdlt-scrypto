@@ -11,6 +11,7 @@ use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::invocation::resolve_native::resolve_native;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
@@ -72,7 +73,7 @@ where
             LockFlags::read_only()
         };
 
-        self.lock_substate(node_id, offset, flags)
+        self.lock_substate(node_id, NodeModuleId::SELF, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -214,18 +215,23 @@ where
         // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
-        let node = RENodeInit::Package(
-            PackageInfoSubstate {
-                code,
-                blueprint_abis: abi,
-            },
-            royalty_config_substate,
-            royalty_accumulator_substate,
-            metadata_substate,
-            auth_substate,
-        );
+        let node = RENodeInit::Package(PackageInfoSubstate {
+            code,
+            blueprint_abis: abi,
+        });
 
-        self.create_node(node_id, node)?;
+        self.create_node(
+            node_id,
+            node,
+            btreemap!(
+                NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
+                    royalty_config_substate,
+                    royalty_accumulator_substate
+                ),
+                NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(auth_substate),
+            ),
+        )?;
 
         Ok(node_id.into())
     }
@@ -260,6 +266,7 @@ where
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.lock_substate(
             package_global,
+            NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -277,6 +284,7 @@ where
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.lock_substate(
             package_global,
+            NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -338,13 +346,20 @@ where
         let node = RENodeInit::Component(
             ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
             ComponentStateSubstate::new(abi_enforced_app_substate),
-            royalty_config_substate,
-            royalty_accumulator_substate,
-            metadata_substate,
-            auth_substate,
         );
 
-        self.create_node(node_id, node)?;
+        self.create_node(
+            node_id,
+            node,
+            btreemap!(
+                NodeModuleId::PackageRoyalty => RENodeModuleInit::ComponentRoyalty(
+                    royalty_config_substate,
+                    royalty_accumulator_substate
+                ),
+                NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(auth_substate),
+            ),
+        )?;
 
         Ok(node_id.into())
     }
@@ -353,20 +368,12 @@ where
         &mut self,
         component_id: ComponentId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        // TODO: remove this logic
-        let type_info = self.get_type_info(component_id)?;
-        let re_node_type = if type_info.0.eq(&ACCOUNT_PACKAGE) && type_info.1.eq(&ACCOUNT_BLUEPRINT)
-        {
-            RENodeType::GlobalAccount
-        } else {
-            RENodeType::GlobalComponent
-        };
-
-        let node_id = self.allocate_node_id(re_node_type)?;
+        let node_id = self.allocate_node_id(RENodeType::GlobalComponent)?;
 
         self.create_node(
             node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(component_id)),
+            btreemap!(),
         )?;
 
         Ok(node_id.into())
@@ -398,6 +405,7 @@ where
         let component_node_id = RENodeId::Component(component_id);
         let handle = self.lock_substate(
             component_node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Component(ComponentOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -412,7 +420,7 @@ where
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.create_node(node_id, RENodeInit::KeyValueStore)?;
+        self.create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
 
         Ok(node_id.into())
     }

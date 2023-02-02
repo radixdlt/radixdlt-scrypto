@@ -3,6 +3,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 pub trait ClientSubstateApi<E: Debug> {
+    // TODO: expose non-SELF?
     fn sys_lock_substate(
         &mut self,
         node_id: RENodeId,

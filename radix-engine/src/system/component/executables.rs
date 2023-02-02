@@ -13,7 +13,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{constants::*, rule};
+use radix_engine_interface::rule;
+use sbor::rust::collections::BTreeMap;
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
@@ -42,31 +43,13 @@ impl Executor for ComponentGlobalizeInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
-        let component_node_id = RENodeId::Component(self.component_id);
-        let global_node_id = {
-            let handle = api.lock_substate(
-                component_node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let node_id = if substate_ref
-                .component_info()
-                .package_address
-                .eq(&ACCOUNT_PACKAGE)
-            {
-                api.allocate_node_id(RENodeType::GlobalAccount)?
-            } else {
-                api.allocate_node_id(RENodeType::GlobalComponent)?
-            };
-            api.drop_lock(handle)?;
-            node_id
-        };
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
+            BTreeMap::new(),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -105,25 +88,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
-        let global_node_id = {
-            let handle = api.lock_substate(
-                component_node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let node_id = if substate_ref
-                .component_info()
-                .package_address
-                .eq(&ACCOUNT_PACKAGE)
-            {
-                api.allocate_node_id(RENodeType::GlobalAccount)?
-            } else {
-                api.allocate_node_id(RENodeType::GlobalComponent)?
-            };
-            api.drop_lock(handle)?;
-            node_id
-        };
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
         // Add protection for metadata/royalties
@@ -157,6 +122,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
+            BTreeMap::new(),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -203,8 +169,12 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = self.royalty_config;
@@ -250,8 +220,12 @@ impl Executor for ComponentClaimRoyaltyInvocation {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();

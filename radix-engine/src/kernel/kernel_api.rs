@@ -1,6 +1,7 @@
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -14,6 +15,7 @@ use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, V
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
@@ -71,7 +73,12 @@ pub trait KernelNodeApi {
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError>;
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        init: RENodeInit,
+        node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
@@ -79,6 +86,7 @@ pub trait KernelSubstateApi {
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
@@ -134,6 +142,8 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
     + Invokable<ValidatorClaimXrdInvocation, E>
+    + Invokable<ValidatorUpdateKeyInvocation, E>
+    + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
@@ -230,6 +240,22 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
+    + Invokable<AccountCreateInvocation, E>
+    + Invokable<AccountNewInvocation, E>
+    + Invokable<AccountBalanceInvocation, E>
+    + Invokable<AccountLockFeeInvocation, E>
+    + Invokable<AccountLockContingentFeeInvocation, E>
+    + Invokable<AccountDepositInvocation, E>
+    + Invokable<AccountDepositBatchInvocation, E>
+    + Invokable<AccountWithdrawInvocation, E>
+    + Invokable<AccountWithdrawByAmountInvocation, E>
+    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountCreateProofInvocation, E>
+    + Invokable<AccountCreateProofByAmountInvocation, E>
+    + Invokable<AccountCreateProofByIdsInvocation, E>
 {
 }
 

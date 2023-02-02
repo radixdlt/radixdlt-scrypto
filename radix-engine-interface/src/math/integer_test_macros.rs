@@ -1094,7 +1094,9 @@ macro_rules! test_from_all_types_safe_safe {
         $(
             #[test]
             fn [<test_from_safe_ $i:lower _from_safe_ $from:lower>]() {
-                let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
+                let a: $i = <$i>::try_from(
+                        <$from>::try_from(112u8).unwrap()
+                    ).unwrap();
                 let expect: $i = <$i>::try_from(112u8).unwrap();
                 assert_eq!(a, expect);
             }

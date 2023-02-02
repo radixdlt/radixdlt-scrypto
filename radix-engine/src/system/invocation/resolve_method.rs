@@ -65,13 +65,26 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
-            | ComponentAddress::Normal(..)
             | ComponentAddress::Account(..) => {
+                let invocation =
+                    AccountPackage::resolve_method_invocation(component_address, method_name, args)
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::ResolveError(e),
+                                ),
+                            )
+                        })?;
+                CallTableInvocation::Native(NativeInvocation::Account(invocation))
+            }
+
+            ComponentAddress::Normal(..) => {
                 let component_node_id =
                     RENodeId::Global(GlobalAddress::Component(component_address));
                 let component_info = {
                     let handle = api.lock_substate(
                         component_node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Component(ComponentOffset::Info),
                         LockFlags::read_only(),
                     )?;
@@ -97,6 +110,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             let component_info = {
                 let handle = api.lock_substate(
                     component_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::Info),
                     LockFlags::read_only(),
                 )?;

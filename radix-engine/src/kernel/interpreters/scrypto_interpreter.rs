@@ -76,6 +76,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             {
                 let handle = api.lock_substate(
                     original_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::Info),
                     LockFlags::read_only(),
                 )?;
@@ -125,6 +126,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
             let handle = api.lock_substate(
                 package_global,
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -193,7 +195,6 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
             actor,
@@ -234,6 +235,7 @@ impl Executor for ScryptoExecutor {
         let package = {
             let handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;

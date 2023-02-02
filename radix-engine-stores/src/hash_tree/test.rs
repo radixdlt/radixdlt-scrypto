@@ -5,11 +5,11 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{scrypto_decode, PackageAddress};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    GlobalAddress, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    GlobalAddress, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
-use sbor::rust::collections::HashSet;
+use sbor::rust::collections::BTreeSet;
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -137,21 +137,22 @@ fn records_stale_tree_node_keys() {
     put_at_next_version(&mut store, Some(1), &[(substate_id(3, 9), value_hash(70))]);
     put_at_next_version(&mut store, Some(2), &[(substate_id(3, 9), value_hash(80))]);
     assert_eq!(
-        store.stale_key_buffer.iter().collect::<HashSet<_>>(),
+        store.stale_key_buffer.iter().collect::<BTreeSet<_>>(),
         vec![
             // tree nodes obsoleted by v=2:
             // the only node == root == leaf for substate_id(4, 6)
             NodeKey::new(1, nibbles("")),
             // tree nodes obsoleted by v=3:
             // the leaf for substate_id(3, 9)
-            NodeKey::new(2, nibbles("84")),
-            // the common parent of 2 leaves at v=2
-            NodeKey::new(2, nibbles("8")),
-            // the root at v=2
             NodeKey::new(2, nibbles("")),
+            // the common parent of 2 leaves at v=2
+            NodeKey::new(2, nibbles("2")),
+            // the root at v=2
+            NodeKey::new(2, nibbles("2a")),
+            NodeKey::new(2, nibbles("2a1")),
         ]
         .iter()
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
     );
 }
 
@@ -160,6 +161,7 @@ fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateId(
         RENodeId::Global(GlobalAddress::Package(fake_pkg_address)),
+        NodeModuleId::SELF,
         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
     )
 }

@@ -47,6 +47,18 @@ pub enum AccessRuleEntry {
     Group(String),
 }
 
+impl From<AccessRule> for AccessRuleEntry {
+    fn from(value: AccessRule) -> Self {
+        AccessRuleEntry::AccessRule(value)
+    }
+}
+
+impl From<String> for AccessRuleEntry {
+    fn from(value: String) -> Self {
+        AccessRuleEntry::Group(value)
+    }
+}
+
 /// Method authorization rules for a component
 #[derive(
     Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
@@ -143,9 +155,12 @@ impl AccessRules {
         &self.default_auth
     }
 
-    pub fn set_method_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
-        self.method_auth
-            .insert(key, AccessRuleEntry::AccessRule(access_rule));
+    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
+        &mut self,
+        key: AccessRuleKey,
+        access_rule_entry: E,
+    ) {
+        self.method_auth.insert(key, access_rule_entry.into());
     }
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {

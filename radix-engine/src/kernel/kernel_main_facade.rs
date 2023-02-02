@@ -7,7 +7,7 @@ use crate::kernel::module::KernelApiCallOutput;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -126,7 +126,12 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError> {
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        re_node: RENodeInit,
+        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError> {
         self.module
             .pre_kernel_api_call(
                 &self.current_frame,
@@ -182,49 +187,8 @@ where
                 RENodeId::Global(GlobalAddress::Component(..)),
                 RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
             ) => {}
-            (
-                RENodeId::Global(address),
-                RENodeInit::Global(GlobalAddressSubstate::Component(component)),
-            ) => {
-                // TODO: Get rid of this logic
-                let (package_address, blueprint_name) = self
-                    .execute_in_mode::<_, _, RuntimeError>(
-                        ExecutionMode::Globalize,
-                        |system_api| {
-                            let handle = system_api.lock_substate(
-                                RENodeId::Component(*component),
-                                SubstateOffset::Component(ComponentOffset::Info),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = system_api.get_ref(handle)?;
-                            let info = substate_ref.component_info();
-                            let package_blueprint =
-                                (info.package_address, info.blueprint_name.clone());
-                            system_api.drop_lock(handle)?;
-                            Ok(package_blueprint)
-                        },
-                    )?;
-
-                match address {
-                    GlobalAddress::Component(ComponentAddress::Account(..)) => {
-                        if !(package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT))
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    GlobalAddress::Component(ComponentAddress::Normal(..)) => {
-                        if package_address.eq(&ACCOUNT_PACKAGE)
-                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT)
-                        {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                        }
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
-                    }
-                }
-            }
+            (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
+            (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
@@ -242,6 +206,7 @@ where
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
@@ -256,6 +221,7 @@ where
         self.current_frame.create_node(
             node_id,
             re_node,
+            module_init,
             &mut self.heap,
             &mut self.track,
             push_to_store,
@@ -286,6 +252,7 @@ where
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -340,6 +307,7 @@ where
             &mut self.heap,
             &mut self.track,
             node_id,
+            module_id,
             offset.clone(),
             flags,
         );
@@ -347,13 +315,14 @@ where
         let lock_handle = match maybe_lock_handle {
             Ok(lock_handle) => lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, ref offset),
+                SubstateId(node_id, module_id, ref offset),
             )))) => {
                 if self.try_virtualize(node_id, &offset)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
                         node_id,
+                        module_id,
                         offset.clone(),
                         flags,
                     )?
@@ -369,15 +338,16 @@ where
                         RENodeId::Global(GlobalAddress::Package(package_address)),
                     )) => {
                         let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+                        let module_id = NodeModuleId::SELF;
                         let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(
-                                SubstateId(node_id, offset.clone()),
+                                SubstateId(node_id, module_id, offset.clone()),
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
                         self.track
-                            .release_lock(SubstateId(node_id, offset.clone()), false)
+                            .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
                             .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
@@ -385,6 +355,7 @@ where
                             &mut self.heap,
                             &mut self.track,
                             node_id,
+                            module_id,
                             offset.clone(),
                             flags,
                         )?

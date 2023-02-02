@@ -8,43 +8,43 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewTokenFixed {
     /// The total supply
-    total_supply: Decimal,
+    pub total_supply: Decimal,
 
     /// The symbol
     #[clap(long)]
-    symbol: Option<String>,
+    pub symbol: Option<String>,
 
     /// The name
     #[clap(long)]
-    name: Option<String>,
+    pub name: Option<String>,
 
     /// The description
     #[clap(long)]
-    description: Option<String>,
+    pub description: Option<String>,
 
     /// The website URL
     #[clap(long)]
-    url: Option<String>,
+    pub url: Option<String>,
 
     /// The ICON url
     #[clap(long)]
-    icon_url: Option<String>,
+    pub icon_url: Option<String>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signing_keys: Option<String>,
+    pub signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl NewTokenFixed {

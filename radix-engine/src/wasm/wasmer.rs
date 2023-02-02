@@ -299,10 +299,8 @@ impl WasmerModule {
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let component_id = read_memory(&instance, component_id_ptr, component_id_len)?;
-
             let buffer = runtime
-                .globalize_component(component_id)
+                .globalize_component(read_memory(&instance, component_id_ptr, component_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

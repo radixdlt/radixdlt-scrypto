@@ -7,15 +7,17 @@ use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
 use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysBucket;
+use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -76,23 +78,21 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        for (bucket, account_address) in self.validator_set.values() {
+        for (_key, validator_init) in &self.validator_set {
             call_frame_update
                 .nodes_to_move
-                .push(RENodeId::Bucket(bucket.0));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                .push(RENodeId::Bucket(validator_init.initial_stake.0));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_init.stake_account_address,
+            )));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_init.validator_account_address,
+            )));
         }
 
         Ok((actor, call_frame_update, self))
     }
-}
-
-// TODO: Cleanup once native accounts implemented
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccountDepositInput {
-    bucket: Bucket,
 }
 
 impl Executor for EpochManagerCreateInvocation {
@@ -121,24 +121,59 @@ impl Executor for EpochManagerCreateInvocation {
             num_unstake_epochs: self.num_unstake_epochs,
         };
 
+        let mut olympia_validator_token_resman: ResourceManager = {
+            let metadata: BTreeMap<String, String> = BTreeMap::new();
+            let mut access_rules = BTreeMap::new();
+
+            // TODO: remove mint and premint all tokens
+            {
+                let non_fungible_local_id = NonFungibleLocalId::Bytes(
+                    scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
+                        .unwrap(),
+                );
+                let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+                access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+            }
+
+            access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+            let resource_address: ResourceAddress =
+                api.call_native(ResourceManagerCreateNonFungibleInvocation {
+                    resource_address: Some(self.olympia_validator_token_address),
+                    id_type: NonFungibleIdType::Bytes,
+                    metadata,
+                    access_rules,
+                })?;
+            ResourceManager(resource_address)
+        };
+
         let mut validator_set = BTreeMap::new();
 
-        for (key, (initial_stake, account_address)) in self.validator_set {
-            let stake = initial_stake.sys_amount(api)?;
+        for (key, validator_init) in self.validator_set {
+            let local_id = NonFungibleLocalId::Bytes(key.to_vec());
+            let global_id =
+                NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
+            let owner_token_bucket =
+                olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
+            api.call_native(AccountDepositInvocation {
+                receiver: validator_init.validator_account_address,
+                bucket: owner_token_bucket.0,
+            })?;
+
+            let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
-                initial_stake,
+                rule!(require(global_id)),
+                validator_init.initial_stake,
                 true,
                 api,
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.call_method(
-                ScryptoReceiver::Global(account_address),
-                "deposit",
-                args!(lp_bucket),
-            )?;
+            api.call_native(AccountDepositInvocation {
+                receiver: validator_init.stake_account_address,
+                bucket: lp_bucket.0,
+            })?;
         }
 
         let current_validator_set = ValidatorSetSubstate {
@@ -177,16 +212,22 @@ impl Executor for EpochManagerCreateInvocation {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            }),
+        );
+
         api.create_node(
             underlying_node_id,
             RENodeInit::EpochManager(
                 epoch_manager,
                 current_validator_set,
                 preparing_validator_set,
-                AccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                },
             ),
+            node_modules,
         )?;
 
         api.create_node(
@@ -194,6 +235,7 @@ impl Executor for EpochManagerCreateInvocation {
             RENodeInit::Global(GlobalAddressSubstate::EpochManager(
                 underlying_node_id.into(),
             )),
+            BTreeMap::new(),
         )?;
 
         let component_address: ComponentAddress = global_node_id.into();
@@ -246,7 +288,8 @@ impl Executor for EpochManagerGetCurrentEpochExecutable {
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
@@ -296,7 +339,12 @@ impl Executor for EpochManagerNextRoundExecutable {
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+        let mgr_handle = system_api.lock_substate(
+            self.node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
         let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
         let epoch_manager = substate_mut.epoch_manager();
 
@@ -311,7 +359,12 @@ impl Executor for EpochManagerNextRoundExecutable {
 
         if self.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+            let handle = system_api.lock_substate(
+                self.node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::MUTABLE,
+            )?;
             let mut substate_mut = system_api.get_ref_mut(handle)?;
             let preparing_validator_set = substate_mut.validator_set();
             let prepared_epoch = preparing_validator_set.epoch;
@@ -324,7 +377,12 @@ impl Executor for EpochManagerNextRoundExecutable {
             epoch_manager.round = 0;
 
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-            let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+            let handle = system_api.lock_substate(
+                self.node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::MUTABLE,
+            )?;
             let mut substate_mut = system_api.get_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
             validator_set.epoch = prepared_epoch;
@@ -374,14 +432,15 @@ impl Executor for EpochManagerSetEpochExecutable {
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let handle =
+            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(handle)?;
         substate_mut.epoch_manager().epoch = self.1;
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey, AccessRule);
 
 impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
     type Exec = EpochManagerCreateValidatorExecutable;
@@ -402,7 +461,11 @@ impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),
             resolved_receiver,
         );
-        let executor = EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
+        let executor = EpochManagerCreateValidatorExecutable(
+            resolved_receiver.receiver,
+            self.key,
+            self.owner_access_rule,
+        );
 
         Ok((actor, call_frame_update, executor))
     }
@@ -423,13 +486,14 @@ impl Executor for EpochManagerCreateValidatorExecutable {
     {
         let handle = api.lock_substate(
             self.0,
+            NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = ValidatorCreator::create(manager, self.1, false, api)?;
+        let validator_address = ValidatorCreator::create(manager, self.1, self.2, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(
@@ -477,7 +541,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
         Y: KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_ref = api.get_ref_mut(handle)?;
         let validator_set = substate_ref.validator_set();
         match self.2 {

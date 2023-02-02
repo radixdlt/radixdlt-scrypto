@@ -3,6 +3,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
@@ -102,18 +103,23 @@ impl Executor for PackagePublishInvocation {
         // - `royalty::set_royalty_config`
         // - `royalty::claim_royalty`
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::PackageRoyalty,
+            RENodeModuleInit::PackageRoyalty(package_royalty_config, package_royalty_accumulator),
+        );
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules),
+        );
+
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Package(
-                package,
-                package_royalty_config,
-                package_royalty_accumulator,
-                metadata_substate,
-                access_rules,
-            ),
-        )?;
+        api.create_node(node_id, RENodeInit::Package(package), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -126,6 +132,7 @@ impl Executor for PackagePublishInvocation {
         api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            BTreeMap::new(),
         )?;
 
         let package_address: PackageAddress = global_node_id.into();
@@ -169,8 +176,12 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::PackageRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate = api.get_ref_mut(handle)?;
         substate.package_royalty_config().royalty_config = self.royalty_config;
@@ -216,8 +227,12 @@ impl Executor for PackageClaimRoyaltyExecutable {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::PackageRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();

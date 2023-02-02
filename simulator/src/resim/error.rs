@@ -18,6 +18,8 @@ use crate::utils::*;
 #[derive(Debug)]
 pub enum Error {
     NoDefaultAccount,
+    NoDefaultPrivateKey,
+    NoDefaultOwnerBadge,
 
     HomeDirUnknown,
 

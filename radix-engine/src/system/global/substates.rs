@@ -1,5 +1,4 @@
 use crate::types::*;
-use radix_engine_interface::api::types::{PackageId, RENodeId, ResourceManagerId};
 
 // TODO: clean up after `Owned(RENodeId)`?
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -12,6 +11,7 @@ pub enum GlobalAddressSubstate {
     Clock(ClockId),
     AccessController(AccessControllerId),
     Identity(IdentityId),
+    Account(AccountId),
 }
 
 impl GlobalAddressSubstate {
@@ -24,6 +24,7 @@ impl GlobalAddressSubstate {
             GlobalAddressSubstate::Identity(id) => RENodeId::Identity(*id),
             GlobalAddressSubstate::Validator(id) => RENodeId::Validator(*id),
             GlobalAddressSubstate::Clock(id) => RENodeId::Clock(*id),
+            GlobalAddressSubstate::Account(id) => RENodeId::Account(*id),
             GlobalAddressSubstate::AccessController(id) => RENodeId::AccessController(*id),
         }
     }

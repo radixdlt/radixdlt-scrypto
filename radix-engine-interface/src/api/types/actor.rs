@@ -2,6 +2,7 @@ use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::data::scrypto_decode;
@@ -29,6 +30,7 @@ pub enum NativePackage {
     Logger,
     TransactionRuntime,
     TransactionProcessor,
+    Account,
     AccessController,
 }
 
@@ -120,6 +122,7 @@ pub enum NativeFn {
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
+    Account(AccountFn),
     AccessController(AccessControllerFn),
 }
 
@@ -141,6 +144,7 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+            NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
         }
     }
@@ -308,6 +312,8 @@ pub enum ValidatorFn {
     Stake,
     Unstake,
     ClaimXrd,
+    UpdateKey,
+    UpdateAcceptDelegatedStake,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -366,7 +372,8 @@ impl EpochManagerPackage {
                         NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
                             EpochManagerCreateValidatorInvocation {
                                 receiver,
-                                key: args.validator,
+                                key: args.key,
+                                owner_access_rule: args.owner_access_rule,
                             },
                         ))
                     }
@@ -434,6 +441,30 @@ impl EpochManagerPackage {
                                 unstake_nft: args.bucket,
                             },
                         ))
+                    }
+
+                    ValidatorFn::UpdateKey => {
+                        let args: ValidatorUpdateKeyMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(
+                            ValidatorUpdateKeyInvocation {
+                                receiver,
+                                key: args.key,
+                            },
+                        ))
+                    }
+
+                    ValidatorFn::UpdateAcceptDelegatedStake => {
+                        let args: ValidatorUpdateAcceptDelegatedStakeMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(
+                            ValidatorInvocation::UpdateAcceptDelegatedStake(
+                                ValidatorUpdateAcceptDelegatedStakeInvocation {
+                                    receiver,
+                                    accept_delegated_stake: args.accept_delegated_stake,
+                                },
+                            ),
+                        )
                     }
                 }
             }
@@ -832,6 +863,195 @@ pub enum TransactionRuntimeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum AccountFn {
+    Create,
+
+    New,
+
+    Balance,
+
+    LockFee,
+    LockContingentFee,
+
+    Deposit,
+    DepositBatch,
+
+    Withdraw,
+    WithdrawByAmount,
+    WithdrawByIds,
+
+    LockFeeAndWithdraw,
+    LockFeeAndWithdrawByAmount,
+    LockFeeAndWithdrawByIds,
+
+    CreateProof,
+    CreateProofByAmount,
+    CreateProofByIds,
+}
+
+pub struct AccountPackage;
+
+impl AccountPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<AccountInvocation, ResolveError> {
+        let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match account_fn {
+            AccountFn::Create | AccountFn::New => {
+                return Err(ResolveError::NotAMethod);
+            }
+            AccountFn::Balance => {
+                let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Balance(AccountBalanceInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::LockFee => {
+                let args = scrypto_decode::<AccountLockFeeMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFee(AccountLockFeeInvocation {
+                    receiver,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::LockContingentFee => {
+                let args = scrypto_decode::<AccountLockContingentFeeMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                    receiver,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::Deposit => {
+                let args = scrypto_decode::<AccountDepositMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Deposit(AccountDepositInvocation {
+                    receiver,
+                    bucket: args.bucket.0,
+                })
+            }
+            AccountFn::DepositBatch => {
+                let args = scrypto_decode::<AccountDepositBatchMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                    receiver,
+                    buckets: args.buckets.into_iter().map(|x| x.0).collect(),
+                })
+            }
+            AccountFn::Withdraw => {
+                let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::Withdraw(AccountWithdrawInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::WithdrawByAmount => {
+                let args = scrypto_decode::<AccountWithdrawByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::WithdrawByIds => {
+                let args = scrypto_decode::<AccountWithdrawByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    ids: args.ids,
+                })
+            }
+            AccountFn::LockFeeAndWithdraw => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
+                    receiver,
+                    amount_to_lock: args.amount_to_lock,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::LockFeeAndWithdrawByAmount => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawByAmount(
+                    AccountLockFeeAndWithdrawByAmountInvocation {
+                        receiver,
+                        amount_to_lock: args.amount_to_lock,
+                        resource_address: args.resource_address,
+                        amount: args.amount,
+                    },
+                )
+            }
+            AccountFn::LockFeeAndWithdrawByIds => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawByIds(
+                    AccountLockFeeAndWithdrawByIdsInvocation {
+                        receiver,
+                        amount_to_lock: args.amount_to_lock,
+                        resource_address: args.resource_address,
+                        ids: args.ids,
+                    },
+                )
+            }
+            AccountFn::CreateProof => {
+                let args = scrypto_decode::<AccountCreateProofMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
+            AccountFn::CreateProofByAmount => {
+                let args = scrypto_decode::<AccountCreateProofByAmountMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    amount: args.amount,
+                })
+            }
+            AccountFn::CreateProofByIds => {
+                let args = scrypto_decode::<AccountCreateProofByIdsMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                    ids: args.ids,
+                })
+            }
+        };
+        Ok(invocation)
+    }
 }
 
 #[derive(

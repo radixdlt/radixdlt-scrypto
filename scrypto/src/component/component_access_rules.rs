@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
     ComponentAddress, ComponentId, GlobalAddress, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
@@ -43,7 +43,7 @@ impl ComponentAccessRules {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
-                rule: access_rule,
+                rule: AccessRuleEntry::AccessRule(access_rule),
             })
             .unwrap();
     }

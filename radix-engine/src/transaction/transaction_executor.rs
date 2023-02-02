@@ -158,6 +158,10 @@ where
             println!("{:-^80}", "Engine Execution Log");
         }
 
+        // Start resources usage measurement
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        let mut resources_tracker = ResourcesTracker::start_measurement();
+
         // Prepare state track and execution trace
         let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
 
@@ -170,6 +174,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         events: vec![],
+                        resources_usage: ResourcesUsage::default(),
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -211,10 +216,19 @@ where
             track.finalize(invoke_result, events)
         };
 
+        // Finish resources usage measurement and get results
+        let resources_usage = match () {
+            #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+            () => ResourcesUsage::default(),
+            #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+            () => resources_tracker.end_measurement(),
+        };
+
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
+                resources_usage,
             },
             result: track_receipt.result,
         };
@@ -229,8 +243,38 @@ where
                 .map(|(k, v)| (k.to_string(), v))
                 .collect::<BTreeMap<String, &u32>>();
             for (k, v) in break_down {
-                println!("{:<30}: {:>8}", k, v);
+                println!("{:<30}: {:>10}", k, v);
             }
+
+            println!("{:-^80}", "Cost Totals");
+            println!(
+                "{:<30}: {:>10}",
+                "Total Cost Units Consumed",
+                receipt.execution.fee_summary.total_cost_units_consumed
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Cost Unit Limit", receipt.execution.fee_summary.cost_unit_limit
+            );
+            // NB - we use "to_string" to ensure they align correctly
+            println!(
+                "{:<30}: {:>10}",
+                "Execution XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_execution_cost_xrd
+                    .to_string()
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Royalty XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_royalty_cost_xrd
+                    .to_string()
+            );
 
             match &receipt.result {
                 TransactionResult::Commit(commit) => {

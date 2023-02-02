@@ -53,6 +53,7 @@ impl QueryableSubstateStore for SerializedInMemorySubstateStore {
                 let substate_id: SubstateId = scrypto_decode(key).unwrap();
                 if let SubstateId(
                     RENodeId::KeyValueStore(id),
+                    NodeModuleId::SELF,
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
                 ) = substate_id
                 {

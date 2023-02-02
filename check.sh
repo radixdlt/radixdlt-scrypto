@@ -27,7 +27,7 @@ packages="
     assets/blueprints/faucet \
     "
 packages+=$(find examples -maxdepth 1 -type d \( ! -name . \))
-packages+=$(find radix-engine/tests/blueprints -maxdepth 1 -type d \( ! -name . \))
+packages+=$(find radix-engine-tests/tests/blueprints -maxdepth 1 -type d \( ! -name . \))
 
 for package in $packages; do
     scrypto fmt --check --quiet --path $package ||

@@ -59,7 +59,7 @@ impl StateDiff {
     pub fn up_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
         let mut counter = BTreeMap::new();
         for s in &self.up_substates {
-            *counter.entry(&s.0 .1).or_default() += 1;
+            *counter.entry(&s.0 .2).or_default() += 1;
         }
         counter
     }
@@ -67,7 +67,7 @@ impl StateDiff {
     pub fn down_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
         let mut counter = BTreeMap::new();
         for s in &self.down_substates {
-            *counter.entry(&s.substate_id.1).or_default() += 1;
+            *counter.entry(&s.substate_id.2).or_default() += 1;
         }
         counter
     }

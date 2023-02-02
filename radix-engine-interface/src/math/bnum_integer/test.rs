@@ -316,76 +316,66 @@ fn test_bnum_to_bigint() {
 #[test]
 fn test_bnum_to_bnum() {
     let a = BnumI256::from(1);
-    let b = BnumU256::from(a);
+    let b = BnumU256::try_from(a).unwrap();
     assert_eq!(b, BnumU256::ONE);
 
     let a = BnumI256::from(-123);
-    let b = BnumI512::from(a);
+    let b = BnumI512::try_from(a).unwrap();
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumI256::MAX;
-    let b = BnumU256::from(a);
+    let b = BnumU256::try_from(a).unwrap();
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumI256::MIN;
-    let b = BnumI512::from(a);
+    let b = BnumI512::try_from(a).unwrap();
     assert_eq!(a.to_string(), b.to_string());
 
     let a = BnumU256::MAX;
-    let b = BnumI512::from(a);
+    let b = BnumI512::try_from(a).unwrap();
     assert_eq!(a.to_string(), b.to_string());
 }
 
 #[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_1() {
+fn test_bnum_to_bnum_errors() {
     let i512 = BnumI512::MIN;
-    let _ = BnumI256::from(i512);
-}
+    let err = BnumI256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseBnumI256Error::Overflow);
 
-#[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_2() {
     // I256::MAX + 1
     let i256_str = BnumI256::MAX.to_string();
     let i512 = BnumI512::from(i256_str) + BnumI512::ONE;
-    let _ = BnumI256::from(i512);
-}
+    let err = BnumI256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseBnumI256Error::Overflow);
 
-#[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_3() {
     // I256::MIN - 1
     let i256_str = BnumI256::MIN.to_string();
     let i512 = BnumI512::from(i256_str) - BnumI512::ONE;
-    let _ = BnumI256::try_from(i512).unwrap();
-}
+    let err = BnumI256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseBnumI256Error::Overflow);
 
-#[test]
-#[should_panic(expected = "NegativeToUnsigned")]
-fn test_bnum_to_bnum_panic_4() {
-    let i512 = -BnumI512::ONE;
-    let _ = BnumU256::try_from(i512).unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_5() {
     let u256 = BnumU256::MAX;
-    let _ = BnumI256::try_from(u256).unwrap();
-}
+    let err = BnumI256::try_from(u256).unwrap_err();
+    assert_eq!(err, ParseBnumI256Error::Overflow);
 
-#[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_6() {
     let i512_str = BnumI512::MAX.to_string();
     let u512 = BnumU512::from(i512_str) + BnumU512::ONE;
-    let _ = BnumI512::try_from(u512).unwrap();
-}
+    let err = BnumU256::try_from(u512).unwrap_err();
+    assert_eq!(err, ParseBnumU256Error::Overflow);
 
-#[test]
-#[should_panic(expected = "Overflow")]
-fn test_bnum_to_bnum_panic_7() {
     let u512 = BnumU512::MAX;
-    let _ = BnumI512::from(u512);
+    let err = BnumI256::try_from(u512).unwrap_err();
+    assert_eq!(err, ParseBnumI256Error::Overflow);
+
+    let a = BnumU256::MAX;
+    let b = BnumI256::try_from(a).unwrap_err();
+    assert_eq!(b, ParseBnumI256Error::Overflow);
+
+    let i512 = -BnumI512::ONE;
+    let err = BnumU256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseBnumU256Error::NegativeToUnsigned);
+
+    let a = BnumI256::from(-123);
+    let b = BnumU512::try_from(a).unwrap_err();
+    assert_eq!(b, ParseBnumU512Error::NegativeToUnsigned);
 }

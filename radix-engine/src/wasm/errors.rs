@@ -1,5 +1,4 @@
 use radix_engine_interface::api::types::BufferId;
-use wasmi::HostError;
 
 use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
 use crate::system::kernel_modules::fee::FeeReserveError;
@@ -116,6 +115,8 @@ pub enum WasmRuntimeError {
     InvalidNode(DecodeError),
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
+    /// Invalid RE module ID
+    InvalidModuleId(DecodeError),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
     /// Invalid package abi
@@ -155,8 +156,6 @@ impl fmt::Display for WasmRuntimeError {
     }
 }
 
-impl HostError for WasmRuntimeError {}
-
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for WasmRuntimeError {}
 
@@ -165,8 +164,6 @@ impl fmt::Display for InvokeError<WasmRuntimeError> {
         write!(f, "{:?}", self)
     }
 }
-
-impl HostError for InvokeError<WasmRuntimeError> {}
 
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for InvokeError<WasmRuntimeError> {}

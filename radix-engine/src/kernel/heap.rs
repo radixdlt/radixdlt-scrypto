@@ -6,8 +6,9 @@ use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut
 use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
+use sbor::rust::collections::BTreeMap;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -23,6 +24,7 @@ impl Heap {
     pub fn get_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, CallFrameError> {
         let node = self
@@ -33,7 +35,7 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry(offset.clone()).or_insert(
+                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
                     RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref())
@@ -41,13 +43,13 @@ impl Heap {
             (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
                 let entry = node
                     .substates
-                    .entry(offset.clone())
+                    .entry((module_id, offset.clone()))
                     .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
                 Ok(entry.to_ref())
             }
             _ => node
                 .substates
-                .get(offset)
+                .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
                 .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
         }
@@ -56,6 +58,7 @@ impl Heap {
     pub fn get_substate_mut(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRefMut, CallFrameError> {
         let node = self
@@ -66,7 +69,7 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry(offset.clone()).or_insert(
+                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
                     RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref_mut())
@@ -74,13 +77,13 @@ impl Heap {
             (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
                 let entry = node
                     .substates
-                    .entry(offset.clone())
+                    .entry((module_id, offset.clone()))
                     .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
                 Ok(entry.to_ref_mut())
             }
             _ => node
                 .substates
-                .get_mut(offset)
+                .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
                 .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
         }
@@ -111,10 +114,10 @@ impl Heap {
             .nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        for (offset, substate) in node.substates {
+        for ((module_id, offset), substate) in node.substates {
             let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
             self.move_nodes_to_store(track, owned_nodes)?;
-            track.insert_substate(SubstateId(node_id, offset), substate);
+            track.insert_substate(SubstateId(node_id, module_id, offset), substate);
         }
 
         Ok(())
@@ -129,13 +132,16 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct HeapRENode {
-    pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
+    pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
 impl Into<BucketSubstate> for HeapRENode {
     fn into(mut self) -> BucketSubstate {
         self.substates
-            .remove(&SubstateOffset::Bucket(BucketOffset::Bucket))
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::Bucket(BucketOffset::Bucket),
+            ))
             .unwrap()
             .into()
     }
@@ -144,7 +150,10 @@ impl Into<BucketSubstate> for HeapRENode {
 impl Into<ProofSubstate> for HeapRENode {
     fn into(mut self) -> ProofSubstate {
         self.substates
-            .remove(&SubstateOffset::Proof(ProofOffset::Proof))
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::Proof),
+            ))
             .unwrap()
             .into()
     }

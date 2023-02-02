@@ -5,6 +5,7 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::identity::*;
@@ -74,6 +75,7 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+    Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
 }
 
@@ -85,13 +87,13 @@ impl NativeInvocation {
     ) -> Result<(), ReplaceManifestValuesError> {
         match self {
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, (bucket, _)) in &mut invocation.validator_set {
+                for (_, validator_init) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
-                        .remove(&ManifestBucket(bucket.0))
+                        .remove(&ManifestBucket(validator_init.initial_stake.0))
                         .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
-                            bucket.0,
+                            validator_init.initial_stake.0,
                         )))?;
-                    bucket.0 = next_id;
+                    validator_init.initial_stake.0 = next_id;
                 }
             }
             _ => {} // TODO: Expand this
@@ -178,6 +180,8 @@ pub enum ValidatorInvocation {
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
     ClaimXrd(ValidatorClaimXrdInvocation),
+    UpdateKey(ValidatorUpdateKeyInvocation),
+    UpdateAcceptDelegatedStake(ValidatorUpdateAcceptDelegatedStakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -262,6 +266,32 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum AccountInvocation {
+    Create(AccountCreateInvocation),
+    New(AccountNewInvocation),
+
+    Balance(AccountBalanceInvocation),
+
+    LockFee(AccountLockFeeInvocation),
+    LockContingentFee(AccountLockContingentFeeInvocation),
+
+    Deposit(AccountDepositInvocation),
+    DepositBatch(AccountDepositBatchInvocation),
+
+    Withdraw(AccountWithdrawInvocation),
+    WithdrawByAmount(AccountWithdrawByAmountInvocation),
+    WithdrawByIds(AccountWithdrawByIdsInvocation),
+
+    LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation),
+    LockFeeAndWithdrawByAmount(AccountLockFeeAndWithdrawByAmountInvocation),
+    LockFeeAndWithdrawByIds(AccountLockFeeAndWithdrawByIdsInvocation),
+
+    CreateProof(AccountCreateProofInvocation),
+    CreateProofByAmount(AccountCreateProofByAmountInvocation),
+    CreateProofByIds(AccountCreateProofByIdsInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -462,8 +492,13 @@ impl NativeInvocation {
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(invocation) => {
-                    for (_key, (_bucket, account_address)) in &invocation.validator_set {
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(*account_address)));
+                    for (_key, validator_init) in &invocation.validator_set {
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.stake_account_address,
+                        )));
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(
+                            validator_init.validator_account_address,
+                        )));
                     }
                 }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
@@ -518,6 +553,16 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
+                ValidatorInvocation::UpdateKey(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
@@ -558,6 +603,51 @@ impl NativeInvocation {
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::GetHash(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
+            },
+            NativeInvocation::Account(account_method) => match account_method {
+                AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
+                AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
+                | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
+                | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::Deposit(AccountDepositInvocation { receiver, .. })
+                | AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::Withdraw(AccountWithdrawInvocation { receiver, .. })
+                | AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::LockFeeAndWithdrawByAmount(
+                    AccountLockFeeAndWithdrawByAmountInvocation { receiver, .. },
+                )
+                | AccountInvocation::LockFeeAndWithdrawByIds(
+                    AccountLockFeeAndWithdrawByIdsInvocation { receiver, .. },
+                )
+                | AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                    receiver, ..
+                })
+                | AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
+                    receiver,
+                    ..
+                })
+                | AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
+                    receiver,
+                    ..
+                }) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
+                }
             },
             NativeInvocation::AccessController(method) => match method {
                 AccessControllerInvocation::CreateGlobal(..) => {}
@@ -613,227 +703,234 @@ impl NativeInvocation {
     }
 }
 
+fn get_native_fn<T: SerializableInvocation>(_: &T) -> NativeFn {
+    T::native_fn()
+}
+
 impl NativeInvocation {
     pub fn flatten(&self) -> (NativeFn, Vec<u8>) {
-        let (fn_identifier, encoding) = match self {
+        let (native_fn, encoding) = match self {
             NativeInvocation::AccessRulesChain(i) => match i {
                 AccessRulesChainInvocation::AddAccessCheck(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessRulesChainInvocation::SetMethodAccessRule(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessRulesChainInvocation::SetMethodMutability(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessRulesChainInvocation::SetGroupAccessRule(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessRulesChainInvocation::SetGroupMutability(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                AccessRulesChainInvocation::GetLength(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                AccessRulesChainInvocation::GetLength(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Metadata(i) => match i {
-                MetadataInvocation::Set(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                MetadataInvocation::Get(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                MetadataInvocation::Set(i) => (get_native_fn(i), scrypto_encode(i)),
+                MetadataInvocation::Get(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Package(i) => match i {
-                PackageInvocation::Publish(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                PackageInvocation::SetRoyaltyConfig(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                PackageInvocation::ClaimRoyalty(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),
+                PackageInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
+                PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Component(i) => match i {
-                ComponentInvocation::Globalize(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ComponentInvocation::GlobalizeWithOwner(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                ComponentInvocation::SetRoyaltyConfig(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ComponentInvocation::ClaimRoyalty(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ComponentInvocation::Globalize(i) => (get_native_fn(i), scrypto_encode(i)),
+                ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
+                ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
+                ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::EpochManager(i) => match i {
-                EpochManagerInvocation::Create(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                EpochManagerInvocation::GetCurrentEpoch(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                EpochManagerInvocation::SetEpoch(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                EpochManagerInvocation::NextRound(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                EpochManagerInvocation::CreateValidator(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                EpochManagerInvocation::UpdateValidator(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
+                EpochManagerInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
+                EpochManagerInvocation::GetCurrentEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
+                EpochManagerInvocation::SetEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
+                EpochManagerInvocation::NextRound(i) => (get_native_fn(i), scrypto_encode(i)),
+                EpochManagerInvocation::CreateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
+                EpochManagerInvocation::UpdateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Validator(i) => match i {
-                ValidatorInvocation::Register(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ValidatorInvocation::Unregister(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ValidatorInvocation::Stake(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ValidatorInvocation::Unstake(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ValidatorInvocation::ClaimXrd(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ValidatorInvocation::Register(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::Unregister(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::Stake(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::Unstake(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::ClaimXrd(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::UpdateKey(i) => (get_native_fn(i), scrypto_encode(i)),
+                ValidatorInvocation::UpdateAcceptDelegatedStake(i) => {
+                    (get_native_fn(i), scrypto_encode(i))
+                }
             },
             NativeInvocation::Clock(i) => match i {
-                ClockInvocation::Create(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ClockInvocation::GetCurrentTime(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ClockInvocation::CompareCurrentTime(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ClockInvocation::SetCurrentTime(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ClockInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
+                ClockInvocation::GetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
+                ClockInvocation::CompareCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
+                ClockInvocation::SetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Identity(i) => match i {
-                IdentityInvocation::Create(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                IdentityInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Logger(i) => match i {
-                LoggerInvocation::Log(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::AuthZoneStack(i) => match i {
-                AuthZoneStackInvocation::Pop(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                AuthZoneStackInvocation::Push(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                AuthZoneStackInvocation::CreateProof(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                AuthZoneStackInvocation::Pop(i) => (get_native_fn(i), scrypto_encode(i)),
+                AuthZoneStackInvocation::Push(i) => (get_native_fn(i), scrypto_encode(i)),
+                AuthZoneStackInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::CreateProofByAmount(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AuthZoneStackInvocation::CreateProofByIds(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                AuthZoneStackInvocation::Clear(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                AuthZoneStackInvocation::Drain(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                AuthZoneStackInvocation::AssertAuthRule(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
+                AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
+                AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
+                AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::ResourceManager(i) => match i {
-                ResourceInvocation::CreateNonFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::CreateFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ResourceInvocation::CreateNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::CreateFungible(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::CreateNonFungibleWithInitialSupply(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 ResourceInvocation::CreateFungibleWithInitialSupply(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                ResourceInvocation::BurnBucket(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::GetResourceType(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::Burn(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::MintNonFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::MintUuidNonFungible(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                ResourceInvocation::MintFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::CreateBucket(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::CreateVault(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::UpdateVaultAuth(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ResourceInvocation::BurnBucket(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::Burn(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::MintNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::MintUuidNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::MintFungible(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::CreateBucket(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::CreateVault(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::UpdateVaultAuth(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::SetVaultAuthMutability(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                ResourceInvocation::GetTotalSupply(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ResourceInvocation::GetTotalSupply(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::UpdateNonFungibleData(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                ResourceInvocation::GetNonFungible(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ResourceInvocation::NonFungibleExists(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ResourceInvocation::GetNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
+                ResourceInvocation::NonFungibleExists(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Bucket(i) => match i {
-                BucketInvocation::Take(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                BucketInvocation::TakeNonFungibles(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                BucketInvocation::Put(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                BucketInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),
+                BucketInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
+                BucketInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::GetNonFungibleLocalIds(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                BucketInvocation::GetAmount(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                BucketInvocation::GetResourceAddress(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                BucketInvocation::CreateProof(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                BucketInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                BucketInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
+                BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Vault(i) => match i {
-                VaultInvocation::Take(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::LockFee(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::Put(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::TakeNonFungibles(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::GetAmount(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::GetResourceAddress(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::GetNonFungibleLocalIds(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                VaultInvocation::CreateProof(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::CreateProofByAmount(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::CreateProofByIds(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::Recall(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                VaultInvocation::RecallNonFungibles(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                VaultInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::Recall(i) => (get_native_fn(i), scrypto_encode(i)),
+                VaultInvocation::RecallNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Proof(i) => match i {
-                ProofInvocation::Clone(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ProofInvocation::GetAmount(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                ProofInvocation::GetNonFungibleLocalIds(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
-                ProofInvocation::GetResourceAddress(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                ProofInvocation::Clone(i) => (get_native_fn(i), scrypto_encode(i)),
+                ProofInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                ProofInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
+                ProofInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Worktop(i) => match i {
-                WorktopInvocation::TakeAll(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                WorktopInvocation::TakeAmount(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                WorktopInvocation::TakeNonFungibles(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                WorktopInvocation::Put(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                WorktopInvocation::AssertContains(i) => (i.fn_identifier(), scrypto_encode(&i)),
-                WorktopInvocation::AssertContainsAmount(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
+                WorktopInvocation::TakeAll(i) => (get_native_fn(i), scrypto_encode(i)),
+                WorktopInvocation::TakeAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                WorktopInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
+                WorktopInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
+                WorktopInvocation::AssertContains(i) => (get_native_fn(i), scrypto_encode(i)),
+                WorktopInvocation::AssertContainsAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 WorktopInvocation::AssertContainsNonFungibles(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                WorktopInvocation::Drain(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                WorktopInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::TransactionRuntime(i) => match i {
-                TransactionRuntimeInvocation::GetHash(i) => (i.fn_identifier(), scrypto_encode(&i)),
+                TransactionRuntimeInvocation::GetHash(i) => (get_native_fn(i), scrypto_encode(i)),
                 TransactionRuntimeInvocation::GenerateUuid(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
             },
             NativeInvocation::AccessController(i) => match i {
                 AccessControllerInvocation::CreateGlobal(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
-                AccessControllerInvocation::CreateProof(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
-                }
+                AccessControllerInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccessControllerInvocation::InitiateRecoveryAsPrimary(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::InitiateRecoveryAsRecovery(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::TimedConfirmRecovery(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::LockPrimaryRole(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::UnlockPrimaryRole(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessControllerInvocation::StopTimedRecovery(i) => {
-                    (i.fn_identifier(), scrypto_encode(&i))
+                    (get_native_fn(i), scrypto_encode(i))
                 }
+            },
+            NativeInvocation::Account(i) => match i {
+                AccountInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::New(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::Balance(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::LockContingentFee(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::Deposit(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::DepositBatch(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::Withdraw(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::WithdrawByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::WithdrawByIds(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::LockFeeAndWithdraw(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::LockFeeAndWithdrawByAmount(i) => {
+                    (get_native_fn(i), scrypto_encode(i))
+                }
+                AccountInvocation::LockFeeAndWithdrawByIds(i) => {
+                    (get_native_fn(i), scrypto_encode(i))
+                }
+                AccountInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
+                AccountInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 
-        let native_fn = match fn_identifier {
-            FnIdentifier::Scrypto(_) => panic!("TODO: refine the interface"),
-            FnIdentifier::Native(f) => f,
-        };
-        let invocation = encoding.expect("Failed to encode native invocation");
-
-        (native_fn, invocation)
+        (
+            native_fn,
+            encoding.expect("Failed to encode native invocation"),
+        )
     }
 }
