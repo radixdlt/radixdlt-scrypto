@@ -56,7 +56,12 @@ pub trait KernelNodeApi {
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError>;
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        init: RENodeInit,
+        node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
@@ -64,6 +69,7 @@ pub trait KernelSubstateApi {
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;

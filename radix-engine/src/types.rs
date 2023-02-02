@@ -27,6 +27,9 @@ pub use sbor::rust::rc::Rc;
 pub use sbor::rust::str::FromStr;
 pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
+pub use sbor::rust::sync;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{Categorize, Decode, DecodeError, Encode, SborPath, SborPathBuf, Value, ValueKind};
+#[cfg(feature = "std")]
+pub use std::alloc;

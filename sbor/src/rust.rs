@@ -42,6 +42,8 @@ pub use core::ptr;
 pub use core::slice;
 
 #[cfg(not(feature = "alloc"))]
+pub use std::alloc;
+#[cfg(not(feature = "alloc"))]
 pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::boxed;

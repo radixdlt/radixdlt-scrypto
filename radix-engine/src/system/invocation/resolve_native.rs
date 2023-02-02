@@ -5,6 +5,7 @@ use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientStaticInvokeApi;
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
     clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
@@ -528,6 +529,19 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ValidatorFn::UpdateKey => {
+                let invocation = scrypto_decode::<ValidatorUpdateKeyInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ValidatorFn::UpdateAcceptDelegatedStake => {
+                let invocation =
+                    scrypto_decode::<ValidatorUpdateAcceptDelegatedStakeInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
         },
         NativeFn::Clock(clock_fn) => match clock_fn {
             ClockFn::Create => {
@@ -726,6 +740,107 @@ where
                 let invocation =
                     scrypto_decode::<AccessControllerStopTimedRecoveryInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeFn::Account(account_fn) => match account_fn {
+            AccountFn::Create => {
+                let invocation = scrypto_decode::<AccountCreateInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::New => {
+                let invocation = scrypto_decode::<AccountNewInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::Balance => {
+                let invocation = scrypto_decode::<AccountBalanceInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::LockFee => {
+                let invocation = scrypto_decode::<AccountLockFeeInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::LockContingentFee => {
+                let invocation = scrypto_decode::<AccountLockContingentFeeInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::Deposit => {
+                let invocation = scrypto_decode::<AccountDepositInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::DepositBatch => {
+                let invocation = scrypto_decode::<AccountDepositBatchInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::Withdraw => {
+                let invocation = scrypto_decode::<AccountWithdrawInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::WithdrawByAmount => {
+                let invocation = scrypto_decode::<AccountWithdrawByAmountInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::WithdrawByIds => {
+                let invocation = scrypto_decode::<AccountWithdrawByIdsInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::LockFeeAndWithdraw => {
+                let invocation = scrypto_decode::<AccountLockFeeAndWithdrawInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::LockFeeAndWithdrawByAmount => {
+                let invocation =
+                    scrypto_decode::<AccountLockFeeAndWithdrawByAmountInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::LockFeeAndWithdrawByIds => {
+                let invocation =
+                    scrypto_decode::<AccountLockFeeAndWithdrawByIdsInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::CreateProof => {
+                let invocation = scrypto_decode::<AccountCreateProofInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::CreateProofByAmount => {
+                let invocation =
+                    scrypto_decode::<AccountCreateProofByAmountInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            AccountFn::CreateProofByIds => {
+                let invocation = scrypto_decode::<AccountCreateProofByIdsInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

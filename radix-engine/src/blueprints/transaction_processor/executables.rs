@@ -20,6 +20,8 @@ use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::AccountNewInvocation;
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -210,9 +212,11 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateValidator { .. }
             | BasicInstruction::CreateAccessController { .. }
             | BasicInstruction::CreateIdentity { .. }
-            | BasicInstruction::AssertAccessRule { .. } => {}
+            | BasicInstruction::AssertAccessRule { .. }
+            | BasicInstruction::CreateAccount { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -252,7 +256,6 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         let actor =
             ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
@@ -281,7 +284,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(node_id, RENodeInit::Worktop(WorktopSubstate::new()))?;
+        let _worktop_id = api.create_node(
+            node_id,
+            RENodeInit::Worktop(WorktopSubstate::new()),
+            BTreeMap::new(),
+        )?;
 
         let runtime_substate = TransactionRuntimeSubstate {
             hash: self.transaction_hash,
@@ -292,6 +299,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api.create_node(
             runtime_node_id,
             RENodeInit::TransactionRuntime(runtime_substate),
+            BTreeMap::new(),
         )?;
 
         // TODO: defer blob hashing to post fee payments as it's computationally costly
@@ -774,7 +782,19 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: RENodeId::Global(entity_address.clone()),
                         index: index.clone(),
                         key: key.clone(),
-                        rule: rule.clone(),
+                        rule: AccessRuleEntry::AccessRule(rule.clone()),
+                    })?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateValidator {
+                    key,
+                    owner_access_rule,
+                }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        key: key.clone(),
+                        owner_access_rule: owner_access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
@@ -809,6 +829,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
+                Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
+                    let rtn = api.invoke(AccountNewInvocation {
+                        withdraw_rule: withdraw_rule.clone(),
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
                 Instruction::System(invocation) => {
                     let mut invocation = invocation.clone();
                     processor.replace_ids_native(&mut invocation)?;
@@ -828,6 +854,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             {
                 let handle = api.lock_substate(
                     runtime_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),

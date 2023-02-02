@@ -12,8 +12,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::types::*;
 use crate::wasm::{constants::*, errors::*, PrepareError};
 
-use super::WasmiEnvModule;
-
+use super::WasmiModule;
 #[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
@@ -537,15 +536,10 @@ impl WasmModule {
 
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
+        let code = parity_wasm::serialize(self.module.clone())
+            .map_err(|_| PrepareError::SerializationError)?;
 
-        wasmi::ModuleInstance::new(
-            &wasmi::Module::from_parity_wasm_module(self.module.clone())
-                .expect("Failed to convert WASM module from parity to wasmi"),
-            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
-        )
-        .map_err(|_| PrepareError::NotInstantiatable)?;
-
-        Ok(self)
+        WasmiModule::new(&code[..]).map(|_| self)
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
@@ -624,7 +618,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use scrypto::abi;
+    use radix_engine_interface::abi;
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -652,7 +646,7 @@ mod tests {
         assert_invalid_wasm!(
             r#"
             (module
-                (func (param f64)   
+                (func (param f64)
                 )
             )
             "#,
@@ -782,17 +776,17 @@ mod tests {
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {
-                structure: scrypto::abi::Type::Tuple {
+                structure: abi::Type::Tuple {
                     element_types: vec![],
                 },
                 fns: vec![abi::Fn {
                     ident: "f".to_string(),
                     mutability: Option::None,
-                    input: scrypto::abi::Type::Struct {
+                    input: abi::Type::Struct {
                         name: "Any".to_string(),
-                        fields: scrypto::abi::Fields::Named { named: vec![] },
+                        fields: Fields::Named { named: vec![] },
                     },
-                    output: scrypto::abi::Type::Tuple {
+                    output: abi::Type::Tuple {
                         element_types: vec![],
                     },
                     export_name: "Test_f".to_string(),

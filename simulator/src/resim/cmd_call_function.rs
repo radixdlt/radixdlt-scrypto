@@ -9,36 +9,36 @@ use crate::utils::*;
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_address: SimulatorPackageAddress,
+    pub package_address: SimulatorPackageAddress,
 
     /// The name of the blueprint which the function belongs to
-    blueprint_name: String,
+    pub blueprint_name: String,
 
     /// The function name
-    function_name: String,
+    pub function_name: String,
 
-    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for non-fungible Bucket
-    arguments: Vec<String>,
+    /// The call arguments, such as "5", "hello", "<amount>,<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    pub arguments: Vec<String>,
 
-    /// The proofs to add to the auth zone
+    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
-    proofs: Option<Vec<String>>,
+    pub proofs: Option<Vec<String>>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signing_keys: Option<String>,
+    pub signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl CallFunction {

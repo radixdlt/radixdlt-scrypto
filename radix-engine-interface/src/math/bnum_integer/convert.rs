@@ -8,42 +8,6 @@ pub trait By<T> {
     fn by(val: T) -> Self::Output;
 }
 
-macro_rules! error {
-    ($($t:ident),*) => {
-        paste! {
-            $(
-                #[derive(Debug, Clone, PartialEq, Eq)]
-                pub enum [<Parse $t Error>] {
-                    NegativeToUnsigned,
-                    Overflow,
-                    InvalidLength,
-                    InvalidDigit,
-                }
-
-                #[cfg(not(feature = "alloc"))]
-                impl std::error::Error for [<Parse $t Error>] {}
-
-                #[cfg(not(feature = "alloc"))]
-                impl fmt::Display for [<Parse $t Error>] {
-                    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                        write!(f, "{:?}", self)
-                    }
-                }
-            )*
-        }
-    };
-}
-error! {
-    BnumI256,
-    BnumI384,
-    BnumI512,
-    BnumI768,
-    BnumU256,
-    BnumU384,
-    BnumU512,
-    BnumU768
-}
-
 macro_rules! impl_from_primitive {
     ($t:ident, $wrapped:ty, ($($type:ident),*)) => {
         paste! {
@@ -226,28 +190,31 @@ macro_rules! impl_from_bnum {
     ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
         $(
             paste! {
-                impl From<$t> for $into {
-                    fn from(val: $t) -> $into {
-                        let mut sign = <$into>::ONE;
+                impl TryFrom<$t> for $into {
+                    type Error = [<Parse $into Error>];
+
+                    fn try_from(val: $t) -> Result<Self, Self::Error> {
+                        let mut sign = Self::ONE;
                         let mut other = val;
 
                         if other < <$t>::ZERO {
-                            if <$into>::MIN == <$into>::ZERO {
-                                panic!("NegativeToUnsigned");
+                            if Self::MIN == Self::ZERO {
+                                return Err(Self::Error::NegativeToUnsigned);
                             } else {
                                 // This is basically abs() function (which is not available for
                                 // unsigned types).
                                 // Do not perform below for MIN value to avoid overflow
                                 if other != <$t>::MIN {
                                     other = <$t>::ZERO - other;
-                                    sign = <$into>::ZERO - sign;
+                                    sign = Self::ZERO - sign;
                                 }
                             }
                         }
-                        if (other.leading_zeros() as i32) <= <$t>::BITS as i32 - <$into>::BITS as i32 {
-                            panic!("Overflow");
+                        if (other.leading_zeros() as i32) <= <$t>::BITS as i32 - Self::BITS as i32 {
+                            return Err(Self::Error::Overflow);
                         }
-                        Self(<$into_wrap>::cast_from(other.0)) * sign
+                        Ok(
+                         Self(<$into_wrap>::cast_from(other.0)) * sign)
                     }
                 }
 

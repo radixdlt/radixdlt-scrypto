@@ -20,12 +20,12 @@ test_crates_features \
     radix-engine-derive \
     radix-engine-interface \
     radix-engine \
+    radix-engine-tests \
     transaction"
 
 echo "Testing scrypto packages..."
 test_packages \
-    "assets/blueprints/account \
-    assets/blueprints/faucet \
+    "assets/blueprints/faucet \
     examples/hello-world \
     examples/no-std"
 
@@ -39,6 +39,6 @@ test_cli \
 echo "Running benchmark..."
 test_benchmark  \
     "sbor-tests \
-    radix-engine"
+    radix-engine-tests"
 
 echo "Congrats! All tests passed."

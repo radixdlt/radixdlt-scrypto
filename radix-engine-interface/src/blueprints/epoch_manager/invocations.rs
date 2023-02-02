@@ -8,9 +8,17 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: Bucket,
+    pub stake_account_address: ComponentAddress,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
-    pub component_address: [u8; 26], // TODO: Clean this up
-    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Bucket, ComponentAddress)>,
+    pub olympia_validator_token_address: [u8; 26], // TODO: Clean this up
+    pub component_address: [u8; 26],               // TODO: Clean this up
+    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
@@ -19,11 +27,19 @@ pub struct EpochManagerCreateInvocation {
 impl Clone for EpochManagerCreateInvocation {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
-        for (key, (bucket, account_address)) in &self.validator_set {
-            validator_set.insert(key.clone(), (Bucket(bucket.0), account_address.clone()));
+        for (key, validator_init) in &self.validator_set {
+            validator_set.insert(
+                key.clone(),
+                ValidatorInit {
+                    validator_account_address: validator_init.validator_account_address,
+                    stake_account_address: validator_init.stake_account_address,
+                    initial_stake: Bucket(validator_init.initial_stake.0),
+                },
+            );
         }
 
         Self {
+            olympia_validator_token_address: self.olympia_validator_token_address,
             component_address: self.component_address,
             validator_set,
             initial_epoch: self.initial_epoch,
@@ -153,13 +169,15 @@ impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateValidatorMethodArgs {
-    pub validator: EcdsaSecp256k1PublicKey,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub owner_access_rule: AccessRule,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: ComponentAddress,
     pub key: EcdsaSecp256k1PublicKey,
+    pub owner_access_rule: AccessRule,
 }
 
 impl Invocation for EpochManagerCreateValidatorInvocation {
@@ -409,5 +427,71 @@ impl SerializableInvocation for ValidatorClaimXrdInvocation {
 impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateKeyMethodArgs {
+    pub key: EcdsaSecp256k1PublicKey,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateKeyInvocation {
+    pub receiver: ComponentAddress,
+    pub key: EcdsaSecp256k1PublicKey,
+}
+
+impl Invocation for ValidatorUpdateKeyInvocation {
+    type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateKey))
+    }
+}
+
+impl SerializableInvocation for ValidatorUpdateKeyInvocation {
+    type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::UpdateKey)
+    }
+}
+
+impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateAcceptDelegatedStakeMethodArgs {
+    pub accept_delegated_stake: bool,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUpdateAcceptDelegatedStakeInvocation {
+    pub receiver: ComponentAddress,
+    pub accept_delegated_stake: bool,
+}
+
+impl Invocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake))
+    }
+}
+
+impl SerializableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)
+    }
+}
+
+impl Into<CallTableInvocation> for ValidatorUpdateAcceptDelegatedStakeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(self)).into()
     }
 }

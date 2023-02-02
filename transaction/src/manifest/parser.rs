@@ -245,6 +245,10 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::CreateValidator => Instruction::CreateValidator {
+                key: self.parse_value()?,
+                owner_access_rule: self.parse_value()?,
+            },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
                 primary_role: self.parse_value()?,
@@ -257,6 +261,9 @@ impl Parser {
             },
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,
+            },
+            TokenKind::CreateAccount => Instruction::CreateAccount {
+                withdraw_rule: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
