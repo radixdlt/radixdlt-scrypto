@@ -101,10 +101,6 @@ impl VisibilityProperties {
         match (mode, offset) {
             /* Kernel */
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
-            (ExecutionMode::KernelDeref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                _ => false,
-            },
             (ExecutionMode::KernelDrop, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,

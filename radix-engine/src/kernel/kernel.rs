@@ -17,10 +17,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
-    SubstateId, SubstateOffset, WorktopOffset,
-};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
 };
@@ -514,56 +511,6 @@ where
         Ok(output)
     }
 
-    pub fn node_method_deref(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        if let RENodeId::Global(..) = node_id {
-            let derefed =
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelDeref, |api| {
-                    let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle =
-                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
-                    let substate_ref = api.get_ref(handle)?;
-                    Ok((substate_ref.global_address().node_deref(), handle))
-                })?;
-
-            Ok(Some(derefed))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn node_offset_deref(
-        &mut self,
-        node_id: RENodeId,
-        offset: &SubstateOffset,
-    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        if let RENodeId::Global(..) = node_id {
-            if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let derefed = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::KernelDeref,
-                    |api| {
-                        let handle = api.lock_substate(
-                            node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Global(GlobalOffset::Global),
-                            LockFlags::empty(),
-                        )?;
-                        let substate_ref = api.get_ref(handle)?;
-                        Ok((substate_ref.global_address().node_deref(), handle))
-                    },
-                )?;
-
-                Ok(Some(derefed))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
     fn verify_valid_mode_transition(cur: &ExecutionMode, next: &ExecutionMode) -> bool {
         if cur == next {
             return true;
@@ -572,7 +519,6 @@ where
         match (cur, next) {
             // Kernel can transition into any mode
             (ExecutionMode::Kernel, _) => true,
-            (ExecutionMode::KernelDeref, _) => true,
             (ExecutionMode::KernelDrop, _) => true,
 
             // KernelModule can be promoted into kernel
