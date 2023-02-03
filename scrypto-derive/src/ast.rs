@@ -6,7 +6,7 @@ use syn::{braced, Ident, ItemImpl, ItemStruct, Result, Token, Visibility};
 pub struct BlueprintMod {
     pub vis: Visibility,
     pub mod_token: Token![mod],
-    pub ident: Ident,
+    pub module_ident: Ident,
     pub brace: Brace,
     pub structure: ItemStruct,
     pub implementation: ItemImpl,
@@ -19,7 +19,7 @@ impl Parse for BlueprintMod {
         Ok(Self {
             vis: input.parse()?,
             mod_token: input.parse()?,
-            ident: input.parse()?,
+            module_ident: input.parse()?,
             brace: braced!(content in input),
             structure: content.parse()?,
             implementation: content.parse()?,

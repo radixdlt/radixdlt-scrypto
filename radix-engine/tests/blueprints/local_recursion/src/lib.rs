@@ -23,7 +23,7 @@ mod local_recursion_bomb {
             let local_component = Self {
                 vault: Vault::with_bucket(bucket),
             }
-            .instantiate();
+                .instantiate();
 
             let rtn_bucket = local_component.recurse();
             local_component.globalize();
@@ -33,7 +33,7 @@ mod local_recursion_bomb {
 }
 
 #[blueprint]
-mod local_recursion_bomb {
+mod local_recursion_bomb2 {
     struct LocalRecursionBomb2 {
         vaults: KeyValueStore<u32, Vault>,
     }

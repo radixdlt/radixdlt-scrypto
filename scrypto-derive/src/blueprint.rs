@@ -42,7 +42,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         ));
     }
 
-    let module_ident = format_ident!("{}_impl", bp_ident);
+    let module_ident = bp.module_ident;
     let component_ident = format_ident!("{}Component", bp_ident);
     let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
 
@@ -621,7 +621,7 @@ mod tests {
             output,
             quote! {
                 #[allow(non_snake_case)]
-                pub mod Test_impl {
+                pub mod test {
                     use super::*;
 
                     #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
@@ -680,9 +680,9 @@ mod tests {
                         radix_engine_interface::api::types::RENodeId::Component(component_id),
                         radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
                     );
-                    let state: DataRef<Test_impl::Test> = component_data.get();
+                    let state: DataRef<test::Test> = component_data.get();
 
-                    let return_data = Test_impl::Test::x(state.deref(), input.arg0);
+                    let return_data = test::Test::x(state.deref(), input.arg0);
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
@@ -698,7 +698,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_y_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                    let return_data = Test_impl::Test::y(input.arg0);
+                    let return_data = test::Test::y(input.arg0);
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
@@ -724,7 +724,7 @@ mod tests {
                             export_name: "Test_y".to_string(),
                         }
                     ];
-                    let structure: Type = Test_impl::Test::describe();
+                    let structure: Type = test::Test::describe();
                     let return_data = BlueprintAbi {
                         structure,
                         fns,
@@ -834,7 +834,7 @@ mod tests {
             output,
             quote! {
                 #[allow(non_snake_case)]
-                pub mod Test_impl {
+                pub mod test {
                     use super::*;
 
                     #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
@@ -865,7 +865,7 @@ mod tests {
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
-                    let structure: Type = Test_impl::Test::describe();
+                    let structure: Type = test::Test::describe();
                     let return_data = BlueprintAbi {
                         structure,
                         fns,

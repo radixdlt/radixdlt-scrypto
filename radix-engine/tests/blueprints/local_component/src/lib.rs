@@ -114,7 +114,7 @@ mod stored_kv_local {
 }
 
 #[blueprint]
-mod stored_kv_local {
+mod stored_secret {
     struct StoredSecret {
         component: SecretComponent,
     }
