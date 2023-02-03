@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod fee {
     struct Fee {
         xrd: Vault,
         xrd_empty: Vault,

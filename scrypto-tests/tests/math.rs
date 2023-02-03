@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod test_decimal {
     struct TestDecimal {
     }
 

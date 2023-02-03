@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod hello {
     struct Hello {
         // Define what resources and data will be managed by Hello components
         sample_vault: Vault,

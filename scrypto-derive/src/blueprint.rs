@@ -17,7 +17,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
-    let bp = parse2::<ast::Blueprint>(input)?;
+    let bp = parse2::<ast::BlueprintMod>(input)?;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
@@ -126,7 +126,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("blueprint!", &output);
+    crate::utils::print_generated_code("blueprint", &output);
 
     trace!("handle_blueprint() finishes");
     Ok(output)
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } }",
+            "mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -827,7 +827,7 @@ mod tests {
 
     #[test]
     fn test_empty_blueprint() {
-        let input = TokenStream::from_str("struct Test {} impl Test {}").unwrap();
+        let input = TokenStream::from_str("mod test { struct Test {} impl Test {} }").unwrap();
         let output = handle_blueprint(input).unwrap();
 
         assert_code_eq(

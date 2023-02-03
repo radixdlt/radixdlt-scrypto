@@ -2,7 +2,8 @@
 
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod empty {
   struct Empty {
   }
 
@@ -11,7 +12,8 @@ blueprint! {
   }
 }
 
-blueprint! {
+#[blueprint]
+mod simple {
     struct Simple {
         state: u32,
     }
