@@ -168,6 +168,7 @@ impl VisibilityProperties {
                                     _,
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 ) => true,
+                                (RENodeId::Global(_), SubstateOffset::Global(_)) => true,
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -188,6 +189,7 @@ impl VisibilityProperties {
                                     _,
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 ) => true,
+                                (RENodeId::Global(_), SubstateOffset::Global(_)) => true,
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

@@ -1,3 +1,4 @@
+use super::Invokable;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
@@ -35,8 +36,6 @@ use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-use super::Invokable;
 
 impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
@@ -300,15 +299,15 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<ComponentId, RuntimeError> {
-        // TODO: formally define and verify visibility expansion.
-
-        let optional_node_id = self.deref(RENodeId::Global(GlobalAddress::Component(
-            component_address,
-        )))?;
-        Ok(optional_node_id
-            .expect("Deref of component address should either error or return Option::Some")
-            .0
-            .into())
+        let offset = SubstateOffset::Global(GlobalOffset::Global);
+        let handle = self.lock_substate(
+            RENodeId::Global(GlobalAddress::Component(component_address)),
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::empty(),
+        )?;
+        let substate_ref = self.get_ref(handle)?;
+        Ok(substate_ref.global_address().node_deref().into())
     }
 
     fn new_component(
