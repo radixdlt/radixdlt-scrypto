@@ -1,4 +1,3 @@
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
@@ -8,11 +7,12 @@ use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::vec::Vec;
 
 use super::BaseModule;
-use super::SysCallInput;
-use super::SysCallOutput;
+use super::KernelApiCallInput;
+use super::KernelApiCallOutput;
 
 pub struct KernelModule {
     trace: bool,
@@ -39,42 +39,42 @@ impl KernelModule {
 }
 
 impl<R: FeeReserve> BaseModule<R> for KernelModule {
-    fn pre_sys_call(
+    fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
-        input: SysCallInput,
+        input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            KernelTraceModule.pre_sys_call(call_frame, heap, track, input.clone())?;
+            KernelTraceModule.pre_kernel_api_call(call_frame, heap, track, input.clone())?;
         }
         self.costing
-            .pre_sys_call(call_frame, heap, track, input.clone())?;
+            .pre_kernel_api_call(call_frame, heap, track, input.clone())?;
         self.royalty
-            .pre_sys_call(call_frame, heap, track, input.clone())?;
+            .pre_kernel_api_call(call_frame, heap, track, input.clone())?;
         self.execution_trace
-            .pre_sys_call(call_frame, heap, track, input.clone())?;
+            .pre_kernel_api_call(call_frame, heap, track, input.clone())?;
 
         Ok(())
     }
 
-    fn post_sys_call(
+    fn post_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
-        output: SysCallOutput,
+        output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            KernelTraceModule.post_sys_call(call_frame, heap, track, output.clone())?;
+            KernelTraceModule.post_kernel_api_call(call_frame, heap, track, output.clone())?;
         }
         self.costing
-            .post_sys_call(call_frame, heap, track, output.clone())?;
+            .post_kernel_api_call(call_frame, heap, track, output.clone())?;
         self.royalty
-            .post_sys_call(call_frame, heap, track, output.clone())?;
+            .post_kernel_api_call(call_frame, heap, track, output.clone())?;
         self.execution_trace
-            .post_sys_call(call_frame, heap, track, output.clone())?;
+            .post_kernel_api_call(call_frame, heap, track, output.clone())?;
 
         Ok(())
     }

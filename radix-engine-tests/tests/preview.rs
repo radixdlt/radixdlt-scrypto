@@ -42,8 +42,11 @@ fn test_transaction_preview_cost_estimate() {
     receipt.expect_commit_success();
 
     assert_eq!(
-        preview_receipt.execution.fee_summary.cost_unit_consumed,
-        receipt.execution.fee_summary.cost_unit_consumed
+        preview_receipt
+            .execution
+            .fee_summary
+            .total_cost_units_consumed,
+        receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
 

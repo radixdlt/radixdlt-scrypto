@@ -342,7 +342,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
             "Cost Units:".bold().green(),
             execution.fee_summary.cost_unit_limit,
-            execution.fee_summary.cost_unit_consumed,
+            execution.fee_summary.total_cost_units_consumed,
             execution.fee_summary.cost_unit_price,
             execution.fee_summary.tip_percentage
         )?;

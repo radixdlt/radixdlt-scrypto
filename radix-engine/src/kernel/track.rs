@@ -1,6 +1,6 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{NonFungibleSubstate, Resource};
+use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
@@ -8,8 +8,8 @@ use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
-use crate::system::kernel_modules::fee::FeeSummary;
 use crate::system::kernel_modules::fee::FeeTable;
+use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
 use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
 use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
@@ -20,12 +20,8 @@ use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, VaultId, VaultOffset,
-};
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::blueprints::resource::ResourceType;
+use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 use transaction::model::Executable;
@@ -488,19 +484,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         executable: &Executable,
     ) -> Result<(), FeeReserveError> {
         self.fee_reserve
-            .consume_deferred(self.fee_table.tx_base_fee(), 1, "tx_base_fee")
+            .consume_deferred(self.fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
             .and_then(|()| {
                 self.fee_reserve.consume_deferred(
                     self.fee_table.tx_payload_cost_per_byte(),
                     executable.payload_size(),
-                    "tx_payload_cost",
+                    CostingReason::TxPayloadCost,
                 )
             })
             .and_then(|()| {
                 self.fee_reserve.consume_deferred(
                     self.fee_table.tx_signature_verification_per_sig(),
                     executable.auth_zone_params().initial_proofs.len(),
-                    "tx_signature_verification",
+                    CostingReason::TxSignatureVerification,
                 )
             })
     }
@@ -676,7 +672,7 @@ impl<'s> FinalizingTrack<'s> {
         // Revert royalty in case of failure
         if !is_success {
             fee_summary.total_royalty_cost_xrd = Decimal::ZERO;
-            fee_summary.royalty_cost_unit_breakdown = HashMap::new();
+            fee_summary.royalty_cost_unit_breakdown = BTreeMap::new();
         }
 
         // Finalize payments

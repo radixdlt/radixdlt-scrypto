@@ -1,4 +1,3 @@
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
@@ -6,6 +5,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::blueprints::resource::Resource;
 
 bitflags! {
     #[derive(Encode, Decode, Categorize)]
@@ -87,8 +87,6 @@ pub trait KernelWasmApi<W: WasmEngine> {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
-
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

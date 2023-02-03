@@ -40,7 +40,7 @@ extern "C" {
     //===============
 
     /// Invokes a method on a component.
-    pub fn invoke_method(
+    pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
         ident_ptr: *const u8,
@@ -49,7 +49,19 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    /// Invokes any function, either scrypto or native.
+    /// Invokes a function on a blueprint.
+    pub fn call_function(
+        package_address_ptr: *const u8,
+        package_address_len: usize,
+        blueprint_ident_ptr: *const u8,
+        blueprint_ident_len: usize,
+        function_ident_ptr: *const u8,
+        function_ident_len: usize,
+        args_ptr: *const u8,
+        args_len: usize,
+    ) -> Buffer;
+
+    /// Invokes any function or method, for both Scrypto and Native blueprints.
     pub fn invoke(invocation_ptr: *const u8, invocation_len: usize) -> Buffer;
 
     //===============
@@ -101,11 +113,25 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn invoke_method(
+pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
     _ident_ptr: *const u8,
     _ident_len: usize,
+    _args_ptr: *const u8,
+    _args_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn call_function(
+    _package_address_ptr: *const u8,
+    _package_address_len: usize,
+    _blueprint_ident_ptr: *const u8,
+    _blueprint_ident_len: usize,
+    _function_ident_ptr: *const u8,
+    _function_ident_len: usize,
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
