@@ -23,7 +23,7 @@ mod local_recursion_bomb {
             let local_component = Self {
                 vault: Vault::with_bucket(bucket),
             }
-                .instantiate();
+            .instantiate();
 
             let rtn_bucket = local_component.recurse();
             local_component.globalize();

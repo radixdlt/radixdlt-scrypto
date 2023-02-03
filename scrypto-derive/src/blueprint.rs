@@ -45,8 +45,25 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let module_ident = bp.module_ident;
     let component_ident = format_ident!("{}Component", bp_ident);
     let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
+    let use_statements = {
+        let mut use_statements = bp.use_statements;
+
+        let contains_prelude_import = use_statements
+            .iter()
+            .map(|x| quote! { #(#x) }.to_string())
+            .any(|x| x.contains("scrypto::prelude::*"));
+
+        if !contains_prelude_import {
+            let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
+            use_statements.push(item);
+        }
+
+        use_statements
+    };
 
     let output_mod = quote! {
+        #(#use_statements)*
+
         #[allow(non_snake_case)]
         pub mod #module_ident {
             use super::*;
@@ -232,7 +249,7 @@ fn generate_dispatcher(
 
                 // parse args
                 let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
-                stmts.push(parse_quote!{
+                stmts.push(parse_quote! {
                     let input: #input_struct_name = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
@@ -593,8 +610,9 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
 
 #[cfg(test)]
 mod tests {
-    use proc_macro2::TokenStream;
     use std::str::FromStr;
+
+    use proc_macro2::TokenStream;
 
     use super::*;
 
@@ -614,7 +632,7 @@ mod tests {
         let input = TokenStream::from_str(
             "mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
         )
-        .unwrap();
+            .unwrap();
         let output = handle_blueprint(input).unwrap();
 
         assert_code_eq(

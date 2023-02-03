@@ -4,12 +4,9 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod empty {
-  struct Empty {
-  }
+    struct Empty {}
 
-  impl Empty {
-
-  }
+    impl Empty {}
 }
 
 #[blueprint]
@@ -20,11 +17,7 @@ mod simple {
 
     impl Simple {
         pub fn new() -> ComponentAddress {
-            Self {
-                state: 0
-            }
-            .instantiate()
-            .globalize()
+            Self { state: 0 }.instantiate().globalize()
         }
 
         pub fn get_state(&self) -> u32 {
@@ -35,7 +28,15 @@ mod simple {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageAddress, KeyValueStore<String, String>, Hash, Bucket, Proof, Vault) {
+        pub fn custom_types() -> (
+            Decimal,
+            PackageAddress,
+            KeyValueStore<String, String>,
+            Hash,
+            Bucket,
+            Proof,
+            Vault,
+        ) {
             todo!()
         }
     }
