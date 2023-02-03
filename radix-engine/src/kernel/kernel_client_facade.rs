@@ -48,10 +48,6 @@ where
         self.drop_node(node_id)?;
         Ok(())
     }
-
-    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.get_visible_nodes()
-    }
 }
 
 impl<'g, 's, W, R, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>

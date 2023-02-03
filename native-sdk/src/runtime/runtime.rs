@@ -57,14 +57,8 @@ impl Runtime {
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let visible_node_ids = api.sys_get_visible_nodes()?;
-        let node_id = visible_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
-            .expect("TransactionHash does not exist");
-
         api.call_native(TransactionRuntimeGenerateUuidInvocation {
-            receiver: node_id.into(),
+            receiver: RENodeId::TransactionRuntime.into(),
         })
     }
 }

@@ -252,12 +252,6 @@ impl ClientNodeApi<ClientApiError> for ScryptoEnv {
 
         Ok(())
     }
-
-    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, ClientApiError> {
-        let node_ids = copy_buffer(unsafe { get_visible_nodes() });
-
-        scrypto_decode(&node_ids).map_err(ClientApiError::DecodeError)
-    }
 }
 
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {

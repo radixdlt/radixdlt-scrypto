@@ -68,7 +68,6 @@ fn test_basic_transfer() {
         15000 /* CreateNode */
         + 34000 /* DropLock */
         + 10000 /* DropNode */
-        + 32500 /* GetVisibleNodes */
         + 0 /* InstantiateWasm */
         + 6000 /* Invoke */
         + 41500 /* LockSubstate */

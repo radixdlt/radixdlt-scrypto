@@ -23,10 +23,8 @@ impl LoggerModule {
         _actor: &ResolvedActor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = api.get_visible_nodes()?;
-        let maybe_id = refed.into_iter().find(|e| matches!(e, RENodeId::Logger));
-        if let Some(logger_id) = maybe_id {
-            call_frame_update.node_refs_to_copy.insert(logger_id);
+        if api.get_visible_node_data(RENodeId::Logger).is_ok() {
+            call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);
         }
 
         Ok(())

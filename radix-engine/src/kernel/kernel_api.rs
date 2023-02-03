@@ -57,9 +57,6 @@ pub trait KernelNodeApi {
         contingent: bool,
     ) -> Result<Resource, RuntimeError>; // TODO: move
 
-    /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,

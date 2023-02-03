@@ -14,7 +14,6 @@ pub enum KernelApiCallInput<'a> {
         input_size: u32,
         depth: usize,
     },
-    GetVisibleNodes,
     DropNode {
         node_id: &'a RENodeId,
     },
@@ -40,8 +39,6 @@ pub enum KernelApiCallInput<'a> {
 #[derive(Debug, Clone)]
 pub enum KernelApiCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
-
-    GetVisibleNodes,
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
 

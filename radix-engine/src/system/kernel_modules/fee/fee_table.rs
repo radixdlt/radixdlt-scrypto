@@ -11,7 +11,6 @@ pub enum CostingEntry {
     /*
      * RENode
      */
-    ReadOwnedNodes,
     /// Creates a RENode.
     CreateNode {
         size: u32,
@@ -287,7 +286,6 @@ impl FeeTable {
         match entry {
             CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
 
-            CostingEntry::ReadOwnedNodes => self.fixed_low,
             CostingEntry::CreateNode { .. } => self.fixed_medium,
             CostingEntry::DropNode { .. } => self.fixed_medium,
 

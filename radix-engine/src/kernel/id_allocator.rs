@@ -2,9 +2,9 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress,
-    KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType,
-    ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
+    AccessControllerId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
+    NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId,
+    VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -61,14 +61,10 @@ impl IdAllocator {
 
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
-            RENodeType::AuthZoneStack => self
-                .new_auth_zone_id()
-                .map(|id| RENodeId::AuthZoneStack(id)),
+            RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
             RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
-            RENodeType::TransactionRuntime => self
-                .new_transaction_hash_id()
-                .map(|id| RENodeId::TransactionRuntime(id)),
+            RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Logger => Ok(RENodeId::Logger),
             RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Vault(id)),
@@ -235,10 +231,6 @@ impl IdAllocator {
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
-        Ok(self.next()?)
-    }
-
     pub fn new_fee_reserve_id(&mut self) -> Result<FeeReserveId, IdAllocationError> {
         Ok(self.next()?)
     }
@@ -256,10 +248,6 @@ impl IdAllocator {
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self) -> Result<VaultId, IdAllocationError> {
         self.next_id()
-    }
-
-    pub fn new_transaction_hash_id(&mut self) -> Result<TransactionRuntimeId, IdAllocationError> {
-        self.next()
     }
 
     pub fn new_component_id(&mut self) -> Result<ComponentId, IdAllocationError> {

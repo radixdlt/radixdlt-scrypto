@@ -42,30 +42,6 @@ where
         Ok(fee)
     }
 
-    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::GetVisibleNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let node_ids = self.current_frame.get_visible_nodes();
-
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::GetVisibleNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(node_ids)
-    }
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
@@ -190,9 +166,9 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
-            (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
-            (RENodeId::AuthZoneStack(..), RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}

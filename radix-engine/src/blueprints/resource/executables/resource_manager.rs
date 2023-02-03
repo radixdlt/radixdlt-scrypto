@@ -951,12 +951,6 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let node_ids = api.get_visible_nodes()?;
-            let auth_zone_id = node_ids
-                .into_iter()
-                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-                .expect("AuthZone does not exist");
-
             let substate_ref = api.get_ref(handle)?;
             let substate = substate_ref.access_rules_chain();
 
@@ -971,7 +965,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
             .clone();
 
             api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: auth_zone_id.into(),
+                receiver: RENodeId::AuthZoneStack.into(),
                 access_rule,
             })?;
         }
@@ -1045,12 +1039,6 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let node_ids = api.get_visible_nodes()?;
-            let auth_zone_id = node_ids
-                .into_iter()
-                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-                .expect("AuthZone does not exist");
-
             let substate_ref = api.get_ref(handle)?;
             let substate = substate_ref.access_rules_chain();
 
@@ -1065,7 +1053,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
             .clone();
 
             api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: auth_zone_id.into(),
+                receiver: RENodeId::AuthZoneStack.into(),
                 access_rule,
             })?;
         }
