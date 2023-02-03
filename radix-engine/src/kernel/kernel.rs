@@ -203,7 +203,7 @@ where
             node_id
         };
 
-        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: Use api to globalize component when create_node is refactored
         // TODO: to allow for address selection
         let global_substate = GlobalAddressSubstate::Account(component_id.into());
 
@@ -227,7 +227,7 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let underlying_node_id = Identity::create(access_rule, self)?;
 
-        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: Use api to globalize component when create_node is refactored
         // TODO: to allow for address selection
         let global_substate = GlobalAddressSubstate::Identity(underlying_node_id.into());
         self.current_frame.create_node(
@@ -295,37 +295,37 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelDropNode, |api| {
             match node_id {
                 RENodeId::AuthZoneStack => {
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
                     let auth_zone_stack = substate_ref_mut.auth_zone_stack();
                     auth_zone_stack.clear_all();
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
                     Ok(())
                 }
                 RENodeId::Proof(..) => {
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
                     let proof = substate_ref_mut.proof();
                     proof.drop();
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
                     Ok(())
                 }
                 RENodeId::Logger => Ok(()),
                 RENodeId::Worktop => {
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Worktop(WorktopOffset::Worktop),
@@ -333,20 +333,20 @@ where
                     )?;
 
                     let buckets = {
-                        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                        let mut substate_ref_mut = api.get_ref_mut(handle)?;
                         let worktop = substate_ref_mut.worktop();
                         mem::replace(&mut worktop.resources, BTreeMap::new())
                     };
                     for (_, bucket) in buckets {
                         let bucket = Bucket(bucket.bucket_id());
-                        if !bucket.sys_is_empty(system_api)? {
+                        if !bucket.sys_is_empty(api)? {
                             return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                                 RENodeId::Worktop,
                             )));
                         }
                     }
 
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
@@ -361,7 +361,7 @@ where
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
-                // Need to go through system_api so that visibility issues can be caught
+                // Need to go through api so that visibility issues can be caught
                 self.drop_node(child_node)?;
             }
         }
@@ -373,17 +373,17 @@ where
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
 
-        // Need to go through system_api so that visibility issues can be caught
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Application, |system_api| {
+        // Need to go through api so that visibility issues can be caught
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
                 } else {
-                    system_api.drop_node(node_id)?;
+                    api.drop_node(node_id)?;
                 }
             }
             for worktop_id in worktops {
-                system_api.drop_node(worktop_id)?;
+                api.drop_node(worktop_id)?;
             }
 
             Ok(())
@@ -409,32 +409,24 @@ where
         };
 
         // Filter
-        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, system_api)
+        self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+            AuthModule::on_before_frame_start(&actor, api)
         })?;
 
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::TransactionModule, |system_api| {
-                TransactionHashModule::on_call_frame_enter(
-                    &mut call_frame_update,
-                    &actor,
-                    system_api,
-                )
+            self.execute_in_mode(ExecutionMode::TransactionModule, |api| {
+                TransactionHashModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::LoggerModule, |system_api| {
-                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            self.execute_in_mode(ExecutionMode::LoggerModule, |api| {
+                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-                AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+                AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_enter(
-                    &mut call_frame_update,
-                    &actor.identifier,
-                    system_api,
-                )
+            self.execute_in_mode(ExecutionMode::NodeMoveModule, |api| {
+                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor.identifier, api)
             })?;
 
             self.module
@@ -461,9 +453,8 @@ where
         }
 
         // Execute
-        let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
-            executor.execute(system_api)
-        })?;
+        let (output, update) =
+            self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
 
         // Call Frame post-processing
         {
@@ -483,11 +474,11 @@ where
                 .map_err(RuntimeError::ModuleError)?;
 
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_exit(&update, system_api)
+            self.execute_in_mode(ExecutionMode::NodeMoveModule, |api| {
+                NodeMoveModule::on_call_frame_exit(&update, api)
             })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-                AuthModule::on_call_frame_exit(system_api)
+            self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+                AuthModule::on_call_frame_exit(api)
             })?;
 
             // Auto-drop locks again in case module forgot to drop
@@ -521,15 +512,11 @@ where
     ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             let derefed =
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelDeref, |api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::empty(),
-                    )?;
-                    let substate_ref = system_api.get_ref(handle)?;
+                    let handle =
+                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
+                    let substate_ref = api.get_ref(handle)?;
                     Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
 
@@ -547,15 +534,15 @@ where
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
                 let derefed = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::Deref,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
+                    ExecutionMode::KernelDeref,
+                    |api| {
+                        let handle = api.lock_substate(
                             node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Global(GlobalOffset::Global),
                             LockFlags::empty(),
                         )?;
-                        let substate_ref = system_api.get_ref(handle)?;
+                        let substate_ref = api.get_ref(handle)?;
                         Ok((substate_ref.global_address().node_deref(), handle))
                     },
                 )?;
@@ -575,7 +562,6 @@ where
     ) -> Result<(), RuntimeError> {
         match (cur, next) {
             (ExecutionMode::Kernel, ..) => Ok(()),
-            (ExecutionMode::Resolver, ExecutionMode::Deref) => Ok(()),
             _ => Err(RuntimeError::KernelError(
                 KernelError::InvalidModeTransition(*cur, *next),
             )),

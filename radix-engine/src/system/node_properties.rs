@@ -18,7 +18,7 @@ impl VisibilityProperties {
                 RENodeId::Logger => return true,
                 _ => return false,
             },
-            ExecutionMode::Application => match node_id {
+            ExecutionMode::Client => match node_id {
                 // TODO: Cleanup and reduce to least privilege
                 RENodeId::Worktop => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
@@ -63,7 +63,7 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
             (
-                ExecutionMode::Application,
+                ExecutionMode::Client,
                 FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address,
                     blueprint_name,
@@ -100,12 +100,8 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
-            (ExecutionMode::Deref, offset) => match offset {
+            (ExecutionMode::KernelDeref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Globalize, offset) => match offset {
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 _ => false,
             },
             (ExecutionMode::LoggerModule, ..) => false,
@@ -115,11 +111,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::TransactionModule, _offset) => false,
-            (ExecutionMode::MoveUpstream, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::DropNode, offset) => match offset {
+            (ExecutionMode::KernelDropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
@@ -143,14 +135,7 @@ impl VisibilityProperties {
                 }
                 _ => false,
             },
-            (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Application, offset) => {
+            (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     match &actor.identifier {
                         // Native
