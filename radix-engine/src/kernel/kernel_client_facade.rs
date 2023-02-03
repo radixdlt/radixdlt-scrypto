@@ -300,6 +300,8 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<ComponentId, RuntimeError> {
+        // TODO: formally define and verify visibility expansion.
+
         let optional_node_id = self.deref(RENodeId::Global(GlobalAddress::Component(
             component_address,
         )))?;
