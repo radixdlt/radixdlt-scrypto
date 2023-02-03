@@ -321,9 +321,9 @@ impl WasmInstance for WasmiInstance {
         .map_err(InvokeError::SelfError)
     }
 
-    fn consumed_memory(&self) -> usize {
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
         let bytes_size: wasmi::memory_units::Bytes = self.memory_ref.current_size().into();
-        bytes_size.0
+        Ok(bytes_size.0)
     }
 }
 

@@ -85,7 +85,7 @@ impl Executor for ScryptoExecutor {
                 KernelError::InvalidScryptoFnOutput,
             ))
         } else {
-            api.emit_wasm_post_instantiation_event(instance.consumed_memory())?;
+            api.emit_wasm_post_instantiation_event(instance.consumed_memory()?)?;
 
             let update = CallFrameUpdate {
                 node_refs_to_copy: output

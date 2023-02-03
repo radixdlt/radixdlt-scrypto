@@ -405,9 +405,14 @@ impl WasmInstance for WasmerInstance {
         }
     }
 
-    fn consumed_memory(&self) -> usize {
-        // TODO
-        0
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
+        let memory = self
+            .instance
+            .exports
+            .get_memory(EXPORT_MEMORY)
+            .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+        let memory_slice = unsafe { memory.data_unchecked_mut() };
+        Ok(memory_slice.len())
     }
 }
 
