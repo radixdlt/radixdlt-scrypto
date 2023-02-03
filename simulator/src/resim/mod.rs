@@ -65,7 +65,6 @@ use radix_engine::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::LegacyDescribe;
-use radix_engine_interface::api::static_invoke_api::Invocation;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;

@@ -1,6 +1,6 @@
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{NonFungibleSubstate, Resource};
+use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
@@ -8,8 +8,8 @@ use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
-use crate::system::kernel_modules::fee::FeeSummary;
 use crate::system::kernel_modules::fee::FeeTable;
+use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
 use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
 use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
@@ -20,12 +20,8 @@ use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, VaultId, VaultOffset,
-};
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::blueprints::resource::ResourceType;
+use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 use transaction::model::Executable;
@@ -253,7 +249,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    pub fn get_substate(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> SubstateRef {
+    pub fn get_substate(
+        &mut self,
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: &SubstateOffset,
+    ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
             (
                 RENodeId::KeyValueStore(..),
@@ -264,7 +265,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => self.read_key_value(node_id, offset),
             _ => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
                     .loaded_substates
                     .get(&substate_id)
@@ -278,19 +279,22 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn get_substate_mut(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
-        let runtime_substate = match (node_id, offset) {
+        let runtime_substate = match (node_id, module_id, offset) {
             (
                 RENodeId::KeyValueStore(..),
+                NodeModuleId::SELF,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
             )
             | (
                 RENodeId::NonFungibleStore(..),
+                NodeModuleId::SELF,
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => self.read_key_value_mut(node_id, offset),
             _ => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
                     .loaded_substates
                     .get_mut(&substate_id)
@@ -307,6 +311,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         match &substate_id {
             SubstateId(
                 RENodeId::Global(global_address),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 self.new_global_addresses.push(*global_address);
@@ -331,7 +336,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -357,7 +362,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 RENodeId::KeyValueStore(..),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -396,7 +401,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -426,7 +431,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 RENodeId::KeyValueStore(..),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, offset.clone());
+                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -479,19 +484,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         executable: &Executable,
     ) -> Result<(), FeeReserveError> {
         self.fee_reserve
-            .consume_deferred(self.fee_table.tx_base_fee(), 1, "tx_base_fee")
+            .consume_deferred(self.fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
             .and_then(|()| {
                 self.fee_reserve.consume_deferred(
                     self.fee_table.tx_payload_cost_per_byte(),
                     executable.payload_size(),
-                    "tx_payload_cost",
+                    CostingReason::TxPayloadCost,
                 )
             })
             .and_then(|()| {
                 self.fee_reserve.consume_deferred(
                     self.fee_table.tx_signature_verification_per_sig(),
                     executable.auth_zone_params().initial_proofs.len(),
-                    "tx_signature_verification",
+                    CostingReason::TxSignatureVerification,
                 )
             })
     }
@@ -619,7 +624,7 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
 
-                match id.1 {
+                match id.2 {
                     SubstateOffset::Logger(LoggerOffset::Logger) => {
                         let logger: LoggerSubstate = loaded.substate.into();
                         application_logs.extend(logger.logs);
@@ -667,7 +672,7 @@ impl<'s> FinalizingTrack<'s> {
         // Revert royalty in case of failure
         if !is_success {
             fee_summary.total_royalty_cost_xrd = Decimal::ZERO;
-            fee_summary.royalty_cost_unit_breakdown = HashMap::new();
+            fee_summary.royalty_cost_unit_breakdown = BTreeMap::new();
         }
 
         // Finalize payments
@@ -697,6 +702,7 @@ impl<'s> FinalizingTrack<'s> {
             // Refund overpayment
             let substate_id = SubstateId(
                 RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             );
 
@@ -723,7 +729,8 @@ impl<'s> FinalizingTrack<'s> {
                 RoyaltyReceiver::Package(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
-                        SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                        NodeModuleId::PackageRoyalty,
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();
                     let royalty_vault_id = accumulator_substate
@@ -734,6 +741,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
+                            NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::Vault),
                         ))
                         .unwrap();
@@ -750,7 +758,8 @@ impl<'s> FinalizingTrack<'s> {
                 RoyaltyReceiver::Component(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
-                        SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                        NodeModuleId::ComponentRoyalty,
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
                     let accumulator_substate = to_persist.get(&substate_id).unwrap();
                     let royalty_vault_id = accumulator_substate
@@ -761,6 +770,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
+                            NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::Vault),
                         ))
                         .unwrap();

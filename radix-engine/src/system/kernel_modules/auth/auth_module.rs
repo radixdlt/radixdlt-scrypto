@@ -70,12 +70,12 @@ impl AuthModule {
                             || matches!(method, NativeFn::Account(..))
                             || matches!(method, NativeFn::AccessController(..)) =>
                     {
-                        let offset = SubstateOffset::AccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        );
                         let handle = system_api.lock_substate(
                             resolved_receiver.receiver,
-                            offset,
+                            NodeModuleId::AccessRules,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
@@ -98,6 +98,7 @@ impl AuthModule {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             let handle = system_api.lock_substate(
                                 vault_node_id,
+                                NodeModuleId::SELF,
                                 offset,
                                 LockFlags::read_only(),
                             )?;
@@ -107,11 +108,14 @@ impl AuthModule {
                             resource_address
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let offset = SubstateOffset::VaultAccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        );
-                        let handle =
-                            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            NodeModuleId::AccessRules1,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
+                            LockFlags::read_only(),
+                        )?;
 
                         let substate_ref = system_api.get_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
@@ -155,7 +159,12 @@ impl AuthModule {
                 let node_id =
                     RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
                 let offset = SubstateOffset::Package(PackageOffset::Info);
-                let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                let handle = system_api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
 
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
@@ -173,6 +182,7 @@ impl AuthModule {
                     let offset = SubstateOffset::Component(ComponentOffset::State);
                     let handle = system_api.lock_substate(
                         component_node_id,
+                        NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),
                     )?;
@@ -182,11 +192,10 @@ impl AuthModule {
                     state
                 };
                 {
-                    let offset =
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
                     let handle = system_api.lock_substate(
                         component_node_id,
-                        offset,
+                        NodeModuleId::AccessRules,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = system_api.get_ref(handle)?;
@@ -204,14 +213,9 @@ impl AuthModule {
             _ => vec![],
         };
 
-        let refed = system_api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-
         let handle = system_api.lock_substate(
-            auth_zone_id,
+            RENodeId::AuthZoneStack,
+            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
@@ -240,12 +244,9 @@ impl AuthModule {
         actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::AuthZoneStack);
 
         if !matches!(
             actor.identifier,
@@ -253,7 +254,8 @@ impl AuthModule {
                 | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
         ) {
             let handle = system_api.lock_substate(
-                auth_zone_id,
+                RENodeId::AuthZoneStack,
+                NodeModuleId::SELF,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
@@ -302,13 +304,9 @@ impl AuthModule {
             return Ok(());
         }
 
-        let refed = api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
         let handle = api.lock_substate(
-            auth_zone_id,
+            RENodeId::AuthZoneStack,
+            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;

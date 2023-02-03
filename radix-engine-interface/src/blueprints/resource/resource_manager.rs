@@ -1,5 +1,4 @@
 use crate::address::*;
-use crate::api::static_invoke_api::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::types::Own;

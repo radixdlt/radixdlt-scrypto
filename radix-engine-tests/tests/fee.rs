@@ -251,7 +251,7 @@ fn test_fee_accounting_success() {
         account1_balance
             - 66
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.cost_unit_consumed
+                * summary.total_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -313,7 +313,7 @@ fn test_fee_accounting_failure() {
         account1_new_balance,
         account1_balance
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.cost_unit_consumed
+                * summary.total_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -396,7 +396,7 @@ fn test_contingent_fee_accounting_success() {
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.cost_unit_consumed + contingent_fee
+        account1_balance - effective_price * summary.total_cost_units_consumed + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
 }
@@ -456,7 +456,7 @@ fn test_contingent_fee_accounting_failure() {
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.cost_unit_consumed
+        account1_balance - effective_price * summary.total_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }

@@ -40,7 +40,7 @@ impl Executor for LoggerLogInvocation {
     {
         let offset = SubstateOffset::Logger(LoggerOffset::Logger);
         let node_id = RENodeId::Logger;
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate = api.get_ref_mut(handle)?;
         let logger = substate.logger();
         logger.logs.push((self.level, self.message));

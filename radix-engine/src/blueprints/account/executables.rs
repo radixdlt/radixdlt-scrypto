@@ -24,6 +24,7 @@ use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::blueprints::resource::Proof;
 
 use super::AccountSubstate;
+use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::Vault;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -76,7 +77,7 @@ impl Executor for AccountCreateInvocation {
         let kv_store_id = {
             let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-            api.create_node(node_id, node)?;
+            api.create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -85,16 +86,27 @@ impl Executor for AccountCreateInvocation {
 
         // Creating the Account substates and RENode
         let node_id = {
-            let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
-            };
+            let mut node_modules = BTreeMap::new();
+            node_modules.insert(
+                NodeModuleId::Metadata,
+                RENodeModuleInit::Metadata(MetadataSubstate {
+                    metadata: BTreeMap::new(),
+                }),
+            );
             let access_rules_substate = AccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
+            node_modules.insert(
+                NodeModuleId::AccessRules,
+                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            );
+            let account_substate = AccountSubstate {
+                vaults: Own::KeyValueStore(kv_store_id.into()),
+            };
 
             let node_id = api.allocate_node_id(RENodeType::Account)?;
-            let node = RENodeInit::Account(account_substate, access_rules_substate);
-            api.create_node(node_id, node)?;
+            let node = RENodeInit::Account(account_substate);
+            api.create_node(node_id, node, node_modules)?;
             node_id
         };
 
@@ -141,7 +153,7 @@ impl Executor for AccountNewInvocation {
         let kv_store_id = {
             let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore(KeyValueStore::new());
-            api.create_node(node_id, node)?;
+            api.create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -150,16 +162,28 @@ impl Executor for AccountNewInvocation {
 
         // Creating the Account substates and RENode
         let node_id = {
-            let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
-            };
+            let mut node_modules = BTreeMap::new();
+            node_modules.insert(
+                NodeModuleId::Metadata,
+                RENodeModuleInit::Metadata(MetadataSubstate {
+                    metadata: BTreeMap::new(),
+                }),
+            );
             let access_rules_substate = AccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
+            node_modules.insert(
+                NodeModuleId::AccessRules,
+                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            );
+
+            let account_substate = AccountSubstate {
+                vaults: Own::KeyValueStore(kv_store_id.into()),
+            };
 
             let node_id = api.allocate_node_id(RENodeType::Account)?;
-            let node = RENodeInit::Account(account_substate, access_rules_substate);
-            api.create_node(node_id, node)?;
+            let node = RENodeInit::Account(account_substate);
+            api.create_node(node_id, node, node_modules)?;
             node_id
         };
 
@@ -167,7 +191,7 @@ impl Executor for AccountNewInvocation {
         let global_node_id = {
             let node = RENodeInit::Global(GlobalAddressSubstate::Account(node_id.into()));
             let node_id = api.allocate_node_id(RENodeType::GlobalAccount)?;
-            api.create_node(node_id, node)?;
+            api.create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -228,7 +252,8 @@ impl Executor for AccountBalanceExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -238,7 +263,8 @@ impl Executor for AccountBalanceExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -319,7 +345,8 @@ impl Executor for AccountLockFeeExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -329,7 +356,8 @@ impl Executor for AccountLockFeeExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -413,7 +441,8 @@ impl Executor for AccountLockContingentFeeExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -423,7 +452,8 @@ impl Executor for AccountLockContingentFeeExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -507,7 +537,8 @@ impl Executor for AccountDepositExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -517,7 +548,8 @@ impl Executor for AccountDepositExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -626,7 +658,8 @@ impl Executor for AccountDepositBatchExecutable {
     {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
         // KV-store entries again and again because of buckets that have the same resource address.
@@ -644,7 +677,8 @@ impl Executor for AccountDepositBatchExecutable {
 
                 let node_id = RENodeId::KeyValueStore(kv_store_id);
                 let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -738,7 +772,8 @@ impl Executor for AccountWithdrawExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -748,7 +783,8 @@ impl Executor for AccountWithdrawExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -835,7 +871,8 @@ impl Executor for AccountWithdrawByAmountExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -845,7 +882,8 @@ impl Executor for AccountWithdrawByAmountExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -932,7 +970,8 @@ impl Executor for AccountWithdrawByIdsExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -942,7 +981,8 @@ impl Executor for AccountWithdrawByIdsExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -1195,7 +1235,12 @@ impl Executor for AccountCreateProofExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(), // TODO: should this be an R or RW lock?
+        )?;
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -1205,7 +1250,8 @@ impl Executor for AccountCreateProofExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -1292,7 +1338,12 @@ impl Executor for AccountCreateProofByAmountExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::read_only(), // TODO: should this be an R or RW lock?
+        )?;
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -1302,7 +1353,8 @@ impl Executor for AccountCreateProofByAmountExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -1389,7 +1441,8 @@ impl Executor for AccountCreateProofByIdsExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -1399,7 +1452,8 @@ impl Executor for AccountCreateProofByIdsExecutable {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -1464,7 +1518,7 @@ where
 {
     let node_id = RENodeId::Bucket(bucket);
     let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-    let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
     let substate = api.get_ref(handle)?;
     let bucket = substate.bucket();
     let resource_address = bucket.resource_address();

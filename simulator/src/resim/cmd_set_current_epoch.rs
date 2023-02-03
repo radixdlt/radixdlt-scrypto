@@ -1,12 +1,10 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::{
-    api::{
-        kernel_modules::auth::AuthAddresses,
-        types::{EpochManagerInvocation, NativeInvocation},
-    },
-    blueprints::epoch_manager::EpochManagerSetEpochInvocation,
+use radix_engine_interface::api::{
+    kernel_modules::auth::AuthAddresses,
+    types::{EpochManagerInvocation, NativeInvocation},
 };
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerSetEpochInvocation;
 
 use crate::resim::*;
 

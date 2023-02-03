@@ -1,4 +1,3 @@
-use crate::blueprints::resource::Resource;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
@@ -6,6 +5,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::blueprints::resource::Resource;
 
 bitflags! {
     #[derive(Encode, Decode, Categorize)]
@@ -40,9 +40,6 @@ pub trait KernelNodeApi {
         contingent: bool,
     ) -> Result<Resource, RuntimeError>; // TODO: move
 
-    /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
@@ -56,7 +53,12 @@ pub trait KernelNodeApi {
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError>;
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        init: RENodeInit,
+        node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
@@ -64,6 +66,7 @@ pub trait KernelSubstateApi {
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
@@ -89,8 +92,6 @@ pub trait KernelWasmApi<W: WasmEngine> {
         &mut self,
         consumed_memory: usize,
     ) -> Result<(), RuntimeError>;
-
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

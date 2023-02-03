@@ -6,8 +6,9 @@ use crate::{
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
     BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn,
-    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, ScryptoFnIdentifier,
-    SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
+    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset,
+    ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
+    WorktopOffset,
 };
 
 use super::LockFlags;
@@ -31,11 +32,11 @@ impl VisibilityProperties {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
-                RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                RENodeId::AuthZoneStack => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
-                RENodeId::TransactionRuntime(..) => match &actor.identifier {
+                RENodeId::TransactionRuntime => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
@@ -141,9 +142,6 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
-                SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
-                    flags == LockFlags::read_only()
-                }
                 _ => false,
             },
             (ExecutionMode::Resolver, offset) => match offset {
@@ -247,8 +245,8 @@ impl SubstateProperties {
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
+            SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,
-            SubstateOffset::VaultAccessRulesChain(..) => true,
             SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
@@ -296,14 +294,7 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
-            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => match node_id {
                 RENodeId::Vault(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),

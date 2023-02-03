@@ -1,5 +1,4 @@
-use super::module::SysCallOutput;
-use crate::blueprints::resource::Resource;
+use super::module::KernelApiCallOutput;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{
@@ -15,6 +14,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
+use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
@@ -43,30 +43,6 @@ where
         Ok(fee)
     }
 
-    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadOwnedNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let node_ids = self.current_frame.get_visible_nodes();
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadOwnedNodes,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(node_ids)
-    }
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
@@ -77,11 +53,11 @@ where
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::DropNode { node_id: &node_id },
+                KernelApiCallInput::DropNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -109,11 +85,11 @@ where
         self.execution_mode = current_mode;
 
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::DropNode { node: &node },
+                KernelApiCallOutput::DropNode { node: &node },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -127,13 +103,18 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError> {
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        re_node: RENodeInit,
+        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::CreateNode { node: &re_node },
+                KernelApiCallInput::CreateNode { node: &re_node },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -186,9 +167,9 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
-            (RENodeId::TransactionRuntime(..), RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
-            (RENodeId::AuthZoneStack(..), RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
@@ -217,6 +198,7 @@ where
         self.current_frame.create_node(
             node_id,
             re_node,
+            module_init,
             &mut self.heap,
             &mut self.track,
             push_to_store,
@@ -226,11 +208,11 @@ where
         self.execution_mode = current_mode;
 
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::CreateNode { node_id: &node_id },
+                KernelApiCallOutput::CreateNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -247,15 +229,16 @@ where
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::LockSubstate {
+                KernelApiCallInput::LockSubstate {
                     node_id: &node_id,
                     offset: &offset,
                     flags: &flags,
@@ -301,6 +284,7 @@ where
             &mut self.heap,
             &mut self.track,
             node_id,
+            module_id,
             offset.clone(),
             flags,
         );
@@ -308,13 +292,14 @@ where
         let lock_handle = match maybe_lock_handle {
             Ok(lock_handle) => lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, ref offset),
+                SubstateId(node_id, module_id, ref offset),
             )))) => {
                 if self.try_virtualize(node_id, &offset)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
                         node_id,
+                        module_id,
                         offset.clone(),
                         flags,
                     )?
@@ -330,15 +315,16 @@ where
                         RENodeId::Global(GlobalAddress::Package(package_address)),
                     )) => {
                         let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+                        let module_id = NodeModuleId::SELF;
                         let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(
-                                SubstateId(node_id, offset.clone()),
+                                SubstateId(node_id, module_id, offset.clone()),
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
                         self.track
-                            .release_lock(SubstateId(node_id, offset.clone()), false)
+                            .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
                             .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
@@ -346,6 +332,7 @@ where
                             &mut self.heap,
                             &mut self.track,
                             node_id,
+                            module_id,
                             offset.clone(),
                             flags,
                         )?
@@ -364,11 +351,11 @@ where
         self.execution_mode = current_mode;
 
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::LockSubstate { lock_handle },
+                KernelApiCallOutput::LockSubstate { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -381,11 +368,11 @@ where
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::DropLock {
+                KernelApiCallInput::DropLock {
                     lock_handle: &lock_handle,
                 },
             )
@@ -395,11 +382,11 @@ where
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
 
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::DropLock,
+                KernelApiCallOutput::DropLock,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -408,11 +395,11 @@ where
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::GetRef {
+                KernelApiCallInput::GetRef {
                     lock_handle: &lock_handle,
                 },
             )
@@ -425,11 +412,11 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::GetRef { lock_handle },
+                KernelApiCallOutput::GetRef { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -442,11 +429,11 @@ where
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
         self.module
-            .pre_sys_call(
+            .pre_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallInput::GetRefMut {
+                KernelApiCallInput::GetRefMut {
                     lock_handle: &lock_handle,
                 },
             )
@@ -459,11 +446,11 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
         self.module
-            .post_sys_call(
+            .post_kernel_api_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::GetRefMut,
+                KernelApiCallOutput::GetRefMut,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -508,12 +495,12 @@ where
 
         Ok(())
     }
+}
 
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
-    }
+impl<'g, 's, W, R, M> KernelApi<W> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
 }

@@ -21,6 +21,62 @@ use radix_engine_interface::api::types::{
 };
 
 #[derive(Debug)]
+pub enum RENodeModuleInit {
+    Metadata(MetadataSubstate),
+    AccessRulesChain(AccessRulesChainSubstate),
+    ComponentRoyalty(
+        ComponentRoyaltyConfigSubstate,
+        ComponentRoyaltyAccumulatorSubstate,
+    ),
+    PackageRoyalty(
+        PackageRoyaltyConfigSubstate,
+        PackageRoyaltyAccumulatorSubstate,
+    ),
+}
+
+impl RENodeModuleInit {
+    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
+        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+        match self {
+            RENodeModuleInit::Metadata(metadata) => {
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
+                );
+            }
+            RENodeModuleInit::AccessRulesChain(access_rules) => {
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules.into(),
+                );
+            }
+            RENodeModuleInit::ComponentRoyalty(config, accumulator) => {
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    accumulator.into(),
+                );
+            }
+            RENodeModuleInit::PackageRoyalty(config, accumulator) => {
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    accumulator.into(),
+                );
+            }
+        }
+
+        substates
+    }
+}
+
+#[derive(Debug)]
 pub enum RENodeInit {
     Global(GlobalAddressSubstate),
     Bucket(BucketSubstate),
@@ -31,43 +87,21 @@ pub enum RENodeInit {
     Worktop(WorktopSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    Identity(MetadataSubstate, AccessRulesChainSubstate),
-    Component(
-        ComponentInfoSubstate,
-        ComponentStateSubstate,
-        ComponentRoyaltyConfigSubstate,
-        ComponentRoyaltyAccumulatorSubstate,
-        MetadataSubstate,
-        AccessRulesChainSubstate,
-    ),
-    Package(
-        PackageInfoSubstate,
-        PackageRoyaltyConfigSubstate,
-        PackageRoyaltyAccumulatorSubstate,
-        MetadataSubstate,
-        AccessRulesChainSubstate,
-    ),
-    ResourceManager(
-        ResourceManagerSubstate,
-        MetadataSubstate,
-        AccessRulesChainSubstate,
-        AccessRulesChainSubstate,
-    ),
+    Identity(),
+    Component(ComponentInfoSubstate, ComponentStateSubstate),
+    Package(PackageInfoSubstate),
+    ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
         ValidatorSetSubstate,
-        AccessRulesChainSubstate,
     ),
-    Validator(ValidatorSubstate, AccessRulesChainSubstate),
-    Clock(
-        CurrentTimeRoundedToMinutesSubstate,
-        AccessRulesChainSubstate,
-    ),
+    Validator(ValidatorSubstate),
+    Clock(CurrentTimeRoundedToMinutesSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
-    Account(AccountSubstate, AccessRulesChainSubstate),
-    AccessController(AccessControllerSubstate, AccessRulesChainSubstate),
+    AccessController(AccessControllerSubstate),
+    Account(AccountSubstate),
 }
 
 impl RENodeInit {
@@ -109,24 +143,8 @@ impl RENodeInit {
                     );
                 }
             }
-            RENodeInit::Identity(metadata, access_rules) => {
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
-                );
-            }
-            RENodeInit::Component(
-                info,
-                state,
-                royalty_config,
-                royalty_accumulator,
-                metadata,
-                access_rules,
-            ) => {
+            RENodeInit::Identity() => {}
+            RENodeInit::Component(info, state) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -134,22 +152,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::State),
                     state.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
-                    royalty_config.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-                    royalty_accumulator.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
                 );
             }
             RENodeInit::Worktop(worktop) => {
@@ -164,66 +166,22 @@ impl RENodeInit {
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENodeInit::Package(
-                package_info,
-                package_royalty_config,
-                package_royalty_accumulator,
-                metadata,
-                access_rules,
-            ) => {
+            RENodeInit::Package(package_info) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
                 );
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::RoyaltyConfig),
-                    package_royalty_config.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-                    package_royalty_accumulator.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
-                );
             }
-            RENodeInit::ResourceManager(
-                resource_manager,
-                metadata,
-                access_rules,
-                vault_access_rules,
-            ) => {
+            RENodeInit::ResourceManager(resource_manager) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
                 );
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
-                );
-                // TODO: Figure out what the right abstraction is for vault access rules
-                substates.insert(
-                    SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    vault_access_rules.into(),
-                );
             }
-            RENodeInit::Validator(validator, access_rules) => {
+            RENodeInit::Validator(validator) => {
                 substates.insert(
                     SubstateOffset::Validator(ValidatorOffset::Validator),
                     validator.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
                 );
             }
             RENodeInit::NonFungibleStore(non_fungible_store) => {
@@ -238,7 +196,6 @@ impl RENodeInit {
                 epoch_manager,
                 current_validator_set_substate,
                 preparing_validator_set_substate,
-                access_rules,
             ) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
@@ -252,19 +209,11 @@ impl RENodeInit {
                     SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
                     preparing_validator_set_substate.into(),
                 );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
-                );
             }
-            RENodeInit::Clock(current_time_rounded_to_minutes_substate, access_rules_substate) => {
+            RENodeInit::Clock(current_time_rounded_to_minutes_substate) => {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     current_time_rounded_to_minutes_substate.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules_substate.into(),
                 );
             }
             RENodeInit::FeeReserve(fee_reserve) => {
@@ -281,24 +230,16 @@ impl RENodeInit {
                     transaction_hash.into(),
                 );
             }
-            RENodeInit::Account(account_substate, access_rules_substate) => {
+            RENodeInit::Account(account_substate) => {
                 substates.insert(
                     SubstateOffset::Account(AccountOffset::Account),
                     account_substate.into(),
                 );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules_substate.into(),
-                );
             }
-            RENodeInit::AccessController(access_controller, access_rules) => {
+            RENodeInit::AccessController(access_controller) => {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
-                );
-                substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    access_rules.into(),
                 );
             }
         };

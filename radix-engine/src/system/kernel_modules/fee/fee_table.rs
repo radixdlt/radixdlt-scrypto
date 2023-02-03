@@ -11,7 +11,6 @@ pub enum CostingEntry {
     /*
      * RENode
      */
-    ReadOwnedNodes,
     /// Creates a RENode.
     CreateNode {
         size: u32,
@@ -124,6 +123,8 @@ impl FeeTable {
                 ValidatorFn::Stake => self.fixed_low,
                 ValidatorFn::Unstake => self.fixed_low,
                 ValidatorFn::ClaimXrd => self.fixed_low,
+                ValidatorFn::UpdateKey => self.fixed_low,
+                ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
@@ -285,7 +286,6 @@ impl FeeTable {
         match entry {
             CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
 
-            CostingEntry::ReadOwnedNodes => self.fixed_low,
             CostingEntry::CreateNode { .. } => self.fixed_medium,
             CostingEntry::DropNode { .. } => self.fixed_medium,
 

@@ -149,11 +149,12 @@ impl TestRunnerBuilder {
         let genesis = self
             .custom_genesis
             .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
-        runner.execute_transaction_with_config(
+        let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
         );
+        receipt.expect_commit_success();
         runner
     }
 }
@@ -223,6 +224,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())
@@ -234,6 +236,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 underlying_node,
+                NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate.to_runtime())
@@ -249,6 +252,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -261,6 +265,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
@@ -275,7 +280,8 @@ impl TestRunner {
 
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             node_id,
-            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
             let royalty_vault: Own = output
                 .substate
@@ -286,6 +292,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -299,7 +306,8 @@ impl TestRunner {
 
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             node_id,
-            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+            NodeModuleId::PackageRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
             let royalty_vault: Own = output
                 .substate
@@ -310,6 +318,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
@@ -338,6 +347,7 @@ impl TestRunner {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|output| output.substate.vault().0.ids().clone())
@@ -408,6 +418,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -421,6 +432,7 @@ impl TestRunner {
             .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())
@@ -433,6 +445,7 @@ impl TestRunner {
         let node_id = self.deref_component_address(system_address);
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
         let substate: ValidatorSubstate = self
@@ -449,6 +462,7 @@ impl TestRunner {
         let node_id = self.deref_component_address(EPOCH_MANAGER);
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
         let substate: ValidatorSetSubstate = self
@@ -497,17 +511,19 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
-        let address = self.new_validator_with_pub_key(pub_key);
+        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
+        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
         (pub_key, address)
     }
 
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();

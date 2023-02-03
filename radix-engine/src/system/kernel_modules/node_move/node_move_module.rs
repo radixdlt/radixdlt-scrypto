@@ -25,6 +25,7 @@ impl NodeMoveModule {
             RENodeId::Bucket(..) => {
                 let handle = api.lock_substate(
                     node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
@@ -46,6 +47,7 @@ impl NodeMoveModule {
                 if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
                     let handle = api.lock_substate(
                         node_id,
+                        NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
@@ -70,8 +72,8 @@ impl NodeMoveModule {
             }
             RENodeId::Component(..) => Ok(()),
 
-            RENodeId::TransactionRuntime(..)
-            | RENodeId::AuthZoneStack(..)
+            RENodeId::TransactionRuntime
+            | RENodeId::AuthZoneStack
             | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
@@ -100,6 +102,7 @@ impl NodeMoveModule {
             RENodeId::Bucket(..) => {
                 let handle = system_api.lock_substate(
                     node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
@@ -117,8 +120,8 @@ impl NodeMoveModule {
             }
             RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
 
-            RENodeId::TransactionRuntime(..)
-            | RENodeId::AuthZoneStack(..)
+            RENodeId::TransactionRuntime
+            | RENodeId::AuthZoneStack
             | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)

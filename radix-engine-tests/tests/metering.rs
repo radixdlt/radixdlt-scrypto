@@ -65,19 +65,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        15000 /* create_node */
-        + 34000 /* drop_lock */
-        + 10000 /* drop_node */
-        + 6000 /* invoke */
-        + 41500 /* lock_substate */
-        + 32500 /* read_owned_nodes */
-        + 115000 /* read_substate */
-        + 21000 /* run_native_method */
-        + 50000 /* tx_base_fee */
-        + 1370 /* tx_payload_cost */
-        + 100000 /* tx_signature_verification */
-        + 95000, /* write_substate */
-        receipt.execution.fee_summary.cost_unit_consumed
+        15000 /* CreateNode */
+        + 34000 /* DropLock */
+        + 10000 /* DropNode */
+        + 0 /* InstantiateWasm */
+        + 6000 /* Invoke */
+        + 41500 /* LockSubstate */
+        + 115000 /* ReadSubstate */
+        + 21000 /* RunNative */
+        + 0 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 1370 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 95000, /* WriteSubstate */
+        receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
 
@@ -115,8 +116,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.cost_unit_consumed > 20000000
-            && receipt.execution.fee_summary.cost_unit_consumed < 30000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 20000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 30000000
     );
 }
 

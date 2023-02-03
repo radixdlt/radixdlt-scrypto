@@ -38,6 +38,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let global: Option<GlobalAddressSubstate> = substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(package_address)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
@@ -46,6 +47,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
+                NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
             ))
             .map(|s| s.substate)
@@ -91,6 +93,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         substate_store
             .get_substate(&SubstateId(
                 node_id,
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate)
@@ -105,6 +108,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let component_info_substate: ComponentInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::Info),
                 ))
                 .map(|s| s.substate)
@@ -113,6 +117,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
@@ -121,6 +126,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::State),
                 ))
                 .map(|s| s.substate)
@@ -129,6 +135,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let metadata_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
                 .map(|s| s.substate)
@@ -195,6 +202,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let account_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Account(AccountOffset::Account),
                 ))
                 .map(|s| s.substate)
@@ -203,6 +211,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
@@ -244,6 +253,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let metadata_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
                 .map(|s| s.substate)
@@ -252,6 +262,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
@@ -271,6 +282,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_controller_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
                 .map(|s| s.substate)
@@ -279,6 +291,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
+                    NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
@@ -425,6 +438,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let vault: VaultSubstate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Vault(*vault_id),
+                NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|s| s.substate)
@@ -435,6 +449,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let global: Option<GlobalAddressSubstate> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate)
@@ -444,6 +459,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 substate_store
                     .get_substate(&SubstateId(
                         global.node_deref(),
+                        NodeModuleId::SELF,
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     ))
                     .map(|s| s.substate)
@@ -454,6 +470,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             substate_store
                 .get_substate(&SubstateId(
                     global.node_deref(),
+                    NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
                 .map(|s| s.substate)
@@ -486,6 +503,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(
                         RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
+                        NodeModuleId::SELF,
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
                     ))
                     .map(|s| s.substate.to_runtime())
@@ -524,6 +542,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     let global: Option<GlobalAddressSubstate> = substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
@@ -532,6 +551,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
+                NodeModuleId::SELF,
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
             .map(|s| s.substate)
@@ -542,6 +562,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
+                NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
             .map(|s| s.substate)

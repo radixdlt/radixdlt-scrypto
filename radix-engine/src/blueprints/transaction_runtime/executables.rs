@@ -27,7 +27,7 @@ impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
     {
         let actor = ResolvedActor::method(
             NativeFn::TransactionRuntime(TransactionRuntimeFn::Get),
-            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime),
         );
         let call_frame_update = CallFrameUpdate::empty();
 
@@ -45,10 +45,12 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let offset =
-            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
-        let node_id = RENodeId::TransactionRuntime(self.receiver);
-        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle = api.lock_substate(
+            RENodeId::TransactionRuntime,
+            NodeModuleId::SELF,
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
+            LockFlags::read_only(),
+        )?;
         let substate = api.get_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
@@ -70,7 +72,7 @@ impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
     {
         let actor = ResolvedActor::method(
             NativeFn::TransactionRuntime(TransactionRuntimeFn::GenerateUuid),
-            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime),
         );
 
         let call_frame_update = CallFrameUpdate::empty();
@@ -89,10 +91,12 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let offset =
-            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
-        let node_id = RENodeId::TransactionRuntime(self.receiver);
-        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(
+            RENodeId::TransactionRuntime,
+            NodeModuleId::SELF,
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate_mut = api.get_ref_mut(handle)?;
         let tx_hash_substate = substate_mut.transaction_runtime();
 

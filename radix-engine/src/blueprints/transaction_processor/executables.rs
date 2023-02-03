@@ -5,8 +5,8 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::system::invocation::native_wrapper::invoke_call_table;
-use crate::system::invocation::native_wrapper::invoke_native_fn;
+use crate::system::invocation::invoke_native::invoke_native_fn;
+use crate::system::invocation::invoke_scrypto::invoke_scrypto_fn;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -15,7 +15,6 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::static_invoke_api::Invocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNodeApi;
@@ -285,7 +284,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(node_id, RENodeInit::Worktop(WorktopSubstate::new()))?;
+        let _worktop_id = api.create_node(
+            node_id,
+            RENodeInit::Worktop(WorktopSubstate::new()),
+            BTreeMap::new(),
+        )?;
 
         let runtime_substate = TransactionRuntimeSubstate {
             hash: self.transaction_hash,
@@ -296,6 +299,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api.create_node(
             runtime_node_id,
             RENodeInit::TransactionRuntime(runtime_substate),
+            BTreeMap::new(),
         )?;
 
         // TODO: defer blob hashing to post fee payments as it's computationally costly
@@ -446,8 +450,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: None,
                         args: args.to_vec(),
                     };
-                    let invocation = CallTableInvocation::Scrypto(invocation);
-                    let result = invoke_call_table(invocation, api)?;
+                    let result = invoke_scrypto_fn(invocation, api)?;
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
@@ -465,7 +468,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke_method(
+                    let result = api.call_method(
                         ScryptoReceiver::Global(*component_address),
                         method_name,
                         args.into_vec(),
@@ -779,15 +782,19 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: RENodeId::Global(entity_address.clone()),
                         index: index.clone(),
                         key: key.clone(),
-                        rule: rule.clone(),
+                        rule: AccessRuleEntry::AccessRule(rule.clone()),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                Instruction::Basic(BasicInstruction::CreateValidator {
+                    key,
+                    owner_access_rule,
+                }) => {
                     let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
                         receiver: EPOCH_MANAGER,
                         key: key.clone(),
+                        owner_access_rule: owner_access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
@@ -847,6 +854,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             {
                 let handle = api.lock_substate(
                     runtime_node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),

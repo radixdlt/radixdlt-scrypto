@@ -256,7 +256,7 @@ impl From<ExecutionTraceError> for ModuleError {
 /// This enum is to help with designing intuitive error abstractions.
 /// Each engine module can have its own [`SelfError`], but can also wrap arbitrary downstream errors.
 /// Ultimately these errors get flattened out to a [`RuntimeError`] anyway.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InvokeError<E: SelfError> {
     SelfError(E),
     Downstream(RuntimeError),

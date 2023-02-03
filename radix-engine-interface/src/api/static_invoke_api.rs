@@ -11,43 +11,9 @@ use crate::blueprints::identity::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::*;
-use crate::data::ScryptoDecode;
-use crate::data::ScryptoValue;
-use sbor::rust::fmt::Debug;
-use sbor::rust::format;
-use sbor::rust::string::String;
-
-pub trait SerializableInvocation:
-    Into<CallTableInvocation> + Invocation<Output = Self::ScryptoOutput>
-{
-    type ScryptoOutput: ScryptoDecode;
-}
-
-pub trait Invocation: Debug {
-    type Output: Debug;
-
-    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
-    fn fn_identifier(&self) -> String {
-        format!("{:?}", self)
-    }
-}
 
 pub trait Invokable<I: Invocation, E> {
     fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
-}
-
-impl Invocation for ScryptoInvocation {
-    type Output = ScryptoValue;
-}
-
-impl SerializableInvocation for ScryptoInvocation {
-    type ScryptoOutput = ScryptoValue;
-}
-
-impl Into<CallTableInvocation> for ScryptoInvocation {
-    fn into(self) -> CallTableInvocation {
-        CallTableInvocation::Scrypto(self)
-    }
 }
 
 pub trait ClientStaticInvokeApi<E>:
@@ -62,6 +28,8 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
     + Invokable<ValidatorClaimXrdInvocation, E>
+    + Invokable<ValidatorUpdateKeyInvocation, E>
+    + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>

@@ -27,7 +27,7 @@ scrypto="scrypto"
 
 echo "Building scrypto packages used in tests..."
 (
-    find "radix-engine/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-engine-tests/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto build --path {}"
 )

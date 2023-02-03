@@ -14,10 +14,18 @@ use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
 use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
+#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
+pub struct ResourcesUsage {
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64,
+}
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
+    pub resources_usage: ResourcesUsage,
 }
 
 /// Captures whether a transaction should be committed, and its other results
@@ -334,7 +342,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
             "Cost Units:".bold().green(),
             execution.fee_summary.cost_unit_limit,
-            execution.fee_summary.cost_unit_consumed,
+            execution.fee_summary.total_cost_units_consumed,
             execution.fee_summary.cost_unit_price,
             execution.fee_summary.tip_percentage
         )?;

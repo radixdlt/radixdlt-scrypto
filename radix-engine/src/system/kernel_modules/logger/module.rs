@@ -3,6 +3,7 @@ use crate::{
     kernel::kernel_api::KernelSubstateApi, kernel::*,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
@@ -13,7 +14,7 @@ impl LoggerModule {
     ) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
-        api.create_node(node_id, RENodeInit::Logger(logger))?;
+        api.create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
         Ok(())
     }
 
@@ -22,10 +23,8 @@ impl LoggerModule {
         _actor: &ResolvedActor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = api.get_visible_nodes()?;
-        let maybe_id = refed.into_iter().find(|e| matches!(e, RENodeId::Logger));
-        if let Some(logger_id) = maybe_id {
-            call_frame_update.node_refs_to_copy.insert(logger_id);
+        if api.get_visible_node_data(RENodeId::Logger).is_ok() {
+            call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);
         }
 
         Ok(())

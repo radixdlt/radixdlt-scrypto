@@ -1,68 +1,61 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::KernelSubstateApi;
-use crate::kernel::KernelWasmApi;
-use crate::system::invocation::native_wrapper::invoke_call_table;
+use crate::system::invocation::invoke::invoke_call_table;
 use crate::system::kernel_modules::fee::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientMeteringApi;
+use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi,
-    Invokable,
 };
 use sbor::rust::vec::Vec;
 
-/// A glue between system api (call frame and track abstraction) and WASM.
-///
-/// Execution is free from a costing perspective, as we assume
-/// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, Y, W>
+/// A shim between ClientApi and WASM, with buffer capability.
+pub struct ScryptoRuntime<'y, Y>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
+    Y: ClientMeteringApi<RuntimeError>
+        + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + Invokable<ScryptoInvocation, RuntimeError>,
-    W: WasmEngine,
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
-    phantom: PhantomData<W>,
 }
 
-impl<'y, Y, W> RadixEngineWasmRuntime<'y, Y, W>
+impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
+    Y: ClientMeteringApi<RuntimeError>
+        + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + Invokable<ScryptoInvocation, RuntimeError>,
-    W: WasmEngine,
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime {
+        ScryptoRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
-            phantom: PhantomData,
         }
     }
 }
 
-impl<'y, Y, W> WasmRuntime for RadixEngineWasmRuntime<'y, Y, W>
+impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + KernelWasmApi<W>
-        + ClientComponentApi<RuntimeError>
+    Y: ClientMeteringApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>
-        + ClientActorApi<RuntimeError>,
-    W: WasmEngine,
+        + ClientPackageApi<RuntimeError>
+        + ClientComponentApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
+        + ClientStaticInvokeApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -90,7 +83,7 @@ where
             )))
     }
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
@@ -101,7 +94,28 @@ where
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
 
-        let return_data = self.api.invoke_method(receiver, ident.as_str(), args)?;
+        let return_data = self.api.call_method(receiver, ident.as_str(), args)?;
+
+        self.allocate_buffer(return_data.into_vec())
+    }
+
+    fn call_function(
+        &mut self,
+        package_address: Vec<u8>,
+        blueprint_ident: Vec<u8>,
+        function_ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let package_address = scrypto_decode::<PackageAddress>(&package_address)
+            .map_err(WasmRuntimeError::InvalidPackageAddress)?;
+        let blueprint_ident =
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+        let function_ident =
+            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+
+        let return_data =
+            self.api
+                .call_function(package_address, blueprint_ident, function_ident, args)?;
 
         self.allocate_buffer(return_data.into_vec())
     }
@@ -124,18 +138,11 @@ where
         self.allocate_buffer(node_id_encoded)
     }
 
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_ids = self.api.sys_get_visible_nodes()?;
-        let node_ids_encoded = scrypto_encode(&node_ids).expect("Failed to encode node id list");
-
-        self.allocate_buffer(node_ids_encoded)
-    }
-
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.drop_node(node_id)?;
+        self.api.sys_drop_node(node_id)?;
 
         Ok(())
     }
@@ -222,9 +229,19 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn call_function(
+        &mut self,
+        package_address: Vec<u8>,
+        blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -236,10 +253,6 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -278,7 +291,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
-            .consume_execution(n, "run_wasm")
+            .consume_execution(n, CostingReason::RunWasm)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
     }
 }
