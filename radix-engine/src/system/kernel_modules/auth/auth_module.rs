@@ -213,14 +213,8 @@ impl AuthModule {
             _ => vec![],
         };
 
-        let refed = system_api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-
         let handle = system_api.lock_substate(
-            auth_zone_id,
+            RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
@@ -250,12 +244,9 @@ impl AuthModule {
         actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::AuthZoneStack);
 
         if !matches!(
             actor.identifier,
@@ -263,7 +254,7 @@ impl AuthModule {
                 | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
         ) {
             let handle = system_api.lock_substate(
-                auth_zone_id,
+                RENodeId::AuthZoneStack,
                 NodeModuleId::SELF,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
@@ -313,13 +304,8 @@ impl AuthModule {
             return Ok(());
         }
 
-        let refed = api.get_visible_nodes()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
         let handle = api.lock_substate(
-            auth_zone_id,
+            RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,

@@ -23,9 +23,6 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
             KernelApiCallInput::Invoke { fn_identifier, .. } => {
                 log!(call_frame, "Invoking: {}", fn_identifier);
             }
-            KernelApiCallInput::GetVisibleNodes => {
-                log!(call_frame, "Reading owned nodes");
-            }
             KernelApiCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
@@ -74,7 +71,6 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
             KernelApiCallOutput::Invoke { rtn, .. } => {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
-            KernelApiCallOutput::GetVisibleNodes { .. } => {}
             KernelApiCallOutput::DropNode { .. } => {}
             KernelApiCallOutput::CreateNode { .. } => {}
             KernelApiCallOutput::LockSubstate { lock_handle } => {
