@@ -51,7 +51,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let contains_prelude_import = use_statements
             .iter()
             .map(|x| quote! { #(#x) }.to_string())
-            .any(|x| x.contains("scrypto::prelude::*"));
+            .any(|x| x.contains("scrypto :: prelude :: *"));
 
         if !contains_prelude_import {
             let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
@@ -638,6 +638,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
+                use scrypto::prelude::*;
+
                 #[allow(non_snake_case)]
                 pub mod test {
                     use super::*;
@@ -851,6 +853,145 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
+                use scrypto::prelude::*;
+
+                #[allow(non_snake_case)]
+                pub mod test {
+                    use super::*;
+
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                    pub struct Test {
+                    }
+
+                    impl Test {
+                    }
+
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
+                            let component = ::scrypto::component::component_system().create_component(
+                                "Test",
+                                self
+                            );
+                            TestComponent {
+                                component
+                            }
+                        }
+                    }
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
+                    use ::sbor::rust::borrow::ToOwned;
+                    use ::sbor::rust::vec;
+                    use ::sbor::rust::vec::Vec;
+                    let fns: Vec<Fn> = vec![];
+                    let structure: Type = test::Test::describe();
+                    let return_data = BlueprintAbi {
+                        structure,
+                        fns,
+                    };
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                pub struct TestComponent {
+                    pub component: ::scrypto::component::Component,
+                }
+
+                impl ::scrypto::component::LocalComponent for TestComponent {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn globalize(self) -> ComponentAddress {
+                        self.component.globalize()
+                    }
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
+                        self.component.globalize_with_owner(owner_badge)
+                    }
+                }
+
+                impl TestComponent {
+                }
+
+                #[allow(non_camel_case_types)]
+                pub struct TestGlobalComponentRef {
+                    pub component: ::scrypto::component::GlobalComponentRef,
+                }
+
+                impl From<ComponentAddress> for TestGlobalComponentRef {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::GlobalComponentRef(component)
+                        }
+                    }
+                }
+
+                impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
+                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                        self.component.access_rules_chain()
+                    }
+                }
+
+                impl TestGlobalComponentRef {
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_empty_blueprint_with_use_statements() {
+        let input = TokenStream::from_str(
+            "mod test { use scrypto::prelude::*; use std::fs; struct Test {} impl Test {} }",
+        )
+        .unwrap();
+        let output = handle_blueprint(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                use scrypto::prelude::*;
+                use std::fs;
+
                 #[allow(non_snake_case)]
                 pub mod test {
                     use super::*;
