@@ -5,7 +5,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
-use crate::system::global::GlobalAddressSubstate; // TODO: possible clean-up
+use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
@@ -14,7 +14,6 @@ use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate};
 use crate::system::node_modules::metadata::MetadataSubstate;
-// TODO: possible clean-up
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;

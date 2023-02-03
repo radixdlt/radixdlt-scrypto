@@ -211,14 +211,12 @@ where
         // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
-        let node = RENodeInit::Package(PackageInfoSubstate {
-            code,
-            blueprint_abis: abi,
-        });
-
         self.create_node(
             node_id,
-            node,
+            RENodeInit::Package(PackageInfoSubstate {
+                code,
+                blueprint_abis: abi,
+            }),
             btreemap!(
                 NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
                     royalty_config_substate,
@@ -339,14 +337,13 @@ where
         // FIXME: remove unwrap;
         // FIXME: support native blueprints
         let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
-        let node = RENodeInit::Component(
-            ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
-            ComponentStateSubstate::new(abi_enforced_app_substate),
-        );
 
         self.create_node(
             node_id,
-            node,
+            RENodeInit::Component(
+                ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
+                ComponentStateSubstate::new(abi_enforced_app_substate),
+            ),
             btreemap!(
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
