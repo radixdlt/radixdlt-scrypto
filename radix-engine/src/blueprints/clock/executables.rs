@@ -9,7 +9,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,

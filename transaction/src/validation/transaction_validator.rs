@@ -1,5 +1,5 @@
 use radix_engine_constants::*;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;

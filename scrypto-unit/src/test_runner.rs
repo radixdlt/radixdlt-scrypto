@@ -18,7 +18,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
     ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
 };
