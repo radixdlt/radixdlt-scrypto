@@ -4,6 +4,11 @@ use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 
 pub trait ClientComponentApi<E> {
+    fn lookup_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<ComponentId, E>;
+
     // TODO: refine the interface
     fn new_component(
         &mut self,

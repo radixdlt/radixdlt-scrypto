@@ -296,6 +296,13 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn lookup_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<ComponentId, RuntimeError> {
+        todo!()
+    }
+
     fn new_component(
         &mut self,
         blueprint_ident: &str,
