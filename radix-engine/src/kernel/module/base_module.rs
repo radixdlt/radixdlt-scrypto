@@ -94,12 +94,22 @@ pub trait BaseModule<R: FeeReserve> {
         Ok(())
     }
 
-    fn on_wasm_instantiation(
+    fn pre_wasm_instantiation(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
         _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn post_wasm_instantiation(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _consumed_memory: usize,
     ) -> Result<(), ModuleError> {
         Ok(())
     }

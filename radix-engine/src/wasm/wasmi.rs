@@ -146,7 +146,6 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
     pub fn write_memory(&self, ptr: u32, data: &[u8]) -> Result<(), WasmRuntimeError> {
         let ptr = ptr as usize;
         let len = data.len();
-
         let mut memory = self.instance.memory_ref.direct_access_mut();
         let memory_slice = memory.as_mut();
         let memory_size = memory_slice.len();
@@ -320,6 +319,11 @@ impl WasmInstance for WasmiInstance {
             Err(WasmRuntimeError::InvalidExportReturn)
         }
         .map_err(InvokeError::SelfError)
+    }
+
+    fn consumed_memory(&self) -> usize {
+        let bytes_size: wasmi::memory_units::Bytes = self.memory_ref.current_size().into();
+        bytes_size.0
     }
 }
 

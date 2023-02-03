@@ -6,6 +6,7 @@ use crate::system::kernel_modules::fee::CostingModule;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
+use crate::system::kernel_modules::transaction_limits::TransactionLimitsModule;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
 use sbor::rust::vec::Vec;
@@ -19,6 +20,7 @@ pub struct KernelModule {
     execution_trace: ExecutionTraceModule,
     costing: CostingModule,
     royalty: RoyaltyModule,
+    limits: TransactionLimitsModule,
 }
 
 impl KernelModule {
@@ -28,6 +30,7 @@ impl KernelModule {
             execution_trace: ExecutionTraceModule::new(config.max_sys_call_trace_depth),
             royalty: RoyaltyModule::default(),
             costing: CostingModule::new(config.max_call_depth),
+            limits: TransactionLimitsModule::new(config.max_wasm_mem_per_transaction),
         }
     }
 }
@@ -47,13 +50,21 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            KernelTraceModule.pre_sys_call(call_frame, heap, track, input.clone())?;
+            KernelTraceModule::pre_sys_call(
+                &mut KernelTraceModule,
+                call_frame,
+                heap,
+                track,
+                input.clone(),
+            )?;
         }
         self.costing
             .pre_sys_call(call_frame, heap, track, input.clone())?;
         self.royalty
             .pre_sys_call(call_frame, heap, track, input.clone())?;
         self.execution_trace
+            .pre_sys_call(call_frame, heap, track, input.clone())?;
+        self.limits
             .pre_sys_call(call_frame, heap, track, input.clone())?;
 
         Ok(())
@@ -74,6 +85,8 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         self.royalty
             .post_sys_call(call_frame, heap, track, output.clone())?;
         self.execution_trace
+            .post_sys_call(call_frame, heap, track, output.clone())?;
+        self.limits
             .post_sys_call(call_frame, heap, track, output.clone())?;
 
         Ok(())
@@ -107,6 +120,8 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
             heap,
             track,
         )?;
+        self.limits
+            .pre_execute_invocation(actor, call_frame_update, call_frame, heap, track)?;
 
         Ok(())
     }
@@ -128,11 +143,13 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
             .post_execute_invocation(caller, update, call_frame, heap, track)?;
         self.execution_trace
             .post_execute_invocation(caller, update, call_frame, heap, track)?;
+        self.limits
+            .post_execute_invocation(caller, update, call_frame, heap, track)?;
 
         Ok(())
     }
 
-    fn on_wasm_instantiation(
+    fn pre_wasm_instantiation(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
@@ -140,14 +157,38 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         code: &[u8],
     ) -> Result<(), ModuleError> {
         if self.trace {
-            KernelTraceModule.on_wasm_instantiation(call_frame, heap, track, code)?;
+            KernelTraceModule.pre_wasm_instantiation(call_frame, heap, track, code)?;
         }
         self.costing
-            .on_wasm_instantiation(call_frame, heap, track, code)?;
+            .pre_wasm_instantiation(call_frame, heap, track, code)?;
         self.royalty
-            .on_wasm_instantiation(call_frame, heap, track, code)?;
+            .pre_wasm_instantiation(call_frame, heap, track, code)?;
         self.execution_trace
-            .on_wasm_instantiation(call_frame, heap, track, code)?;
+            .pre_wasm_instantiation(call_frame, heap, track, code)?;
+        self.limits
+            .pre_wasm_instantiation(call_frame, heap, track, code)?;
+
+        Ok(())
+    }
+
+    fn post_wasm_instantiation(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        consumed_memory: usize,
+    ) -> Result<(), ModuleError> {
+        if self.trace {
+            KernelTraceModule.post_wasm_instantiation(call_frame, heap, track, consumed_memory)?;
+        }
+        self.costing
+            .post_wasm_instantiation(call_frame, heap, track, consumed_memory)?;
+        self.royalty
+            .post_wasm_instantiation(call_frame, heap, track, consumed_memory)?;
+        self.execution_trace
+            .post_wasm_instantiation(call_frame, heap, track, consumed_memory)?;
+        self.limits
+            .post_wasm_instantiation(call_frame, heap, track, consumed_memory)?;
 
         Ok(())
     }
@@ -167,6 +208,8 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         self.royalty
             .on_wasm_costing(call_frame, heap, track, units)?;
         self.execution_trace
+            .on_wasm_costing(call_frame, heap, track, units)?;
+        self.limits
             .on_wasm_costing(call_frame, heap, track, units)?;
 
         Ok(())
@@ -193,6 +236,9 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
             .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
         fee = self
             .execution_trace
+            .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
+        fee = self
+            .limits
             .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
 
         Ok(fee)

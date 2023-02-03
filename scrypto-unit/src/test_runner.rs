@@ -1098,6 +1098,13 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
     matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
 }
 
+pub fn is_transaction_limit_error(e: &RuntimeError) -> bool {
+    matches!(
+        e,
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(_))
+    )
+}
+
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
     matches!(
         e,

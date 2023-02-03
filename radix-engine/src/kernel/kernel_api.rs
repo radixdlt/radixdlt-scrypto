@@ -83,7 +83,12 @@ pub trait KernelSubstateApi {
 pub trait KernelWasmApi<W: WasmEngine> {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn emit_wasm_pre_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+
+    fn emit_wasm_post_instantiation_event(
+        &mut self,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError>;
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 }

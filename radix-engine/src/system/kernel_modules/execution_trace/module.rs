@@ -211,7 +211,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
         self.finalize_sys_call_trace(call_frame, traced_output)
     }
 
-    fn on_wasm_instantiation(
+    fn pre_wasm_instantiation(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

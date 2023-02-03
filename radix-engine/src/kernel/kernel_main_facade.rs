@@ -485,9 +485,25 @@ where
         self.scrypto_interpreter
     }
 
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+    fn emit_wasm_pre_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
         self.module
-            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
+            .pre_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
+            .map_err(RuntimeError::ModuleError)?;
+
+        Ok(())
+    }
+
+    fn emit_wasm_post_instantiation_event(
+        &mut self,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        self.module
+            .post_wasm_instantiation(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                consumed_memory,
+            )
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(())

@@ -185,3 +185,33 @@ fn test_grow_memory_out_of_cost_unit() {
     // Assert
     receipt.expect_specific_failure(is_costing_error)
 }
+
+#[test]
+fn test_max_memory_exceeded() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "1000"));
+    let package_address = test_runner.publish_package(
+        code,
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
+        BTreeMap::new(),
+        BTreeMap::new(),
+        AccessRules::new(),
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(package_address, "Test", "f", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(is_transaction_limit_error)
+}

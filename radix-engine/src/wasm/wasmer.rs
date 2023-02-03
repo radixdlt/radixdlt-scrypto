@@ -404,6 +404,11 @@ impl WasmInstance for WasmerInstance {
             ))
         }
     }
+
+    fn consumed_memory(&self) -> usize {
+        // TODO
+        0
+    }
 }
 
 #[derive(Debug, Clone)]
