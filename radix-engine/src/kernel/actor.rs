@@ -50,18 +50,33 @@ impl ResolvedActor {
 /// Execution mode
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum ExecutionMode {
-    /* Kernel itself */
+    /* Kernel */
     Kernel,
     KernelDeref,
-    KernelDropNode,
+    KernelDrop,
 
-    /* Kernel modules */
-    NodeMoveModule,
-    AuthModule,
-    LoggerModule,
-    EntityModule,
-    TransactionModule,
+    /* Kernel module */
+    Module(KernelModuleMode),
 
-    /* Clients, i.e. blueprints and node modules */
+    /* System */
+    System,
+
+    /* Clients, i.e. blueprints & node module logic */
     Client,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+pub enum KernelMode {
+    Common,
+    Deref,
+    Drop,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+pub enum KernelModuleMode {
+    NodeMove,
+    Auth,
+    Logger,
+    Entity,
+    Transaction,
 }

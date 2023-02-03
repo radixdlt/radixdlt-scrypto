@@ -1,6 +1,6 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver};
+use crate::kernel::{ExecutionMode, KernelModuleMode, LockFlags, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
 use radix_engine_interface::api::types::*;
 use sbor::rust::collections::BTreeMap;
@@ -14,7 +14,7 @@ impl VisibilityProperties {
         node_id: RENodeId,
     ) -> bool {
         match mode {
-            ExecutionMode::LoggerModule => match node_id {
+            ExecutionMode::Module(KernelModuleMode::Logger) => match node_id {
                 RENodeId::Logger => return true,
                 _ => return false,
             },
@@ -99,33 +99,32 @@ impl VisibilityProperties {
 
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
+            /* Kernel */
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
             (ExecutionMode::KernelDeref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
             },
-            (ExecutionMode::LoggerModule, ..) => false,
-            (ExecutionMode::NodeMoveModule, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                _ => false,
-            },
-            (ExecutionMode::TransactionModule, _offset) => false,
-            (ExecutionMode::KernelDropNode, offset) => match offset {
+            (ExecutionMode::KernelDrop, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
-            (ExecutionMode::EntityModule, _offset) => false,
-            (ExecutionMode::AuthModule, offset) => match offset {
+
+            /* Kernel modules */
+            (ExecutionMode::Module(KernelModuleMode::Logger), _) => false,
+            (ExecutionMode::Module(KernelModuleMode::NodeMove), offset) => match offset {
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                _ => false,
+            },
+            (ExecutionMode::Module(KernelModuleMode::Transaction), _) => false,
+            (ExecutionMode::Module(KernelModuleMode::Entity), _) => false,
+            (ExecutionMode::Module(KernelModuleMode::Auth), offset) => match offset {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
-                // TODO: Remove these and use AuthRulesSubstate
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                    read_only
-                }
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 SubstateOffset::Vault(VaultOffset::Vault) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
@@ -135,100 +134,52 @@ impl VisibilityProperties {
                 }
                 _ => false,
             },
+
+            /* System */
+            (ExecutionMode::System, offset) => match (node_id, offset) {
+                // READ package code & abi
+                (
+                    RENodeId::Package(_),
+                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                ) => read_only,
+                // READ global substates
+                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
+                (
+                    RENodeId::Component(_),
+                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                ) => read_only,
+                // READ/WRITE KVStore entry
+                (
+                    RENodeId::KeyValueStore(_),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => true,
+                // Otherwise, false
+                _ => false,
+            },
+
+            /* Clients */
             (ExecutionMode::Client, offset) => {
-                if !flags.contains(LockFlags::MUTABLE) {
-                    match &actor.identifier {
-                        // Native
-                        FnIdentifier::Native(..) => true,
-                        // Scrypto
-                        FnIdentifier::Scrypto(..) => match &actor.receiver {
-                            None => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    RENodeId::Package(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                ) => read_only,
-                                // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
-                                (
-                                    RENodeId::Component(_),
-                                    SubstateOffset::ComponentTypeInfo(
-                                        ComponentTypeInfoOffset::TypeInfo,
-                                    ),
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // Otherwise, false
-                                _ => false,
-                            },
-                            Some(ResolvedReceiver {
-                                receiver: RENodeId::Component(component_address),
-                                ..
-                            }) => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    RENodeId::Package(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                ) => read_only,
-                                // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
-                                (
-                                    RENodeId::Component(_),
-                                    SubstateOffset::ComponentTypeInfo(
-                                        ComponentTypeInfoOffset::TypeInfo,
-                                    ),
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // READ/WRITE component application state
-                                (
-                                    RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State0),
-                                ) => addr.eq(component_address),
-                                // Otherwise, false
-                                _ => false,
-                            },
-                            _ => false,
-                        },
-                    }
-                } else {
-                    match &actor.identifier {
-                        // Native
-                        FnIdentifier::Native(..) => true,
-
-                        // Scrypto
-                        FnIdentifier::Scrypto(..) => match &actor.receiver {
-                            None => match (node_id, offset) {
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                _ => false,
-                            },
-
-                            Some(ResolvedReceiver {
-                                receiver: RENodeId::Component(component_address),
-                                ..
-                            }) => match (node_id, offset) {
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                (
-                                    RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State0),
-                                ) => addr.eq(component_address),
-                                _ => false,
-                            },
-                            _ => false,
-                        },
-                    }
+                match &actor.identifier {
+                    FnIdentifier::Native(..) => true, // TODO: make fn identifier irrelevant
+                    FnIdentifier::Scrypto(..) => match (node_id, offset) {
+                        // READ/WRITE KVStore entry
+                        (
+                            RENodeId::KeyValueStore(_),
+                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                        ) => true,
+                        // READ/WRITE component app states
+                        (
+                            RENodeId::Component(component_id),
+                            SubstateOffset::Component(ComponentOffset::State0),
+                        ) => {
+                            if let Some(receiver) = actor.receiver {
+                                receiver.receiver.eq(&RENodeId::Component(component_id))
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false,
+                    },
                 }
             }
         }

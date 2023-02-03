@@ -87,26 +87,30 @@ where
         // Initial authzone
         // TODO: Move into module initialization
         kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
-                let auth_zone = AuthZoneStackSubstate::new(
-                    vec![],
-                    auth_zone_params.virtualizable_proofs_resource_addresses,
-                    auth_zone_params.initial_proofs.into_iter().collect(),
-                );
-                let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(
-                    node_id,
-                    RENodeInit::AuthZoneStack(auth_zone),
-                    BTreeMap::new(),
-                )?;
-                Ok(())
-            })
+            .execute_in_mode::<_, _, RuntimeError>(
+                ExecutionMode::Module(KernelModuleMode::Auth),
+                |api| {
+                    let auth_zone = AuthZoneStackSubstate::new(
+                        vec![],
+                        auth_zone_params.virtualizable_proofs_resource_addresses,
+                        auth_zone_params.initial_proofs.into_iter().collect(),
+                    );
+                    let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
+                    api.create_node(
+                        node_id,
+                        RENodeInit::AuthZoneStack(auth_zone),
+                        BTreeMap::new(),
+                    )?;
+                    Ok(())
+                },
+            )
             .expect("AuthModule failed to initialize");
 
         kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
-                LoggerModule::initialize(api)
-            })
+            .execute_in_mode::<_, _, RuntimeError>(
+                ExecutionMode::Module(KernelModuleMode::Logger),
+                |api| LoggerModule::initialize(api),
+            )
             .expect("Logger failed to initialize");
 
         kernel.current_frame.add_stored_ref(
@@ -295,8 +299,9 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelDropNode, |api| {
-            match node_id {
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelDrop,
+            |api| match node_id {
                 RENodeId::AuthZoneStack => {
                     let handle = api.lock_substate(
                         node_id,
@@ -354,8 +359,8 @@ where
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
-            }
-        })?;
+            },
+        )?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
         for (_, substate) in &node.substates {
@@ -409,23 +414,26 @@ where
         };
 
         // Filter
-        self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+        self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
             AuthModule::on_before_frame_start(&actor, api)
         })?;
 
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::TransactionModule, |api| {
-                TransactionHashModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
-            })?;
-            self.execute_in_mode(ExecutionMode::LoggerModule, |api| {
+            self.execute_in_mode(
+                ExecutionMode::Module(KernelModuleMode::Transaction),
+                |api| {
+                    TransactionHashModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
+                },
+            )?;
+            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Logger), |api| {
                 LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |api| {
+            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::NodeMove), |api| {
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor.identifier, api)
             })?;
 
@@ -474,10 +482,10 @@ where
                 .map_err(RuntimeError::ModuleError)?;
 
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |api| {
+            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::NodeMove), |api| {
                 NodeMoveModule::on_call_frame_exit(&update, api)
             })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |api| {
+            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
                 AuthModule::on_call_frame_exit(api)
             })?;
 
@@ -556,15 +564,33 @@ where
         }
     }
 
-    fn verify_valid_mode_transition(
-        cur: &ExecutionMode,
-        next: &ExecutionMode,
-    ) -> Result<(), RuntimeError> {
+    fn verify_valid_mode_transition(cur: &ExecutionMode, next: &ExecutionMode) -> bool {
+        if cur == next {
+            return true;
+        }
+
         match (cur, next) {
-            (ExecutionMode::Kernel, ..) => Ok(()),
-            _ => Err(RuntimeError::KernelError(
-                KernelError::InvalidModeTransition(*cur, *next),
-            )),
+            // Kernel can transition into any mode
+            (ExecutionMode::Kernel, _) => true,
+            (ExecutionMode::KernelDeref, _) => true,
+            (ExecutionMode::KernelDrop, _) => true,
+
+            // KernelModule can be promoted into kernel
+            (ExecutionMode::Module(_), ExecutionMode::Kernel) => true,
+            (ExecutionMode::Module(_), _) => false,
+
+            // System can be promoted into kernel
+            //
+            // Note that we don't have System => Client, because client is only set
+            // by kernel when executing an invocation.
+            (ExecutionMode::System, ExecutionMode::Kernel) => false,
+            (ExecutionMode::System, _) => false,
+
+            // Client can be promoted into system only.
+            //
+            // This enforces that all kernel access must be through ClientApi.
+            (ExecutionMode::Client, ExecutionMode::System) => true,
+            (ExecutionMode::Client, _) => false,
         }
     }
 
@@ -671,7 +697,11 @@ where
         RuntimeError: From<E>,
         X: FnOnce(&mut Self) -> Result<RTN, E>,
     {
-        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
+        if !Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode) {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidModeTransition(self.execution_mode, execution_mode),
+            ));
+        }
 
         // Save and replace kernel actor
         let saved = self.execution_mode;

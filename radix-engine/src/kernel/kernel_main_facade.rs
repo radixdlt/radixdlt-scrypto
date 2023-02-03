@@ -505,7 +505,7 @@ where
         // Change to kernel mode
         let saved_mode = self.execution_mode;
 
-        self.execution_mode = ExecutionMode::Resolver;
+        self.execution_mode = ExecutionMode::System;
         let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
