@@ -601,8 +601,10 @@ impl WasmInstance for WasmiInstance {
     }
 
     fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
-        // TODO
-        Ok(0)
+        self.memory
+            .current_pages(self.store.as_context())
+            .to_bytes()
+            .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))
     }
 }
 

@@ -3,6 +3,8 @@ use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionLimitsError {
+    /// Used when WASM memory consumed during transaction execution exceeds defined limit,
+    /// as parameter current memory value is returned.
     MaxWasmMemoryExceeded(usize),
 }
 
