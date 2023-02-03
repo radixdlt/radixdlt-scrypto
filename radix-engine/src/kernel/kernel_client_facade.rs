@@ -340,11 +340,11 @@ where
 
         self.create_node(
             node_id,
-            RENodeInit::Component(
-                ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
-                ComponentStateSubstate::new(abi_enforced_app_substate),
-            ),
+            RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
+                NodeModuleId::ComponentTypeInfo => RENodeModuleInit::ComponentTypeInfo(
+                    ComponentInfoSubstate::new(package_address, blueprint_ident.to_string())
+                ),
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
                     royalty_accumulator_substate
@@ -398,8 +398,8 @@ where
         let component_node_id = RENodeId::Component(component_id);
         let handle = self.lock_substate(
             component_node_id,
-            NodeModuleId::SELF,
-            SubstateOffset::Component(ComponentOffset::Info),
+            NodeModuleId::ComponentTypeInfo,
+            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.get_ref(handle)?;

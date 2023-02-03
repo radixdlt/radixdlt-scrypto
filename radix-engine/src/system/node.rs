@@ -23,6 +23,7 @@ use radix_engine_interface::api::types::{
 pub enum RENodeModuleInit {
     Metadata(MetadataSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
+    ComponentTypeInfo(ComponentInfoSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
@@ -47,6 +48,12 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
+                );
+            }
+            RENodeModuleInit::ComponentTypeInfo(type_info) => {
+                substates.insert(
+                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                    type_info.into(),
                 );
             }
             RENodeModuleInit::ComponentRoyalty(config, accumulator) => {
@@ -87,7 +94,7 @@ pub enum RENodeInit {
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
     Identity(),
-    Component(ComponentInfoSubstate, ComponentStateSubstate),
+    Component(ComponentStateSubstate),
     Package(PackageInfoSubstate),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(
@@ -136,13 +143,9 @@ impl RENodeInit {
             }
             RENodeInit::KeyValueStore => {}
             RENodeInit::Identity() => {}
-            RENodeInit::Component(info, state) => {
+            RENodeInit::Component(state) => {
                 substates.insert(
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    info.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                     state.into(),
                 );
             }

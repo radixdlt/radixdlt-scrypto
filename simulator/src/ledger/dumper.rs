@@ -108,8 +108,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let component_info_substate: ComponentInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::Info),
+                    NodeModuleId::ComponentTypeInfo,
+                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
@@ -127,7 +127,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     component_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())

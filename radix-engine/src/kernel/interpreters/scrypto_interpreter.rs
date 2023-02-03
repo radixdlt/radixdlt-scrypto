@@ -76,8 +76,8 @@ impl ExecutableInvocation for ScryptoInvocation {
             {
                 let handle = api.lock_substate(
                     original_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::Info),
+                    NodeModuleId::ComponentTypeInfo,
+                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;

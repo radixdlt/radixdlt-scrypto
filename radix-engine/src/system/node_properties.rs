@@ -1,17 +1,9 @@
-use crate::{
-    errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
-    system::global::GlobalAddressSubstate,
-};
-use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
-    BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn,
-    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset,
-    ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
-    WorktopOffset,
-};
-
-use super::node::RENodeInit;
+use super::node::{RENodeInit, RENodeModuleInit};
+use crate::errors::{KernelError, RuntimeError};
+use crate::kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver};
+use crate::system::global::GlobalAddressSubstate;
+use radix_engine_interface::api::types::*;
+use sbor::rust::collections::BTreeMap;
 
 pub struct VisibilityProperties;
 
@@ -66,6 +58,7 @@ impl VisibilityProperties {
         mode: ExecutionMode,
         actor: &ResolvedActor,
         node: &RENodeInit,
+        module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
@@ -77,9 +70,15 @@ impl VisibilityProperties {
                     ..
                 }),
             ) => match node {
-                RENodeInit::Component(info, ..) => {
-                    blueprint_name.eq(&info.blueprint_name)
-                        && package_address.eq(&info.package_address)
+                RENodeInit::Component(..) => {
+                    if let Some(RENodeModuleInit::ComponentTypeInfo(type_info)) =
+                        module_init.get(&NodeModuleId::ComponentTypeInfo)
+                    {
+                        blueprint_name.eq(&type_info.blueprint_name)
+                            && package_address.eq(&type_info.package_address)
+                    } else {
+                        false
+                    }
                 }
                 RENodeInit::KeyValueStore => true,
                 RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
@@ -104,7 +103,9 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::Globalize, offset) => match offset {
-                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => {
+                    flags == LockFlags::read_only()
+                }
                 _ => false,
             },
             (ExecutionMode::LoggerModule, ..) => false,
@@ -135,10 +136,12 @@ impl VisibilityProperties {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
                 SubstateOffset::Vault(VaultOffset::Vault) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
-                SubstateOffset::Component(ComponentOffset::State) => {
+                SubstateOffset::Component(ComponentOffset::State0) => {
                     flags == LockFlags::read_only()
                 }
-                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => {
+                    flags == LockFlags::read_only()
+                }
                 SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
@@ -146,7 +149,9 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
-                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => {
+                    flags == LockFlags::read_only()
+                }
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 _ => false,
@@ -169,7 +174,9 @@ impl VisibilityProperties {
                                 ) => true,
                                 (
                                     RENodeId::Component(_),
-                                    SubstateOffset::Component(ComponentOffset::Info),
+                                    SubstateOffset::ComponentTypeInfo(
+                                        ComponentTypeInfoOffset::TypeInfo,
+                                    ),
                                 ) => true,
                                 _ => false,
                             },
@@ -187,11 +194,13 @@ impl VisibilityProperties {
                                 ) => true,
                                 (
                                     RENodeId::Component(_),
-                                    SubstateOffset::Component(ComponentOffset::Info),
+                                    SubstateOffset::ComponentTypeInfo(
+                                        ComponentTypeInfoOffset::TypeInfo,
+                                    ),
                                 ) => true,
                                 (
                                     RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State),
+                                    SubstateOffset::Component(ComponentOffset::State0),
                                 ) => addr.eq(component_address),
                                 _ => false,
                             },
@@ -223,7 +232,7 @@ impl VisibilityProperties {
                                 ) => true,
                                 (
                                     RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State),
+                                    SubstateOffset::Component(ComponentOffset::State0),
                                 ) => addr.eq(component_address),
                                 _ => false,
                             },
@@ -263,13 +272,14 @@ impl SubstateProperties {
             SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
+            SubstateOffset::ComponentTypeInfo(..) => true,
         }
     }
 
     pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
         match offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
-            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
+            | SubstateOffset::Component(ComponentOffset::State0) => match node_id {
                 RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
                     Ok(())
                 }

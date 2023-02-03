@@ -125,6 +125,7 @@ where
             current_mode,
             &self.current_frame.actor,
             &re_node,
+            &module_init,
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidCreateNodeVisibility {

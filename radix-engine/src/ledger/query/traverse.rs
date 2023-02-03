@@ -109,7 +109,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                 );
                 let output_value = self
                     .substate_store

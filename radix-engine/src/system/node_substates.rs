@@ -304,7 +304,7 @@ impl RuntimeSubstate {
         buffer: &[u8],
     ) -> Result<Self, RuntimeError> {
         let substate = match offset {
-            SubstateOffset::Component(ComponentOffset::State) => {
+            SubstateOffset::Component(ComponentOffset::State0) => {
                 let substate =
                     scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)

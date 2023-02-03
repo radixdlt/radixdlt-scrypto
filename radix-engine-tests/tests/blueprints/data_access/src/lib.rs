@@ -11,7 +11,7 @@ blueprint! {
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
                     RENodeId::Global(GlobalAddress::Component(component_address)),
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                     false,
                 )
                 .unwrap();
@@ -23,7 +23,7 @@ blueprint! {
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
                     RENodeId::Global(GlobalAddress::Component(component_address)),
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                     true,
                 )
                 .unwrap();
