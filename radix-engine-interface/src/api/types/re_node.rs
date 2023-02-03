@@ -206,6 +206,7 @@ impl Into<ResourceAddress> for GlobalAddress {
 )]
 pub enum NodeModuleId {
     SELF,
+    ComponentTypeInfo,
     Metadata,
     AccessRules,
     AccessRules1,
