@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod leaks {
     struct Leaks {}
 
     impl Leaks {

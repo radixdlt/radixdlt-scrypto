@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod secret {
     struct Secret {
         secret: u32,
     }
@@ -64,7 +65,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod stored_kv_local {
     struct StoredKVLocal {
         components: KeyValueStore<u32, SecretComponent>,
     }
@@ -111,7 +113,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod stored_secret {
     struct StoredSecret {
         component: SecretComponent,
     }

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod numbers {
     struct Numbers {}
 
     impl Numbers {

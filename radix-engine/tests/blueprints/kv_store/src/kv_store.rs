@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod key_value_store_test {
     struct KeyValueStoreTest {
         map: KeyValueStore<String, String>,
         vector: Vec<KeyValueStore<String, String>>,

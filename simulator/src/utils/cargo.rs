@@ -217,23 +217,6 @@ pub fn fmt_package<P: AsRef<Path>>(path: P, check: bool, quiet: bool) -> Result<
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
-        // replace `blueprint!` with `mod blueprint`
-        let mut src = path.as_ref().to_owned();
-        src.push("src");
-        for entry in fs::read_dir(&src).map_err(FormatError::IOError)? {
-            let p = entry.map_err(FormatError::IOError)?.path();
-            if let Some(ext) = p.extension() {
-                if ext.to_str() == Some("rs") {
-                    let code = fs::read_to_string(&p).map_err(FormatError::IOError)?;
-                    let code_transformed = code
-                        .replace("blueprint!", "mod blueprint")
-                        // Reverts unintended replacement of `external_blueprint!` to `external_mod blueprint` by the `replace` above
-                        .replace("external_mod blueprint", "external_blueprint!");
-                    fs::write(&p, code_transformed).map_err(FormatError::IOError)?;
-                }
-            }
-        }
-
         let status = Command::new("cargo")
             .arg("fmt")
             .arg("--manifest-path")
@@ -250,18 +233,6 @@ pub fn fmt_package<P: AsRef<Path>>(path: P, check: bool, quiet: bool) -> Result<
             })
             .status()
             .map_err(FormatError::IOError)?;
-
-        // replace `mod blueprint` with `blueprint!`
-        for entry in fs::read_dir(&src).map_err(FormatError::IOError)? {
-            let p = entry.map_err(FormatError::IOError)?.path();
-            if let Some(ext) = p.extension() {
-                if ext.to_str() == Some("rs") {
-                    let code = fs::read_to_string(&p).map_err(FormatError::IOError)?;
-                    let code_transformed = code.replace("mod blueprint", "blueprint!");
-                    fs::write(&p, code_transformed).map_err(FormatError::IOError)?;
-                }
-            }
-        }
 
         if status.success() {
             Ok(())

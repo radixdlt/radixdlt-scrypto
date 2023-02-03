@@ -164,9 +164,10 @@ import! {
 "#
 }
 
-blueprint! {
+#[blueprint]
+mod use_import {
     struct UseImport {
-        simple: SimpleGlobalComponentRef
+        simple: SimpleGlobalComponentRef,
     }
 
     impl UseImport {
