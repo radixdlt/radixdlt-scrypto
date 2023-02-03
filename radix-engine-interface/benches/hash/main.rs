@@ -1,3 +1,5 @@
+use blake2::{digest::consts::U32, Blake2b, Digest};
+use blake3;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use radix_engine_interface::crypto::{sha256, sha256_twice};
 
@@ -21,6 +23,18 @@ fn bench_hash(c: &mut Criterion) {
             &data[..],
             |b, d| b.iter(|| sha256_twice(d)),
         );
+
+        group.bench_with_input(BenchmarkId::new("blake2b", size.1), &data[..], |b, d| {
+            b.iter(|| {
+                let mut hasher = Blake2b::<U32>::new();
+                hasher.update(d);
+                hasher.finalize()
+            })
+        });
+
+        group.bench_with_input(BenchmarkId::new("blake3", size.1), &data[..], |b, d| {
+            b.iter(|| blake3::hash(d))
+        });
     }
 }
 
