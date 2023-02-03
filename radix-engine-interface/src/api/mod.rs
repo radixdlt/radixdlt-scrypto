@@ -31,7 +31,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientNativeInvokeApi<E>  // TODO: restrict and protect native invocations
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
-    + ClientDerefApi<E>
+    + ClientDerefApi<E>  // TODO: remove
     + ClientMeteringApi<E>
 {
 }

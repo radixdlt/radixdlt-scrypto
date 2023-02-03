@@ -23,7 +23,10 @@ pub trait ClientComponentApi<E> {
 
     fn globalize_component(&mut self, component_id: ComponentId) -> Result<ComponentAddress, E>;
 
-    fn get_type_info(&mut self, component_id: ComponentId) -> Result<(PackageAddress, String), E>;
+    fn get_component_type_info(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<(PackageAddress, String), E>;
 
     fn call_method(
         &mut self,

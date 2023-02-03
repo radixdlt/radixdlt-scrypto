@@ -61,6 +61,16 @@ pub trait WasmRuntime {
 
     fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn lookup_global_component(
+        &mut self,
+        component_address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn get_component_type_info(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn lock_substate(

@@ -271,6 +271,30 @@ where
             .consume_cost_units(n)
             .map_err(InvokeError::downstream)
     }
+
+    fn lookup_global_component(
+        &mut self,
+        component_address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let component_address = scrypto_decode::<ComponentAddress>(&component_address)
+            .map_err(WasmRuntimeError::InvalidComponentAddress)?;
+        let component_id = self.api.lookup_global_component(component_address)?;
+
+        let buffer = scrypto_encode(&component_id).expect("Failed to encode component_id");
+        self.allocate_buffer(buffer)
+    }
+
+    fn get_component_type_info(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let component_id = scrypto_decode::<ComponentId>(&component_id)
+            .map_err(WasmRuntimeError::InvalidComponentAddress)?;
+        let type_info = self.api.get_component_type_info(component_id)?;
+
+        let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
+        self.allocate_buffer(buffer)
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -397,5 +421,19 @@ impl WasmRuntime for NopWasmRuntime {
         self.fee_reserve
             .consume_execution(n, CostingReason::RunWasm)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
+    }
+
+    fn lookup_global_component(
+        &mut self,
+        component_address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_component_type_info(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

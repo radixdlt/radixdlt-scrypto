@@ -300,7 +300,13 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<ComponentId, RuntimeError> {
-        todo!()
+        let optional_node_id = self.deref(RENodeId::Global(GlobalAddress::Component(
+            component_address,
+        )))?;
+        Ok(optional_node_id
+            .expect("Deref of component address should either error or return Option::Some")
+            .0
+            .into())
     }
 
     fn new_component(
@@ -398,7 +404,7 @@ where
         }
     }
 
-    fn get_type_info(
+    fn get_component_type_info(
         &mut self,
         component_id: ComponentId,
     ) -> Result<(PackageAddress, String), RuntimeError> {

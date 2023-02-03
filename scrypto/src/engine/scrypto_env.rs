@@ -23,7 +23,7 @@ impl ScryptoEnv {
         component_address: ComponentAddress,
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let component_id = self.lookup_global_component(component_address)?;
-        self.get_type_info(component_id)
+        self.get_component_type_info(component_id)
     }
 }
 
@@ -102,14 +102,15 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_type_info(
+    fn get_component_type_info(
         &mut self,
         component_id: ComponentId,
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let component_id = scrypto_encode(&component_id).unwrap();
 
-        let bytes =
-            copy_buffer(unsafe { get_type_info(component_id.as_ptr(), component_id.len()) });
+        let bytes = copy_buffer(unsafe {
+            get_component_type_info(component_id.as_ptr(), component_id.len())
+        });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
