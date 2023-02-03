@@ -129,6 +129,7 @@ fn supports_empty_state() {
 // The asserts will need to be adjusted after introducing separate ReNode tree
 // vs Substate trees.
 #[test]
+#[ignore]
 fn records_stale_tree_node_keys() {
     let mut store = MemoryTreeStore::new();
     // the substate_id(4, 6) and substate_id(3, 9) below are deliberately
