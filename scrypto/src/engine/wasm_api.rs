@@ -55,11 +55,11 @@ extern "C" {
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
         app_states_ptr: *const u8,
-        app_states: usize,
+        app_states_len: usize,
         access_rules_chain_ptr: *const u8,
-        access_rules_chain: usize,
+        access_rules_chain_len: usize,
         royalty_config_ptr: *const u8,
-        royalty_config: usize,
+        royalty_config_len: usize,
         metadata_ptr: *const u8,
         metadata_len: usize,
     ) -> Buffer;
@@ -126,9 +126,9 @@ extern "C" {
 
     // Locks a substate
     pub fn lock_substate(
-        node_id: *const u8,
+        node_id_ptr: *const u8,
         node_id_len: usize,
-        offset: *const u8,
+        offset_ptr: *const u8,
         offset_len: usize,
         mutable: bool,
     ) -> u32;

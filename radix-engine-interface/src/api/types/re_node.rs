@@ -382,7 +382,6 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
-
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),

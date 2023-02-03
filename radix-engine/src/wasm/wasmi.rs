@@ -388,13 +388,13 @@ macro_rules! linker_define {
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, PrepareError> {
         let engine = Engine::default();
-        let module = Module::new(&engine, code).expect("Failed to parse WASM module");
+        let module = Module::new(&engine, code).expect("WASM undecodable, prepare step missed?");
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
             .map_err(|_| PrepareError::NotInstantiatable)?
             .ensure_no_start(store.as_context_mut())
-            .map_err(|_| PrepareError::NotInstantiatable)?;
+            .expect("WASM contains start function, prepare step missed?");
 
         Ok(Self {
             template_store: unsafe { transmute(store) },

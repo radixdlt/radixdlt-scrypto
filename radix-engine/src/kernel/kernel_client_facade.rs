@@ -352,7 +352,7 @@ where
             node_id,
             node,
             btreemap!(
-                NodeModuleId::PackageRoyalty => RENodeModuleInit::ComponentRoyalty(
+                NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
                     royalty_accumulator_substate
                 ),
