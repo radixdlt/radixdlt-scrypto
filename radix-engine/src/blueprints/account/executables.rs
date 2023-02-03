@@ -1,12 +1,12 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;

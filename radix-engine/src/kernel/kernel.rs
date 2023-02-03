@@ -2,7 +2,6 @@ use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -14,6 +13,7 @@ use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate};
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
@@ -296,68 +296,65 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(
-            ExecutionMode::KernelDrop,
-            |api| match node_id {
-                RENodeId::AuthZoneStack => {
-                    let handle = api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
-                    let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-                    auth_zone_stack.clear_all();
-                    api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Proof(..) => {
-                    let handle = api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::Proof),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
-                    let proof = substate_ref_mut.proof();
-                    proof.drop();
-                    api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Logger => Ok(()),
-                RENodeId::Worktop => {
-                    let handle = api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Worktop(WorktopOffset::Worktop),
-                        LockFlags::MUTABLE,
-                    )?;
-
-                    let buckets = {
-                        let mut substate_ref_mut = api.get_ref_mut(handle)?;
-                        let worktop = substate_ref_mut.worktop();
-                        mem::replace(&mut worktop.resources, BTreeMap::new())
-                    };
-                    for (_, bucket) in buckets {
-                        let bucket = Bucket(bucket.bucket_id());
-                        if !bucket.sys_is_empty(api)? {
-                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                                RENodeId::Worktop,
-                            )));
-                        }
-                    }
-
-                    api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionRuntime => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+        match node_id {
+            RENodeId::AuthZoneStack => {
+                let handle = self.lock_substate(
                     node_id,
-                ))),
-            },
-        )?;
+                    NodeModuleId::SELF,
+                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_ref_mut = self.get_ref_mut(handle)?;
+                let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                auth_zone_stack.clear_all();
+                self.drop_lock(handle)?;
+                Ok(())
+            }
+            RENodeId::Proof(..) => {
+                let handle = self.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_ref_mut = self.get_ref_mut(handle)?;
+                let proof = substate_ref_mut.proof();
+                proof.drop();
+                self.drop_lock(handle)?;
+                Ok(())
+            }
+            RENodeId::Logger => Ok(()),
+            RENodeId::Worktop => {
+                let handle = self.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    LockFlags::MUTABLE,
+                )?;
+
+                let buckets = {
+                    let mut substate_ref_mut = self.get_ref_mut(handle)?;
+                    let worktop = substate_ref_mut.worktop();
+                    mem::replace(&mut worktop.resources, BTreeMap::new())
+                };
+                for (_, bucket) in buckets {
+                    let bucket = Bucket(bucket.bucket_id());
+                    if !bucket.sys_is_empty(self)? {
+                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                            RENodeId::Worktop,
+                        )));
+                    }
+                }
+
+                self.drop_lock(handle)?;
+                Ok(())
+            }
+            RENodeId::Bucket(..) => Ok(()),
+            RENodeId::TransactionRuntime => Ok(()),
+            _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            ))),
+        }?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
         for (_, substate) in &node.substates {
@@ -519,7 +516,6 @@ where
         match (cur, next) {
             // Kernel can transition into any mode
             (ExecutionMode::Kernel, _) => true,
-            (ExecutionMode::KernelDrop, _) => true,
 
             // KernelModule can be promoted into kernel
             (ExecutionMode::Module(_), ExecutionMode::Kernel) => true,

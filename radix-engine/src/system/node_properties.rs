@@ -1,7 +1,8 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::{ExecutionMode, KernelModuleMode, LockFlags, ResolvedActor};
+use crate::kernel::{ExecutionMode, KernelModuleMode, ResolvedActor};
 use crate::system::global::GlobalAddressSubstate;
+use crate::types::LockFlags;
 use radix_engine_interface::api::types::*;
 use sbor::rust::collections::BTreeMap;
 
@@ -101,13 +102,6 @@ impl VisibilityProperties {
         match (mode, offset) {
             /* Kernel */
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
-            (ExecutionMode::KernelDrop, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
-                _ => false,
-            },
 
             /* Kernel modules */
             (ExecutionMode::Module(KernelModuleMode::Logger), _) => false,

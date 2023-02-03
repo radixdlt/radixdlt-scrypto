@@ -3,11 +3,12 @@ use super::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
-    KernelSubstateApi, LockFlags, ResolvedActor,
+    KernelSubstateApi, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::types::LockFlags;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;

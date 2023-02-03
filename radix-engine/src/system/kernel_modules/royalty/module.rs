@@ -1,10 +1,10 @@
 use crate::errors::ModuleError;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::fee::{
     CostingError, ExecutionFeeReserve, FeeReserve, RoyaltyReceiver,
 };
+use crate::types::LockFlags;
 use radix_engine_interface::api::types::{
     FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
     SubstateOffset, VaultOffset,

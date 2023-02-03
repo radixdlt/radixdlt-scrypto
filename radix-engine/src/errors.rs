@@ -6,7 +6,6 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
 use crate::system::kernel_modules::auth::auth_module::AuthError;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceError;
@@ -16,6 +15,7 @@ use crate::system::kernel_modules::royalty::RoyaltyError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
+use crate::types::LockFlags;
 use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;

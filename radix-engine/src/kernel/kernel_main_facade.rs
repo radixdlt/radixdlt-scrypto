@@ -1,7 +1,5 @@
 use crate::errors::*;
-use crate::kernel::kernel_api::{
-    Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
-};
+use crate::kernel::kernel_api::{Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi};
 use crate::kernel::module::BaseModule;
 use crate::kernel::module::KernelApiCallOutput;
 use crate::kernel::*;

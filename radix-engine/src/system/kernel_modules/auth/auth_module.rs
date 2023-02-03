@@ -1,8 +1,8 @@
 use crate::blueprints::clock::Clock;
 use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
+use crate::types::LockFlags;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,

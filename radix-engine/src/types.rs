@@ -33,3 +33,30 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{Categorize, Decode, DecodeError, Encode, SborPath, SborPathBuf, Value, ValueKind};
 #[cfg(feature = "std")]
 pub use std::alloc;
+
+use bitflags::bitflags;
+
+bitflags! {
+    #[derive(Encode, Decode, Categorize)]
+    pub struct LockFlags: u32 {
+        /// Allows the locked substate to be mutated
+        const MUTABLE = 0b00000001;
+        /// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        const UNMODIFIED_BASE = 0b00000010;
+        /// Forces a write of a substate even on a transaction failure
+        /// Currently used for vault fees.
+        const FORCE_WRITE = 0b00000100;
+    }
+}
+
+impl LockFlags {
+    pub fn read_only() -> Self {
+        LockFlags::empty()
+    }
+}
+
+pub struct LockInfo {
+    pub offset: SubstateOffset,
+}

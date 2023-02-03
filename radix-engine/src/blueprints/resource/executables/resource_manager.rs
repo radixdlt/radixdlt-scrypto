@@ -3,7 +3,6 @@ use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor,
@@ -13,6 +12,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;

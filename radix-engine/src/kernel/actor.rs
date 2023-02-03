@@ -52,7 +52,6 @@ impl ResolvedActor {
 pub enum ExecutionMode {
     /* Kernel */
     Kernel,
-    KernelDrop,
 
     /* Kernel module */
     Module(KernelModuleMode),

@@ -1,8 +1,8 @@
 use crate::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},
-    kernel::kernel_api::LockFlags,
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
+    types::LockFlags,
     types::*,
 };
 use radix_engine_interface::api::{
