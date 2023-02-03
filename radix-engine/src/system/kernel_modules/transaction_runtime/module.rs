@@ -13,14 +13,13 @@ impl TransactionHashModule {
         _actor: &ResolvedActor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = api.get_visible_nodes()?;
-        let maybe_hash_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::TransactionRuntime(..)));
-        if let Some(transaction_hash_id) = maybe_hash_id {
+        if api
+            .get_visible_node_data(RENodeId::TransactionRuntime)
+            .is_ok()
+        {
             call_frame_update
                 .node_refs_to_copy
-                .insert(transaction_hash_id);
+                .insert(RENodeId::TransactionRuntime);
         }
 
         Ok(())

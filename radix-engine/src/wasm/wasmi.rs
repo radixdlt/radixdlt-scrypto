@@ -202,12 +202,6 @@ fn create_node(
     runtime.create_node(node).map(|buffer| buffer.0)
 }
 
-fn get_visible_nodes(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_visible_nodes().map(|buffer| buffer.0)
-}
-
 fn drop_node(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
@@ -398,13 +392,6 @@ impl WasmiModule {
             },
         );
 
-        let host_get_visible_nodes = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_visible_nodes(caller).map_err(|e| e.into())
-            },
-        );
-
         let host_drop_node = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -481,11 +468,6 @@ impl WasmiModule {
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, CALL_NATIVE_FUNCTION_NAME, host_call_native);
         linker_define!(linker, CREATE_NODE_FUNCTION_NAME, host_create_node);
-        linker_define!(
-            linker,
-            GET_VISIBLE_NODES_FUNCTION_NAME,
-            host_get_visible_nodes
-        );
         linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

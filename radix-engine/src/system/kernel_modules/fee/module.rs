@@ -75,13 +75,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     )?;
                 }
             }
-            KernelApiCallInput::GetVisibleNodes => {
-                consume_api_cost(
-                    track,
-                    CostingReason::GetVisibleNodes,
-                    CostingEntry::ReadOwnedNodes,
-                )?;
-            }
             KernelApiCallInput::DropNode { .. } => {
                 // TODO: get size of the value
                 consume_api_cost(
