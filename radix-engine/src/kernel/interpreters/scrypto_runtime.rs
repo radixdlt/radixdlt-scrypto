@@ -200,6 +200,10 @@ where
             .consume_cost_units(n)
             .map_err(InvokeError::downstream)
     }
+
+    fn memory_consumption(&mut self, size: usize) {
+        self.api.memory_consumption(size);
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -293,5 +297,8 @@ impl WasmRuntime for NopWasmRuntime {
         self.fee_reserve
             .consume_execution(n, CostingReason::RunWasm)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
+    }
+    fn memory_consumption(&mut self, size: usize) {
+        //self.api.
     }
 }

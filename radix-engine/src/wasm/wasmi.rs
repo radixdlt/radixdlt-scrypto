@@ -158,6 +158,12 @@ fn call_function(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .unwrap(); //todo ms
+    runtime.memory_consumption(mem);
+
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
         .map(|buffer| buffer.0)

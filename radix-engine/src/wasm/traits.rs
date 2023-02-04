@@ -59,6 +59,8 @@ pub trait WasmRuntime {
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn memory_consumption(&mut self, size: usize);
 }
 
 /// Represents an instantiated, invokable Scrypto module.

@@ -307,6 +307,10 @@ where
 
         Ok(rtn)
     }
+
+    fn memory_consumption(&mut self, size: usize) {
+        self.current_frame.consumed_wasm_memory += size;
+    }
 }
 
 impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>

@@ -38,10 +38,10 @@ pub const MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
 
 /// The default max call depth, used by transaction executor.
-pub const DEFAULT_MAX_CALL_DEPTH: usize = 10;
+pub const DEFAULT_MAX_CALL_DEPTH: usize = 9;
 
 /// The default cost unit price.
 pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
 
 /// The default maximum memory per transaction for WASM.
-pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 12 * 1024 * 1024;
+pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
