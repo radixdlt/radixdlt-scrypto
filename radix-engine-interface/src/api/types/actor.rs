@@ -864,8 +864,6 @@ pub enum AccountFn {
 
     New,
 
-    Balance,
-
     LockFee,
     LockContingentFee,
 
@@ -897,14 +895,6 @@ impl AccountPackage {
         let invocation = match account_fn {
             AccountFn::Create | AccountFn::New => {
                 return Err(ResolveError::NotAMethod);
-            }
-            AccountFn::Balance => {
-                let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::Balance(AccountBalanceInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                })
             }
             AccountFn::LockFee => {
                 let args = scrypto_decode::<AccountLockFeeMethodArgs>(args)

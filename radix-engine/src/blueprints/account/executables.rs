@@ -199,99 +199,6 @@ impl Executor for AccountNewInvocation {
     }
 }
 
-//=================
-// Account Balance
-//=================
-
-pub struct AccountBalanceExecutable {
-    pub receiver: RENodeId,
-    pub resource_address: ResourceAddress,
-}
-
-impl ExecutableInvocation for AccountBalanceInvocation {
-    type Exec = AccountBalanceExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(NativeFn::Account(AccountFn::Balance), resolved_receiver);
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            resource_address: self.resource_address,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountBalanceExecutable {
-    type Output = Decimal;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
-    {
-        let resource_address = RADIX_TOKEN;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
-
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
-            let account = substate.account();
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-            handle
-        };
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
-        let vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
-
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
-            }
-        }?;
-
-        // Get the balance
-        let amount = vault.sys_amount(api)?;
-
-        // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
-
-        Ok((amount, CallFrameUpdate::empty()))
-    }
-}
-
 //==================
 // Account Lock Fee
 //==================
@@ -1488,11 +1395,6 @@ impl Executor for AccountCreateProofByIdsExecutable {
 
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
     let mut access_rules = AccessRules::new();
-    access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Account(AccountFn::Balance)),
-        AccessRule::AllowAll,
-        AccessRule::DenyAll,
-    );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
         AccessRule::AllowAll,

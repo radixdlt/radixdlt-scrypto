@@ -19,7 +19,6 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
             "deposit_batch",
             args!(ManifestExpression::EntireWorktop),
         )
-        .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -27,7 +26,9 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    let other_account_balance: Decimal = receipt.output(2);
+    let other_account_balance: Decimal = test_runner
+        .account_balance(other_account, RADIX_TOKEN)
+        .unwrap();
     let transfer_amount = other_account_balance - 1000 /* initial balance */;
     let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
 
@@ -155,41 +156,6 @@ fn account_to_bucket_to_allocated_account() {
 #[test]
 fn account_to_bucket_to_virtual_account() {
     account_to_bucket_to_account_internal(true);
-}
-
-fn test_account_balance_internal(use_virtual: bool) {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account1) = test_runner.new_account(use_virtual);
-    let (_, _, account2) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 10.into())
-        .call_method(account2, "balance", args!(RADIX_TOKEN))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    let outputs = receipt.expect_commit_success();
-
-    // Assert
-    assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
-    assert_eq!(
-        outputs[1].as_vec(),
-        IndexedScryptoValue::from_typed(&Decimal::from(1000)).into_vec()
-    );
-}
-
-#[test]
-fn test_allocated_account_balance() {
-    test_account_balance_internal(false)
-}
-
-#[test]
-fn test_virtual_account_balance() {
-    test_account_balance_internal(true)
 }
 
 fn assert_resource_changes_for_transfer(

@@ -154,30 +154,6 @@ fn should_be_able_run_large_manifest() {
 }
 
 #[test]
-fn should_be_able_invoke_account_balance_100_times() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-
-    // Act
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(account, 100u32.into());
-    for _ in 0..100 {
-        builder.call_method(account, "balance", args!(RADIX_TOKEN));
-    }
-    let manifest = builder.build();
-
-    let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

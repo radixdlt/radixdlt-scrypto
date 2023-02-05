@@ -327,6 +327,26 @@ impl TestRunner {
         }
     }
 
+    pub fn account_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Option<Decimal> {
+        if !matches!(
+            account_address,
+            ComponentAddress::Account(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..)
+        ) {
+            panic!("Method only works for accounts!")
+        }
+
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        vaults
+            .get(0)
+            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
+    }
+
     pub fn get_component_vaults(
         &mut self,
         component_address: ComponentAddress,
@@ -351,6 +371,16 @@ impl TestRunner {
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|output| output.substate.vault().0.ids().clone())
+    }
+
+    pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.amount())
     }
 
     pub fn get_component_resources(
