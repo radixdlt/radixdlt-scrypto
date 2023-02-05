@@ -6,7 +6,8 @@ struct Car {
     manufacturer: String,
 }
 
-blueprint! {
+#[blueprint]
+mod foo {
     struct Foo {}
 
     impl Foo {

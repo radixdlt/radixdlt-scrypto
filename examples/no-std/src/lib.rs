@@ -19,7 +19,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod no_std {
     struct NoStd;
 
     impl NoStd {
