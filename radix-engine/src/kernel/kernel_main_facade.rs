@@ -378,75 +378,81 @@ where
     }
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallInput::GetRef {
-                        lock_handle: &lock_handle,
-                    },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // FIXME: this method isn't compatible with execute_in_mode because of the reference return.
+        // Possible directions:
+        // 1. replace reference with value, requiring removal of Rc in resource model;
+        // 2. add lifetime parameters to traits
 
-            // A little hacky: this post sys call is called before the sys call happens due to
-            // a mutable borrow conflict for substate ref.
-            // Some modules (specifically: ExecutionTraceModule) require that all
-            // pre/post callbacks are balanced.
-            // TODO: Move post sys call to substate_ref drop() so that it's actually
-            // after the sys call processing, not before.
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::GetRef { lock_handle },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        self.module
+            .pre_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                self.track,
+                KernelApiCallInput::GetRef {
+                    lock_handle: &lock_handle,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
 
-            let substate_ref = api
-                .current_frame
-                .get_ref(lock_handle, &mut api.heap, api.track)?;
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
+        self.module
+            .post_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                self.track,
+                KernelApiCallOutput::GetRef { lock_handle },
+            )
+            .map_err(RuntimeError::ModuleError)?;
 
-            Ok(substate_ref)
-        })
+        let substate_ref = self
+            .current_frame
+            .get_ref(lock_handle, &mut self.heap, self.track)?;
+
+        Ok(substate_ref)
     }
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallInput::GetRefMut {
-                        lock_handle: &lock_handle,
-                    },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // FIXME: this method isn't compatible with execute_in_mode because of the reference return.
+        // Possible directions:
+        // 1. replace reference with value, requiring removal of Rc in resource model;
+        // 2. add lifetime parameters to traits
 
-            // A little hacky: this post sys call is called before the sys call happens due to
-            // a mutable borrow conflict for substate ref.
-            // Some modules (specifically: ExecutionTraceModule) require that all
-            // pre/post callbacks are balanced.
-            // TODO: Move post sys call to substate_ref drop() so that it's actually
-            // after the sys call processing, not before.
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::GetRefMut,
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        self.module
+            .pre_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                self.track,
+                KernelApiCallInput::GetRefMut {
+                    lock_handle: &lock_handle,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
 
-            let substate_ref_mut =
-                api.current_frame
-                    .get_ref_mut(lock_handle, &mut api.heap, api.track)?;
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
+        self.module
+            .post_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                self.track,
+                KernelApiCallOutput::GetRefMut,
+            )
+            .map_err(RuntimeError::ModuleError)?;
 
-            Ok(substate_ref_mut)
-        })
+        let substate_ref_mut =
+            self.current_frame
+                .get_ref_mut(lock_handle, &mut self.heap, self.track)?;
+
+        Ok(substate_ref_mut)
     }
 }
 
