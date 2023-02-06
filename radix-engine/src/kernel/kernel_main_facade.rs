@@ -31,7 +31,7 @@ where
                 .on_lock_fee(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     vault_id,
                     fee,
                     contingent,
@@ -58,7 +58,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::DropNode { node_id: &node_id },
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -83,7 +83,7 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::DropNode { node: &node },
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -112,7 +112,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::CreateNode { node: &re_node },
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -199,7 +199,7 @@ where
                 re_node,
                 module_init,
                 &mut api.heap,
-                &mut api.track,
+                api.track,
                 push_to_store,
             )?;
 
@@ -207,7 +207,7 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::CreateNode { node_id: &node_id },
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -235,7 +235,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::LockSubstate {
                         node_id: &node_id,
                         offset: &offset,
@@ -268,7 +268,7 @@ where
 
             let maybe_lock_handle = api.current_frame.acquire_lock(
                 &mut api.heap,
-                &mut api.track,
+                api.track,
                 node_id,
                 module_id,
                 offset.clone(),
@@ -283,7 +283,7 @@ where
                     if api.try_virtualize(node_id, &offset)? {
                         api.current_frame.acquire_lock(
                             &mut api.heap,
-                            &mut api.track,
+                            api.track,
                             node_id,
                             module_id,
                             offset.clone(),
@@ -317,7 +317,7 @@ where
                                 .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
                             api.current_frame.acquire_lock(
                                 &mut api.heap,
-                                &mut api.track,
+                                api.track,
                                 node_id,
                                 module_id,
                                 offset.clone(),
@@ -333,7 +333,7 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::LockSubstate { lock_handle },
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -354,7 +354,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::DropLock {
                         lock_handle: &lock_handle,
                     },
@@ -362,13 +362,13 @@ where
                 .map_err(RuntimeError::ModuleError)?;
 
             api.current_frame
-                .drop_lock(&mut api.heap, &mut api.track, lock_handle)?;
+                .drop_lock(&mut api.heap, api.track, lock_handle)?;
 
             api.module
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::DropLock,
                 )
                 .map_err(RuntimeError::ModuleError)?;
@@ -383,7 +383,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::GetRef {
                         lock_handle: &lock_handle,
                     },
@@ -400,14 +400,14 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::GetRef { lock_handle },
                 )
                 .map_err(RuntimeError::ModuleError)?;
 
-            let substate_ref =
-                api.current_frame
-                    .get_ref(lock_handle, &mut api.heap, &mut api.track)?;
+            let substate_ref = api
+                .current_frame
+                .get_ref(lock_handle, &mut api.heap, api.track)?;
 
             Ok(substate_ref)
         })
@@ -419,7 +419,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::GetRefMut {
                         lock_handle: &lock_handle,
                     },
@@ -436,14 +436,14 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::GetRefMut,
                 )
                 .map_err(RuntimeError::ModuleError)?;
 
             let substate_ref_mut =
                 api.current_frame
-                    .get_ref_mut(lock_handle, &mut api.heap, &mut api.track)?;
+                    .get_ref_mut(lock_handle, &mut api.heap, api.track)?;
 
             Ok(substate_ref_mut)
         })
@@ -466,7 +466,7 @@ where
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
             api.module
-                .on_wasm_instantiation(&api.current_frame, &mut api.heap, &mut api.track, code)
+                .on_wasm_instantiation(&api.current_frame, &mut api.heap, api.track, code)
                 .map_err(RuntimeError::ModuleError)?;
 
             Ok(())
@@ -487,7 +487,7 @@ where
                 .pre_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallInput::Invoke {
                         fn_identifier: invocation.fn_identifier(),
                         input_size: 0, // TODO: Fix this
@@ -503,7 +503,7 @@ where
                 .post_kernel_api_call(
                     &api.current_frame,
                     &mut api.heap,
-                    &mut api.track,
+                    api.track,
                     KernelApiCallOutput::Invoke { rtn: &rtn },
                 )
                 .map_err(RuntimeError::ModuleError)?;

@@ -215,7 +215,7 @@ where
             RENodeInit::Global(global_substate),
             BTreeMap::new(),
             &mut self.heap,
-            &mut self.track,
+            self.track,
             true,
         )?;
 
@@ -238,7 +238,7 @@ where
             RENodeInit::Global(global_substate),
             BTreeMap::new(),
             &mut self.heap,
-            &mut self.track,
+            self.track,
             true,
         )?;
 
@@ -447,7 +447,7 @@ where
                     &call_frame_update,
                     &mut self.current_frame,
                     &mut self.heap,
-                    &mut self.track,
+                    self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
             self.id_allocator.pre_execute_invocation();
@@ -472,7 +472,7 @@ where
         {
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
+                .drop_all_locks(&mut self.heap, self.track)?;
 
             self.id_allocator.post_execute_invocation()?;
             self.module
@@ -481,7 +481,7 @@ where
                     &update,
                     &mut self.current_frame,
                     &mut self.heap,
-                    &mut self.track,
+                    self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
 
@@ -496,7 +496,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
+                .drop_all_locks(&mut self.heap, self.track)?;
         }
 
         // Call Frame Pop
@@ -513,7 +513,7 @@ where
 
         if let Some(derefed_lock) = derefed_lock {
             self.current_frame
-                .drop_lock(&mut self.heap, &mut self.track, derefed_lock)?;
+                .drop_lock(&mut self.heap, self.track, derefed_lock)?;
         }
 
         Ok(output)
@@ -634,7 +634,7 @@ where
         // TODO: Move to higher layer
         if depth == 0 {
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
+                .drop_all_locks(&mut self.heap, self.track)?;
             self.drop_nodes_in_frame()?;
         }
 

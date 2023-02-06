@@ -452,7 +452,7 @@ where
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
+            .on_wasm_costing(&self.current_frame, &mut self.heap, self.track, units)
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(())
@@ -467,7 +467,7 @@ where
         let rtn = self.module.on_lock_fee(
             &self.current_frame,
             &mut self.heap,
-            &mut self.track,
+            self.track,
             vault_id,
             fee,
             contingent,
