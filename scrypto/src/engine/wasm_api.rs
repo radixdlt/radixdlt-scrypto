@@ -61,8 +61,13 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    /// Invokes any function or method, for both Scrypto and Native blueprints.
-    pub fn invoke(invocation_ptr: *const u8, invocation_len: usize) -> Buffer;
+    /// Invokes a native function or method.
+    pub fn call_native(
+        native_fn_identifier_ptr: *const u8,
+        native_fn_identifier_len: usize,
+        invocation_ptr: *const u8,
+        invocation_len: usize,
+    ) -> Buffer;
 
     //===============
     // Node API
@@ -139,7 +144,12 @@ pub unsafe fn call_function(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn invoke(_invocation_ptr: *const u8, _invocation_len: usize) -> Buffer {
+pub unsafe fn call_native(
+    _native_fn_identifier_ptr: *const u8,
+    _native_fn_identifier_len: usize,
+    _invocation_ptr: *const u8,
+    _invocation_len: usize,
+) -> Buffer {
     todo!()
 }
 

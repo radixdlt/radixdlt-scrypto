@@ -17,10 +17,18 @@ pub struct AccessControllerCreateGlobalInvocation {
 
 impl Invocation for AccessControllerCreateGlobalInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateGlobal))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCreateGlobalInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CreateGlobal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
@@ -43,10 +51,18 @@ pub struct AccessControllerCreateProofInvocation {
 
 impl Invocation for AccessControllerCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCreateProofInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CreateProof)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCreateProofInvocation {
@@ -73,10 +89,20 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
 
 impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsPrimary,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvocation {
@@ -106,10 +132,20 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
 
 impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::InitiateRecoveryAsRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInvocation {
@@ -139,10 +175,20 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation>
@@ -174,10 +220,20 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation>
@@ -209,10 +265,20 @@ pub struct AccessControllerTimedConfirmRecoveryInvocation {
 
 impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::TimedConfirmRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocation {
@@ -236,10 +302,20 @@ pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CancelPrimaryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
@@ -265,10 +341,20 @@ pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
 
 impl Invocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::CancelRecoveryRoleRecoveryProposal)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
@@ -294,10 +380,20 @@ pub struct AccessControllerLockPrimaryRoleInvocation {
 
 impl Invocation for AccessControllerLockPrimaryRoleInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::LockPrimaryRole,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerLockPrimaryRoleInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::LockPrimaryRole)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerLockPrimaryRoleInvocation {
@@ -320,10 +416,20 @@ pub struct AccessControllerUnlockPrimaryRoleInvocation {
 
 impl Invocation for AccessControllerUnlockPrimaryRoleInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::UnlockPrimaryRole,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::UnlockPrimaryRole)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerUnlockPrimaryRoleInvocation {
@@ -351,10 +457,20 @@ pub struct AccessControllerStopTimedRecoveryInvocation {
 
 impl Invocation for AccessControllerStopTimedRecoveryInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::AccessController(
+            AccessControllerFn::StopTimedRecovery,
+        ))
+    }
 }
 
 impl SerializableInvocation for AccessControllerStopTimedRecoveryInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::AccessController(AccessControllerFn::StopTimedRecovery)
+    }
 }
 
 impl Into<CallTableInvocation> for AccessControllerStopTimedRecoveryInvocation {

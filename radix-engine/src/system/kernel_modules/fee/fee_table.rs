@@ -158,7 +158,7 @@ impl FeeTable {
                 ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
-                ResourceManagerFn::LockAuth => self.fixed_medium,
+                ResourceManagerFn::SetVaultAuthMutability => self.fixed_medium,
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
                 ResourceManagerFn::MintNonFungible => self.fixed_high,
@@ -224,7 +224,7 @@ impl FeeTable {
                 }
             }
             NativeFn::TransactionRuntime(ident) => match ident {
-                TransactionRuntimeFn::Get => self.fixed_low,
+                TransactionRuntimeFn::GetHash => self.fixed_low,
                 TransactionRuntimeFn::GenerateUuid => self.fixed_low,
             },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {

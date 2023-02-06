@@ -10,15 +10,23 @@ pub struct TransactionRuntimeGetHashInvocation {
 
 impl Invocation for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash))
+    }
 }
 
 impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
     type ScryptoOutput = Hash;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash)
+    }
 }
 
 impl Into<CallTableInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::Get(self)).into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GetHash(self)).into()
     }
 }
 
@@ -29,10 +37,20 @@ pub struct TransactionRuntimeGenerateUuidInvocation {
 
 impl Invocation for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::TransactionRuntime(
+            TransactionRuntimeFn::GenerateUuid,
+        ))
+    }
 }
 
 impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type ScryptoOutput = u128;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::TransactionRuntime(TransactionRuntimeFn::GenerateUuid)
+    }
 }
 
 impl Into<CallTableInvocation> for TransactionRuntimeGenerateUuidInvocation {

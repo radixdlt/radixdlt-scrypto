@@ -1,7 +1,8 @@
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod abi_component {
     struct AbiComponent {}
 
     impl AbiComponent {
@@ -211,7 +212,8 @@ pub extern "C" fn AbiComponent2_abi() -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
 
-blueprint! {
+#[blueprint]
+mod simple {
     struct Simple {
         state: u32,
     }

@@ -21,7 +21,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
     ) -> Result<(), ModuleError> {
         match input {
             KernelApiCallInput::Invoke { fn_identifier, .. } => {
-                log!(call_frame, "Invoking: {}", fn_identifier);
+                log!(call_frame, "Invoking: {:?}", fn_identifier);
             }
             KernelApiCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);

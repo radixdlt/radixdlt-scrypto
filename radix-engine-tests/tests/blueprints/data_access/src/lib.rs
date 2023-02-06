@@ -2,7 +2,8 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
-blueprint! {
+#[blueprint]
+mod data_access {
     struct DataAccess {}
 
     impl DataAccess {

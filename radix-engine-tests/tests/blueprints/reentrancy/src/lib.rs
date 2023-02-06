@@ -1,10 +1,8 @@
-use crate::radix_engine_interface::api::types::ScryptoInvocation;
-use crate::radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::api::Invokable;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod reentrant_component {
     struct ReentrantComponent {}
 
     impl ReentrantComponent {
@@ -18,37 +16,19 @@ blueprint! {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             ScryptoEnv
-                .invoke(ScryptoInvocation {
-                    package_address: Runtime::package_address(),
-                    blueprint_name: "ReentrantComponent".to_string(),
-                    fn_name: "mut_func".to_string(),
-                    receiver: Some(ScryptoReceiver::Global(address)),
-                    args: args!(),
-                })
+                .call_method(ScryptoReceiver::Global(address), "mut_func", args!())
                 .unwrap();
         }
 
         pub fn call_self(&self, address: ComponentAddress) {
             ScryptoEnv
-                .invoke(ScryptoInvocation {
-                    package_address: Runtime::package_address(),
-                    blueprint_name: "ReentrantComponent".to_string(),
-                    fn_name: "func".to_string(),
-                    receiver: Some(ScryptoReceiver::Global(address)),
-                    args: args!(),
-                })
+                .call_method(ScryptoReceiver::Global(address), "func", args!())
                 .unwrap();
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             ScryptoEnv
-                .invoke(ScryptoInvocation {
-                    package_address: Runtime::package_address(),
-                    blueprint_name: "ReentrantComponent".to_string(),
-                    fn_name: "mut_func".to_string(),
-                    receiver: Some(ScryptoReceiver::Global(address)),
-                    args: args!(),
-                })
+                .call_method(ScryptoReceiver::Global(address), "mut_func", args!())
                 .unwrap();
         }
     }

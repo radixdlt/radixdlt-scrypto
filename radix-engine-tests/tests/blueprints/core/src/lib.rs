@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod move_test {
     struct MoveTest {
         vaults: Vec<Vault>,
     }
@@ -43,7 +44,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod core_test {
     struct CoreTest;
 
     impl CoreTest {

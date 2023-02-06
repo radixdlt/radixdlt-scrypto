@@ -109,8 +109,8 @@ pub enum WasmRuntimeError {
     InvalidPackageAddress(DecodeError),
     /// Invalid method ident
     InvalidIdent,
-    /// Invalid invocation
-    InvalidInvocation(DecodeError),
+    /// Invalid native fn identifier
+    InvalidNativeFnIdentifier(DecodeError),
     /// Invalid RE node data
     InvalidNode(DecodeError),
     /// Invalid RE node ID

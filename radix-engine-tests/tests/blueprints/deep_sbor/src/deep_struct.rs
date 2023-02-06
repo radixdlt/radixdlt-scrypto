@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod deep_struct {
     struct DeepStruct {
         deep_object: Option<AccessRules>,
     }
