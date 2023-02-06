@@ -6,7 +6,6 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;

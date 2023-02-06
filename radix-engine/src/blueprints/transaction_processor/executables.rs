@@ -5,7 +5,6 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::node::RENodeInit;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};

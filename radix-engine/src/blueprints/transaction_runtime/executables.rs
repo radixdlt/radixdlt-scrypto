@@ -2,7 +2,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;

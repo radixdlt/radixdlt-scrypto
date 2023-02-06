@@ -5,7 +5,6 @@ use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};

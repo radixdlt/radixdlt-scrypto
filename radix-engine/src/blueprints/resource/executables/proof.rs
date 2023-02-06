@@ -5,7 +5,6 @@ use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
 use crate::system::node::RENodeInit;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;

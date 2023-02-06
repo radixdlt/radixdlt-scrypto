@@ -17,7 +17,6 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::system::package::PackageError;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use crate::wasm::WasmValidator;

@@ -8,7 +8,6 @@ use crate::kernel::{
 };
 use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::system::node::RENodeInit;
-use crate::types::LockFlags;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;

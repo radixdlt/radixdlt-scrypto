@@ -18,7 +18,6 @@ use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
-use crate::types::LockFlags;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
