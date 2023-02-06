@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod assert_access_rule {
     struct AssertAccessRule {}
 
     impl AssertAccessRule {

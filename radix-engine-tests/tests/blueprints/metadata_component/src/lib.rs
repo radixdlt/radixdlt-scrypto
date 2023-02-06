@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod metadata_component {
     struct MetadataComponent {}
 
     impl MetadataComponent {

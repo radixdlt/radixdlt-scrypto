@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod component_test {
     struct ComponentTest {
         test_vault: Vault,
         secret: String,

@@ -3,7 +3,8 @@ use radix_engine_interface::api::ClientNativeInvokeApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod epoch_manager_test {
     struct EpochManagerTest;
 
     impl EpochManagerTest {

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod super_key_value_store {
     struct SuperKeyValueStore {
         maps: KeyValueStore<
             u32,
