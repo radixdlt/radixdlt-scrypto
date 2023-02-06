@@ -218,7 +218,7 @@ impl Executor for VaultLockFeeInvocation {
 
         // Refill fee reserve
         let bucket_id = system_api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket = system_api.create_node(
+        system_api.create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(fee)),
             btreemap!(),
@@ -226,6 +226,8 @@ impl Executor for VaultLockFeeInvocation {
         let changes: Bucket = system_api.call_native(FeeReserveLockFeeInvocation {
             receiver: RENodeId::FeeReserve.into(),
             bucket: Bucket(bucket_id.into()),
+            vault_id: self.receiver,
+            contingent: self.contingent,
         })?;
 
         system_api.call_native(VaultPutInvocation {

@@ -1,6 +1,7 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
+use crate::blueprints::fee_reserve::FeeReserveBlueprintError;
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
 };
@@ -320,6 +321,8 @@ pub enum ApplicationError {
 
     TransactionRuntimeError(TransactionRuntimeError),
 
+    FeeReserveBlueprintError(FeeReserveBlueprintError),
+
     BucketError(BucketError),
 
     ProofError(ProofError),
@@ -368,6 +371,18 @@ impl From<AccessRulesChainError> for ApplicationError {
 impl From<TransactionRuntimeError> for ApplicationError {
     fn from(value: TransactionRuntimeError) -> Self {
         Self::TransactionRuntimeError(value)
+    }
+}
+
+impl From<FeeReserveBlueprintError> for ApplicationError {
+    fn from(value: FeeReserveBlueprintError) -> Self {
+        Self::FeeReserveBlueprintError(value)
+    }
+}
+
+impl From<FeeReserveBlueprintError> for RuntimeError {
+    fn from(value: FeeReserveBlueprintError) -> Self {
+        RuntimeError::ApplicationError(ApplicationError::FeeReserveBlueprintError(value))
     }
 }
 
