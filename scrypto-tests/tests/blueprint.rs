@@ -44,7 +44,6 @@ mod simple {
 
 #[blueprint]
 mod empty_with_use_statements {
-    use sbor::BasicValue;
     use scrypto::model::ComponentAddress;
 
     struct Empty1 {}
