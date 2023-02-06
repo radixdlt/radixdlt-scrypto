@@ -7,13 +7,11 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
-use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi,
-    ClientSubstateApi,
-};
+use radix_engine_interface::api::{ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use crate::blueprints::identity::IdentityCreateExecutable;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -47,6 +45,8 @@ impl ExecutableInvocation for ScryptoInvocation {
             self.blueprint_name.clone(),
             self.fn_name.clone(),
         );
+
+
 
         let (receiver, actor) = if let Some(receiver) = self.receiver {
             let original_node_id = match receiver {
@@ -121,9 +121,29 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
+        if self.package_address.eq(&IDENTITY_PACKAGE) {
+            let executor = ScryptoExecutor {
+                package_address: self.package_address,
+                export_name: "test".to_string(),
+                component_id: receiver,
+                args: args.into(),
+            };
+
+            return Ok((
+                actor,
+                CallFrameUpdate {
+                    nodes_to_move,
+                    node_refs_to_copy,
+                },
+                executor,
+            ))
+        }
+
+
         // Signature check + retrieve export_name
         let export_name = {
             let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
+
             let handle = api.lock_substate(
                 package_global,
                 NodeModuleId::SELF,
@@ -222,6 +242,7 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi
             + KernelSubstateApi
             + KernelWasmApi<W>
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
@@ -232,6 +253,12 @@ impl Executor for ScryptoExecutor {
             + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
+        if self.package_address.eq(&IDENTITY_PACKAGE) {
+            let invocation: IdentityCreateExecutable = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+            let rtn = invocation.execute(api)?;
+            return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+        }
+
         let package = {
             let handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::Package(self.package_address)),

@@ -7,29 +7,15 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 
-impl ExecutableInvocation for IdentityCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Identity(IdentityFn::Create));
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct IdentityCreateExecutable {
+    pub access_rule: AccessRule,
 }
 
-impl Executor for IdentityCreateInvocation {
+impl Executor for IdentityCreateExecutable {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

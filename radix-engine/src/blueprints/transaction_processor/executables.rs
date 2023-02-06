@@ -22,7 +22,6 @@ use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, Cli
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
-use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -214,7 +213,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateValidator { .. }
             | BasicInstruction::CreateAccessController { .. }
-            | BasicInstruction::CreateIdentity { .. }
             | BasicInstruction::AssertAccessRule { .. }
             | BasicInstruction::CreateAccount { .. } => {}
         },
@@ -814,13 +812,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             confirmation_role: confirmation_role.clone(),
                         },
                         timed_recovery_delay_in_minutes: *timed_recovery_delay_in_minutes,
-                    })?;
-
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateIdentity { access_rule }) => {
-                    let rtn = api.invoke(IdentityCreateInvocation {
-                        access_rule: access_rule.clone(),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))

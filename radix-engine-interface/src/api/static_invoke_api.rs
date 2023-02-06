@@ -7,7 +7,6 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::identity::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::*;
@@ -110,7 +109,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<WorktopAssertContainsAmountInvocation, E>
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
-    + Invokable<IdentityCreateInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>

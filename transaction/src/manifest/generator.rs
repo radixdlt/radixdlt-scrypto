@@ -1,5 +1,7 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::constants::{IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -573,8 +575,11 @@ pub fn generate_instruction(
                 blobs,
             )?,
         },
-        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CreateIdentity {
-            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: scrypto_encode(&generate_typed_value::<AccessRule>(access_rule, resolver, bech32_decoder, blobs)?).unwrap(),
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,

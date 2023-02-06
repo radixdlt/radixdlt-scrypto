@@ -8,6 +8,7 @@ use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
+use radix_engine_interface::constants::{IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -353,7 +354,12 @@ impl ManifestBuilder {
     }
 
     pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateIdentity { access_rule });
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: args!(access_rule),
+        });
         self
     }
 

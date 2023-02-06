@@ -8,7 +8,6 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::identity::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::TransactionRuntimeGenerateUuidInvocation;
@@ -65,7 +64,6 @@ pub enum NativeInvocation {
     EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
     Clock(ClockInvocation),
-    Identity(IdentityInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -135,11 +133,6 @@ pub enum ClockInvocation {
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum IdentityInvocation {
-    Create(IdentityCreateInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -580,9 +573,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-            },
-            NativeInvocation::Identity(invocation) => match invocation {
-                IdentityInvocation::Create(..) => {}
             },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {

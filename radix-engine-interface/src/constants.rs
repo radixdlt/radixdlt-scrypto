@@ -21,7 +21,10 @@ pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
+pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
+pub const IDENTITY_BLUEPRINT: &str = "Identity";
+
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.

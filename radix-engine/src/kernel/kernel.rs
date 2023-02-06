@@ -621,6 +621,15 @@ where
                                 continue;
                             }
 
+                            if matches!(
+                                global_address,
+                                GlobalAddress::Package(IDENTITY_PACKAGE)
+                            ) {
+                                self.current_frame
+                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                continue;
+                            }
+
                             let offset = SubstateOffset::Global(GlobalOffset::Global);
 
                             self.track

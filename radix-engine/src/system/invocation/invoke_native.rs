@@ -1,7 +1,7 @@
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
-    ComponentInvocation, EpochManagerInvocation, IdentityInvocation, LoggerInvocation,
+    ComponentInvocation, EpochManagerInvocation, LoggerInvocation,
     MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
@@ -369,12 +369,6 @@ where
                 Ok(Box::new(rtn))
             }
             ClockInvocation::CompareCurrentTime(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Identity(identity_invocation) => match identity_invocation {
-            IdentityInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

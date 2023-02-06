@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
-    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_hash::*,
+    clock::*, epoch_manager::*, logger::*, resource::*, transaction_hash::*,
 };
 
 pub fn resolve_and_invoke_native_fn<Y>(
@@ -569,6 +569,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
+        /*
         NativeFn::Identity(identity_fn) => match identity_fn {
             IdentityFn::Create => {
                 let invocation = scrypto_decode::<IdentityCreateInvocation>(&invocation)
@@ -577,6 +578,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
+         */
         NativeFn::Logger(logger_fn) => match logger_fn {
             LoggerFn::Log => {
                 let invocation = scrypto_decode::<LoggerLogInvocation>(&invocation)
