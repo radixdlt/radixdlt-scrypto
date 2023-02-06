@@ -119,6 +119,10 @@ impl VisibilityProperties {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
+            (ExecutionMode::CostingModule, offset) => match offset {
+                SubstateOffset::FeeReserve(_) => true,
+                _ => false,
+            },
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,

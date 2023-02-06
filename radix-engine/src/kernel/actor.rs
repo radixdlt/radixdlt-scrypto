@@ -55,6 +55,7 @@ pub enum ExecutionMode {
     Deref,
     Globalize,
     Resolver,
+    CostingModule,
     NodeMoveModule,
     AuthModule,
     LoggerModule,

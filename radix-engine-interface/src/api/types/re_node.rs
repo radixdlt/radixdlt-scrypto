@@ -23,6 +23,7 @@ pub enum RENodeType {
     Bucket,
     Proof,
     AuthZoneStack,
+    FeeReserve,
     Worktop,
     GlobalAccount,
     GlobalComponent,

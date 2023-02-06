@@ -62,6 +62,7 @@ impl IdAllocator {
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
+            RENodeType::FeeReserve => Ok(RENodeId::FeeReserve),
             RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
             RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),

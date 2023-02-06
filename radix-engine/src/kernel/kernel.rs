@@ -1,4 +1,5 @@
 use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -7,6 +8,7 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
+use crate::system::kernel_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
@@ -68,6 +70,8 @@ where
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
+        fee_reserve: SystemLoanFeeReserve, // TODO: merge with `module`
+        fee_table: FeeTable,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
@@ -98,12 +102,25 @@ where
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
-
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::CostingModule, |api| {
+                let node_id = api.allocate_node_id(RENodeType::FeeReserve)?;
+                api.create_node(
+                    node_id,
+                    RENodeInit::FeeReserve(FeeReserveSubstate {
+                        fee_reserve,
+                        fee_table,
+                    }),
+                    BTreeMap::new(),
+                )?;
+                Ok(())
+            })
+            .expect("CostingModule failed to initialize");
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
                 LoggerModule::initialize(api)
             })
-            .expect("Logger failed to initialize");
+            .expect("LoggerModule failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),

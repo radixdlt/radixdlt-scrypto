@@ -50,6 +50,7 @@ pub enum CostingEntry {
     },
 }
 
+#[derive(Debug)]
 pub struct FeeTable {
     tx_base_fee: u32,
     tx_payload_cost_per_byte: u32,
@@ -285,7 +286,7 @@ impl FeeTable {
         }
     }
 
-    pub fn system_api_cost(&self, entry: CostingEntry) -> u32 {
+    pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
         match entry {
             CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
 

@@ -1,20 +1,21 @@
-use crate::errors::ModuleError;
+use crate::errors::{CallFrameError, ModuleError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use radix_engine_interface::api::types::{
-    FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
-    SubstateOffset, VaultOffset,
+    FeeReserveOffset, FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId,
+    RoyaltyOffset, SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::*;
 
-use super::CostingError;
+use super::{CostingError, ExecutionFeeReserve};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RoyaltyCostingError {
     CostingError(CostingError),
     TrackError(TrackError),
+    CallFrameError(CallFrameError),
 }
 
 pub struct RoyaltyCostingModule {}
@@ -29,6 +30,26 @@ impl Default for RoyaltyCostingModule {
     fn default() -> Self {
         Self {}
     }
+}
+
+fn apply_royalty_cost(
+    heap: &mut Heap,
+    receiver: RoyaltyReceiver,
+    amount: u32,
+) -> Result<(), ModuleError> {
+    let mut substate = heap
+        .get_substate_mut(
+            RENodeId::FeeReserve,
+            NodeModuleId::SELF,
+            &SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+        )
+        .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CallFrameError(e)))?;
+    let fee_reserve_substate = substate.fee_reserve();
+
+    fee_reserve_substate
+        .fee_reserve
+        .consume_royalty(receiver, amount)
+        .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e)))
 }
 
 macro_rules! preload_vault {
@@ -63,7 +84,7 @@ impl BaseModule for RoyaltyCostingModule {
         actor: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
-        _heap: &mut Heap,
+        heap: &mut Heap,
         track: &mut Track,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
@@ -129,13 +150,11 @@ impl BaseModule for RoyaltyCostingModule {
             .get(&scrypto_fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
             .unwrap_or(0);
-        track
-            .fee_reserve()
-            .consume_royalty(
-                RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
-                royalty,
-            )
-            .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e)))?;
+        apply_royalty_cost(
+            heap,
+            RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
+            royalty,
+        )?;
         track
             .release_lock(
                 SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
@@ -208,15 +227,11 @@ impl BaseModule for RoyaltyCostingModule {
                 .royalty_config
                 .get_rule(&scrypto_fn_identifier.ident)
                 .clone();
-            track
-                .fee_reserve()
-                .consume_royalty(
-                    RoyaltyReceiver::Component(component_address, node_id),
-                    royalty,
-                )
-                .map_err(|e| {
-                    ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e))
-                })?;
+            apply_royalty_cost(
+                heap,
+                RoyaltyReceiver::Component(component_address, node_id),
+                royalty,
+            )?;
             track
                 .release_lock(
                     SubstateId(node_id, NodeModuleId::ComponentRoyalty, offset.clone()),

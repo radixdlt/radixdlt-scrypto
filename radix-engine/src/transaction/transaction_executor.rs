@@ -138,11 +138,11 @@ where
     }
 
     fn apply_pre_execution_costs(
-        fee_reserve: SystemLoanFeeReserve,
+        mut fee_reserve: SystemLoanFeeReserve,
         fee_table: &FeeTable,
         executable: &Executable,
     ) -> Result<SystemLoanFeeReserve, PreExecutionError> {
-        fee_reserve
+        let result = fee_reserve
             .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
             .and_then(|()| {
                 fee_reserve.consume_deferred(
@@ -157,12 +157,15 @@ where
                     executable.auth_zone_params().initial_proofs.len(),
                     CostingReason::TxSignatureVerification,
                 )
-            })
-            .map_err(|e| PreExecutionError {
+            });
+
+        match result {
+            Ok(_) => Ok(fee_reserve),
+            Err(e) => Err(PreExecutionError {
                 fee_summary: fee_reserve.finalize(),
                 error: e,
-            })
-            .map(|_| fee_reserve)
+            }),
+        }
     }
 
     fn execute_with_fee_reserve(
@@ -216,7 +219,7 @@ where
         };
 
         // Prepare state track and execution trace
-        let track = Track::new(self.substate_store, FeeTable::new());
+        let mut track = Track::new(self.substate_store, FeeTable::new());
 
         // Invoke the function/method
         let track_receipt = {
@@ -230,8 +233,9 @@ where
                 &mut track,
                 self.scrypto_interpreter,
                 &mut module,
+                fee_reserve,
+                fee_table,
             );
-            // TODO: install fee_reserve into Heap
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
@@ -247,7 +251,8 @@ where
             });
 
             let events = module.collect_events();
-            track.finalize(invoke_result, fee_reserve, events)
+            // TODO: install restore fee reserve
+            track.finalize(invoke_result, SystemLoanFeeReserve::no_fee(), events)
         };
 
         // Finish resources usage measurement and get results

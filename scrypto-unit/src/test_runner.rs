@@ -1111,7 +1111,13 @@ pub fn is_auth_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
+    matches!(
+        e,
+        RuntimeError::ModuleError(ModuleError::ExecutionCostingError(_))
+    ) || matches!(
+        e,
+        RuntimeError::ModuleError(ModuleError::RoyaltyCostingError(_))
+    )
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
