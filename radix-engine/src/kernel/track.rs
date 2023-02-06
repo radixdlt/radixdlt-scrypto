@@ -7,10 +7,10 @@ use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
+use crate::system::kernel_modules::fee::FeeSummary;
 use crate::system::kernel_modules::fee::FeeTable;
-use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
+use crate::system::kernel_modules::fee::RoyaltyReceiver;
 use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
-use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -458,43 +458,6 @@ impl<'s> Track<'s> {
             }
             _ => panic!("Invalid keyed value"),
         }
-    }
-
-    pub fn apply_pre_execution_costs(
-        mut self,
-        transaction: &Executable,
-    ) -> Result<Self, PreExecutionError> {
-        let result = self.attempt_apply_pre_execution_costs(transaction);
-
-        match result {
-            Ok(()) => Ok(self),
-            Err(error) => Err(PreExecutionError {
-                fee_summary: self.fee_reserve.finalize(),
-                error,
-            }),
-        }
-    }
-
-    fn attempt_apply_pre_execution_costs(
-        &mut self,
-        executable: &Executable,
-    ) -> Result<(), FeeReserveError> {
-        self.fee_reserve
-            .consume_deferred(self.fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
-            .and_then(|()| {
-                self.fee_reserve.consume_deferred(
-                    self.fee_table.tx_payload_cost_per_byte(),
-                    executable.payload_size(),
-                    CostingReason::TxPayloadCost,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_deferred(
-                    self.fee_table.tx_signature_verification_per_sig(),
-                    executable.auth_zone_params().initial_proofs.len(),
-                    CostingReason::TxSignatureVerification,
-                )
-            })
     }
 
     pub fn finalize(

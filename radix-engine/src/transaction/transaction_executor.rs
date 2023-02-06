@@ -3,7 +3,10 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::fee::{CostingError, FeeTable, SystemLoanFeeReserve};
+use crate::system::kernel_modules::fee::FinalizingFeeReserve;
+use crate::system::kernel_modules::fee::{
+    CostingError, CostingReason, FeeTable, PreExecutionFeeReserve, SystemLoanFeeReserve,
+};
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -131,7 +134,35 @@ where
             FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
         };
 
-        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
+        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
+    }
+
+    fn apply_pre_execution_costs(
+        fee_reserve: SystemLoanFeeReserve,
+        fee_table: &FeeTable,
+        executable: &Executable,
+    ) -> Result<SystemLoanFeeReserve, PreExecutionError> {
+        fee_reserve
+            .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_payload_cost_per_byte(),
+                    executable.payload_size(),
+                    CostingReason::TxPayloadCost,
+                )
+            })
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_signature_verification_per_sig(),
+                    executable.auth_zone_params().initial_proofs.len(),
+                    CostingReason::TxSignatureVerification,
+                )
+            })
+            .map_err(|e| PreExecutionError {
+                fee_summary: fee_reserve.finalize(),
+                error: e,
+            })
+            .map(|_| fee_reserve)
     }
 
     fn execute_with_fee_reserve(
@@ -139,6 +170,7 @@ where
         transaction: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: SystemLoanFeeReserve,
+        fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
@@ -160,13 +192,11 @@ where
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
-        // Prepare state track and execution trace
-        let track = Track::new(self.substate_store, FeeTable::new());
-
         // Apply pre execution costing
-        let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut track = match pre_execution_result {
-            Ok(track) => track,
+        let pre_execution_result =
+            Self::apply_pre_execution_costs(fee_reserve, &fee_table, transaction);
+        let fee_reserve = match pre_execution_result {
+            Ok(fee_reserve) => fee_reserve,
             Err(err) => {
                 return TransactionReceipt {
                     execution: TransactionExecution {
@@ -182,6 +212,9 @@ where
                 };
             }
         };
+
+        // Prepare state track and execution trace
+        let track = Track::new(self.substate_store, FeeTable::new());
 
         // Invoke the function/method
         let track_receipt = {
