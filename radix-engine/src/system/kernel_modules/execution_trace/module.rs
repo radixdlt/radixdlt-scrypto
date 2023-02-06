@@ -205,38 +205,6 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
         let traced_output = Self::extract_trace_data(update, heap)?;
         self.finalize_sys_call_trace(call_frame, traced_output)
     }
-
-    fn on_wasm_instantiation(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _code: &[u8],
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_wasm_costing(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _units: u32,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _vault_id: VaultId,
-        fee: Resource,
-        _contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        Ok(fee)
-    }
 }
 
 impl ExecutionTraceModule {

@@ -20,7 +20,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::fee_reserve::FeeReserveLockFeeInvocation;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::*;
-use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 
@@ -50,13 +49,6 @@ pub struct LockInfo {
 }
 
 pub trait KernelNodeApi {
-    fn lock_fee(
-        &mut self,
-        vault_id: VaultId,
-        fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, RuntimeError>; // TODO: move
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,

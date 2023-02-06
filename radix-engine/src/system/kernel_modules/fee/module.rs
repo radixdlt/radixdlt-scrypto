@@ -168,21 +168,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        track: &mut Track<R>,
-        vault_id: VaultId,
-        fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        track
-            .fee_reserve()
-            .lock_fee(vault_id, fee, contingent)
-            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
-    }
-
     fn pre_execute_invocation(
         &mut self,
         actor: &ResolvedActor,

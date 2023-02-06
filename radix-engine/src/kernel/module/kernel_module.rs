@@ -6,8 +6,6 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
-use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::vec::Vec;
 
 use super::BaseModule;
@@ -170,31 +168,5 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
             .on_wasm_costing(call_frame, heap, track, units)?;
 
         Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        vault_id: VaultId,
-        mut fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        if self.trace {
-            fee = KernelTraceModule
-                .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
-        }
-        fee = self
-            .costing
-            .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
-        fee = self
-            .royalty
-            .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
-        fee = self
-            .execution_trace
-            .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
-
-        Ok(fee)
     }
 }

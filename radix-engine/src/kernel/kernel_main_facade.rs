@@ -13,7 +13,6 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
@@ -21,27 +20,6 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn lock_fee(
-        &mut self,
-        vault_id: VaultId,
-        mut fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
-        fee = self
-            .module
-            .on_lock_fee(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                vault_id,
-                fee,
-                contingent,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(fee)
-    }
-
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,

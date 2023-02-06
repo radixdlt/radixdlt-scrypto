@@ -5,7 +5,6 @@ use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::Resource;
 
 #[derive(Clone)]
 pub enum KernelApiCallInput<'a> {
@@ -109,17 +108,5 @@ pub trait BaseModule<R: FeeReserve> {
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _eap: &mut Heap,
-        _rack: &mut Track<R>,
-        _vault_id: VaultId,
-        fee: Resource,
-        _contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        Ok(fee)
     }
 }

@@ -16,6 +16,8 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::blueprints::fee_reserve::FeeReserveLockFeeInvocation;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -184,7 +186,7 @@ impl Executor for VaultLockFeeInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -215,17 +217,21 @@ impl Executor for VaultLockFeeInvocation {
         };
 
         // Refill fee reserve
-        let changes = system_api.lock_fee(self.receiver, fee, self.contingent)?;
+        let bucket_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket = system_api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(fee)),
+            btreemap!(),
+        )?;
+        let changes: Bucket = system_api.call_native(FeeReserveLockFeeInvocation {
+            receiver: RENodeId::FeeReserve.into(),
+            bucket: Bucket(bucket_id.into()),
+        })?;
 
-        // Return changes
-        {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-            vault
-                .borrow_resource_mut()
-                .put(changes)
-                .expect("Failed to return fee changes to a locking-fee vault");
-        }
+        system_api.call_native(VaultPutInvocation {
+            receiver: self.receiver,
+            bucket: changes,
+        })?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
