@@ -6,10 +6,10 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
-use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::costing::FeeTable;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
-use crate::system::kernel_modules::costing::{CostingError, ExecutionFeeReserve};
+use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
+use crate::system::kernel_modules::costing::{FeeTable, FinalizingFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
@@ -111,12 +111,6 @@ impl<'s> Track<'s> {
     /// Returns a copy of the substate associated with the given address, if exists
     fn load_substate(&mut self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substate_store.get_substate(substate_id)
-    }
-
-    #[inline]
-    /// During execution, we only allow access to the Execution subset of the FeeReserve
-    pub fn fee_reserve(&mut self) -> &mut impl ExecutionFeeReserve {
-        &mut self.fee_reserve
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -462,10 +456,11 @@ impl<'s> Track<'s> {
     pub fn finalize(
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        fee_reserve: SystemLoanFeeReserve,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
         // Close fee reserve
-        let mut fee_summary = self.fee_reserve.finalize();
+        let mut fee_summary = fee_reserve.finalize();
 
         let result = match determine_result_type(invoke_result, &fee_summary) {
             TransactionResultType::Commit(invoke_result) => {

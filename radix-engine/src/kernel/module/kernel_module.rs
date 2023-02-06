@@ -1,7 +1,9 @@
 use crate::errors::*;
 use crate::kernel::*;
-use crate::system::kernel_modules::costing::CostingModule;
-use crate::system::kernel_modules::costing::RoyaltyModule;
+use crate::system::kernel_modules::costing::ExecutionCostingModule;
+use crate::system::kernel_modules::costing::FeeReserve;
+use crate::system::kernel_modules::costing::RoyaltyCostingModule;
+use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::transaction::ExecutionConfig;
@@ -14,8 +16,8 @@ use super::KernelApiCallOutput;
 pub struct KernelModule {
     trace: bool,
     execution_trace: ExecutionTraceModule,
-    costing: CostingModule,
-    royalty: RoyaltyModule,
+    costing: ExecutionCostingModule,
+    royalty: RoyaltyCostingModule,
 }
 
 impl KernelModule {
@@ -23,8 +25,8 @@ impl KernelModule {
         Self {
             trace: config.trace,
             execution_trace: ExecutionTraceModule::new(config.max_sys_call_trace_depth),
-            royalty: RoyaltyModule::default(),
-            costing: CostingModule::new(config.max_call_depth),
+            royalty: RoyaltyCostingModule::default(),
+            costing: ExecutionCostingModule::new(config.max_call_depth),
         }
     }
 }

@@ -7,6 +7,7 @@ use crate::types::*;
 
 use super::CostingReason;
 use super::ExecutionFeeReserve;
+use super::SystemLoanFeeReserve;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ExecutionCostingError {
@@ -23,11 +24,11 @@ impl CanBeAbortion for ExecutionCostingError {
     }
 }
 
-pub struct CostingModule {
+pub struct ExecutionCostingModule {
     max_depth: usize,
 }
 
-impl CostingModule {
+impl ExecutionCostingModule {
     pub fn new(max_depth: usize) -> Self {
         Self { max_depth }
     }
@@ -46,7 +47,7 @@ pub fn consume_api_cost(
     Ok(())
 }
 
-impl BaseModule for CostingModule {
+impl BaseModule for ExecutionCostingModule {
     fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,

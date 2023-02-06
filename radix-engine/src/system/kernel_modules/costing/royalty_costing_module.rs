@@ -2,7 +2,7 @@ use crate::errors::ModuleError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::costing::{ExecutionFeeReserve, RoyaltyReceiver};
+use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use radix_engine_interface::api::types::{
     FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
     SubstateOffset, VaultOffset,
@@ -17,7 +17,7 @@ pub enum RoyaltyCostingError {
     TrackError(TrackError),
 }
 
-pub struct RoyaltyModule {}
+pub struct RoyaltyCostingModule {}
 
 impl From<TrackError> for RoyaltyCostingError {
     fn from(error: TrackError) -> Self {
@@ -25,7 +25,7 @@ impl From<TrackError> for RoyaltyCostingError {
     }
 }
 
-impl Default for RoyaltyModule {
+impl Default for RoyaltyCostingModule {
     fn default() -> Self {
         Self {}
     }
@@ -57,7 +57,7 @@ macro_rules! preload_vault {
     };
 }
 
-impl BaseModule for RoyaltyModule {
+impl BaseModule for RoyaltyCostingModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &ResolvedActor,

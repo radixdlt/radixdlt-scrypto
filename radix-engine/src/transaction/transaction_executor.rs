@@ -231,6 +231,7 @@ where
                 self.scrypto_interpreter,
                 &mut module,
             );
+            // TODO: install fee_reserve into Heap
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
@@ -246,7 +247,7 @@ where
             });
 
             let events = module.collect_events();
-            track.finalize(invoke_result, events)
+            track.finalize(invoke_result, fee_reserve, events)
         };
 
         // Finish resources usage measurement and get results
