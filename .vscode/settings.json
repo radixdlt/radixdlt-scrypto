@@ -19,6 +19,7 @@
         "Secp",
         "Substate",
         "substates",
+        "Unstake",
         "Untimed",
         "virtualizable",
         "Wasmer",

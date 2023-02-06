@@ -163,13 +163,21 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn invoke(
+fn call_native(
     mut caller: Caller<'_, HostState>,
+    native_fn_ptr: u32,
+    native_fn_len: u32,
     invocation_ptr: u32,
     invocation_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
+    let native_fn = read_memory(
+        caller.as_context_mut(),
+        memory,
+        native_fn_ptr,
+        native_fn_len,
+    )?;
     let invocation = read_memory(
         caller.as_context_mut(),
         memory,
@@ -177,7 +185,9 @@ fn invoke(
         invocation_len,
     )?;
 
-    runtime.invoke(invocation).map(|buffer| buffer.0)
+    runtime
+        .call_native(native_fn, invocation)
+        .map(|buffer| buffer.0)
 }
 
 fn create_node(
@@ -356,13 +366,22 @@ impl WasmiModule {
             },
         );
 
-        let host_invoke = Func::wrap(
+        let host_call_native = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
+             native_fn_ptr: u32,
+             native_fn_len: u32,
              invocation_ptr: u32,
              invocation_len: u32|
              -> Result<u64, Trap> {
-                invoke(caller, invocation_ptr, invocation_len).map_err(|e| e.into())
+                call_native(
+                    caller,
+                    native_fn_ptr,
+                    native_fn_len,
+                    invocation_ptr,
+                    invocation_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -447,7 +466,7 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, INVOKE_FUNCTION_NAME, host_invoke);
+        linker_define!(linker, CALL_NATIVE_FUNCTION_NAME, host_call_native);
         linker_define!(linker, CREATE_NODE_FUNCTION_NAME, host_create_node);
         linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);

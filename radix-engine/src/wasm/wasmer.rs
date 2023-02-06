@@ -213,17 +213,24 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn invoke(
+        pub fn call_native(
             env: &WasmerInstanceEnv,
+            native_fn_identifier_ptr: u32,
+            native_fn_identifier_len: u32,
             invocation_ptr: u32,
             invocation_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
+            let native_fn = read_memory(
+                &instance,
+                native_fn_identifier_ptr,
+                native_fn_identifier_len,
+            )?;
             let invocation = read_memory(&instance, invocation_ptr, invocation_len)?;
 
             let buffer = runtime
-                .invoke(invocation)
+                .call_native(native_fn, invocation)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -348,7 +355,7 @@ impl WasmerModule {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
-                INVOKE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke),
+                CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_native),
                 CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),

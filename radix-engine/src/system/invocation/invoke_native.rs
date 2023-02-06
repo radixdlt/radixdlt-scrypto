@@ -15,7 +15,7 @@ where
     Y: ClientStaticInvokeApi<E>,
 {
     match native_invocation {
-        NativeInvocation::Component(component_method) => match component_method {
+        NativeInvocation::Component(component_invocation) => match component_invocation {
             ComponentInvocation::Globalize(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -33,7 +33,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Package(package_method) => match package_method {
+        NativeInvocation::Package(package_invocation) => match package_invocation {
             PackageInvocation::Publish(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -47,7 +47,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Bucket(bucket_method) => match bucket_method {
+        NativeInvocation::Bucket(bucket_invocation) => match bucket_invocation {
             BucketInvocation::Take(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -77,7 +77,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
+        NativeInvocation::AuthZoneStack(auth_zone_invocation) => match auth_zone_invocation {
             AuthZoneStackInvocation::Pop(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -111,7 +111,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Proof(proof_method) => match proof_method {
+        NativeInvocation::Proof(proof_invocation) => match proof_invocation {
             ProofInvocation::GetAmount(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -129,7 +129,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Vault(vault_method) => match vault_method {
+        NativeInvocation::Vault(vault_invocation) => match vault_invocation {
             VaultInvocation::Take(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -179,33 +179,35 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
-            AccessRulesChainInvocation::AddAccessCheck(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
+        NativeInvocation::AccessRulesChain(access_rules_invocation) => {
+            match access_rules_invocation {
+                AccessRulesChainInvocation::AddAccessCheck(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                AccessRulesChainInvocation::SetMethodMutability(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                AccessRulesChainInvocation::SetGroupMutability(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                AccessRulesChainInvocation::GetLength(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
             }
-            AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessRulesChainInvocation::SetMethodMutability(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessRulesChainInvocation::SetGroupMutability(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessRulesChainInvocation::GetLength(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Metadata(metadata_method) => match metadata_method {
+        }
+        NativeInvocation::Metadata(metadata_invocation) => match metadata_invocation {
             MetadataInvocation::Set(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -215,111 +217,115 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::ResourceManager(resman_method) => match resman_method {
-            ResourceInvocation::CreateNonFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
+        NativeInvocation::ResourceManager(resource_manager_invocation) => {
+            match resource_manager_invocation {
+                ResourceInvocation::CreateNonFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateNonFungibleWithInitialSupply(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::BurnBucket(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::Burn(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::UpdateVaultAuth(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::SetVaultAuthMutability(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateVault(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::CreateBucket(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::MintNonFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::MintUuidNonFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::MintFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::GetResourceType(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::GetTotalSupply(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::UpdateNonFungibleData(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::NonFungibleExists(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::GetNonFungible(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
             }
-            ResourceInvocation::CreateFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
+        }
+        NativeInvocation::EpochManager(epoch_manager_invocation) => {
+            match epoch_manager_invocation {
+                EpochManagerInvocation::Create(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                EpochManagerInvocation::GetCurrentEpoch(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                EpochManagerInvocation::NextRound(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                EpochManagerInvocation::SetEpoch(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                EpochManagerInvocation::CreateValidator(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                EpochManagerInvocation::UpdateValidator(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
             }
-            ResourceInvocation::CreateNonFungibleWithInitialSupply(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::BurnBucket(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::Burn(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::UpdateVaultAuth(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::LockVaultAuth(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::CreateVault(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::CreateBucket(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::MintNonFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::MintUuidNonFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::MintFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::GetResourceType(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::GetTotalSupply(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::UpdateNonFungibleData(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::NonFungibleExists(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ResourceInvocation::GetNonFungible(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-            EpochManagerInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            EpochManagerInvocation::NextRound(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            EpochManagerInvocation::SetEpoch(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            EpochManagerInvocation::CreateValidator(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            EpochManagerInvocation::UpdateValidator(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Validator(invocation) => match invocation {
+        }
+        NativeInvocation::Validator(validator_invocation) => match validator_invocation {
             ValidatorInvocation::Register(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -349,7 +355,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Clock(clock_method) => match clock_method {
+        NativeInvocation::Clock(clock_invocation) => match clock_invocation {
             ClockInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -367,19 +373,19 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Identity(invocation) => match invocation {
+        NativeInvocation::Identity(identity_invocation) => match identity_invocation {
             IdentityInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Logger(invocation) => match invocation {
+        NativeInvocation::Logger(logger_invocation) => match logger_invocation {
             LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Worktop(worktop_method) => match worktop_method {
+        NativeInvocation::Worktop(worktop_invocation) => match worktop_invocation {
             WorktopInvocation::TakeNonFungibles(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -414,7 +420,7 @@ where
             }
         },
         NativeInvocation::TransactionRuntime(method) => match method {
-            TransactionRuntimeInvocation::Get(invocation) => {
+            TransactionRuntimeInvocation::GetHash(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

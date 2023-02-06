@@ -19,10 +19,18 @@ pub struct AccountCreateInvocation {
 
 impl Invocation for AccountCreateInvocation {
     type Output = ComponentId;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::Create))
+    }
 }
 
 impl SerializableInvocation for AccountCreateInvocation {
     type ScryptoOutput = ComponentId;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::Create)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountCreateInvocation {
@@ -44,10 +52,18 @@ pub struct AccountNewInvocation {
 
 impl Invocation for AccountNewInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::New))
+    }
 }
 
 impl SerializableInvocation for AccountNewInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::New)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountNewInvocation {
@@ -75,10 +91,18 @@ pub struct AccountBalanceInvocation {
 
 impl Invocation for AccountBalanceInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::Balance))
+    }
 }
 
 impl SerializableInvocation for AccountBalanceInvocation {
     type ScryptoOutput = Decimal;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::Balance)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountBalanceInvocation {
@@ -106,10 +130,18 @@ pub struct AccountLockFeeInvocation {
 
 impl Invocation for AccountLockFeeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFee))
+    }
 }
 
 impl SerializableInvocation for AccountLockFeeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::LockFee)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountLockFeeInvocation {
@@ -137,10 +169,18 @@ pub struct AccountLockContingentFeeInvocation {
 
 impl Invocation for AccountLockContingentFeeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::LockContingentFee))
+    }
 }
 
 impl SerializableInvocation for AccountLockContingentFeeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::LockContingentFee)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountLockContingentFeeInvocation {
@@ -168,10 +208,18 @@ pub struct AccountDepositInvocation {
 
 impl Invocation for AccountDepositInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::Deposit))
+    }
 }
 
 impl SerializableInvocation for AccountDepositInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::Deposit)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountDepositInvocation {
@@ -199,10 +247,18 @@ pub struct AccountDepositBatchInvocation {
 
 impl Invocation for AccountDepositBatchInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::DepositBatch))
+    }
 }
 
 impl SerializableInvocation for AccountDepositBatchInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::DepositBatch)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountDepositBatchInvocation {
@@ -230,10 +286,18 @@ pub struct AccountWithdrawInvocation {
 
 impl Invocation for AccountWithdrawInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::Withdraw))
+    }
 }
 
 impl SerializableInvocation for AccountWithdrawInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::Withdraw)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountWithdrawInvocation {
@@ -263,10 +327,18 @@ pub struct AccountWithdrawByAmountInvocation {
 
 impl Invocation for AccountWithdrawByAmountInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawByAmount))
+    }
 }
 
 impl SerializableInvocation for AccountWithdrawByAmountInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::WithdrawByAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountWithdrawByAmountInvocation {
@@ -296,10 +368,18 @@ pub struct AccountWithdrawByIdsInvocation {
 
 impl Invocation for AccountWithdrawByIdsInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawByIds))
+    }
 }
 
 impl SerializableInvocation for AccountWithdrawByIdsInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::WithdrawByIds)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountWithdrawByIdsInvocation {
@@ -329,10 +409,18 @@ pub struct AccountLockFeeAndWithdrawInvocation {
 
 impl Invocation for AccountLockFeeAndWithdrawInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdraw))
+    }
 }
 
 impl SerializableInvocation for AccountLockFeeAndWithdrawInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::LockFeeAndWithdraw)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawInvocation {
@@ -364,10 +452,18 @@ pub struct AccountLockFeeAndWithdrawByAmountInvocation {
 
 impl Invocation for AccountLockFeeAndWithdrawByAmountInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdrawByAmount))
+    }
 }
 
 impl SerializableInvocation for AccountLockFeeAndWithdrawByAmountInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::LockFeeAndWithdrawByAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByAmountInvocation {
@@ -399,10 +495,18 @@ pub struct AccountLockFeeAndWithdrawByIdsInvocation {
 
 impl Invocation for AccountLockFeeAndWithdrawByIdsInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdrawByIds))
+    }
 }
 
 impl SerializableInvocation for AccountLockFeeAndWithdrawByIdsInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::LockFeeAndWithdrawByIds)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByIdsInvocation {
@@ -430,10 +534,18 @@ pub struct AccountCreateProofInvocation {
 
 impl Invocation for AccountCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for AccountCreateProofInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::CreateProof)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountCreateProofInvocation {
@@ -463,10 +575,18 @@ pub struct AccountCreateProofByAmountInvocation {
 
 impl Invocation for AccountCreateProofByAmountInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByAmount))
+    }
 }
 
 impl SerializableInvocation for AccountCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::CreateProofByAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountCreateProofByAmountInvocation {
@@ -496,10 +616,18 @@ pub struct AccountCreateProofByIdsInvocation {
 
 impl Invocation for AccountCreateProofByIdsInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByIds))
+    }
 }
 
 impl SerializableInvocation for AccountCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Account(AccountFn::CreateProofByIds)
+    }
 }
 
 impl Into<CallTableInvocation> for AccountCreateProofByIdsInvocation {

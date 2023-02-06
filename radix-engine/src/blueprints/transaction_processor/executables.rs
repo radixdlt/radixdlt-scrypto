@@ -100,8 +100,8 @@ impl Clone for InstructionOutput {
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn fn_identifier(&self) -> String {
-        "TransactionProcessor(Run)".to_owned()
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::TransactionProcessor(TransactionProcessorFn::Run))
     }
 }
 
@@ -664,7 +664,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
-                    let rtn = api.invoke(ResourceManagerBucketBurnInvocation { bucket })?;
+                    let rtn = api.invoke(ResourceManagerBurnBucketInvocation { bucket })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::MintFungible {

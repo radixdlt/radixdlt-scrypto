@@ -40,10 +40,14 @@ pub struct ScryptoInvocation {
 
 impl Invocation for ScryptoInvocation {
     type Output = ScryptoValue;
-}
 
-impl SerializableInvocation for ScryptoInvocation {
-    type ScryptoOutput = ScryptoValue;
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            package_address: self.package_address,
+            blueprint_name: self.blueprint_name.clone(),
+            ident: self.fn_name.clone(),
+        })
+    }
 }
 
 impl Into<CallTableInvocation> for ScryptoInvocation {
@@ -105,7 +109,7 @@ impl Into<CallTableInvocation> for NativeInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeInvocation {
-    Get(TransactionRuntimeGetHashInvocation),
+    GetHash(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
@@ -200,7 +204,7 @@ pub enum ResourceInvocation {
         ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
     ),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
-    BurnBucket(ResourceManagerBucketBurnInvocation),
+    BurnBucket(ResourceManagerBurnBucketInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
     MintNonFungible(ResourceManagerMintNonFungibleInvocation),
@@ -209,7 +213,7 @@ pub enum ResourceInvocation {
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
-    LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
+    SetVaultAuthMutability(ResourceManagerSetVaultAuthMutabilityInvocation),
     GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
@@ -429,7 +433,7 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::LockVaultAuth(invocation) => {
+                ResourceInvocation::SetVaultAuthMutability(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
@@ -596,7 +600,7 @@ impl NativeInvocation {
                 WorktopInvocation::TakeAmount(..) => {}
             },
             NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::Get(..) => {}
+                TransactionRuntimeInvocation::GetHash(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {

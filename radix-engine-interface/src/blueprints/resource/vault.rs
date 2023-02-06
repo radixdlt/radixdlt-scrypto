@@ -22,10 +22,18 @@ impl Clone for VaultPutInvocation {
 
 impl Invocation for VaultPutInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Put))
+    }
 }
 
 impl SerializableInvocation for VaultPutInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::Put)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultPutInvocation {
@@ -42,10 +50,18 @@ pub struct VaultTakeInvocation {
 
 impl Invocation for VaultTakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Take))
+    }
 }
 
 impl SerializableInvocation for VaultTakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::Take)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultTakeInvocation {
@@ -62,10 +78,18 @@ pub struct VaultTakeNonFungiblesInvocation {
 
 impl Invocation for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::TakeNonFungibles))
+    }
 }
 
 impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::TakeNonFungibles)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultTakeNonFungiblesInvocation {
@@ -81,10 +105,18 @@ pub struct VaultGetAmountInvocation {
 
 impl Invocation for VaultGetAmountInvocation {
     type Output = Decimal;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetAmount))
+    }
 }
 
 impl SerializableInvocation for VaultGetAmountInvocation {
     type ScryptoOutput = Decimal;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::GetAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultGetAmountInvocation {
@@ -101,10 +133,18 @@ pub struct VaultRecallInvocation {
 
 impl Invocation for VaultRecallInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall))
+    }
 }
 
 impl SerializableInvocation for VaultRecallInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::Recall)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultRecallInvocation {
@@ -121,10 +161,18 @@ pub struct VaultRecallNonFungiblesInvocation {
 
 impl Invocation for VaultRecallNonFungiblesInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::RecallNonFungibles))
+    }
 }
 
 impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::RecallNonFungibles)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultRecallNonFungiblesInvocation {
@@ -140,10 +188,18 @@ pub struct VaultGetResourceAddressInvocation {
 
 impl Invocation for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetResourceAddress))
+    }
 }
 
 impl SerializableInvocation for VaultGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::GetResourceAddress)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultGetResourceAddressInvocation {
@@ -159,10 +215,18 @@ pub struct VaultGetNonFungibleLocalIdsInvocation {
 
 impl Invocation for VaultGetNonFungibleLocalIdsInvocation {
     type Output = BTreeSet<NonFungibleLocalId>;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetNonFungibleLocalIds))
+    }
 }
 
 impl SerializableInvocation for VaultGetNonFungibleLocalIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::GetNonFungibleLocalIds)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultGetNonFungibleLocalIdsInvocation {
@@ -178,10 +242,18 @@ pub struct VaultCreateProofInvocation {
 
 impl Invocation for VaultCreateProofInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProof))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::CreateProof)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultCreateProofInvocation {
@@ -198,10 +270,18 @@ pub struct VaultCreateProofByAmountInvocation {
 
 impl Invocation for VaultCreateProofByAmountInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByAmount))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::CreateProofByAmount)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultCreateProofByAmountInvocation {
@@ -218,10 +298,18 @@ pub struct VaultCreateProofByIdsInvocation {
 
 impl Invocation for VaultCreateProofByIdsInvocation {
     type Output = Proof;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByIds))
+    }
 }
 
 impl SerializableInvocation for VaultCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::CreateProofByIds)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
@@ -239,10 +327,18 @@ pub struct VaultLockFeeInvocation {
 
 impl Invocation for VaultLockFeeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee))
+    }
 }
 
 impl SerializableInvocation for VaultLockFeeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Vault(VaultFn::LockFee)
+    }
 }
 
 impl Into<CallTableInvocation> for VaultLockFeeInvocation {

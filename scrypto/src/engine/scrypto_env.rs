@@ -1,7 +1,7 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::types::{
-    CallTableInvocation, FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode,
-    ScryptoReceiver, SerializableInvocation, SubstateOffset,
+    FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode, ScryptoReceiver,
+    SerializableInvocation, SubstateOffset,
 };
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientSubstateApi, Invokable};
@@ -18,9 +18,8 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ScryptoEnv {
-    // Slightly different from ClientComponentApi::call_method and ClientPackageApi::call_function, for the return type.
+    // Slightly different from ClientComponentApi::call_method, for the return type.
     // This is to avoid duplicated encoding and decoding.
-
     pub fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
@@ -43,6 +42,8 @@ impl ScryptoEnv {
         Ok(return_data)
     }
 
+    // Slightly different from ClientPackageApi::call_function, for the return type.
+    // This is to avoid duplicated encoding and decoding.
     pub fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -67,15 +68,31 @@ impl ScryptoEnv {
 
         Ok(return_data)
     }
+
+    pub fn call_native<N: SerializableInvocation>(
+        &mut self,
+        invocation: N,
+    ) -> Result<N::Output, ClientApiError> {
+        let native_fn = N::native_fn();
+        let native_fn = scrypto_encode(&native_fn).unwrap();
+        let invocation = scrypto_encode(&invocation).unwrap();
+
+        let return_data = copy_buffer(unsafe {
+            call_native(
+                native_fn.as_ptr(),
+                native_fn.len(),
+                invocation.as_ptr(),
+                invocation.len(),
+            )
+        });
+
+        scrypto_decode(&return_data).map_err(ClientApiError::DecodeError)
+    }
 }
 
 impl<N: SerializableInvocation> Invokable<N, ClientApiError> for ScryptoEnv {
-    fn invoke(&mut self, input: N) -> Result<N::Output, ClientApiError> {
-        let invocation = scrypto_encode(&Into::<CallTableInvocation>::into(input)).unwrap();
-
-        let return_data = copy_buffer(unsafe { invoke(invocation.as_ptr(), invocation.len()) });
-
-        scrypto_decode(&return_data).map_err(ClientApiError::DecodeError)
+    fn invoke(&mut self, invocation: N) -> Result<N::Output, ClientApiError> {
+        self.call_native(invocation)
     }
 }
 

@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::Resource;
 #[derive(Clone)]
 pub enum KernelApiCallInput<'a> {
     Invoke {
-        fn_identifier: String,
+        fn_identifier: FnIdentifier,
         input_size: u32,
         depth: usize,
     },
