@@ -9,7 +9,8 @@ pub struct Sandwich {
     pub available: bool,
 }
 
-blueprint! {
+#[blueprint]
+mod non_fungible_test {
     struct NonFungibleTest {
         vault: Vault,
     }

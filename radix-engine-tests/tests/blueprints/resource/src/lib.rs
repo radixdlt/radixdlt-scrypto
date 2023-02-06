@@ -7,7 +7,8 @@ pub struct Sandwich {
     pub available: bool,
 }
 
-blueprint! {
+#[blueprint]
+mod resource_test {
     struct ResourceTest;
 
     impl ResourceTest {
