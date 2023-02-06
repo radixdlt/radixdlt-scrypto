@@ -67,7 +67,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         })
         .manifest(
             ManifestBuilder::new()
-                .withdraw_from_account(account1, 1u32.into(), RADIX_TOKEN)
+                .withdraw_from_account(account1, RADIX_TOKEN, 1u32.into())
                 .call_method(
                     account2,
                     "deposit_batch",

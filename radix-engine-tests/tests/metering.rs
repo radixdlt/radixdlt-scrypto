@@ -44,7 +44,7 @@ fn test_basic_transfer() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10u32.into())
-        .withdraw_from_account(account1, 100u32.into(), RADIX_TOKEN)
+        .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
             "deposit_batch",
@@ -130,7 +130,7 @@ fn should_be_able_run_large_manifest() {
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
-    builder.withdraw_from_account(account, 100u32.into(), RADIX_TOKEN);
+    builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..500 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
@@ -163,7 +163,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Act
     let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
-        builder.create_proof_from_account_by_amount(account, 1.into(), resource_address);
+        builder.create_proof_from_account_by_amount(account, resource_address, 1.into());
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();
@@ -188,7 +188,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .withdraw_from_account(account, 10u32.into(), RADIX_TOKEN)
+            .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", args!(bucket_id));
                 builder

@@ -440,7 +440,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, rule!(allow_all));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_address, Decimal::one(), RADIX_TOKEN)
+        .withdraw_from_account(account_address, RADIX_TOKEN, Decimal::one())
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
@@ -772,8 +772,8 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(
             account_with_lp,
-            Decimal::one(),
             validator_substate.liquidity_token,
+            Decimal::one(),
         )
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)

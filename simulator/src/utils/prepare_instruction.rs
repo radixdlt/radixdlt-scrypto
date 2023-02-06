@@ -131,10 +131,10 @@ pub fn add_create_proof_instruction_from_account_with_resource_specifier<'a>(
         .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
         ResourceSpecifier::Amount(amount, resource_address) => {
-            manifest_builder.create_proof_from_account_by_amount(account, amount, resource_address)
+            manifest_builder.create_proof_from_account_by_amount(account, resource_address, amount)
         }
         ResourceSpecifier::Ids(non_fungible_local_ids, resource_address) => manifest_builder
-            .create_proof_from_account_by_ids(account, &non_fungible_local_ids, resource_address),
+            .create_proof_from_account_by_ids(account, resource_address, &non_fungible_local_ids),
     };
     Ok(builder)
 }
@@ -241,8 +241,8 @@ fn parse_args<'a>(
                                 if let Some(account) = account {
                                     manifest_builder.withdraw_from_account(
                                         account,
-                                        amount,
                                         resource_address,
+                                        amount,
                                     );
                                 }
                                 manifest_builder
@@ -257,8 +257,8 @@ fn parse_args<'a>(
                                 if let Some(account) = account {
                                     manifest_builder.withdraw_non_fungibles_from_account(
                                         account,
-                                        &ids,
                                         resource_address,
+                                        &ids,
                                     );
                                 }
                                 manifest_builder
@@ -282,8 +282,8 @@ fn parse_args<'a>(
                                 if let Some(account) = account {
                                     manifest_builder.create_proof_from_account_by_amount(
                                         account,
-                                        amount,
                                         resource_address,
+                                        amount,
                                     );
                                     manifest_builder
                                         .add_instruction(BasicInstruction::PopFromAuthZone)
@@ -297,8 +297,8 @@ fn parse_args<'a>(
                                 if let Some(account) = account {
                                     manifest_builder.create_proof_from_account_by_ids(
                                         account,
-                                        &ids,
                                         resource_address,
+                                        &ids,
                                     );
                                     manifest_builder
                                         .add_instruction(BasicInstruction::PopFromAuthZone)
