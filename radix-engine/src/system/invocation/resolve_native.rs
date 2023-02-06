@@ -781,21 +781,29 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            AccountFn::WithdrawAll => {
+                let invocation = scrypto_decode::<AccountWithdrawAllInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             AccountFn::Withdraw => {
                 let invocation = scrypto_decode::<AccountWithdrawInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccountFn::WithdrawByAmount => {
-                let invocation = scrypto_decode::<AccountWithdrawByAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+            AccountFn::WithdrawNonFungibles => {
+                let invocation =
+                    scrypto_decode::<AccountWithdrawNonFungiblesInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccountFn::WithdrawByIds => {
-                let invocation = scrypto_decode::<AccountWithdrawByIdsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+            AccountFn::LockFeeAndWithdrawAll => {
+                let invocation =
+                    scrypto_decode::<AccountLockFeeAndWithdrawAllInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -805,16 +813,9 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccountFn::LockFeeAndWithdrawByAmount => {
+            AccountFn::LockFeeAndWithdrawNonFungibles => {
                 let invocation =
-                    scrypto_decode::<AccountLockFeeAndWithdrawByAmountInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccountFn::LockFeeAndWithdrawByIds => {
-                let invocation =
-                    scrypto_decode::<AccountLockFeeAndWithdrawByIdsInvocation>(&invocation)
+                    scrypto_decode::<AccountLockFeeAndWithdrawNonFungiblesInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

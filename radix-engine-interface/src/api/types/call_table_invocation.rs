@@ -278,13 +278,13 @@ pub enum AccountInvocation {
     Deposit(AccountDepositInvocation),
     DepositBatch(AccountDepositBatchInvocation),
 
+    WithdrawAll(AccountWithdrawAllInvocation),
     Withdraw(AccountWithdrawInvocation),
-    WithdrawByAmount(AccountWithdrawByAmountInvocation),
-    WithdrawByIds(AccountWithdrawByIdsInvocation),
+    WithdrawNonFungibles(AccountWithdrawNonFungiblesInvocation),
 
+    LockFeeAndWithdrawAll(AccountLockFeeAndWithdrawAllInvocation),
     LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation),
-    LockFeeAndWithdrawByAmount(AccountLockFeeAndWithdrawByAmountInvocation),
-    LockFeeAndWithdrawByIds(AccountLockFeeAndWithdrawByIdsInvocation),
+    LockFeeAndWithdrawNonFungibles(AccountLockFeeAndWithdrawNonFungiblesInvocation),
 
     CreateProof(AccountCreateProofInvocation),
     CreateProofByAmount(AccountCreateProofByAmountInvocation),
@@ -612,24 +612,22 @@ impl NativeInvocation {
                 | AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
                     receiver, ..
                 })
+                | AccountInvocation::WithdrawAll(AccountWithdrawAllInvocation {
+                    receiver, ..
+                })
                 | AccountInvocation::Withdraw(AccountWithdrawInvocation { receiver, .. })
-                | AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
-                    receiver,
-                    ..
-                })
-                | AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
-                    receiver,
-                    ..
-                })
+                | AccountInvocation::WithdrawNonFungibles(
+                    AccountWithdrawNonFungiblesInvocation { receiver, .. },
+                )
+                | AccountInvocation::LockFeeAndWithdrawAll(
+                    AccountLockFeeAndWithdrawAllInvocation { receiver, .. },
+                )
                 | AccountInvocation::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInvocation {
                     receiver,
                     ..
                 })
-                | AccountInvocation::LockFeeAndWithdrawByAmount(
-                    AccountLockFeeAndWithdrawByAmountInvocation { receiver, .. },
-                )
-                | AccountInvocation::LockFeeAndWithdrawByIds(
-                    AccountLockFeeAndWithdrawByIdsInvocation { receiver, .. },
+                | AccountInvocation::LockFeeAndWithdrawNonFungibles(
+                    AccountLockFeeAndWithdrawNonFungiblesInvocation { receiver, .. },
                 )
                 | AccountInvocation::CreateProof(AccountCreateProofInvocation {
                     receiver, ..

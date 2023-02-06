@@ -239,7 +239,7 @@ fn parse_args<'a>(
                         let bucket_id = match resource_specifier {
                             ResourceSpecifier::Amount(amount, resource_address) => {
                                 if let Some(account) = account {
-                                    manifest_builder.withdraw_from_account_by_amount(
+                                    manifest_builder.withdraw_from_account(
                                         account,
                                         amount,
                                         resource_address,
@@ -255,7 +255,7 @@ fn parse_args<'a>(
                             }
                             ResourceSpecifier::Ids(ids, resource_address) => {
                                 if let Some(account) = account {
-                                    manifest_builder.withdraw_from_account_by_ids(
+                                    manifest_builder.withdraw_non_fungibles_from_account(
                                         account,
                                         &ids,
                                         resource_address,

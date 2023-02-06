@@ -63,7 +63,7 @@ PUBLISH_PACKAGE_WITH_OWNER
             r##"
 CALL_METHOD
     ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
-    "withdraw_by_amount"
+    "withdraw"
     Decimal("5")
     ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
 TAKE_FROM_WORKTOP_BY_AMOUNT

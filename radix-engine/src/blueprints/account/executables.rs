@@ -629,13 +629,13 @@ impl Executor for AccountDepositBatchExecutable {
 // Account Withdraw
 //==================
 
-pub struct AccountWithdrawExecutable {
+pub struct AccountWithdrawAllExecutable {
     pub receiver: RENodeId,
     pub resource_address: ResourceAddress,
 }
 
-impl ExecutableInvocation for AccountWithdrawInvocation {
-    type Exec = AccountWithdrawExecutable;
+impl ExecutableInvocation for AccountWithdrawAllInvocation {
+    type Exec = AccountWithdrawAllExecutable;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -649,7 +649,7 @@ impl ExecutableInvocation for AccountWithdrawInvocation {
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         let actor =
-            ResolvedActor::method(NativeFn::Account(AccountFn::Withdraw), resolved_receiver);
+            ResolvedActor::method(NativeFn::Account(AccountFn::WithdrawAll), resolved_receiver);
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
@@ -660,7 +660,7 @@ impl ExecutableInvocation for AccountWithdrawInvocation {
     }
 }
 
-impl Executor for AccountWithdrawExecutable {
+impl Executor for AccountWithdrawAllExecutable {
     type Output = Bucket;
 
     fn execute<Y, W: WasmEngine>(
@@ -724,14 +724,14 @@ impl Executor for AccountWithdrawExecutable {
 // Account Withdraw By Amount
 //============================
 
-pub struct AccountWithdrawByAmountExecutable {
+pub struct AccountWithdrawExecutable {
     pub receiver: RENodeId,
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-impl ExecutableInvocation for AccountWithdrawByAmountInvocation {
-    type Exec = AccountWithdrawByAmountExecutable;
+impl ExecutableInvocation for AccountWithdrawInvocation {
+    type Exec = AccountWithdrawExecutable;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -744,10 +744,8 @@ impl ExecutableInvocation for AccountWithdrawByAmountInvocation {
 
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::WithdrawByAmount),
-            resolved_receiver,
-        );
+        let actor =
+            ResolvedActor::method(NativeFn::Account(AccountFn::Withdraw), resolved_receiver);
 
         let executor = Self::Exec {
             receiver: resolved_receiver.receiver,
@@ -759,7 +757,7 @@ impl ExecutableInvocation for AccountWithdrawByAmountInvocation {
     }
 }
 
-impl Executor for AccountWithdrawByAmountExecutable {
+impl Executor for AccountWithdrawExecutable {
     type Output = Bucket;
 
     fn execute<Y, W: WasmEngine>(
@@ -823,14 +821,14 @@ impl Executor for AccountWithdrawByAmountExecutable {
 // Account Withdraw By Ids
 //=========================
 
-pub struct AccountWithdrawByIdsExecutable {
+pub struct AccountWithdrawNonFungiblesExecutable {
     pub receiver: RENodeId,
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-impl ExecutableInvocation for AccountWithdrawByIdsInvocation {
-    type Exec = AccountWithdrawByIdsExecutable;
+impl ExecutableInvocation for AccountWithdrawNonFungiblesInvocation {
+    type Exec = AccountWithdrawNonFungiblesExecutable;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -844,7 +842,7 @@ impl ExecutableInvocation for AccountWithdrawByIdsInvocation {
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::WithdrawByIds),
+            NativeFn::Account(AccountFn::WithdrawNonFungibles),
             resolved_receiver,
         );
 
@@ -858,7 +856,7 @@ impl ExecutableInvocation for AccountWithdrawByIdsInvocation {
     }
 }
 
-impl Executor for AccountWithdrawByIdsExecutable {
+impl Executor for AccountWithdrawNonFungiblesExecutable {
     type Output = Bucket;
 
     fn execute<Y, W: WasmEngine>(
@@ -922,6 +920,62 @@ impl Executor for AccountWithdrawByIdsExecutable {
 // Account Withdraw And Lock
 //===========================
 
+impl ExecutableInvocation for AccountLockFeeAndWithdrawAllInvocation {
+    type Exec = Self;
+
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let call_frame_update =
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
+        let actor = ResolvedActor::method(
+            NativeFn::Account(AccountFn::LockFeeAndWithdrawAll),
+            ResolvedReceiver {
+                derefed_from: None,
+                receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
+            },
+        );
+
+        Ok((actor, call_frame_update, self))
+    }
+}
+
+impl Executor for AccountLockFeeAndWithdrawAllInvocation {
+    type Output = Bucket;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        api.invoke(AccountLockFeeInvocation {
+            receiver: self.receiver,
+            amount: self.amount_to_lock,
+        })?;
+        let bucket = api.invoke(AccountWithdrawAllInvocation {
+            receiver: self.receiver,
+            resource_address: self.resource_address,
+        })?;
+
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
+        Ok((bucket, call_frame_update))
+    }
+}
+
+//=====================================
+// Account Withdraw By Amount And Lock
+//=====================================
+
 impl ExecutableInvocation for AccountLockFeeAndWithdrawInvocation {
     type Exec = Self;
 
@@ -967,62 +1021,6 @@ impl Executor for AccountLockFeeAndWithdrawInvocation {
         let bucket = api.invoke(AccountWithdrawInvocation {
             receiver: self.receiver,
             resource_address: self.resource_address,
-        })?;
-
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, call_frame_update))
-    }
-}
-
-//=====================================
-// Account Withdraw By Amount And Lock
-//=====================================
-
-impl ExecutableInvocation for AccountLockFeeAndWithdrawByAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockFeeAndWithdrawByAmount),
-            ResolvedReceiver {
-                derefed_from: None,
-                receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
-            },
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountLockFeeAndWithdrawByAmountInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
-    {
-        api.invoke(AccountLockFeeInvocation {
-            receiver: self.receiver,
-            amount: self.amount_to_lock,
-        })?;
-        let bucket = api.invoke(AccountWithdrawByAmountInvocation {
-            receiver: self.receiver,
-            resource_address: self.resource_address,
             amount: self.amount,
         })?;
 
@@ -1035,7 +1033,7 @@ impl Executor for AccountLockFeeAndWithdrawByAmountInvocation {
 // Account Withdraw By Ids And Lock
 //==================================
 
-impl ExecutableInvocation for AccountLockFeeAndWithdrawByIdsInvocation {
+impl ExecutableInvocation for AccountLockFeeAndWithdrawNonFungiblesInvocation {
     type Exec = Self;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
@@ -1048,7 +1046,7 @@ impl ExecutableInvocation for AccountLockFeeAndWithdrawByIdsInvocation {
         let call_frame_update =
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
         let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockFeeAndWithdrawByIds),
+            NativeFn::Account(AccountFn::LockFeeAndWithdrawNonFungibles),
             ResolvedReceiver {
                 derefed_from: None,
                 receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
@@ -1059,7 +1057,7 @@ impl ExecutableInvocation for AccountLockFeeAndWithdrawByIdsInvocation {
     }
 }
 
-impl Executor for AccountLockFeeAndWithdrawByIdsInvocation {
+impl Executor for AccountLockFeeAndWithdrawNonFungiblesInvocation {
     type Output = Bucket;
 
     fn execute<Y, W: WasmEngine>(
@@ -1077,7 +1075,7 @@ impl Executor for AccountLockFeeAndWithdrawByIdsInvocation {
             receiver: self.receiver,
             amount: self.amount_to_lock,
         })?;
-        let bucket = api.invoke(AccountWithdrawByIdsInvocation {
+        let bucket = api.invoke(AccountWithdrawNonFungiblesInvocation {
             receiver: self.receiver,
             resource_address: self.resource_address,
             ids: self.ids,

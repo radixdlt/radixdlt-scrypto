@@ -116,7 +116,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_ids(account, &BTreeSet::from([auth_local_id]), auth)
+        .withdraw_non_fungibles_from_account(account, &BTreeSet::from([auth_local_id]), auth)
         .call_method(
             my_component,
             "put_auth",
