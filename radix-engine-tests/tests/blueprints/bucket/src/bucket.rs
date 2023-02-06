@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod bucket_test {
     struct BucketTest {
         vault: Vault,
     }

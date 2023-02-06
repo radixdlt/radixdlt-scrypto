@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod receiver {
     struct Receiver {
         vault: Vault,
     }

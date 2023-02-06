@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod proofs {
     struct Proofs {}
 
     impl Proofs {

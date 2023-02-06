@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod bucket_proof {
     struct BucketProof;
 
     impl BucketProof {
