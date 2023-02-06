@@ -58,18 +58,14 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         if !VisibilityProperties::check_drop_node_visibility(
-            current_mode,
+            self.execution_mode,
             &self.current_frame.actor,
             node_id,
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidDropNodeVisibility {
-                    mode: current_mode,
+                    mode: self.execution_mode,
                     actor: self.current_frame.actor.clone(),
                     node_id,
                 },
@@ -77,9 +73,6 @@ where
         }
 
         let node = self.drop_node_internal(node_id)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
 
         self.module
             .post_kernel_api_call(
@@ -115,19 +108,15 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         if !VisibilityProperties::check_create_node_visibility(
-            current_mode,
+            self.execution_mode,
             &self.current_frame.actor,
             &re_node,
             &module_init,
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidCreateNodeVisibility {
-                    mode: current_mode,
+                    mode: self.execution_mode,
                     actor: self.current_frame.actor.clone(),
                 },
             ));
@@ -202,9 +191,6 @@ where
             push_to_store,
         )?;
 
-        // Restore current mode
-        self.execution_mode = current_mode;
-
         self.module
             .post_kernel_api_call(
                 &self.current_frame,
@@ -244,16 +230,12 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         // TODO: Check if valid offset for node_id
 
         // Authorization
         let actor = &self.current_frame.actor;
         if !VisibilityProperties::check_substate_visibility(
-            current_mode,
+            self.execution_mode,
             actor,
             node_id,
             offset.clone(),
@@ -261,7 +243,7 @@ where
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidSubstateVisibility {
-                    mode: current_mode,
+                    mode: self.execution_mode,
                     actor: actor.clone(),
                     node_id,
                     offset,
@@ -331,9 +313,6 @@ where
                 }
             }
         };
-
-        // Restore current mode
-        self.execution_mode = current_mode;
 
         self.module
             .post_kernel_api_call(
@@ -487,17 +466,8 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
 
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-
-        self.execution_mode = ExecutionMode::System;
         let (actor, call_frame_update, executor) = invocation.resolve(self)?;
-
-        self.execution_mode = ExecutionMode::Kernel;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
 
         self.module
             .post_kernel_api_call(
