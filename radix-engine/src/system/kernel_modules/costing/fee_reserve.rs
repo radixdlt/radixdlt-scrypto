@@ -10,7 +10,7 @@ use strum::EnumCount;
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
-pub enum FeeReserveError {
+pub enum CostingError {
     InsufficientBalance,
     Overflow,
     LimitExceeded,
@@ -19,7 +19,7 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
-impl CanBeAbortion for FeeReserveError {
+impl CanBeAbortion for CostingError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::Abort(reason) => Some(reason),
@@ -36,7 +36,7 @@ pub trait PreExecutionFeeReserve {
         amount: u32,
         multiplier: usize,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError>;
+    ) -> Result<(), CostingError>;
 }
 
 pub trait ExecutionFeeReserve {
@@ -44,27 +44,27 @@ pub trait ExecutionFeeReserve {
         &mut self,
         receiver: RoyaltyReceiver,
         cost_units: u32,
-    ) -> Result<(), FeeReserveError>;
+    ) -> Result<(), CostingError>;
 
     fn consume_multiplied_execution(
         &mut self,
         cost_units_per_multiple: u32,
         multiplier: usize,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError>;
+    ) -> Result<(), CostingError>;
 
     fn consume_execution(
         &mut self,
         cost_units: u32,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError>;
+    ) -> Result<(), CostingError>;
 
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError>;
+    ) -> Result<Resource, CostingError>;
 }
 
 pub trait FinalizingFeeReserve {
@@ -165,21 +165,21 @@ pub struct SystemLoanFeeReserve {
 }
 
 #[inline]
-fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
-    a.checked_add(b).ok_or(FeeReserveError::Overflow)
+fn checked_add(a: u32, b: u32) -> Result<u32, CostingError> {
+    a.checked_add(b).ok_or(CostingError::Overflow)
 }
 
 #[inline]
-fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
+fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), CostingError> {
     *value = checked_add(*value, summand)?;
     Ok(())
 }
 
 #[inline]
-fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, FeeReserveError> {
+fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, CostingError> {
     u32::try_from(multiplier)
-        .map_err(|_| FeeReserveError::Overflow)
-        .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))
+        .map_err(|_| CostingError::Overflow)
+        .and_then(|x| x.checked_mul(amount).ok_or(CostingError::Overflow))
 }
 
 pub fn u128_to_decimal(a: u128) -> Decimal {
@@ -223,12 +223,12 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    fn consume(&mut self, cost_units_to_consume: u32, price: u128) -> Result<(), FeeReserveError> {
+    fn consume(&mut self, cost_units_to_consume: u32, price: u128) -> Result<(), CostingError> {
         // Check limit
         if checked_add(self.total_cost_units_consumed, cost_units_to_consume)?
             > self.cost_unit_limit
         {
-            return Err(FeeReserveError::LimitExceeded);
+            return Err(CostingError::LimitExceeded);
         }
 
         /* To achieve the best performance, we may need to tweak the order of the three branches based on SYSTEM_LOAN_AMOUNT */
@@ -242,7 +242,7 @@ impl SystemLoanFeeReserve {
             // Sort out the amount from balance
             let from_balance = price * cost_units_to_consume as u128;
             if self.remaining_xrd_balance < from_balance {
-                return Err(FeeReserveError::InsufficientBalance);
+                return Err(CostingError::InsufficientBalance);
             }
 
             // Finally, apply state updates
@@ -253,7 +253,7 @@ impl SystemLoanFeeReserve {
             let from_balance =
                 price * (cost_units_to_consume - self.remaining_loan_balance) as u128;
             if self.remaining_xrd_balance < from_balance {
-                return Err(FeeReserveError::InsufficientBalance);
+                return Err(CostingError::InsufficientBalance);
             }
 
             // Finally, apply state updates
@@ -266,7 +266,7 @@ impl SystemLoanFeeReserve {
     }
 
     /// Repays loan and deferred costs in full.
-    fn repay_all(&mut self) -> Result<(), FeeReserveError> {
+    fn repay_all(&mut self) -> Result<(), CostingError> {
         // Apply deferred execution costs
         let mut sum = 0;
         for v in self.execution_deferred.iter() {
@@ -281,14 +281,14 @@ impl SystemLoanFeeReserve {
 
         // Repay owed
         if self.remaining_xrd_balance < self.xrd_owed {
-            return Err(FeeReserveError::LoanRepaymentFailed);
+            return Err(CostingError::LoanRepaymentFailed);
         } else {
             self.remaining_xrd_balance -= self.xrd_owed;
             self.xrd_owed = 0;
         }
 
         if self.abort_when_loan_repaid {
-            return Err(FeeReserveError::Abort(
+            return Err(CostingError::Abort(
                 AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
             ));
         }
@@ -322,7 +322,7 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
         amount: u32,
         multiplier: usize,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError> {
+    ) -> Result<(), CostingError> {
         if amount == 0 {
             return Ok(());
         }
@@ -344,7 +344,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         receiver: RoyaltyReceiver,
         amount: u32,
-    ) -> Result<(), FeeReserveError> {
+    ) -> Result<(), CostingError> {
         if amount == 0 {
             return Ok(());
         }
@@ -363,7 +363,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         cost_units_per_multiple: u32,
         multiplier: usize,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError> {
+    ) -> Result<(), CostingError> {
         if multiplier == 0 {
             return Ok(());
         }
@@ -378,7 +378,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         cost_units_to_consume: u32,
         reason: CostingReason,
-    ) -> Result<(), FeeReserveError> {
+    ) -> Result<(), CostingError> {
         if cost_units_to_consume == 0 {
             return Ok(());
         }
@@ -398,9 +398,9 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         vault_id: VaultId,
         mut fee: Resource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError> {
+    ) -> Result<Resource, CostingError> {
         if fee.resource_address() != RADIX_TOKEN {
-            return Err(FeeReserveError::NotXrd);
+            return Err(CostingError::NotXrd);
         }
 
         // Update balance
@@ -490,7 +490,7 @@ mod tests {
     fn test_out_of_cost_unit() {
         let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5, false);
         assert_eq!(
-            Err(FeeReserveError::InsufficientBalance),
+            Err(CostingError::InsufficientBalance),
             fee_reserve.consume_multiplied_execution(6, 1, CostingReason::Invoke)
         );
         let summary = fee_reserve.finalize();

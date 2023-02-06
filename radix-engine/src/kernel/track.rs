@@ -9,7 +9,7 @@ use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::costing::FeeTable;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
-use crate::system::kernel_modules::costing::{ExecutionFeeReserve, FeeReserveError};
+use crate::system::kernel_modules::costing::{CostingError, ExecutionFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
@@ -88,7 +88,7 @@ pub struct TrackReceipt {
 
 pub struct PreExecutionError {
     pub fee_summary: FeeSummary,
-    pub error: FeeReserveError,
+    pub error: CostingError,
 }
 
 impl<'s> Track<'s> {

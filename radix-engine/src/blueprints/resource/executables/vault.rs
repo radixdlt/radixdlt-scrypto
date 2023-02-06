@@ -7,7 +7,7 @@ use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::kernel_modules::costing::FeeReserveError;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -30,7 +30,7 @@ pub enum VaultError {
     CouldNotCreateProof,
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
-    LockFeeRepayFailure(FeeReserveError),
+    LockFeeRepayFailure(CostingError),
 }
 
 impl ExecutableInvocation for VaultRecallInvocation {

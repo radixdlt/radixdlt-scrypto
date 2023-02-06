@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::costing::CostingEntry;
-use crate::system::kernel_modules::costing::FeeReserveError;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
@@ -10,14 +10,14 @@ use super::ExecutionFeeReserve;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ExecutionCostingError {
-    FeeReserveError(FeeReserveError),
+    CostingError(CostingError),
     MaxCallDepthLimitReached,
 }
 
 impl CanBeAbortion for ExecutionCostingError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            Self::FeeReserveError(err) => err.abortion(),
+            Self::CostingError(err) => err.abortion(),
             _ => None,
         }
     }
@@ -42,9 +42,7 @@ pub fn consume_api_cost(
     track
         .fee_reserve()
         .consume_execution(cost_units, reason)
-        .map_err(|e| {
-            ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
-        })?;
+        .map_err(|e| ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e)))?;
     Ok(())
 }
 
@@ -148,9 +146,7 @@ impl BaseModule for CostingModule {
                 byte_length,
                 CostingReason::InstantiateWasm,
             )
-            .map_err(|e| {
-                ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
-            })
+            .map_err(|e| ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e)))
     }
 
     fn on_wasm_costing(
@@ -166,9 +162,7 @@ impl BaseModule for CostingModule {
         track
             .fee_reserve()
             .consume_multiplied_execution(units, multiplier, CostingReason::RunWasm)
-            .map_err(|e| {
-                ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
-            })
+            .map_err(|e| ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e)))
     }
 
     fn pre_execute_invocation(
@@ -186,9 +180,7 @@ impl BaseModule for CostingModule {
                     .fee_reserve()
                     .consume_execution(cost_units, CostingReason::RunNative)
                     .map_err(|e| {
-                        ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(
-                            e,
-                        ))
+                        ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e))
                     })
             }
             _ => Ok(()),

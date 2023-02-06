@@ -3,8 +3,8 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::costing::ExecutionFeeReserve;
-use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -16,18 +16,18 @@ use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::blueprints::resource::ResourceOperationError;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum FeeReserveBlueprintError {
-    FeeReserveError(FeeReserveError),
+pub enum FeeReserveError {
+    CostingError(CostingError),
     ResourceError(ResourceOperationError),
 }
 
-impl From<FeeReserveError> for FeeReserveBlueprintError {
-    fn from(value: FeeReserveError) -> Self {
-        Self::FeeReserveError(value)
+impl From<CostingError> for FeeReserveError {
+    fn from(value: CostingError) -> Self {
+        Self::CostingError(value)
     }
 }
 
-impl From<ResourceOperationError> for FeeReserveBlueprintError {
+impl From<ResourceOperationError> for FeeReserveError {
     fn from(value: ResourceOperationError) -> Self {
         Self::ResourceError(value)
     }
@@ -78,10 +78,10 @@ impl Executor for FeeReserveLockFeeInvocation {
             .fee_reserve
             .lock_fee(
                 self.vault_id,
-                bucket.resource().map_err(FeeReserveBlueprintError::from)?,
+                bucket.resource().map_err(FeeReserveError::from)?,
                 self.contingent,
             )
-            .map_err(FeeReserveBlueprintError::from)?;
+            .map_err(FeeReserveError::from)?;
 
         let bucket_id = api.allocate_node_id(RENodeType::Bucket)?;
         api.create_node(

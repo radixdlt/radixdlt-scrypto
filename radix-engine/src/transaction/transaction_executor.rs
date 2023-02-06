@@ -207,7 +207,7 @@ where
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
                             ModuleError::ExecutionCostingError(
-                                ExecutionCostingError::FeeReserveError(err.error),
+                                ExecutionCostingError::CostingError(err.error),
                             ),
                         )),
                     }),

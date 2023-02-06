@@ -9,11 +9,11 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::*;
 
-use super::FeeReserveError;
+use super::CostingError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RoyaltyCostingError {
-    FeeReserveError(FeeReserveError),
+    CostingError(CostingError),
     TrackError(TrackError),
 }
 
@@ -135,9 +135,7 @@ impl BaseModule for RoyaltyModule {
                 RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
                 royalty,
             )
-            .map_err(|e| {
-                ModuleError::RoyaltyCostingError(RoyaltyCostingError::FeeReserveError(e))
-            })?;
+            .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e)))?;
         track
             .release_lock(
                 SubstateId(node_id, NodeModuleId::PackageRoyalty, offset.clone()),
@@ -217,7 +215,7 @@ impl BaseModule for RoyaltyModule {
                     royalty,
                 )
                 .map_err(|e| {
-                    ModuleError::RoyaltyCostingError(RoyaltyCostingError::FeeReserveError(e))
+                    ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e))
                 })?;
             track
                 .release_lock(
