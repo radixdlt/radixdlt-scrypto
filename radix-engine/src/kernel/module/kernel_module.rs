@@ -1,9 +1,9 @@
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::costing::CostingModule;
+use crate::system::kernel_modules::costing::RoyaltyModule;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
-use crate::system::kernel_modules::fee::CostingModule;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
-use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
 use sbor::rust::vec::Vec;
 

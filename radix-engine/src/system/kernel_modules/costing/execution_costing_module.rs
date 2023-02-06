@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::*;
-use crate::system::kernel_modules::fee::CostingEntry;
-use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::system::kernel_modules::costing::CostingEntry;
+use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
@@ -9,12 +9,12 @@ use super::CostingReason;
 use super::ExecutionFeeReserve;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
-pub enum CostingError {
+pub enum ExecutionCostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,
 }
 
-impl CanBeAbortion for CostingError {
+impl CanBeAbortion for ExecutionCostingError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::FeeReserveError(err) => err.abortion(),
@@ -42,7 +42,9 @@ pub fn consume_api_cost(
     track
         .fee_reserve()
         .consume_execution(cost_units, reason)
-        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+        .map_err(|e| {
+            ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
+        })?;
     Ok(())
 }
 
@@ -59,8 +61,8 @@ impl BaseModule for CostingModule {
                 depth, input_size, ..
             } => {
                 if depth == self.max_depth {
-                    return Err(ModuleError::CostingError(
-                        CostingError::MaxCallDepthLimitReached,
+                    return Err(ModuleError::ExecutionCostingError(
+                        ExecutionCostingError::MaxCallDepthLimitReached,
                     ));
                 }
 
@@ -146,7 +148,9 @@ impl BaseModule for CostingModule {
                 byte_length,
                 CostingReason::InstantiateWasm,
             )
-            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+            .map_err(|e| {
+                ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
+            })
     }
 
     fn on_wasm_costing(
@@ -162,7 +166,9 @@ impl BaseModule for CostingModule {
         track
             .fee_reserve()
             .consume_multiplied_execution(units, multiplier, CostingReason::RunWasm)
-            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+            .map_err(|e| {
+                ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(e))
+            })
     }
 
     fn pre_execute_invocation(
@@ -179,7 +185,11 @@ impl BaseModule for CostingModule {
                 track
                     .fee_reserve()
                     .consume_execution(cost_units, CostingReason::RunNative)
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+                    .map_err(|e| {
+                        ModuleError::ExecutionCostingError(ExecutionCostingError::FeeReserveError(
+                            e,
+                        ))
+                    })
             }
             _ => Ok(()),
         }

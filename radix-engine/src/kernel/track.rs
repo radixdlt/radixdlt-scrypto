@@ -6,11 +6,11 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
+use crate::system::kernel_modules::costing::FeeSummary;
+use crate::system::kernel_modules::costing::FeeTable;
+use crate::system::kernel_modules::costing::RoyaltyReceiver;
+use crate::system::kernel_modules::costing::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
-use crate::system::kernel_modules::fee::FeeSummary;
-use crate::system::kernel_modules::fee::FeeTable;
-use crate::system::kernel_modules::fee::RoyaltyReceiver;
-use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -26,7 +26,6 @@ use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-use transaction::model::Executable;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {

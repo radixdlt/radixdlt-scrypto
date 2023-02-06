@@ -10,10 +10,10 @@ use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
 use crate::system::kernel_modules::auth::auth_module::AuthError;
+use crate::system::kernel_modules::costing::ExecutionCostingError;
+use crate::system::kernel_modules::costing::RoyaltyCostingError;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceError;
-use crate::system::kernel_modules::fee::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
-use crate::system::kernel_modules::royalty::RoyaltyError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
@@ -209,15 +209,15 @@ pub enum InterpreterError {
 pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
-    CostingError(CostingError),
-    RoyaltyError(RoyaltyError),
+    ExecutionCostingError(ExecutionCostingError),
+    RoyaltyCostingError(RoyaltyCostingError),
     ExecutionTraceError(ExecutionTraceError),
 }
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            Self::CostingError(err) => err.abortion(),
+            Self::ExecutionCostingError(err) => err.abortion(),
             _ => None,
         }
     }
@@ -235,15 +235,15 @@ impl From<AuthError> for ModuleError {
     }
 }
 
-impl From<CostingError> for ModuleError {
-    fn from(error: CostingError) -> Self {
-        Self::CostingError(error)
+impl From<ExecutionCostingError> for ModuleError {
+    fn from(error: ExecutionCostingError) -> Self {
+        Self::ExecutionCostingError(error)
     }
 }
 
-impl From<RoyaltyError> for ModuleError {
-    fn from(error: RoyaltyError) -> Self {
-        Self::RoyaltyError(error)
+impl From<RoyaltyCostingError> for ModuleError {
+    fn from(error: RoyaltyCostingError) -> Self {
+        Self::RoyaltyCostingError(error)
     }
 }
 

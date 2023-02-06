@@ -1,4 +1,4 @@
-use crate::system::kernel_modules::fee::SystemLoanFeeReserve;
+use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
 
 #[derive(Debug)]
 pub struct FeeReserveSubstate {
