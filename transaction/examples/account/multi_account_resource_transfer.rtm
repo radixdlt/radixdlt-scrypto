@@ -20,8 +20,8 @@ CALL_METHOD
 CALL_METHOD 
     ComponentAddress("${this_account_component_address}") 
     "withdraw"
-    Decimal("330")
-    ResourceAddress("${xrd_resource_address}");
+    ResourceAddress("${xrd_resource_address}")
+    Decimal("330");
 
 # Taking 150 XRD from the worktop and depositing them into Account A
 TAKE_FROM_WORKTOP_BY_AMOUNT

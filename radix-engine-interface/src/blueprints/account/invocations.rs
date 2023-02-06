@@ -217,8 +217,8 @@ impl Into<CallTableInvocation> for AccountWithdrawAllInvocation {
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountWithdrawMethodArgs {
-    pub amount: Decimal,
     pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
 #[derive(
@@ -250,8 +250,8 @@ impl Into<CallTableInvocation> for AccountWithdrawInvocation {
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountWithdrawNonFungiblesMethodArgs {
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 #[derive(
@@ -317,8 +317,8 @@ impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawAllInvocation {
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawMethodArgs {
     pub amount_to_lock: Decimal,
-    pub amount: Decimal,
     pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
 #[derive(
@@ -327,8 +327,8 @@ pub struct AccountLockFeeAndWithdrawMethodArgs {
 pub struct AccountLockFeeAndWithdrawInvocation {
     pub receiver: ComponentAddress,
     pub amount_to_lock: Decimal,
-    pub amount: Decimal,
     pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
 impl Invocation for AccountLockFeeAndWithdrawInvocation {
@@ -352,8 +352,8 @@ impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawInvocation {
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesMethodArgs {
     pub amount_to_lock: Decimal,
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 #[derive(
@@ -362,8 +362,8 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesMethodArgs {
 pub struct AccountLockFeeAndWithdrawNonFungiblesInvocation {
     pub receiver: ComponentAddress,
     pub amount_to_lock: Decimal,
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for AccountLockFeeAndWithdrawNonFungiblesInvocation {
@@ -417,8 +417,8 @@ impl Into<CallTableInvocation> for AccountCreateProofInvocation {
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountCreateProofByAmountMethodArgs {
-    pub amount: Decimal,
     pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
 #[derive(
@@ -426,8 +426,8 @@ pub struct AccountCreateProofByAmountMethodArgs {
 )]
 pub struct AccountCreateProofByAmountInvocation {
     pub receiver: ComponentAddress,
-    pub amount: Decimal,
     pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
 impl Invocation for AccountCreateProofByAmountInvocation {
@@ -450,8 +450,8 @@ impl Into<CallTableInvocation> for AccountCreateProofByAmountInvocation {
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountCreateProofByIdsMethodArgs {
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 #[derive(
@@ -459,8 +459,8 @@ pub struct AccountCreateProofByIdsMethodArgs {
 )]
 pub struct AccountCreateProofByIdsInvocation {
     pub receiver: ComponentAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for AccountCreateProofByIdsInvocation {
