@@ -732,7 +732,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn lock_fee_and_withdraw(
+    pub fn lock_fee_and_withdraw_all(
         &mut self,
         account: ComponentAddress,
         amount: Decimal,
@@ -740,13 +740,13 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "lock_fee_and_withdraw".to_string(),
+            method_name: "lock_fee_and_withdraw_all".to_string(),
             args: args!(amount, resource_address),
         })
         .0
     }
 
-    pub fn lock_fee_and_withdraw_by_amount(
+    pub fn lock_fee_and_withdraw(
         &mut self,
         account: ComponentAddress,
         amount_to_lock: Decimal,
@@ -755,14 +755,14 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "lock_fee_and_withdraw_by_amount".to_string(),
+            method_name: "lock_fee_and_withdraw".to_string(),
 
             args: args!(amount_to_lock, amount, resource_address),
         })
         .0
     }
 
-    pub fn lock_fee_and_withdraw_by_ids(
+    pub fn lock_fee_and_withdraw_non_fungibles(
         &mut self,
         account: ComponentAddress,
         amount_to_lock: Decimal,
@@ -771,7 +771,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "lock_fee_and_withdraw_by_ids".to_string(),
+            method_name: "lock_fee_and_withdraw_non_fungibles".to_string(),
 
             args: args!(amount_to_lock, ids, resource_address),
         })
@@ -800,14 +800,14 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
-    pub fn withdraw_from_account(
+    pub fn withdraw_all_from_account(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "withdraw".to_string(),
+            method_name: "withdraw_all".to_string(),
 
             args: args!(resource_address),
         })
@@ -815,7 +815,7 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
-    pub fn withdraw_from_account_by_amount(
+    pub fn withdraw_from_account(
         &mut self,
         account: ComponentAddress,
         amount: Decimal,
@@ -823,7 +823,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "withdraw_by_amount".to_string(),
+            method_name: "withdraw".to_string(),
 
             args: args!(amount, resource_address),
         })
@@ -831,7 +831,7 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
-    pub fn withdraw_from_account_by_ids(
+    pub fn withdraw_non_fungibles_from_account(
         &mut self,
         account: ComponentAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
@@ -839,7 +839,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: "withdraw_by_ids".to_string(),
+            method_name: "withdraw_non_fungibles".to_string(),
 
             args: args!(ids.clone(), resource_address),
         })

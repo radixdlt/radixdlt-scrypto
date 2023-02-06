@@ -411,6 +411,18 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
+            let fn_ident = AccountFn::WithdrawAll;
+
+            let fn_def = Fn {
+                ident: fn_ident.to_string(),
+                export_name: fn_ident.to_string(),
+                mutability: Some(abi::SelfMutability::Mutable),
+                input: AccountWithdrawAllMethodArgs::describe(),
+                output: <AccountWithdrawAllInvocation as Invocation>::Output::describe(),
+            };
+            fns.push(fn_def);
+        }
+        {
             let fn_ident = AccountFn::Withdraw;
 
             let fn_def = Fn {
@@ -423,26 +435,26 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::WithdrawByAmount;
+            let fn_ident = AccountFn::WithdrawNonFungibles;
 
             let fn_def = Fn {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountWithdrawByAmountMethodArgs::describe(),
-                output: <AccountWithdrawByAmountInvocation as Invocation>::Output::describe(),
+                input: AccountWithdrawNonFungiblesMethodArgs::describe(),
+                output: <AccountWithdrawNonFungiblesInvocation as Invocation>::Output::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::WithdrawByIds;
+            let fn_ident = AccountFn::LockFeeAndWithdrawAll;
 
             let fn_def = Fn {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountWithdrawByIdsMethodArgs::describe(),
-                output: <AccountWithdrawByIdsInvocation as Invocation>::Output::describe(),
+                input: AccountLockFeeAndWithdrawAllMethodArgs::describe(),
+                output: <AccountLockFeeAndWithdrawAllInvocation as Invocation>::Output::describe(),
             };
             fns.push(fn_def);
         }
@@ -459,27 +471,14 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::LockFeeAndWithdrawByAmount;
+            let fn_ident = AccountFn::LockFeeAndWithdrawNonFungibles;
 
             let fn_def = Fn {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockFeeAndWithdrawByAmountMethodArgs::describe(),
-                output:
-                    <AccountLockFeeAndWithdrawByAmountInvocation as Invocation>::Output::describe(),
-            };
-            fns.push(fn_def);
-        }
-        {
-            let fn_ident = AccountFn::LockFeeAndWithdrawByIds;
-
-            let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
-                mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockFeeAndWithdrawByIdsMethodArgs::describe(),
-                output: <AccountLockFeeAndWithdrawByIdsInvocation as Invocation>::Output::describe(
+                input: AccountLockFeeAndWithdrawNonFungiblesMethodArgs::describe(),
+                output: <AccountLockFeeAndWithdrawNonFungiblesInvocation as Invocation>::Output::describe(
                 ),
             };
             fns.push(fn_def);

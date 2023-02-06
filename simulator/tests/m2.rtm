@@ -23,7 +23,7 @@ DROP_PROOF Proof("proof2");
 DROP_PROOF Proof("proof3");
 
 # Test - bucket proof
-CALL_METHOD ComponentAddress("${account}") "withdraw_by_amount" Decimal("5.0") ResourceAddress("${xrd}");
+CALL_METHOD ComponentAddress("${account}") "withdraw" Decimal("5.0") ResourceAddress("${xrd}");
 CLEAR_AUTH_ZONE;
 TAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("xrd");
 CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");

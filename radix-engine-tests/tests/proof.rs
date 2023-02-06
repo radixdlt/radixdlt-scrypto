@@ -19,7 +19,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+        .withdraw_from_account(account, 1.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -55,7 +55,7 @@ fn can_create_clone_and_drop_vault_proof() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+                .withdraw_from_account(account, 1.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -90,7 +90,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 3.into(), resource_address)
+                .withdraw_from_account(account, 3.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -124,7 +124,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 3.into(), resource_address)
+                .withdraw_from_account(account, 3.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -164,8 +164,8 @@ fn can_use_bucket_for_authorization() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 1.into(), auth_resource_address)
-        .withdraw_from_account_by_amount(account, 1.into(), burnable_resource_address)
+        .withdraw_from_account(account, 1.into(), auth_resource_address)
+        .withdraw_from_account(account, 1.into(), burnable_resource_address)
         .take_from_worktop(auth_resource_address, |builder, auth_bucket_id| {
             builder.take_from_worktop(burnable_resource_address, |builder, burnable_bucket_id| {
                 builder.call_function(
@@ -203,7 +203,7 @@ fn can_use_vault_for_authorization() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 1.into(), auth_resource_address)
+                .withdraw_from_account(account, 1.into(), auth_resource_address)
                 .take_from_worktop(auth_resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -213,7 +213,7 @@ fn can_use_vault_for_authorization() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 1.into(), burnable_resource_address)
+        .withdraw_from_account(account, 1.into(), burnable_resource_address)
         .take_from_worktop(burnable_resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
@@ -312,7 +312,7 @@ fn cant_move_locked_bucket() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+        .withdraw_from_account(account, 1.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -350,7 +350,7 @@ fn can_compose_bucket_and_vault_proof() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+                .withdraw_from_account(account, 1.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -360,7 +360,7 @@ fn can_compose_bucket_and_vault_proof() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, 99u32.into(), resource_address)
+        .withdraw_from_account(account, 99u32.into(), resource_address)
         .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
@@ -390,7 +390,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+                .withdraw_from_account(account, 1.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -400,7 +400,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, 99u32.into(), resource_address)
+        .withdraw_from_account(account, 99u32.into(), resource_address)
         .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
@@ -429,7 +429,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 1.into(), resource_address)
+                .withdraw_from_account(account, 1.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })
@@ -439,7 +439,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_ids(
+        .withdraw_non_fungibles_from_account(
             account,
             &BTreeSet::from([
                 NonFungibleLocalId::Integer(2),
@@ -488,7 +488,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account_by_amount(account, 3.into(), resource_address)
+                .withdraw_from_account(account, 3.into(), resource_address)
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
                 })

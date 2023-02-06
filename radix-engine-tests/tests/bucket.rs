@@ -114,7 +114,7 @@ fn test_take_with_invalid_granularity() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .withdraw_from_account_by_amount(account, 100.into(), resource_address)
+        .withdraw_from_account(account, 100.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
             builder.call_function(
@@ -157,7 +157,7 @@ fn test_take_with_negative_amount() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .withdraw_from_account_by_amount(account, 100.into(), resource_address)
+        .withdraw_from_account(account, 100.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
             builder.call_function(

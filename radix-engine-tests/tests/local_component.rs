@@ -137,7 +137,7 @@ fn recursion_bomb() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(5u32), RADIX_TOKEN)
+        .withdraw_from_account(account, Decimal::from(5u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -171,7 +171,7 @@ fn recursion_bomb_to_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(100u32), RADIX_TOKEN)
+        .withdraw_from_account(account, Decimal::from(100u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -213,7 +213,7 @@ fn recursion_bomb_2() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(5u32), RADIX_TOKEN)
+        .withdraw_from_account(account, Decimal::from(5u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -247,7 +247,7 @@ fn recursion_bomb_2_to_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(100u32), RADIX_TOKEN)
+        .withdraw_from_account(account, Decimal::from(100u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,

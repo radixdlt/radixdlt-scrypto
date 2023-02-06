@@ -13,7 +13,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
+        .lock_fee_and_withdraw_all(account, 10.into(), RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
@@ -59,7 +59,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 10.into(), resource_address)
+        .lock_fee_and_withdraw_all(account, 10.into(), resource_address)
         .call_method(
             other_account,
             "deposit_batch",
@@ -92,7 +92,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
-        .withdraw_from_account(other_account, RADIX_TOKEN)
+        .withdraw_all_from_account(other_account, RADIX_TOKEN)
         .call_method(
             account,
             "deposit_batch",
@@ -125,7 +125,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
+        .lock_fee_and_withdraw_all(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(BasicInstruction::CallMethod {

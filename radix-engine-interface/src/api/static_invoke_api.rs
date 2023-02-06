@@ -132,12 +132,12 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<AccountLockContingentFeeInvocation, E>
     + Invokable<AccountDepositInvocation, E>
     + Invokable<AccountDepositBatchInvocation, E>
+    + Invokable<AccountWithdrawAllInvocation, E>
     + Invokable<AccountWithdrawInvocation, E>
-    + Invokable<AccountWithdrawByAmountInvocation, E>
-    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountWithdrawNonFungiblesInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawAllInvocation, E>
     + Invokable<AccountLockFeeAndWithdrawInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountCreateProofInvocation, E>
     + Invokable<AccountCreateProofByAmountInvocation, E>
     + Invokable<AccountCreateProofByIdsInvocation, E>
