@@ -37,9 +37,9 @@ pub enum KernelApiCallInput<'a> {
 
 #[derive(Debug, Clone)]
 pub enum KernelApiCallOutput<'a> {
-    Invoke { rtn: &'a dyn Debug },
-    DropNode { node: &'a HeapRENode },
-    CreateNode { node_id: &'a RENodeId },
+    Invoke { return_data: &'a dyn Debug },
+    DropNode { dropped_node: &'a HeapRENode },
+    CreateNode { created_node_id: &'a RENodeId },
 
     LockSubstate { lock_handle: LockHandle },
     GetRef { lock_handle: LockHandle },

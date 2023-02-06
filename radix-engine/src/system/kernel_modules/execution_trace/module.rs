@@ -337,7 +337,9 @@ impl ExecutionTraceModule {
         }
 
         let traced_output = match output {
-            KernelApiCallOutput::CreateNode { node_id } => match node_id {
+            KernelApiCallOutput::CreateNode {
+                created_node_id: node_id,
+            } => match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
                     TracedSysCallData {

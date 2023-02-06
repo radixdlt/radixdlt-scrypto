@@ -104,6 +104,7 @@ impl VisibilityProperties {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
 
             /* Kernel modules */
+            (ExecutionMode::KernelModule(KernelModuleMode::Any), _) => true, // TODO: reduce permission
             (ExecutionMode::KernelModule(KernelModuleMode::Logger), _) => false,
             (ExecutionMode::KernelModule(KernelModuleMode::NodeMove), offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,

@@ -72,6 +72,7 @@ pub enum KernelMode {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum KernelModuleMode {
+    Any,
     NodeMove,
     Auth,
     Logger,

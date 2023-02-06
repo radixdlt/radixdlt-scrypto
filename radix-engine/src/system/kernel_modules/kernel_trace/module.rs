@@ -68,7 +68,9 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
         output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            KernelApiCallOutput::Invoke { rtn, .. } => {
+            KernelApiCallOutput::Invoke {
+                return_data: rtn, ..
+            } => {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
             KernelApiCallOutput::DropNode { .. } => {}

@@ -25,80 +25,142 @@ where
         mut fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            fee = api
-                .module
-                .on_lock_fee(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    vault_id,
-                    fee,
-                    contingent,
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
 
-            Ok(fee)
-        })
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                fee = api
+                    .module
+                    .on_lock_fee(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        vault_id,
+                        fee,
+                        contingent,
+                    )
+                    .map_err(RuntimeError::ModuleError)?;
+
+                Ok(fee)
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
     ) -> Result<RENodeVisibilityOrigin, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            let visibility = api.current_frame.get_node_visibility(node_id)?;
-            Ok(visibility)
-        })
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                let visibility = api.current_frame.get_node_visibility(node_id)?;
+                Ok(visibility)
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallInput::DropNode { node_id: &node_id },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::DropNode { node_id: &node_id },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
 
-            if !VisibilityProperties::check_drop_node_visibility(
-                api.execution_mode(),
-                &api.current_frame.actor,
-                node_id,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeVisibility {
-                        mode: api.execution_mode(),
-                        actor: api.current_frame.actor.clone(),
-                        node_id,
-                    },
-                ));
-            }
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                if !VisibilityProperties::check_drop_node_visibility(
+                    api.execution_mode(),
+                    &api.current_frame.actor,
+                    node_id,
+                ) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidDropNodeVisibility {
+                            mode: api.execution_mode(),
+                            actor: api.current_frame.actor.clone(),
+                            node_id,
+                        },
+                    ));
+                }
 
-            let node = api.drop_node_internal(node_id)?;
+                let node = api.drop_node_internal(node_id)?;
 
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::DropNode { node: &node },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                Ok(node)
+            })?;
 
-            Ok(node)
-        })
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::DropNode {
+                            dropped_node: &response,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+        Ok(response)
     }
 
     fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            // TODO: Add costing
-            let node_id = api.id_allocator.allocate_node_id(node_type)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
 
-            Ok(node_id)
-        })
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                // TODO: Add costing
+                let node_id = api.id_allocator.allocate_node_id(node_type)?;
+
+                Ok(node_id)
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 
     fn create_node(
@@ -107,113 +169,133 @@ where
         re_node: RENodeInit,
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::CreateNode { node: &re_node },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                if !VisibilityProperties::check_create_node_visibility(
+                    api.execution_mode(),
+                    &api.current_frame.actor,
+                    &re_node,
+                    &module_init,
+                ) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidCreateNodeVisibility {
+                            mode: api.execution_mode(),
+                            actor: api.current_frame.actor.clone(),
+                        },
+                    ));
+                }
+
+                match (node_id, &re_node) {
+                    (
+                        RENodeId::Global(GlobalAddress::Package(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::Package(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Resource(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::Resource(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Component(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Component(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::Clock(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Component(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::Validator(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Component(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(GlobalAddress::Component(..)),
+                        RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(..),
+                        RENodeInit::Global(GlobalAddressSubstate::Component(..)),
+                    ) => {}
+                    (
+                        RENodeId::Global(..),
+                        RENodeInit::Global(GlobalAddressSubstate::Account(..)),
+                    ) => {}
+                    (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
+                    (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+                    (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
+                    (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+                    (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
+                    (RENodeId::Component(..), RENodeInit::Component(..)) => {}
+                    (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
+                    (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+                    (RENodeId::Package(..), RENodeInit::Package(..)) => {}
+                    (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+                    (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+                    (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
+                    (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
+                    (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
+                    (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
+                    (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
+                    (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
+                    (RENodeId::Account(..), RENodeInit::Account(..)) => {}
+                    _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
+                }
+
+                // TODO: For Scrypto components, check state against blueprint schema
+
+                let push_to_store = match re_node {
+                    RENodeInit::Global(..) | RENodeInit::Logger(..) => true,
+                    _ => false,
+                };
+
+                api.id_allocator.take_node_id(node_id)?;
+                api.current_frame.create_node(
+                    node_id,
+                    re_node,
+                    module_init,
                     &mut api.heap,
                     api.track,
-                    KernelApiCallInput::CreateNode { node: &re_node },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                    push_to_store,
+                )?;
 
-            if !VisibilityProperties::check_create_node_visibility(
-                api.execution_mode(),
-                &api.current_frame.actor,
-                &re_node,
-                &module_init,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidCreateNodeVisibility {
-                        mode: api.execution_mode(),
-                        actor: api.current_frame.actor.clone(),
-                    },
-                ));
-            }
+                Ok(())
+            })?;
 
-            match (node_id, &re_node) {
-                (
-                    RENodeId::Global(GlobalAddress::Package(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::Package(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Resource(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::Resource(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::Clock(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::Validator(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::Identity(..)),
-                ) => {}
-                (
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    RENodeInit::Global(GlobalAddressSubstate::AccessController(..)),
-                ) => {}
-                (
-                    RENodeId::Global(..),
-                    RENodeInit::Global(GlobalAddressSubstate::Component(..)),
-                ) => {}
-                (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
-                (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
-                (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
-                (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
-                (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-                (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
-                (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-                (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
-                (RENodeId::Logger, RENodeInit::Logger(..)) => {}
-                (RENodeId::Package(..), RENodeInit::Package(..)) => {}
-                (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-                (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-                (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
-                (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
-                (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
-                (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
-                (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
-                (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
-                (RENodeId::Account(..), RENodeInit::Account(..)) => {}
-                _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
-            }
-
-            // TODO: For Scrypto components, check state against blueprint schema
-
-            let push_to_store = match re_node {
-                RENodeInit::Global(..) | RENodeInit::Logger(..) => true,
-                _ => false,
-            };
-
-            api.id_allocator.take_node_id(node_id)?;
-            api.current_frame.create_node(
-                node_id,
-                re_node,
-                module_init,
-                &mut api.heap,
-                api.track,
-                push_to_store,
-            )?;
-
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::CreateNode { node_id: &node_id },
-                )
-                .map_err(RuntimeError::ModuleError)?;
-
-            Ok(())
-        })
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::CreateNode {
+                            created_node_id: &node_id,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+        Ok(response)
     }
 }
 
@@ -230,91 +312,65 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::LockSubstate {
+                            node_id: &node_id,
+                            offset: &offset,
+                            flags: &flags,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                // TODO: Check if valid offset for node_id
+
+                // Authorization
+                let actor = &api.current_frame.actor;
+                if !VisibilityProperties::check_substate_visibility(
+                    api.execution_mode(),
+                    actor,
+                    node_id,
+                    offset.clone(),
+                    flags,
+                ) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidSubstateVisibility {
+                            mode: api.execution_mode(),
+                            actor: actor.clone(),
+                            node_id,
+                            offset,
+                            flags,
+                        },
+                    ));
+                }
+
+                let maybe_lock_handle = api.current_frame.acquire_lock(
                     &mut api.heap,
                     api.track,
-                    KernelApiCallInput::LockSubstate {
-                        node_id: &node_id,
-                        offset: &offset,
-                        flags: &flags,
-                    },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                    node_id,
+                    module_id,
+                    offset.clone(),
+                    flags,
+                );
 
-            // TODO: Check if valid offset for node_id
-
-            // Authorization
-            let actor = &api.current_frame.actor;
-            if !VisibilityProperties::check_substate_visibility(
-                api.execution_mode(),
-                actor,
-                node_id,
-                offset.clone(),
-                flags,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidSubstateVisibility {
-                        mode: api.execution_mode(),
-                        actor: actor.clone(),
-                        node_id,
-                        offset,
-                        flags,
-                    },
-                ));
-            }
-
-            let maybe_lock_handle = api.current_frame.acquire_lock(
-                &mut api.heap,
-                api.track,
-                node_id,
-                module_id,
-                offset.clone(),
-                flags,
-            );
-
-            let lock_handle = match maybe_lock_handle {
-                Ok(lock_handle) => lock_handle,
-                Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                    SubstateId(node_id, module_id, ref offset),
-                )))) => {
-                    if api.try_virtualize(node_id, &offset)? {
-                        api.current_frame.acquire_lock(
-                            &mut api.heap,
-                            api.track,
-                            node_id,
-                            module_id,
-                            offset.clone(),
-                            flags,
-                        )?
-                    } else {
-                        return maybe_lock_handle;
-                    }
-                }
-                Err(err) => {
-                    match &err {
-                        // TODO: This is a hack to allow for package imports to be visible
-                        // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                            RENodeId::Global(GlobalAddress::Package(package_address)),
-                        )) => {
-                            let node_id =
-                                RENodeId::Global(GlobalAddress::Package(*package_address));
-                            let module_id = NodeModuleId::SELF;
-                            let offset = SubstateOffset::Global(GlobalOffset::Global);
-                            api.track
-                                .acquire_lock(
-                                    SubstateId(node_id, module_id, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| err.clone())?;
-                            api.track
-                                .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
-                                .map_err(|_| err)?;
-                            api.current_frame
-                                .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+                let lock_handle = match maybe_lock_handle {
+                    Ok(lock_handle) => lock_handle,
+                    Err(RuntimeError::KernelError(KernelError::TrackError(
+                        TrackError::NotFound(SubstateId(node_id, module_id, ref offset)),
+                    ))) => {
+                        if api.try_virtualize(node_id, &offset)? {
                             api.current_frame.acquire_lock(
                                 &mut api.heap,
                                 api.track,
@@ -323,136 +379,228 @@ where
                                 offset.clone(),
                                 flags,
                             )?
+                        } else {
+                            return maybe_lock_handle;
                         }
-                        _ => return Err(err),
                     }
-                }
-            };
+                    Err(err) => {
+                        match &err {
+                            // TODO: This is a hack to allow for package imports to be visible
+                            // TODO: Remove this once we are able to get this information through the Blueprint ABI
+                            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
+                                RENodeId::Global(GlobalAddress::Package(package_address)),
+                            )) => {
+                                let node_id =
+                                    RENodeId::Global(GlobalAddress::Package(*package_address));
+                                let module_id = NodeModuleId::SELF;
+                                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                                api.track
+                                    .acquire_lock(
+                                        SubstateId(node_id, module_id, offset.clone()),
+                                        LockFlags::read_only(),
+                                    )
+                                    .map_err(|_| err.clone())?;
+                                api.track
+                                    .release_lock(
+                                        SubstateId(node_id, module_id, offset.clone()),
+                                        false,
+                                    )
+                                    .map_err(|_| err)?;
+                                api.current_frame
+                                    .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                api.current_frame.acquire_lock(
+                                    &mut api.heap,
+                                    api.track,
+                                    node_id,
+                                    module_id,
+                                    offset.clone(),
+                                    flags,
+                                )?
+                            }
+                            _ => return Err(err),
+                        }
+                    }
+                };
 
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::LockSubstate { lock_handle },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                Ok(lock_handle)
+            })?;
 
-            Ok(lock_handle)
-        })
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::LockSubstate {
+                            lock_handle: response,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+        Ok(response)
     }
 
     fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.current_frame.get_lock_info(lock_handle)
-        })
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+
+        // Service
+        let response = self
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                api.current_frame.get_lock_info(lock_handle)
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallInput::DropLock {
-                        lock_handle: &lock_handle,
-                    },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::DropLock {
+                            lock_handle: &lock_handle,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
 
-            api.current_frame
-                .drop_lock(&mut api.heap, api.track, lock_handle)?;
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                api.current_frame
+                    .drop_lock(&mut api.heap, api.track, lock_handle)?;
 
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::DropLock,
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                Ok(())
+            })?;
 
-            Ok(())
-        })
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::DropLock,
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+        Ok(response)
     }
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::GetRef {
+                            lock_handle: &lock_handle,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::GetRef { lock_handle },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
         // FIXME: this method isn't compatible with execute_in_mode because of the reference return.
+        //
         // Possible directions:
         // 1. replace reference with value, requiring removal of Rc in resource model;
         // 2. add lifetime parameters to traits
-
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                self.track,
-                KernelApiCallInput::GetRef {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                self.track,
-                KernelApiCallOutput::GetRef { lock_handle },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let substate_ref = self
+        //
+        // In addition, the post-kernel event should be emitted after handling the api call.
+        let response = self
             .current_frame
             .get_ref(lock_handle, &mut self.heap, self.track)?;
 
-        Ok(substate_ref)
+        Ok(response)
     }
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::GetRefMut {
+                            lock_handle: &lock_handle,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::GetRefMut,
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+
         // FIXME: this method isn't compatible with execute_in_mode because of the reference return.
+        //
         // Possible directions:
         // 1. replace reference with value, requiring removal of Rc in resource model;
         // 2. add lifetime parameters to traits
+        //
+        // In addition, the post-kernel event should be emitted after handling the api call.
+        let response = self
+            .current_frame
+            .get_ref_mut(lock_handle, &mut self.heap, self.track)?;
 
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                self.track,
-                KernelApiCallInput::GetRefMut {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                self.track,
-                KernelApiCallOutput::GetRefMut,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let substate_ref_mut =
-            self.current_frame
-                .get_ref_mut(lock_handle, &mut self.heap, self.track)?;
-
-        Ok(substate_ref_mut)
+        Ok(response)
     }
 }
 
@@ -462,21 +610,50 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            Ok(api.scrypto_interpreter)
-        })
-        .expect("No error expected")
+    fn scrypto_interpreter(&mut self) -> Result<&ScryptoInterpreter<W>, RuntimeError> {
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+
+        // Service
+        let response = self
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                Ok(api.scrypto_interpreter)
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .on_wasm_instantiation(&api.current_frame, &mut api.heap, api.track, code)
-                .map_err(RuntimeError::ModuleError)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
 
-            Ok(())
-        })
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                api.module
+                    .on_wasm_instantiation(&api.current_frame, &mut api.heap, api.track, code)
+                    .map_err(RuntimeError::ModuleError)?;
+
+                Ok(())
+            })?;
+
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |_api| Ok(()),
+        )?;
+        Ok(response)
     }
 }
 
@@ -488,34 +665,51 @@ where
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
-            api.module
-                .pre_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallInput::Invoke {
-                        fn_identifier: invocation.fn_identifier(),
-                        input_size: 0, // TODO: Fix this
-                        depth: api.current_frame.depth,
-                    },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+        // Pre kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .pre_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallInput::Invoke {
+                            fn_identifier: invocation.fn_identifier(),
+                            input_size: 0, // TODO: Fix this
+                            depth: api.current_frame.depth,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
 
-            let (actor, call_frame_update, executor) = invocation.resolve(api)?;
-            let rtn = api.invoke_internal(executor, actor, call_frame_update)?;
+        // Service
+        let response =
+            self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Kernel, |api| {
+                let (actor, call_frame_update, executor) = invocation.resolve(api)?;
+                let rtn = api.invoke_internal(executor, actor, call_frame_update)?;
 
-            api.module
-                .post_kernel_api_call(
-                    &api.current_frame,
-                    &mut api.heap,
-                    api.track,
-                    KernelApiCallOutput::Invoke { rtn: &rtn },
-                )
-                .map_err(RuntimeError::ModuleError)?;
+                Ok(rtn)
+            })?;
 
-            Ok(rtn)
-        })
+        // Post kernel api call
+        self.execute_in_mode::<_, _, RuntimeError>(
+            ExecutionMode::KernelModule(KernelModuleMode::Any),
+            |api| {
+                api.module
+                    .post_kernel_api_call(
+                        &api.current_frame,
+                        &mut api.heap,
+                        api.track,
+                        KernelApiCallOutput::Invoke {
+                            return_data: &response,
+                        },
+                    )
+                    .map_err(RuntimeError::ModuleError)
+            },
+        )?;
+        Ok(response)
     }
 }
 

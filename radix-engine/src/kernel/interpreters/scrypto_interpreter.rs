@@ -254,7 +254,7 @@ impl Executor for ScryptoExecutor {
         // Emit event
         api.emit_wasm_instantiation_event(package.code())?;
         let mut instance = api
-            .scrypto_interpreter()
+            .scrypto_interpreter()?
             .create_instance(self.package_address, &package.code);
 
         let output = {
