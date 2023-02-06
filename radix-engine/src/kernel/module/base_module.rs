@@ -1,7 +1,6 @@
 use crate::errors::ModuleError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -47,12 +46,12 @@ pub enum KernelApiCallOutput<'a> {
     DropLock,
 }
 
-pub trait BaseModule<R: FeeReserve> {
+pub trait BaseModule {
     fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         _input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -62,7 +61,7 @@ pub trait BaseModule<R: FeeReserve> {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         _output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -74,7 +73,7 @@ pub trait BaseModule<R: FeeReserve> {
         _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
@@ -85,7 +84,7 @@ pub trait BaseModule<R: FeeReserve> {
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
@@ -94,7 +93,7 @@ pub trait BaseModule<R: FeeReserve> {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -104,7 +103,7 @@ pub trait BaseModule<R: FeeReserve> {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())

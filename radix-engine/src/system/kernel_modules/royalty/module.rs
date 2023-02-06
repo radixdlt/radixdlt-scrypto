@@ -2,9 +2,7 @@ use crate::errors::ModuleError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::fee::{
-    CostingError, ExecutionFeeReserve, FeeReserve, RoyaltyReceiver,
-};
+use crate::system::kernel_modules::fee::{CostingError, ExecutionFeeReserve, RoyaltyReceiver};
 use radix_engine_interface::api::types::{
     FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
     SubstateOffset, VaultOffset,
@@ -56,14 +54,14 @@ macro_rules! preload_vault {
     };
 }
 
-impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
+impl BaseModule for RoyaltyModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
         let (scrypto_fn_identifier, optional_component_address) = match &actor.identifier {

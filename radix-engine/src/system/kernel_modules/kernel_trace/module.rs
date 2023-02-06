@@ -1,4 +1,4 @@
-use crate::{errors::ModuleError, kernel::*, system::kernel_modules::fee::FeeReserve};
+use crate::{errors::ModuleError, kernel::*};
 
 pub struct KernelTraceModule;
 
@@ -11,12 +11,12 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
+impl BaseModule for KernelTraceModule {
     fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         match input {
@@ -64,7 +64,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelTraceModule {
         &mut self,
         call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         match output {

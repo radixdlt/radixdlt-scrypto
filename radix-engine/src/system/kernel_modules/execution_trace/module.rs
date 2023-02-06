@@ -1,6 +1,5 @@
 use crate::errors::*;
 use crate::kernel::*;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -101,12 +100,12 @@ pub enum SysCallTraceOrigin {
     Opaque,
 }
 
-impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
+impl BaseModule for ExecutionTraceModule {
     fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         self.handle_pre_kernel_api_call(call_frame, heap, input)
@@ -116,7 +115,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         self.handle_post_kernel_api_call(call_frame, heap, output)
@@ -128,7 +127,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
             let origin = match &actor.identifier {
@@ -180,7 +179,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         match &call_frame.actor {
             ResolvedActor {
@@ -437,10 +436,10 @@ impl ExecutionTraceModule {
         Ok(substate_ref.bucket().peek_resource())
     }
 
-    fn handle_vault_put<'s, R: FeeReserve>(
+    fn handle_vault_put<'s>(
         call_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
+        track: &mut Track<'s>,
         actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
@@ -464,10 +463,10 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_take<'s, R: FeeReserve>(
+    fn handle_vault_take<'s>(
         update: &CallFrameUpdate,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
+        track: &mut Track<'s>,
         actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
@@ -491,11 +490,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee<'s, R: FeeReserve>(
-        track: &mut Track<'s, R>,
-        actor: &ResolvedActor,
-        vault_id: &VaultId,
-    ) {
+    fn handle_vault_lock_fee<'s>(track: &mut Track<'s>, actor: &ResolvedActor, vault_id: &VaultId) {
         track
             .vault_ops
             .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));

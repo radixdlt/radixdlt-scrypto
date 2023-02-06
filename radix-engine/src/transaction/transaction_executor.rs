@@ -3,9 +3,7 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::fee::{
-    CostingError, FeeReserve, FeeTable, SystemLoanFeeReserve,
-};
+use crate::system::kernel_modules::fee::{CostingError, FeeTable, SystemLoanFeeReserve};
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -136,11 +134,11 @@ where
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    fn execute_with_fee_reserve<R: FeeReserve>(
+    fn execute_with_fee_reserve(
         &mut self,
         transaction: &Executable,
         execution_config: &ExecutionConfig,
-        fee_reserve: R,
+        fee_reserve: SystemLoanFeeReserve,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
@@ -163,7 +161,7 @@ where
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
         // Prepare state track and execution trace
-        let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
+        let track = Track::new(self.substate_store, FeeTable::new());
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);

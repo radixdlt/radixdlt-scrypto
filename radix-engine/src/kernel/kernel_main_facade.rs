@@ -6,7 +6,6 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::module::KernelApiCallOutput;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -14,11 +13,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 
-impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> KernelNodeApi for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn get_visible_node_data(
         &mut self,
@@ -198,11 +196,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelSubstateApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> KernelSubstateApi for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn lock_substate(
         &mut self,
@@ -440,11 +437,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelWasmApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> KernelWasmApi<W> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
@@ -459,11 +455,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
@@ -505,18 +500,16 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
 }
 
-impl<'g, 's, W, R, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
 }

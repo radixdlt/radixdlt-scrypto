@@ -63,12 +63,11 @@ pub struct LoadedSubstate {
 }
 
 /// Transaction-wide states and side effects
-pub struct Track<'s, R: FeeReserve> {
+pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
@@ -93,18 +92,13 @@ pub struct PreExecutionError {
     pub error: FeeReserveError,
 }
 
-impl<'s, R: FeeReserve> Track<'s, R> {
-    pub fn new(
-        substate_store: &'s dyn ReadableSubstateStore,
-        fee_reserve: R,
-        fee_table: FeeTable,
-    ) -> Self {
+impl<'s> Track<'s> {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore, fee_table: FeeTable) -> Self {
         Self {
             application_logs: Vec::new(),
             substate_store,
             loaded_substates: BTreeMap::new(),
             new_global_addresses: Vec::new(),
-            fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
         }

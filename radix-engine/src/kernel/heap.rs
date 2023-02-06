@@ -1,7 +1,6 @@
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
@@ -93,9 +92,9 @@ impl Heap {
         self.nodes.insert(node_id, node);
     }
 
-    pub fn move_nodes_to_store<R: FeeReserve>(
+    pub fn move_nodes_to_store(
         &mut self,
-        track: &mut Track<R>,
+        track: &mut Track,
         nodes: HashSet<RENodeId>,
     ) -> Result<(), CallFrameError> {
         for node_id in nodes {
@@ -105,9 +104,9 @@ impl Heap {
         Ok(())
     }
 
-    pub fn move_node_to_store<R: FeeReserve>(
+    pub fn move_node_to_store(
         &mut self,
-        track: &mut Track<R>,
+        track: &mut Track,
         node_id: RENodeId,
     ) -> Result<(), CallFrameError> {
         let node = self

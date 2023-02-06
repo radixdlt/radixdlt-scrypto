@@ -2,7 +2,6 @@ use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::fee::CostingModule;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::royalty::RoyaltyModule;
 use crate::transaction::ExecutionConfig;
@@ -36,12 +35,12 @@ impl KernelModule {
     }
 }
 
-impl<R: FeeReserve> BaseModule<R> for KernelModule {
+impl BaseModule for KernelModule {
     fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         if self.trace {
@@ -61,7 +60,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         if self.trace {
@@ -83,7 +82,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         call_frame_update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         if self.trace {
             KernelTraceModule.pre_execute_invocation(
@@ -115,7 +114,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         if self.trace {
             KernelTraceModule.post_execute_invocation(caller, update, call_frame, heap, track)?;
@@ -134,7 +133,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         code: &[u8],
     ) -> Result<(), ModuleError> {
         if self.trace {
@@ -154,7 +153,7 @@ impl<R: FeeReserve> BaseModule<R> for KernelModule {
         &mut self,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         units: u32,
     ) -> Result<(), ModuleError> {
         if self.trace {

@@ -10,7 +10,6 @@ use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::invocation::resolve_native::resolve_native;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -37,11 +36,10 @@ use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.drop_node(node_id)?;
@@ -49,11 +47,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn sys_lock_substate(
         &mut self,
@@ -104,33 +101,30 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
     }
 }
 
-impl<'g, 's, W, R, M> ClientActorApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientActorApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
 }
 
-impl<'g, 's, W, R, M> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn call_native_raw(
         &mut self,
@@ -160,11 +154,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn new_package(
         &mut self,
@@ -289,11 +282,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn lookup_global_component(
         &mut self,
@@ -433,11 +425,10 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         self.module
@@ -448,10 +439,9 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
 }

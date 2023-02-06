@@ -1,7 +1,6 @@
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::CostingEntry;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -34,8 +33,8 @@ impl CostingModule {
     }
 }
 
-pub fn consume_api_cost<R: FeeReserve>(
-    track: &mut Track<R>,
+pub fn consume_api_cost(
+    track: &mut Track,
     reason: CostingReason,
     costing_entry: CostingEntry,
 ) -> Result<(), ModuleError> {
@@ -47,12 +46,12 @@ pub fn consume_api_cost<R: FeeReserve>(
     Ok(())
 }
 
-impl<R: FeeReserve> BaseModule<R> for CostingModule {
+impl BaseModule for CostingModule {
     fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         input: KernelApiCallInput,
     ) -> Result<(), ModuleError> {
         match input {
@@ -125,7 +124,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        _track: &mut Track<R>,
+        _track: &mut Track,
         _output: KernelApiCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -135,7 +134,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         code: &[u8],
     ) -> Result<(), ModuleError> {
         let cost_units_per_byte = track.fee_table.wasm_instantiation_per_byte();
@@ -154,7 +153,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         &mut self,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
         units: u32,
     ) -> Result<(), ModuleError> {
         // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
@@ -172,7 +171,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
-        track: &mut Track<R>,
+        track: &mut Track,
     ) -> Result<(), ModuleError> {
         match &actor.identifier {
             FnIdentifier::Native(native_fn) => {

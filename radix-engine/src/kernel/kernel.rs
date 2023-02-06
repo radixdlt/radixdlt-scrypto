@@ -7,7 +7,6 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
@@ -32,12 +31,10 @@ pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
-    R,  // Fee reserve type
     M,
 > where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     /// Current execution mode, specifies permissions into state/invocations
     pub(super) execution_mode: ExecutionMode,
@@ -50,7 +47,7 @@ pub struct Kernel<
     /// Heap
     pub(super) heap: Heap,
     /// Store
-    pub(super) track: &'g mut Track<'s, R>,
+    pub(super) track: &'g mut Track<'s>,
 
     /// ID allocator
     pub(super) id_allocator: &'g mut IdAllocator,
@@ -60,16 +57,15 @@ pub struct Kernel<
     pub(super) module: &'g mut M,
 }
 
-impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, M> Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+    M: BaseModule,
 {
     pub fn new(
         auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s, R>,
+        track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
     ) -> Self {
