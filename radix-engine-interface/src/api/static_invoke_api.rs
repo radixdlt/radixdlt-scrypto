@@ -128,7 +128,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
     + Invokable<AccountCreateInvocation, E>
     + Invokable<AccountNewInvocation, E>
-    + Invokable<AccountBalanceInvocation, E>
     + Invokable<AccountLockFeeInvocation, E>
     + Invokable<AccountLockContingentFeeInvocation, E>
     + Invokable<AccountDepositInvocation, E>

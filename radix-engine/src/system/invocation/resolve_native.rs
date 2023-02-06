@@ -757,12 +757,6 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccountFn::Balance => {
-                let invocation = scrypto_decode::<AccountBalanceInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccountFn::LockFee => {
                 let invocation = scrypto_decode::<AccountLockFeeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

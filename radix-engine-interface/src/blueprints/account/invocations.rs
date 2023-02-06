@@ -72,45 +72,6 @@ impl Into<CallTableInvocation> for AccountNewInvocation {
     }
 }
 
-//=================
-// Account Balance
-//=================
-
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountBalanceMethodArgs {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountBalanceInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountBalanceInvocation {
-    type Output = Decimal;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Balance))
-    }
-}
-
-impl SerializableInvocation for AccountBalanceInvocation {
-    type ScryptoOutput = Decimal;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Balance)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountBalanceInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Balance(self)).into()
-    }
-}
-
 //==================
 // Account Lock Fee
 //==================

@@ -272,8 +272,6 @@ pub enum AccountInvocation {
     Create(AccountCreateInvocation),
     New(AccountNewInvocation),
 
-    Balance(AccountBalanceInvocation),
-
     LockFee(AccountLockFeeInvocation),
     LockContingentFee(AccountLockContingentFeeInvocation),
 
@@ -605,8 +603,7 @@ impl NativeInvocation {
             },
             NativeInvocation::Account(account_method) => match account_method {
                 AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
-                AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
-                | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
+                AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
                 | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
                     receiver,
                     ..
