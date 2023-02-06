@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod auth_list_component {
     struct AuthListComponent {
         count: u8,
         auth: Vec<NonFungibleGlobalId>,

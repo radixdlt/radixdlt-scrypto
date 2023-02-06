@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod execution_trace_test {
     struct ExecutionTraceTest {
         vault: Vault,
     }
