@@ -429,6 +429,12 @@ where
                 Ok(Box::new(rtn))
             }
         },
+        NativeInvocation::FeeReserve(method) => match method {
+            FeeReserveInvocation::LockFee(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
         NativeInvocation::Account(account_method) => match account_method {
             AccountInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;

@@ -74,7 +74,7 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::FeeReserve(..)
+            | RENodeId::FeeReserve
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
@@ -122,7 +122,7 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::FeeReserve(..)
+            | RENodeId::FeeReserve
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)

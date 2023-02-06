@@ -8,10 +8,10 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
+use crate::blueprints::fee_reserve::*;
 use crate::blueprints::identity::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_runtime::TransactionRuntimeGenerateUuidInvocation;
 use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::types::{ManifestBucket, ManifestProof};
@@ -75,6 +75,7 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+    FeeReserve(FeeReserveInvocation),
     Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
 }
@@ -112,6 +113,11 @@ impl Into<CallTableInvocation> for NativeInvocation {
 pub enum TransactionRuntimeInvocation {
     GetHash(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum FeeReserveInvocation {
+    LockFee(FeeReserveLockFeeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -601,9 +607,16 @@ impl NativeInvocation {
                 WorktopInvocation::TakeAmount(..) => {}
             },
             NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::GetHash(..) => {}
-                TransactionRuntimeInvocation::GenerateUuid(..) => {}
+                TransactionRuntimeInvocation::GetHash(..)
+                | TransactionRuntimeInvocation::GenerateUuid(..) => {
+                    refs.insert(RENodeId::TransactionRuntime);
+                }
             },
+            NativeInvocation::FeeReserve(FeeReserveInvocation::LockFee(
+                FeeReserveLockFeeInvocation { .. },
+            )) => {
+                refs.insert(RENodeId::FeeReserve);
+            }
             NativeInvocation::Account(account_method) => match account_method {
                 AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
                 AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
@@ -925,6 +938,9 @@ impl NativeInvocation {
                 AccountInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
+            },
+            NativeInvocation::FeeReserve(i) => match i {
+                FeeReserveInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 

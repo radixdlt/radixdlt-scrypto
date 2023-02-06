@@ -32,6 +32,7 @@ pub enum NativePackage {
     TransactionProcessor,
     Account,
     AccessController,
+    FeeReserve,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -124,6 +125,7 @@ pub enum NativeFn {
     TransactionProcessor(TransactionProcessorFn),
     Account(AccountFn),
     AccessController(AccessControllerFn),
+    FeeReserve(FeeReserveFn),
 }
 
 impl NativeFn {
@@ -146,6 +148,7 @@ impl NativeFn {
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
+            NativeFn::FeeReserve(_) => NativePackage::FeeReserve,
         }
     }
 }
@@ -1094,6 +1097,30 @@ pub enum AccessControllerFn {
     UnlockPrimaryRole,
 
     StopTimedRecovery,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum FeeReserveFn {
+    LockFee,
 }
 
 pub struct AccessControllerPackage;

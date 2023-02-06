@@ -227,6 +227,9 @@ impl FeeTable {
                 TransactionRuntimeFn::GetHash => self.fixed_low,
                 TransactionRuntimeFn::GenerateUuid => self.fixed_low,
             },
+            NativeFn::FeeReserve(ident) => match ident {
+                FeeReserveFn::LockFee => self.fixed_low,
+            },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
                     TransactionProcessorFn::Run => self.fixed_high,
