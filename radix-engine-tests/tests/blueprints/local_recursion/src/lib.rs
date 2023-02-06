@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod local_recursion_bomb {
     struct LocalRecursionBomb {
         vault: Vault,
     }
@@ -31,7 +32,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod local_recursion_bomb2 {
     struct LocalRecursionBomb2 {
         vaults: KeyValueStore<u32, Vault>,
     }

@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod chess {
     struct Chess {
         players: [NonFungibleGlobalId; 2],
     }

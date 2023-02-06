@@ -3,7 +3,8 @@ use scrypto::prelude::*;
 #[derive(NonFungibleData)]
 pub struct Data {}
 
-blueprint! {
+#[blueprint]
+mod vault_test {
     struct VaultTest {
         vault: Vault,
         vaults: KeyValueStore<u128, Vault>,

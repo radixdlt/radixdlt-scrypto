@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod stored_resource {
     struct StoredResource {
         resource_address: ResourceAddress,
     }

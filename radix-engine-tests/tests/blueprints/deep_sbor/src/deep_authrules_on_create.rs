@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod deep_auth_rules_on_create {
     struct DeepAuthRulesOnCreate {}
 
     impl DeepAuthRulesOnCreate {

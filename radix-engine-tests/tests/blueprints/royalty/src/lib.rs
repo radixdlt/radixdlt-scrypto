@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod royalty_test {
     struct RoyaltyTest {}
 
     impl RoyaltyTest {

@@ -3,7 +3,8 @@ use radix_engine_interface::api::ClientNativeInvokeApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod clock_test {
     struct ClockTest;
 
     impl ClockTest {
