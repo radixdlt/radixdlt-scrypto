@@ -1,7 +1,6 @@
 use super::global::GlobalAddressSubstate;
 use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
-use super::node_modules::fee::FeeReserveSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -9,6 +8,7 @@ use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
+use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
