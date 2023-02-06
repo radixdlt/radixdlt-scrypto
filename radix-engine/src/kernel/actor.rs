@@ -54,7 +54,7 @@ pub enum ExecutionMode {
     Kernel,
 
     /* Kernel module */
-    Module(KernelModuleMode),
+    KernelModule(KernelModuleMode),
 
     /* System */
     System,

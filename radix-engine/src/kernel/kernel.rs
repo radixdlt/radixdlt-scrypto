@@ -37,7 +37,9 @@ pub struct Kernel<
     M: BaseModule<R>,
 {
     /// Current execution mode, specifies permissions into state/invocations
-    pub(super) execution_mode: ExecutionMode,
+    ///
+    /// All execution mode transition must be done through the [`execute_in_mode`] method.
+    execution_mode: ExecutionMode,
     /// Stack
     pub(super) current_frame: CallFrame,
     // This stack could potentially be removed and just use the native stack
@@ -85,7 +87,7 @@ where
         // TODO: Move into module initialization
         kernel
             .execute_in_mode::<_, _, RuntimeError>(
-                ExecutionMode::Module(KernelModuleMode::Auth),
+                ExecutionMode::KernelModule(KernelModuleMode::Auth),
                 |api| {
                     let auth_zone = AuthZoneStackSubstate::new(
                         vec![],
@@ -105,7 +107,7 @@ where
 
         kernel
             .execute_in_mode::<_, _, RuntimeError>(
-                ExecutionMode::Module(KernelModuleMode::Logger),
+                ExecutionMode::KernelModule(KernelModuleMode::Logger),
                 |api| LoggerModule::initialize(api),
             )
             .expect("Logger failed to initialize");
@@ -408,7 +410,7 @@ where
         };
 
         // Filter
-        self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
+        self.execute_in_mode(ExecutionMode::KernelModule(KernelModuleMode::Auth), |api| {
             AuthModule::on_before_frame_start(&actor, api)
         })?;
 
@@ -416,20 +418,28 @@ where
         {
             // TODO: Abstract these away
             self.execute_in_mode(
-                ExecutionMode::Module(KernelModuleMode::Transaction),
+                ExecutionMode::KernelModule(KernelModuleMode::Transaction),
                 |api| {
                     TransactionHashModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
                 },
             )?;
-            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Logger), |api| {
-                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
-            })?;
-            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
+            self.execute_in_mode(
+                ExecutionMode::KernelModule(KernelModuleMode::Logger),
+                |api| LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, api),
+            )?;
+            self.execute_in_mode(ExecutionMode::KernelModule(KernelModuleMode::Auth), |api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, api)
             })?;
-            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::NodeMove), |api| {
-                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor.identifier, api)
-            })?;
+            self.execute_in_mode(
+                ExecutionMode::KernelModule(KernelModuleMode::NodeMove),
+                |api| {
+                    NodeMoveModule::on_call_frame_enter(
+                        &mut call_frame_update,
+                        &actor.identifier,
+                        api,
+                    )
+                },
+            )?;
 
             self.module
                 .pre_execute_invocation(
@@ -476,10 +486,11 @@ where
                 .map_err(RuntimeError::ModuleError)?;
 
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::NodeMove), |api| {
-                NodeMoveModule::on_call_frame_exit(&update, api)
-            })?;
-            self.execute_in_mode(ExecutionMode::Module(KernelModuleMode::Auth), |api| {
+            self.execute_in_mode(
+                ExecutionMode::KernelModule(KernelModuleMode::NodeMove),
+                |api| NodeMoveModule::on_call_frame_exit(&update, api),
+            )?;
+            self.execute_in_mode(ExecutionMode::KernelModule(KernelModuleMode::Auth), |api| {
                 AuthModule::on_call_frame_exit(api)
             })?;
 
@@ -518,8 +529,8 @@ where
             (ExecutionMode::Kernel, _) => true,
 
             // KernelModule can be promoted into kernel
-            (ExecutionMode::Module(_), ExecutionMode::Kernel) => true,
-            (ExecutionMode::Module(_), _) => false,
+            (ExecutionMode::KernelModule(_), ExecutionMode::Kernel) => true,
+            (ExecutionMode::KernelModule(_), _) => false,
 
             // System can be promoted into kernel
             //
@@ -655,5 +666,9 @@ where
         self.execution_mode = saved;
 
         Ok(rtn)
+    }
+
+    pub(super) fn execution_mode(&self) -> ExecutionMode {
+        self.execution_mode
     }
 }

@@ -59,13 +59,13 @@ where
             .map_err(RuntimeError::ModuleError)?;
 
         if !VisibilityProperties::check_drop_node_visibility(
-            self.execution_mode,
+            self.execution_mode(),
             &self.current_frame.actor,
             node_id,
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidDropNodeVisibility {
-                    mode: self.execution_mode,
+                    mode: self.execution_mode(),
                     actor: self.current_frame.actor.clone(),
                     node_id,
                 },
@@ -109,14 +109,14 @@ where
             .map_err(RuntimeError::ModuleError)?;
 
         if !VisibilityProperties::check_create_node_visibility(
-            self.execution_mode,
+            self.execution_mode(),
             &self.current_frame.actor,
             &re_node,
             &module_init,
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidCreateNodeVisibility {
-                    mode: self.execution_mode,
+                    mode: self.execution_mode(),
                     actor: self.current_frame.actor.clone(),
                 },
             ));
@@ -235,7 +235,7 @@ where
         // Authorization
         let actor = &self.current_frame.actor;
         if !VisibilityProperties::check_substate_visibility(
-            self.execution_mode,
+            self.execution_mode(),
             actor,
             node_id,
             offset.clone(),
@@ -243,7 +243,7 @@ where
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidSubstateVisibility {
-                    mode: self.execution_mode,
+                    mode: self.execution_mode(),
                     actor: actor.clone(),
                     node_id,
                     offset,

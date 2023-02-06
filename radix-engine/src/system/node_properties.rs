@@ -15,7 +15,7 @@ impl VisibilityProperties {
         node_id: RENodeId,
     ) -> bool {
         match mode {
-            ExecutionMode::Module(KernelModuleMode::Logger) => match node_id {
+            ExecutionMode::KernelModule(KernelModuleMode::Logger) => match node_id {
                 RENodeId::Logger => return true,
                 _ => return false,
             },
@@ -104,15 +104,15 @@ impl VisibilityProperties {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
 
             /* Kernel modules */
-            (ExecutionMode::Module(KernelModuleMode::Logger), _) => false,
-            (ExecutionMode::Module(KernelModuleMode::NodeMove), offset) => match offset {
+            (ExecutionMode::KernelModule(KernelModuleMode::Logger), _) => false,
+            (ExecutionMode::KernelModule(KernelModuleMode::NodeMove), offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 _ => false,
             },
-            (ExecutionMode::Module(KernelModuleMode::Transaction), _) => false,
-            (ExecutionMode::Module(KernelModuleMode::Entity), _) => false,
-            (ExecutionMode::Module(KernelModuleMode::Auth), offset) => match offset {
+            (ExecutionMode::KernelModule(KernelModuleMode::Transaction), _) => false,
+            (ExecutionMode::KernelModule(KernelModuleMode::Entity), _) => false,
+            (ExecutionMode::KernelModule(KernelModuleMode::Auth), offset) => match offset {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 SubstateOffset::Vault(VaultOffset::Vault) => read_only,
