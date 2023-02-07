@@ -4,7 +4,7 @@
 
 Language for building DeFi apps on Radix.
 
-Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
+Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
 
 ## Installation
 
@@ -50,7 +50,7 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
 
 ## Getting Started
 
-If you want a quick walkthrough of how to deploy and run some code, please see the [Run Your First Project](https://docs-babylon.radixdlt.com/main/getting-started-developers/first-component/run-first-project.html) tutorial. If you prefer to soldier through on your own, keep reading below.
+If you want a quick walkthrough of how to deploy and run some code, please see the [Run Your First Project](https://docs.radixdlt.com/main/scrypto/getting-started/run-first-project.html) tutorial. If you prefer to soldier through on your own, keep reading below.
 
 ### Writing Scrypto Code
 
