@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
+use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInvocation;
 use radix_engine_interface::blueprints::account::{AccountCreateInvocation, AccountNewInvocation};
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
@@ -128,7 +129,7 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
 
         match self.package_address {
-            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE => {
+            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE => {
                 let executor = ScryptoExecutor {
                     package_address: self.package_address,
                     export_name: "test".to_string(),
@@ -281,6 +282,11 @@ impl Executor for ScryptoExecutor {
             ACCOUNT_PACKAGE => {
                 // TODO: Add Account Create
                 let invocation: AccountNewInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let rtn = invocation.execute(api)?;
+                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+            }
+            ACCESS_CONTROLLER_PACKAGE => {
+                let invocation: AccessControllerCreateGlobalInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
             }

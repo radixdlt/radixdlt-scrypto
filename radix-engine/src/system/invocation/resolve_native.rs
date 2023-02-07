@@ -659,13 +659,6 @@ where
             }
         },
         NativeFn::AccessController(ac_fn) => match ac_fn {
-            AccessControllerFn::CreateGlobal => {
-                let invocation =
-                    scrypto_decode::<AccessControllerCreateGlobalInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerFn::CreateProof => {
                 let invocation =
                     scrypto_decode::<AccessControllerCreateProofInvocation>(&invocation)

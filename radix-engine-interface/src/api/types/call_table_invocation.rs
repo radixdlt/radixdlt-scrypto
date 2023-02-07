@@ -292,8 +292,6 @@ pub enum AccountInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    CreateGlobal(AccessControllerCreateGlobalInvocation),
-
     CreateProof(AccessControllerCreateProofInvocation),
 
     InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
@@ -645,7 +643,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::CreateGlobal(..) => {}
                 AccessControllerInvocation::CreateProof(
                     AccessControllerCreateProofInvocation { receiver, .. },
                 )

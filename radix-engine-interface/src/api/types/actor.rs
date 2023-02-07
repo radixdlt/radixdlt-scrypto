@@ -1027,8 +1027,6 @@ impl AccountPackage {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    CreateGlobal,
-
     CreateProof,
 
     InitiateRecoveryAsPrimary,
@@ -1059,9 +1057,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::CreateGlobal => {
-                return Err(ResolveError::NotAMethod);
-            }
             AccessControllerFn::CreateProof => {
                 scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

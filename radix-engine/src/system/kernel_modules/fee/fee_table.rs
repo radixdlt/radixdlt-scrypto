@@ -255,8 +255,6 @@ impl FeeTable {
                 AccountFn::CreateProofByIds => self.fixed_low,
             },
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::CreateGlobal => self.fixed_low,
-
                 AccessControllerFn::CreateProof => self.fixed_low,
 
                 AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,

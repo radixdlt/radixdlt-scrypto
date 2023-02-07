@@ -496,10 +496,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::CreateGlobal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::CreateProof(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

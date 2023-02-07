@@ -33,7 +33,10 @@ pub const CLOCK_BLUEPRINT: &str = "Clock";
 pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
+pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
+pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
+
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 5);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.

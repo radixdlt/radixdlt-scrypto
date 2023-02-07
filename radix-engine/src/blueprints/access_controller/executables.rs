@@ -59,6 +59,7 @@ impl From<AccessControllerError> for RuntimeError {
 // Access Controller Create Global
 //=================================
 
+/*
 impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     type Exec = Self;
 
@@ -76,6 +77,7 @@ impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for AccessControllerCreateGlobalInvocation {
     type Output = ComponentAddress;
@@ -93,12 +95,10 @@ impl Executor for AccessControllerCreateGlobalInvocation {
     {
         // Creating a new vault and putting in it the controlled asset
         let vault = {
-            let controlled_asset = Bucket(self.controlled_asset);
-
-            let mut vault = controlled_asset
+            let mut vault = self.controlled_asset
                 .sys_resource_address(api)
                 .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
-            vault.sys_put(controlled_asset, api)?;
+            vault.sys_put(self.controlled_asset, api)?;
 
             vault
         };

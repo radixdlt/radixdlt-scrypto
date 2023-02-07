@@ -8,13 +8,24 @@ use sbor::rust::fmt::Debug;
 // Access Controller Create Global
 //=================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCreateGlobalInvocation {
-    pub controlled_asset: BucketId,
+    pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+impl Clone for AccessControllerCreateGlobalInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            controlled_asset: Bucket(self.controlled_asset.0),
+            rule_set: self.rule_set.clone(),
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
+        }
+    }
+}
+
+/*
 impl Invocation for AccessControllerCreateGlobalInvocation {
     type Output = ComponentAddress;
 
@@ -36,6 +47,7 @@ impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
         NativeInvocation::AccessController(AccessControllerInvocation::CreateGlobal(self)).into()
     }
 }
+ */
 
 //================================
 // Access Controller Create Proof
