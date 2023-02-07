@@ -126,8 +126,8 @@ where
         kernel
     }
 
-    pub fn destroy(mut self) -> (FeeReserveSubstate, &'g mut M, Option<RuntimeError>) {
-        // call stack rewind
+    pub fn destroy(mut self) -> (FeeReserveSubstate, Option<RuntimeError>) {
+        // Rewind call stack
         loop {
             if let Some(f) = self.prev_frame_stack.pop() {
                 self.current_frame = f;
@@ -136,17 +136,16 @@ where
             }
         }
 
-        // attempt to destroy all kernel modules
+        // Attempt to teardown all kernel modules
         let possible_fee_reserve_substate = self
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::destroy(api)
+                KernelModuleMixer::teardown(api)
             });
 
         match possible_fee_reserve_substate {
-            Ok(fee_reserve_substate) => (fee_reserve_substate, self.module, None),
+            Ok(fee_reserve_substate) => (fee_reserve_substate, None),
             Err(e) => (
                 self.heap.remove_node(RENodeId::FeeReserve).unwrap().into(),
-                self.module,
                 Some(e),
             ),
         }

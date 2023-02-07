@@ -29,7 +29,7 @@ impl TransactionRuntimeModule {
         Ok(())
     }
 
-    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<TransactionRuntimeSubstate, RuntimeError> {
         let substate: TransactionRuntimeSubstate =

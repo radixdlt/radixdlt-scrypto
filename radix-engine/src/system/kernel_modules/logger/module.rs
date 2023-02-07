@@ -18,7 +18,7 @@ impl LoggerModule {
         Ok(())
     }
 
-    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<LoggerSubstate, RuntimeError> {
         let substate: LoggerSubstate = api.drop_node(RENodeId::Logger)?.into();

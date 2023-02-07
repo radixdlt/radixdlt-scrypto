@@ -223,7 +223,7 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut module = KernelModuleMixer::new(execution_config);
+            let mut kernel_module_mixer = KernelModuleMixer::new(execution_config);
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
@@ -232,7 +232,7 @@ where
                 &mut id_allocator,
                 &mut track,
                 self.scrypto_interpreter,
-                &mut module,
+                &mut kernel_module_mixer,
                 transaction.transaction_hash().clone(),
                 auth_zone_params.clone(),
                 fee_reserve,
@@ -252,16 +252,21 @@ where
                 blobs: Cow::Borrowed(blobs),
             });
 
-            let (fee_reserve_substate, module, optional_error) = kernel.destroy();
+            let (fee_reserve_substate, optional_error) = kernel.destroy();
             if let Some(error) = optional_error {
                 if invoke_result.is_ok() {
                     // Overwrites invoke result
                     invoke_result = Err(error);
                 }
             }
-            let events = module.collect_events();
+            let (vault_ops, events) = kernel_module_mixer.destroy();
 
-            track.finalize(invoke_result, fee_reserve_substate.fee_reserve, events)
+            track.finalize(
+                invoke_result,
+                fee_reserve_substate.fee_reserve,
+                vault_ops,
+                events,
+            )
         };
 
         // Finish resources usage measurement and get results

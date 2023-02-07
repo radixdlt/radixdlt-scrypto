@@ -51,6 +51,8 @@ pub struct ExecutionTraceModule {
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
+
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -147,7 +149,7 @@ impl KernelModule for ExecutionTraceModule {
         &mut self,
         current_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track,
+        _track: &mut Track,
         callee: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
@@ -182,7 +184,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_put_input(update, heap, track, &current_frame.actor, vault_id),
+            } => self.handle_vault_put_input(update, heap, &current_frame.actor, vault_id),
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
                 receiver:
@@ -190,7 +192,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_lock_fee_input(track, &current_frame.actor, vault_id),
+            } => self.handle_vault_lock_fee_input(&current_frame.actor, vault_id),
             _ => {}
         }
 
@@ -201,7 +203,7 @@ impl KernelModule for ExecutionTraceModule {
         &mut self,
         current_frame: &CallFrame,
         heap: &mut Heap,
-        track: &mut Track,
+        _track: &mut Track,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
@@ -213,7 +215,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_take_output(update, heap, track, caller, vault_id),
+            } => self.handle_vault_take_output(update, heap, caller, vault_id),
             _ => {}
         }
 
@@ -237,6 +239,7 @@ impl ExecutionTraceModule {
             current_kernel_call_depth: 0,
             traced_kernel_call_inputs_stack: vec![],
             kernel_call_traces_stacks: HashMap::new(),
+            vault_ops: Vec::new(),
         }
     }
 
@@ -402,7 +405,7 @@ impl ExecutionTraceModule {
         Ok(())
     }
 
-    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
+    pub fn destroy(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain() {
             // Emit an output event for each "root" kernel call trace
@@ -411,7 +414,7 @@ impl ExecutionTraceModule {
             }
         }
 
-        events
+        (self.vault_ops, events)
     }
 
     fn extract_trace_data(
@@ -470,9 +473,9 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put_input<'s>(
+        &mut self,
         current_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
-        track: &mut Track<'s>,
         actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
@@ -484,7 +487,7 @@ impl ExecutionTraceModule {
                         NodeModuleId::SELF,
                         &SubstateOffset::Bucket(BucketOffset::Bucket),
                     ) {
-                        track.vault_ops.push((
+                        self.vault_ops.push((
                             actor.clone(),
                             vault_id.clone(),
                             VaultOp::Put(bucket_substate.bucket().total_amount()),
@@ -496,20 +499,15 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(
-        track: &mut Track<'s>,
-        actor: &ResolvedActor,
-        vault_id: &VaultId,
-    ) {
-        track
-            .vault_ops
+    fn handle_vault_lock_fee_input<'s>(&mut self, actor: &ResolvedActor, vault_id: &VaultId) {
+        self.vault_ops
             .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
     }
 
     fn handle_vault_take_output<'s>(
+        &mut self,
         update: &CallFrameUpdate,
         heap: &mut Heap,
-        track: &mut Track<'s>,
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
@@ -521,7 +519,7 @@ impl ExecutionTraceModule {
                         NodeModuleId::SELF,
                         &SubstateOffset::Bucket(BucketOffset::Bucket),
                     ) {
-                        track.vault_ops.push((
+                        self.vault_ops.push((
                             caller.clone(),
                             vault_id.clone(),
                             VaultOp::Take(bucket_substate.bucket().total_amount()),
@@ -541,7 +539,7 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         actual_fee_payments: &BTreeMap<VaultId, Decimal>,
-        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
@@ -620,7 +618,7 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> ResourceAddress {
         let (substate, _) = to_persist
             .get(&SubstateId(

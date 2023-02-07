@@ -30,7 +30,7 @@ impl CostingModule {
         Ok(())
     }
 
-    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<FeeReserveSubstate, RuntimeError> {
         let substate: FeeReserveSubstate = api.drop_node(RENodeId::FeeReserve)?.into();

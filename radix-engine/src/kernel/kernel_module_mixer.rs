@@ -9,6 +9,7 @@ use crate::system::kernel_modules::costing::FeeTable;
 use crate::system::kernel_modules::costing::RoyaltyCostingModule;
 use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
+use crate::system::kernel_modules::execution_trace::VaultOp;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
@@ -22,6 +23,7 @@ use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
@@ -46,8 +48,8 @@ impl KernelModuleMixer {
 }
 
 impl KernelModuleMixer {
-    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
-        self.execution_trace.collect_events()
+    pub fn destroy(self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
+        self.execution_trace.destroy()
     }
 }
 
@@ -497,13 +499,13 @@ impl KernelModuleMixer {
         Ok(())
     }
 
-    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<FeeReserveSubstate, RuntimeError> {
-        AuthModule::destroy(api)
-            .and_then(|_| LoggerModule::destroy(api))
-            .and_then(|_| TransactionRuntimeModule::destroy(api))
-            .and_then(|_| CostingModule::destroy(api))
+        AuthModule::teardown(api)
+            .and_then(|_| LoggerModule::teardown(api))
+            .and_then(|_| TransactionRuntimeModule::teardown(api))
+            .and_then(|_| CostingModule::teardown(api))
     }
 
     pub fn on_before_frame_start<Y>(actor: &ResolvedActor, api: &mut Y) -> Result<(), RuntimeError>

@@ -46,7 +46,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<AuthZoneStackSubstate, RuntimeError> {
         let substate: AuthZoneStackSubstate = api.drop_node(RENodeId::AuthZoneStack)?.into();
