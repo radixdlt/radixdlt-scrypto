@@ -167,8 +167,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_byte(u8::from(*self))?;
-        Ok(())
+        u8::from(*self).encode_body(encoder)
     }
 }
 
@@ -177,8 +176,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        Ok(Nibble::from(decoder.read_byte()?))
+        Ok(Nibble::from(u8::decode_body_with_value_kind(
+            decoder, value_kind,
+        )?))
     }
 }
 
@@ -207,7 +207,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let (even, bytes): (bool, Vec<u8>) =
             Decode::<ScryptoCustomValueKind, D>::decode_body_with_value_kind(decoder, value_kind)?;
         let path = if even {
