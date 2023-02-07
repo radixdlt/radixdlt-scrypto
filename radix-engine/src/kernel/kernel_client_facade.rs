@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::module::KernelModule;
+use crate::kernel::KernelModule;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;

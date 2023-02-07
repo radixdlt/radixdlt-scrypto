@@ -2,7 +2,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
-use crate::kernel::module::KernelModule;
+use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::{RENodeInit, RENodeModuleInit};

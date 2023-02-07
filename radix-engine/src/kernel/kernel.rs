@@ -4,7 +4,7 @@ use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::module::KernelModule;
+use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::{FeeTable, SystemLoanFeeReserve};

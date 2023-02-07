@@ -9,7 +9,8 @@ mod interpreters;
 mod kernel;
 mod kernel_client_facade;
 mod kernel_main_facade;
-mod module;
+mod kernel_module;
+mod kernel_module_mixer;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
 mod resources_tracker;
 mod track;
@@ -24,7 +25,8 @@ pub use kernel::*;
 pub use kernel_api::*;
 pub use kernel_client_facade::*;
 pub use kernel_main_facade::*;
-pub use module::*;
+pub use kernel_module::*;
+pub use kernel_module_mixer::*;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
 pub use resources_tracker::*;
 pub use track::*;

@@ -1,8 +1,7 @@
-use crate::errors::{ModuleError, RuntimeError};
+use crate::errors::ModuleError;
 use crate::kernel::*;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::AuthZoneStackSubstate;
-use radix_engine_interface::api::{types::*, ClientActorApi};
+use radix_engine_interface::api::types::*;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
@@ -164,30 +163,4 @@ pub trait KernelModule {
     ) -> Result<(), ModuleError> {
         Ok(())
     }
-}
-
-pub trait ApiBasedKernelModule {
-    fn initialize<Y: KernelNodeApi + KernelSubstateApi>(&mut self, api: &mut Y);
-
-    fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
-        &mut self,
-        api: &mut Y,
-    ) -> Result<AuthZoneStackSubstate, RuntimeError>;
-
-    fn on_before_frame_start<Y>(
-        &mut self,
-        actor: &ResolvedActor,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>;
-
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
-        &mut self,
-        call_frame_update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>;
-
-    fn on_call_frame_exit<Y>(&mut self, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>;
 }
