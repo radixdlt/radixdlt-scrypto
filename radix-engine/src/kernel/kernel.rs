@@ -85,7 +85,7 @@ where
             module,
         };
 
-        // Module initialization order when certain failure is enabled or disabled.
+        // Module initialization order decodes the time certain failure is enabled or disabled.
         // See also `destroy()` impl when reordering items.
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::CostingModule, |api| {
@@ -142,6 +142,15 @@ where
     }
 
     pub fn destroy(mut self) -> (FeeReserveSubstate, &'g mut M, Option<RuntimeError>) {
+        // call stack rewind
+        loop {
+            if let Some(f) = self.prev_frame_stack.pop() {
+                self.current_frame = f;
+            } else {
+                break;
+            }
+        }
+
         // In reverse order
         let possible_fee_reserve_substate = self
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
@@ -153,12 +162,13 @@ where
                 })
             })
             .and_then(|_| {
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
-                    TransactionRuntimeModule::destroy(api)
-                })
+                self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::TransactionRuntimeModule,
+                    |api| TransactionRuntimeModule::destroy(api),
+                )
             })
             .and_then(|_| {
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::CostingModule, |api| {
                     CostingModule::destroy(api)
                 })
             });
@@ -329,6 +339,9 @@ where
     ) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
             match node_id {
+                RENodeId::Logger => Ok(()),
+                RENodeId::TransactionRuntime => Ok(()),
+                RENodeId::FeeReserve => Ok(()),
                 RENodeId::AuthZoneStack => {
                     let handle = system_api.lock_substate(
                         node_id,
@@ -355,7 +368,6 @@ where
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
-                RENodeId::Logger => Ok(()),
                 RENodeId::Worktop => {
                     let handle = system_api.lock_substate(
                         node_id,
@@ -382,8 +394,6 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionRuntime => Ok(()),
-                RENodeId::FeeReserve => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),

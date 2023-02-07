@@ -65,19 +65,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        15000 /* CreateNode */
-        + 34000 /* DropLock */
-        + 10000 /* DropNode */
+        20000 /* CreateNode */
+        + 36500 /* DropLock */
+        + 20000 /* DropNode */
+        + 0 /* GetVisibleNodes */
         + 0 /* InstantiateWasm */
-        + 6000 /* Invoke */
-        + 41500 /* LockSubstate */
-        + 115000 /* ReadSubstate */
-        + 21000 /* RunNative */
+        + 6500 /* Invoke */
+        + 44500 /* LockSubstate */
+        + 122500 /* ReadSubstate */
+        + 21500 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1370 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 95000, /* WriteSubstate */
+        + 102500, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }

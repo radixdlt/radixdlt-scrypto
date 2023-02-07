@@ -167,7 +167,7 @@ where
         // TODO: For Scrypto components, check state against blueprint schema
 
         let push_to_store = match re_node {
-            RENodeInit::Global(..) | RENodeInit::Logger(..) => true,
+            RENodeInit::Global(..) => true,
             _ => false,
         };
 

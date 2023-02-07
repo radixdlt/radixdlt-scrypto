@@ -47,7 +47,11 @@ impl ExecutableInvocation for FeeReserveLockFeeInvocation {
             NativeFn::FeeReserve(FeeReserveFn::LockFee),
             ResolvedReceiver::new(RENodeId::FeeReserve),
         );
-        let call_frame_update = CallFrameUpdate::empty();
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::FeeReserve);
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Bucket(self.bucket.0));
 
         Ok((actor, call_frame_update, self))
     }
@@ -83,13 +87,16 @@ impl Executor for FeeReserveLockFeeInvocation {
             )
             .map_err(FeeReserveError::from)?;
 
-        let bucket_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_node_id = api.allocate_node_id(RENodeType::Bucket)?;
         api.create_node(
-            bucket_id,
+            bucket_node_id,
             RENodeInit::Bucket(BucketSubstate::new(changes)),
             btreemap!(),
         )?;
 
-        Ok((Bucket(bucket_id.into()), CallFrameUpdate::empty()))
+        Ok((
+            Bucket(bucket_node_id.into()),
+            CallFrameUpdate::move_node(bucket_node_id),
+        ))
     }
 }

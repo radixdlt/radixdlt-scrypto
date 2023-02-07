@@ -216,23 +216,29 @@ impl Executor for VaultLockFeeInvocation {
             })?
         };
 
-        // Refill fee reserve
-        let bucket_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        // Invoke fee reserve
+        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
         system_api.create_node(
-            node_id,
+            bucket_node_id,
             RENodeInit::Bucket(BucketSubstate::new(fee)),
             btreemap!(),
         )?;
         let changes: Bucket = system_api.call_native(FeeReserveLockFeeInvocation {
             receiver: RENodeId::FeeReserve.into(),
-            bucket: Bucket(bucket_id.into()),
+            bucket: Bucket(bucket_node_id.into()),
             vault_id: self.receiver,
             contingent: self.contingent,
         })?;
 
-        system_api.call_native(VaultPutInvocation {
-            receiver: self.receiver,
-            bucket: changes,
+        // Keep changes
+        let changes_resource: BucketSubstate =
+            system_api.drop_node(RENodeId::Bucket(changes.0))?.into();
+        let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+        let vault = substate_mut.vault();
+        vault.put(changes_resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::ResourceOperationError(e),
+            ))
         })?;
 
         Ok(((), CallFrameUpdate::empty()))

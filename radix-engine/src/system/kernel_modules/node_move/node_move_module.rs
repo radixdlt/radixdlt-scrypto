@@ -74,6 +74,7 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
+            | RENodeId::Logger
             | RENodeId::FeeReserve
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
@@ -81,7 +82,6 @@ impl NodeMoveModule {
             | RENodeId::Vault(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
-            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)
             | RENodeId::Validator(..)
@@ -123,12 +123,12 @@ impl NodeMoveModule {
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
             | RENodeId::FeeReserve
+            | RENodeId::Logger
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
-            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)
             | RENodeId::Validator(..)
