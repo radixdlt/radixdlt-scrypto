@@ -33,6 +33,7 @@ pub enum NativePackage {
     Account,
     AccessController,
     FeeReserve,
+    Root,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -126,6 +127,7 @@ pub enum NativeFn {
     Account(AccountFn),
     AccessController(AccessControllerFn),
     FeeReserve(FeeReserveFn),
+    Root,
 }
 
 impl NativeFn {
@@ -149,6 +151,7 @@ impl NativeFn {
             NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
             NativeFn::FeeReserve(_) => NativePackage::FeeReserve,
+            NativeFn::Root => NativePackage::Root,
         }
     }
 }

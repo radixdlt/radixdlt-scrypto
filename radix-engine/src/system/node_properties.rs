@@ -15,25 +15,38 @@ impl VisibilityProperties {
     ) -> bool {
         match mode {
             ExecutionMode::LoggerModule => match node_id {
-                RENodeId::Logger => return true,
-                _ => return false,
+                RENodeId::Logger => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
+            ExecutionMode::TransactionRuntimeModule => match node_id {
+                RENodeId::TransactionRuntime => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
+            ExecutionMode::CostingModule => match node_id {
+                RENodeId::FeeReserve => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
+            ExecutionMode::AuthModule => match node_id {
+                RENodeId::AuthZoneStack => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                _ => false,
             },
             ExecutionMode::Application => match node_id {
-                // TODO: Cleanup and reduce to least privilege
                 RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                    _ => false,
-                },
-                RENodeId::AuthZoneStack => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                    _ => false,
-                },
-                RENodeId::TransactionRuntime => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                    _ => false,
-                },
-                RENodeId::FeeReserve => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(
+                        TransactionProcessorFn::Run,
+                    )) => true,
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {

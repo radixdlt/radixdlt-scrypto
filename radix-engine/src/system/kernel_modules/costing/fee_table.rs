@@ -284,6 +284,7 @@ impl FeeTable {
 
                 AccessControllerFn::StopTimedRecovery => self.fixed_low,
             },
+            NativeFn::Root => 0,
         }
     }
 

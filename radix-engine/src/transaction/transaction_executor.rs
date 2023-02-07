@@ -254,7 +254,10 @@ where
 
             let (fee_reserve_substate, module, optional_error) = kernel.destroy();
             if let Some(error) = optional_error {
-                invoke_result = Err(error);
+                if invoke_result.is_ok() {
+                    // Overwrites invoke result
+                    invoke_result = Err(error);
+                }
             }
             let events = module.collect_events();
 

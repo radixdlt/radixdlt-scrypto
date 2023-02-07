@@ -7,7 +7,6 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
-    TransactionProcessorFn,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -286,9 +285,7 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::TransactionProcessor(
-                TransactionProcessorFn::Run,
-            ))),
+            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::Root)),
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,

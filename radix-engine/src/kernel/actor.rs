@@ -55,12 +55,16 @@ pub enum ExecutionMode {
     Deref,
     Globalize,
     Resolver,
+    DropNode,
+
+    /* Kernel modules */
     CostingModule,
     NodeMoveModule,
     AuthModule,
     LoggerModule,
     EntityModule,
     TransactionRuntimeModule,
+
+    /* Clients, e.g. blueprints and node modules */
     Application,
-    DropNode,
 }
