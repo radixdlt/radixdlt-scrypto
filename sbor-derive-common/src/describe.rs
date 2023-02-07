@@ -19,13 +19,87 @@ pub fn handle_describe(
 
     let code_hash = get_code_hash_const_array_token_stream(&input);
 
+    let parsed: DeriveInput = parse2(input)?;
+    let is_transparent = is_transparent(&parsed.attrs);
+
+    let output = if is_transparent {
+        handle_transparent_describe(parsed, context_custom_type_kind)?
+    } else {
+        handle_normal_describe(parsed, code_hash, context_custom_type_kind)?
+    };
+
+    #[cfg(feature = "trace")]
+    crate::utils::print_generated_code("Describe", &output);
+
+    trace!("handle_describe() finishes");
+    Ok(output)
+}
+
+fn handle_transparent_describe(
+    parsed: DeriveInput,
+    context_custom_type_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     let DeriveInput {
         attrs,
         ident,
         data,
         generics,
         ..
-    } = parse2(input)?;
+    } = parsed;
+    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
+
+    let output = match data {
+        Data::Struct(s) => {
+            // TODO fix bug where it's generic over field type
+            let FieldsData {
+                unskipped_field_types,
+                ..
+            } = process_fields_for_describe(&s.fields);
+
+            if unskipped_field_types.len() != 1 {
+                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+            }
+
+            let field_type = &unskipped_field_types[0];
+
+            quote! {
+                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                    const TYPE_ID: ::sbor::GlobalTypeId = <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID;
+
+                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
+                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+                    }
+
+                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
+                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::add_all_dependencies(aggregator)
+                    }
+                }
+            }
+        }
+        Data::Enum(_) => {
+            return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+        }
+        Data::Union(_) => {
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+        }
+    };
+
+    Ok(output)
+}
+
+fn handle_normal_describe(
+    parsed: DeriveInput,
+    code_hash: TokenStream,
+    context_custom_type_kind: Option<&'static str>,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        data,
+        generics,
+        ..
+    } = parsed;
     let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
@@ -232,10 +306,6 @@ pub fn handle_describe(
         }
     };
 
-    #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("Describe", &output);
-
-    trace!("handle_describe() finishes");
     Ok(output)
 }
 

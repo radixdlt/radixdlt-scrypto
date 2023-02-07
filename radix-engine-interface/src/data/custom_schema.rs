@@ -45,6 +45,7 @@ pub enum ScryptoCustomTypeValidation {}
 
 impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeExtension {}
 
 impl CustomTypeExtension for ScryptoCustomTypeExtension {
