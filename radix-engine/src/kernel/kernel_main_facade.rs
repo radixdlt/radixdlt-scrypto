@@ -2,8 +2,8 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
-use crate::kernel::module::BaseModule;
 use crate::kernel::module::KernelApiCallOutput;
+use crate::kernel::module::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
@@ -16,7 +16,7 @@ use radix_engine_interface::api::types::*;
 impl<'g, 's, W, M> KernelNodeApi for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
     fn get_visible_node_data(
         &mut self,
@@ -200,7 +200,7 @@ where
 impl<'g, 's, W, M> KernelSubstateApi for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
     fn lock_substate(
         &mut self,
@@ -441,7 +441,7 @@ where
 impl<'g, 's, W, M> KernelWasmApi<W> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
@@ -459,7 +459,7 @@ where
 impl<'g, 's, W, M, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
@@ -504,13 +504,13 @@ where
 impl<'g, 's, W, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
 }
 
 impl<'g, 's, W, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
 }

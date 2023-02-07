@@ -4,7 +4,7 @@ use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::module::BaseModule;
+use crate::kernel::module::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
@@ -36,7 +36,7 @@ pub struct Kernel<
     M,
 > where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
     /// Current execution mode, specifies permissions into state/invocations
     pub(super) execution_mode: ExecutionMode,
@@ -62,7 +62,7 @@ pub struct Kernel<
 impl<'g, 's, W, M> Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
-    M: BaseModule,
+    M: KernelModule,
 {
     pub fn new(
         id_allocator: &'g mut IdAllocator,

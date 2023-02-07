@@ -100,7 +100,7 @@ pub enum SysCallTraceOrigin {
     Opaque,
 }
 
-impl BaseModule for ExecutionTraceModule {
+impl KernelModule for ExecutionTraceModule {
     fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,

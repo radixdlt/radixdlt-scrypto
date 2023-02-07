@@ -11,7 +11,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl BaseModule for KernelTraceModule {
+impl KernelModule for KernelTraceModule {
     fn pre_kernel_api_call(
         &mut self,
         call_frame: &CallFrame,

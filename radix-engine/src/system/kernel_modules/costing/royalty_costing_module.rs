@@ -79,7 +79,7 @@ macro_rules! preload_vault {
     };
 }
 
-impl BaseModule for RoyaltyCostingModule {
+impl KernelModule for RoyaltyCostingModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &ResolvedActor,

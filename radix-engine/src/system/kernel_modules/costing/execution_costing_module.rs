@@ -63,7 +63,7 @@ where
     }
 }
 
-impl BaseModule for ExecutionCostingModule {
+impl KernelModule for ExecutionCostingModule {
     fn pre_kernel_api_call(
         &mut self,
         _call_frame: &CallFrame,

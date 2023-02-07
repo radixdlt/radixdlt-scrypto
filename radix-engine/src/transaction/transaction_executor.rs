@@ -223,7 +223,7 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut module = KernelModule::new(execution_config);
+            let mut module = KernelModuleMixer::new(execution_config);
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
