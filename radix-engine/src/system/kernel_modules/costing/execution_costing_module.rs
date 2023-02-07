@@ -6,6 +6,8 @@ use crate::kernel::*;
 use crate::kernel::{CallFrameUpdate, ResolvedActor};
 use crate::system::kernel_modules::costing::CostingEntry;
 use crate::system::kernel_modules::costing::CostingError;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_interface::api::types::RENodeId;
@@ -113,6 +115,41 @@ impl KernelModule for ExecutionCostingModule {
         }
     }
 
+    fn pre_create_node(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        _node_id: &RENodeId,
+        _node_init: &RENodeInit,
+        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), ModuleError> {
+        // TODO: calculate size
+        apply_execution_cost(
+            heap,
+            CostingReason::CreateNode,
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
+            1,
+        )?;
+        Ok(())
+    }
+
+    fn post_drop_node(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+    ) -> Result<(), ModuleError> {
+        // TODO: calculate size
+        apply_execution_cost(
+            heap,
+            CostingReason::DropNode,
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
+            1,
+        )?;
+        Ok(())
+    }
+
     fn on_lock_substate(
         &mut self,
         _current_frame: &CallFrame,
@@ -177,7 +214,7 @@ impl KernelModule for ExecutionCostingModule {
     ) -> Result<(), ModuleError> {
         apply_execution_cost(
             heap,
-            CostingReason::WriteSubstate,
+            CostingReason::DropLock,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
             1,
         )?;

@@ -5,6 +5,10 @@ pub enum CostingEntry {
     /* invoke */
     Invoke { input_size: u32 },
 
+    /* node */
+    CreateNode { size: u32 },
+    DropNode { size: u32 },
+
     /* substate */
     LockSubstate,
     ReadSubstate { size: u32 },
@@ -252,7 +256,10 @@ impl FeeTable {
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
         match entry {
-            CostingEntry::Invoke { input_size, .. } => self.fixed_low + (10 * input_size) as u32,
+            CostingEntry::Invoke { input_size } => self.fixed_low + (10 * input_size) as u32,
+
+            CostingEntry::CreateNode { size } => self.fixed_medium + (100 * size) as u32,
+            CostingEntry::DropNode { size } => self.fixed_medium + (100 * size) as u32,
 
             CostingEntry::LockSubstate => self.fixed_high,
             CostingEntry::ReadSubstate { size } => self.fixed_medium + 100 * size,
