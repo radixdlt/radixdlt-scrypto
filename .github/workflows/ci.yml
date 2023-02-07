@@ -229,7 +229,9 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --features wasmer
+      run: |
+        cargo test --features wasmer --no-run
+        cargo test --features wasmer
       working-directory: radix-engine
   radix-engine-bench:
     name: Run Radix Engine benchmarks
