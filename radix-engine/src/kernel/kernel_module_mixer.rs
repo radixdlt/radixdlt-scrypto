@@ -122,38 +122,17 @@ impl KernelModule for KernelModuleMixer {
         heap: &mut Heap,
         track: &mut Track,
         callee: &ResolvedActor,
-        nodes_and_refs: &CallFrameUpdate,
+        update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         if self.kernel_trace {
-            KernelTraceModule.pre_kernel_execute(
-                current_frame,
-                heap,
-                track,
-                callee,
-                nodes_and_refs,
-            )?;
+            KernelTraceModule.pre_kernel_execute(current_frame, heap, track, callee, update)?;
         }
-        self.execution_costing.pre_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            callee,
-            nodes_and_refs,
-        )?;
-        self.royalty_costing.pre_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            callee,
-            nodes_and_refs,
-        )?;
-        self.execution_trace.pre_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            callee,
-            nodes_and_refs,
-        )?;
+        self.execution_costing
+            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
+        self.royalty_costing
+            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
+        self.execution_trace
+            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
 
         Ok(())
     }
@@ -164,38 +143,17 @@ impl KernelModule for KernelModuleMixer {
         heap: &mut Heap,
         track: &mut Track,
         caller: &ResolvedActor,
-        nodes_and_refs: &CallFrameUpdate,
+        update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         if self.kernel_trace {
-            KernelTraceModule.post_kernel_execute(
-                current_frame,
-                heap,
-                track,
-                caller,
-                nodes_and_refs,
-            )?;
+            KernelTraceModule.post_kernel_execute(current_frame, heap, track, caller, update)?;
         }
-        self.execution_costing.post_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            caller,
-            nodes_and_refs,
-        )?;
-        self.royalty_costing.post_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            caller,
-            nodes_and_refs,
-        )?;
-        self.execution_trace.post_kernel_execute(
-            current_frame,
-            heap,
-            track,
-            caller,
-            nodes_and_refs,
-        )?;
+        self.execution_costing
+            .post_kernel_execute(current_frame, heap, track, caller, update)?;
+        self.royalty_costing
+            .post_kernel_execute(current_frame, heap, track, caller, update)?;
+        self.execution_trace
+            .post_kernel_execute(current_frame, heap, track, caller, update)?;
 
         Ok(())
     }

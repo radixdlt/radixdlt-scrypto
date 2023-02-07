@@ -32,7 +32,7 @@ pub trait KernelModule {
         _heap: &mut Heap,
         _track: &mut Track,
         _callee: &ResolvedActor,
-        _nodes_and_refs: &CallFrameUpdate,
+        _update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
@@ -43,7 +43,7 @@ pub trait KernelModule {
         _heap: &mut Heap,
         _track: &mut Track,
         _caller: &ResolvedActor,
-        _nodes_and_refs: &CallFrameUpdate,
+        _update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
