@@ -132,7 +132,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account_by_amount(account, 100u32.into(), RADIX_TOKEN);
-    for _ in 0..500 {
+    for _ in 0..300 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });

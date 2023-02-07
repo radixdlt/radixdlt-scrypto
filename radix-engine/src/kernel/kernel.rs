@@ -137,7 +137,10 @@ where
         }
 
         // attempt to destroy all kernel modules
-        let possible_fee_reserve_substate = KernelModuleMixer::destroy(&mut self);
+        let possible_fee_reserve_substate = self
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::destroy(api)
+            });
 
         match possible_fee_reserve_substate {
             Ok(fee_reserve_substate) => (fee_reserve_substate, self.module, None),
