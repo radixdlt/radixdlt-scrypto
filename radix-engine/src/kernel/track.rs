@@ -7,9 +7,9 @@ use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::CostingError;
+use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::kernel_modules::costing::{FeeTable, FinalizingFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
@@ -67,7 +67,6 @@ pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    pub fee_table: FeeTable,
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
@@ -92,13 +91,12 @@ pub struct PreExecutionError {
 }
 
 impl<'s> Track<'s> {
-    pub fn new(substate_store: &'s dyn ReadableSubstateStore, fee_table: FeeTable) -> Self {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             application_logs: Vec::new(),
             substate_store,
             loaded_substates: BTreeMap::new(),
             new_global_addresses: Vec::new(),
-            fee_table,
             vault_ops: Vec::new(),
         }
     }

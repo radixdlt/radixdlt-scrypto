@@ -219,7 +219,7 @@ where
         };
 
         // Prepare state track and execution trace
-        let mut track = Track::new(self.substate_store, FeeTable::new());
+        let mut track = Track::new(self.substate_store);
 
         // Invoke the function/method
         let track_receipt = {
