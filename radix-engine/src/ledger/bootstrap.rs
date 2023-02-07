@@ -9,7 +9,7 @@ use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
-use radix_engine_interface::blueprints::epoch_manager::{EpochManagerCreateInvocation, ManifestValidatorInit, ValidatorInit};
+use radix_engine_interface::blueprints::epoch_manager::ManifestValidatorInit;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -75,14 +75,17 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,
         )));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
-                id_type: NonFungibleIdType::Bytes,
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible".to_string(),
+            args: args!(
+                Some(resource_address),
+                NonFungibleIdType::Bytes,
                 metadata,
-                access_rules,
-            }),
-        )));
+                access_rules
+            ),
+        }));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -95,14 +98,17 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
-                id_type: NonFungibleIdType::Bytes,
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible".to_string(),
+            args: args!(
+                Some(resource_address),
+                NonFungibleIdType::Bytes,
                 metadata,
-                access_rules,
-            }),
-        )));
+                access_rules
+            ),
+        }));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -113,14 +119,17 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
-                id_type: NonFungibleIdType::Bytes,
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible".to_string(),
+            args: args!(
+                Some(resource_address),
+                NonFungibleIdType::Bytes,
                 metadata,
-                access_rules,
-            }),
-        )));
+                access_rules
+            ),
+        }));
     }
 
     // Package Token
@@ -130,14 +139,17 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
-                id_type: NonFungibleIdType::Bytes,
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible".to_string(),
+            args: args!(
+                Some(resource_address),
+                NonFungibleIdType::Bytes,
                 metadata,
-                access_rules,
-            }),
-        )));
+                access_rules
+            ),
+        }));
     }
 
     {
@@ -208,14 +220,6 @@ pub fn create_genesis(
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
-
-            /*scrypto_encode(&EpochManagerCreateInvocation {
-
-                validator_set: validators,
-                initial_epoch,
-                rounds_per_epoch,
-                num_unstake_epochs,
-            }).unwrap(),*/
         }));
     }
 

@@ -140,13 +140,19 @@ impl Executor for EpochManagerCreateInvocation {
             }
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-            let resource_address: ResourceAddress =
-                api.invoke(ResourceManagerCreateNonFungibleInvocation {
-                    resource_address: Some(self.olympia_validator_token_address),
-                    id_type: NonFungibleIdType::Bytes,
+
+            let result = api.call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                "create_non_fungible".to_string(),
+                args!(
+                    Some(self.olympia_validator_token_address),
+                    NonFungibleIdType::Bytes,
                     metadata,
-                    access_rules,
-                })?;
+                    access_rules
+                )
+            )?;
+            let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)
         };
 
@@ -460,6 +466,7 @@ impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor = ResolvedActor::method(
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),

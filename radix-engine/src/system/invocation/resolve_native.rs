@@ -322,13 +322,6 @@ where
             }
         },
         NativeFn::ResourceManager(resource_manager_fn) => match resource_manager_fn {
-            ResourceManagerFn::CreateNonFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerCreateNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ResourceManagerFn::CreateFungible => {
                 let invocation =
                     scrypto_decode::<ResourceManagerCreateFungibleInvocation>(&invocation)

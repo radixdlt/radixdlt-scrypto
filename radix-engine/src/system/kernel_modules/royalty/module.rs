@@ -91,7 +91,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
 
         let package_id = {
             match scrypto_fn_identifier.package_address {
-                IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE => {
+                IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE | RESOURCE_MANAGER_PACKAGE => {
                     return Ok(());
                 }
                 _ => {

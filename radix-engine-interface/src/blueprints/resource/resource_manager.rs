@@ -66,30 +66,6 @@ pub struct ResourceManagerCreateNonFungibleInvocation {
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
-impl Invocation for ResourceManagerCreateNonFungibleInvocation {
-    type Output = ResourceAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateNonFungible,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungible)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(self)).into()
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleInvocation {
     pub divisibility: u8,

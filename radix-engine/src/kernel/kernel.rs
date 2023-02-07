@@ -126,6 +126,10 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );
@@ -615,6 +619,15 @@ where
                                 GlobalAddress::Component(
                                     ComponentAddress::EddsaEd25519VirtualIdentity(..)
                                 )
+                            ) {
+                                self.current_frame
+                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                continue;
+                            }
+
+                            if matches!(
+                                global_address,
+                                GlobalAddress::Package(RESOURCE_MANAGER_PACKAGE)
                             ) {
                                 self.current_frame
                                     .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);

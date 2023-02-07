@@ -10,9 +10,10 @@ use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInvocation;
-use radix_engine_interface::blueprints::account::{AccountCreateInvocation, AccountNewInvocation};
+use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
+use radix_engine_interface::blueprints::resource::ResourceManagerCreateNonFungibleInvocation;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 use crate::blueprints::identity::IdentityCreateExecutable;
@@ -49,8 +50,6 @@ impl ExecutableInvocation for ScryptoInvocation {
             self.blueprint_name.clone(),
             self.fn_name.clone(),
         );
-
-
 
         let (receiver, actor) = if let Some(receiver) = self.receiver {
             let original_node_id = match receiver {
@@ -125,11 +124,17 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
 
         match self.package_address {
-            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE => {
+            EPOCH_MANAGER_PACKAGE => {
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+            }
+            _ => {}
+        }
+
+        match self.package_address {
+            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE | RESOURCE_MANAGER_PACKAGE => {
                 let executor = ScryptoExecutor {
                     package_address: self.package_address,
                     export_name: "test".to_string(),
@@ -287,6 +292,11 @@ impl Executor for ScryptoExecutor {
             }
             ACCESS_CONTROLLER_PACKAGE => {
                 let invocation: AccessControllerCreateGlobalInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let rtn = invocation.execute(api)?;
+                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+            }
+            RESOURCE_MANAGER_PACKAGE => {
+                let invocation: ResourceManagerCreateNonFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
             }

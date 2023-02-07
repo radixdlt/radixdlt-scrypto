@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::{
     ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
-use radix_engine_interface::constants::{ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
+use radix_engine_interface::constants::{ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
 
 use super::LockFlags;
 
@@ -81,6 +81,9 @@ impl VisibilityProperties {
                 RENodeInit::Component(info, ..) => {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
+                }
+                RENodeInit::ResourceManager(..) | RENodeInit::Global(GlobalAddressSubstate::Resource(..)) | RENodeInit::NonFungibleStore(..) => {
+                    package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
                 }
                 RENodeInit::Identity() | RENodeInit::Global(GlobalAddressSubstate::Identity(..)) => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)

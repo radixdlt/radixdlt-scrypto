@@ -1,11 +1,14 @@
-use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::api::Invokable;
+use radix_engine_interface::args;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::{RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 /// Represents a resource manager.
@@ -58,15 +61,22 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateNonFungibleInvocation {
-            resource_address: None,
-            id_type,
-            metadata,
-            access_rules,
-        })
-        .map(|address| ResourceManager(address))
+
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            "create_non_fungible".to_string(),
+            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
+                resource_address: None,
+                id_type,
+                metadata,
+                access_rules,
+            }).unwrap()
+        )?;
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     /// Mints non-fungible resources

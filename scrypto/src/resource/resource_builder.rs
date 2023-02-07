@@ -1,6 +1,8 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::Invokable;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::{RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -442,25 +444,33 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_non_fungible",
+            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
                 resource_address: None,
                 id_type: Y::id_type(),
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_non_fungible",
+            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
                 resource_address: None,
                 id_type: Y::id_type(),
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -645,14 +655,19 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_non_fungible",
+            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
                 resource_address: None,
                 id_type: Y::id_type(),
                 metadata: self.metadata,
                 access_rules: self.authorization,
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 

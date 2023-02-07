@@ -377,6 +377,7 @@ fn build_substates(
     (substate, vault_substate)
 }
 
+/*
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type Exec = Self;
 
@@ -391,6 +392,7 @@ impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;

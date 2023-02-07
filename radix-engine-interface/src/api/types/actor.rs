@@ -274,7 +274,6 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
-    //Create,
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
@@ -525,11 +524,12 @@ pub enum AuthZoneStackFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
-    CreateNonFungible,
+    // CreateNonFungible,
     CreateFungible,
     CreateNonFungibleWithInitialSupply,
     CreateUuidNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
+
     MintNonFungible,
     MintUuidNonFungible,
     MintFungible,
@@ -690,7 +690,6 @@ pub enum WorktopFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
-    //Create,
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
@@ -837,9 +836,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    //Create,
-    //New,
-
     Balance,
 
     LockFee,
@@ -871,11 +867,6 @@ impl AccountPackage {
     ) -> Result<AccountInvocation, ResolveError> {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
-            /*
-            AccountFn::Create | AccountFn::New => {
-                return Err(ResolveError::NotAMethod);
-            }
-             */
             AccountFn::Balance => {
                 let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
