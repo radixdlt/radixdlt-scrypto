@@ -120,15 +120,6 @@ impl VisibilityProperties {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
             },
-            (ExecutionMode::Globalize, offset) => match offset {
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::MoveUpstream, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,

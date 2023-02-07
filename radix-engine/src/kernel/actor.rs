@@ -51,9 +51,7 @@ impl ResolvedActor {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
-    MoveUpstream,
     Deref,
-    Globalize,
     Resolver,
     DropNode,
 
