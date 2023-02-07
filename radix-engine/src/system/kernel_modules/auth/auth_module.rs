@@ -43,10 +43,20 @@ impl AuthModule {
 
         let method_auths = match &actor {
             ResolvedActor {
+                identifier: FnIdentifier::Scrypto(fn_identifier),
+                receiver: None,
+            } => {
+                if fn_identifier.package_address.eq(&EPOCH_MANAGER_PACKAGE) && fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
+                    && fn_identifier.ident.eq("create") {
+                    EpochManager::create_auth()
+                } else {
+                    vec![]
+                }
+            }
+            ResolvedActor {
                 identifier: FnIdentifier::Native(native_function),
                 receiver: None,
             } => match native_function {
-                NativeFn::EpochManager(EpochManagerFn::Create) => EpochManager::create_auth(),
                 NativeFn::Clock(ClockFn::Create) => Clock::create_auth(),
                 _ => vec![],
             },

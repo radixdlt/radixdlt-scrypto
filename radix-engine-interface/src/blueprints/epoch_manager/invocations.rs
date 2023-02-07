@@ -3,9 +3,17 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ManifestValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: ManifestBucket,
+    pub stake_account_address: ComponentAddress,
+}
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorInit {
@@ -49,6 +57,7 @@ impl Clone for EpochManagerCreateInvocation {
     }
 }
 
+/*
 impl Invocation for EpochManagerCreateInvocation {
     type Output = ComponentAddress;
 
@@ -70,6 +79,7 @@ impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
+ */
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerGetCurrentEpochMethodArgs {}

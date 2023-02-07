@@ -83,6 +83,7 @@ impl NativeInvocation {
         bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
     ) -> Result<(), ReplaceManifestValuesError> {
         match self {
+            /*
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
                 for (_, validator_init) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
@@ -93,6 +94,7 @@ impl NativeInvocation {
                     validator_init.initial_stake.0 = next_id;
                 }
             }
+             */
             _ => {} // TODO: Expand this
         }
         Ok(())
@@ -157,7 +159,7 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum EpochManagerInvocation {
-    Create(EpochManagerCreateInvocation),
+    //Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
@@ -483,6 +485,7 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
+                /*
                 EpochManagerInvocation::Create(invocation) => {
                     for (_key, validator_init) in &invocation.validator_set {
                         refs.insert(RENodeId::Global(GlobalAddress::Component(
@@ -493,6 +496,7 @@ impl NativeInvocation {
                         )));
                     }
                 }
+                 */
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,

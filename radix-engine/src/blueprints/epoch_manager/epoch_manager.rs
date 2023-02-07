@@ -52,6 +52,7 @@ pub enum EpochManagerError {
 
 pub struct EpochManager;
 
+/*
 impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = Self;
 
@@ -92,6 +93,7 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for EpochManagerCreateInvocation {
     type Output = ComponentAddress;
@@ -126,8 +128,12 @@ impl Executor for EpochManagerCreateInvocation {
             // TODO: remove mint and premint all tokens
             {
                 let non_fungible_local_id = NonFungibleLocalId::Bytes(
+                    scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE))
+                        .unwrap(),
+                    /*
                     scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
                         .unwrap(),
+                     */
                 );
                 let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));

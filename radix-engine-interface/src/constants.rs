@@ -24,7 +24,10 @@ pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resour
 pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
+pub const EPOCH_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.

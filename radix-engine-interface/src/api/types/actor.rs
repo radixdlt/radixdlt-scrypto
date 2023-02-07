@@ -274,7 +274,7 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
-    Create,
+    //Create,
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
@@ -332,9 +332,11 @@ impl EpochManagerPackage {
                     EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match epoch_manager_fn {
+                    /*
                     EpochManagerFn::Create => {
                         return Err(ResolveError::NotAMethod);
                     }
+                     */
                     EpochManagerFn::GetCurrentEpoch => {
                         let _args: EpochManagerGetCurrentEpochMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;

@@ -9,9 +9,7 @@ use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateInvocation, ValidatorInit,
-};
+use radix_engine_interface::blueprints::epoch_manager::{EpochManagerCreateInvocation, ManifestValidatorInit, ValidatorInit};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -170,7 +168,7 @@ pub fn create_genesis(
     {
         let mut validators = BTreeMap::new();
         for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
-            let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
+            let initial_stake = id_allocator.new_bucket_id().unwrap();
             instructions.push(
                 BasicInstruction::TakeFromWorktopByAmount {
                     resource_address: RADIX_TOKEN,
@@ -181,9 +179,9 @@ pub fn create_genesis(
             let validator_account_address = ComponentAddress::virtual_account_from_public_key(&key);
             validators.insert(
                 key,
-                ValidatorInit {
+                ManifestValidatorInit {
                     validator_account_address,
-                    initial_stake: bucket,
+                    initial_stake,
                     stake_account_address,
                 },
             );
@@ -195,16 +193,27 @@ pub fn create_genesis(
             OLYMPIA_VALIDATOR_TOKEN,
         )));
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        instructions.push(Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: args!(
                 olympia_validator_token_address,
                 component_address,
+                validators,
+                initial_epoch,
+                rounds_per_epoch,
+                num_unstake_epochs
+            ),
+
+            /*scrypto_encode(&EpochManagerCreateInvocation {
+
                 validator_set: validators,
                 initial_epoch,
                 rounds_per_epoch,
                 num_unstake_epochs,
-            }),
-        )));
+            }).unwrap(),*/
+        }));
     }
 
     for (public_key, amount) in account_xrd_allocations.into_iter() {

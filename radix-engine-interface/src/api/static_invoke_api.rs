@@ -17,7 +17,7 @@ pub trait Invokable<I: Invocation, E> {
 
 pub trait ClientStaticInvokeApi<E>:
     Invokable<ScryptoInvocation, E>
-    + Invokable<EpochManagerCreateInvocation, E>
+    //+ Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>

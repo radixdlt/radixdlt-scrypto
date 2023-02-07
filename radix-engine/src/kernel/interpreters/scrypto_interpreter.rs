@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 use crate::blueprints::identity::IdentityCreateExecutable;
@@ -121,22 +122,29 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-        if self.package_address.eq(&IDENTITY_PACKAGE) {
-            let executor = ScryptoExecutor {
-                package_address: self.package_address,
-                export_name: "test".to_string(),
-                component_id: receiver,
-                args: args.into(),
-            };
 
-            return Ok((
-                actor,
-                CallFrameUpdate {
-                    nodes_to_move,
-                    node_refs_to_copy,
-                },
-                executor,
-            ))
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+
+        match self.package_address {
+            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE => {
+                let executor = ScryptoExecutor {
+                    package_address: self.package_address,
+                    export_name: "test".to_string(),
+                    component_id: receiver,
+                    args: args.into(),
+                };
+
+                return Ok((
+                    actor,
+                    CallFrameUpdate {
+                        nodes_to_move,
+                        node_refs_to_copy,
+                    },
+                    executor,
+                ))
+            }
+            _ => {
+            }
         }
 
 
@@ -206,7 +214,6 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(
             self.package_address,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
@@ -253,10 +260,19 @@ impl Executor for ScryptoExecutor {
             + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
-        if self.package_address.eq(&IDENTITY_PACKAGE) {
-            let invocation: IdentityCreateExecutable = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-            let rtn = invocation.execute(api)?;
-            return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+        match self.package_address {
+            IDENTITY_PACKAGE => {
+                let invocation: IdentityCreateExecutable = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let rtn = invocation.execute(api)?;
+                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+            }
+            EPOCH_MANAGER_PACKAGE => {
+                let invocation: EpochManagerCreateInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let rtn = invocation.execute(api)?;
+                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+            }
+            _ => {
+            }
         }
 
         let package = {

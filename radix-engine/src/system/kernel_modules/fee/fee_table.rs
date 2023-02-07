@@ -110,7 +110,6 @@ impl FeeTable {
                 }
             }
             NativeFn::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerFn::Create => self.fixed_low,
                 EpochManagerFn::GetCurrentEpoch => self.fixed_low,
                 EpochManagerFn::NextRound => self.fixed_low,
                 EpochManagerFn::SetEpoch => self.fixed_low,

@@ -458,12 +458,14 @@ where
             }
         },
         NativeFn::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
+            /*
             EpochManagerFn::Create => {
                 let invocation = scrypto_decode::<EpochManagerCreateInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+             */
             EpochManagerFn::GetCurrentEpoch => {
                 let invocation =
                     scrypto_decode::<EpochManagerGetCurrentEpochInvocation>(&invocation)

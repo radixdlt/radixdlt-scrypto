@@ -299,10 +299,12 @@ where
         }
         NativeInvocation::EpochManager(epoch_manager_invocation) => {
             match epoch_manager_invocation {
+                /*
                 EpochManagerInvocation::Create(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
+                 */
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
