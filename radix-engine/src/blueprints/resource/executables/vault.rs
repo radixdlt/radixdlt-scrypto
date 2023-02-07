@@ -135,7 +135,7 @@ impl Executor for VaultPutInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
@@ -143,13 +143,11 @@ impl Executor for VaultPutInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let bucket = system_api
-            .drop_node(RENodeId::Bucket(self.bucket.0))?
-            .into();
+        let bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
 
-        let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+        let mut substate_mut = api.get_ref_mut(vault_handle)?;
         let vault = substate_mut.vault();
         vault.put(bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -183,14 +181,14 @@ impl Executor for VaultLockFeeInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
+        let vault_handle = api.lock_substate(
             node_id,
             NodeModuleId::SELF,
             offset,
@@ -198,7 +196,7 @@ impl Executor for VaultLockFeeInvocation {
         )?;
 
         let fee = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
 
             // Check resource and take amount
@@ -217,13 +215,13 @@ impl Executor for VaultLockFeeInvocation {
         };
 
         // Invoke fee reserve
-        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
-        system_api.create_node(
+        let bucket_node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
             bucket_node_id,
             RENodeInit::Bucket(BucketSubstate::new(fee)),
             btreemap!(),
         )?;
-        let changes: Bucket = system_api.call_native(FeeReserveLockFeeInvocation {
+        let changes: Bucket = api.call_native(FeeReserveLockFeeInvocation {
             receiver: RENodeId::FeeReserve.into(),
             bucket: Bucket(bucket_node_id.into()),
             vault_id: self.receiver,
@@ -231,9 +229,8 @@ impl Executor for VaultLockFeeInvocation {
         })?;
 
         // Keep changes
-        let changes_resource: BucketSubstate =
-            system_api.drop_node(RENodeId::Bucket(changes.0))?.into();
-        let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+        let changes_resource: BucketSubstate = api.drop_node(RENodeId::Bucket(changes.0))?.into();
+        let mut substate_mut = api.get_ref_mut(vault_handle)?;
         let vault = substate_mut.vault();
         vault.put(changes_resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -341,21 +338,17 @@ impl Executor for VaultGetAmountInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let amount = vault.total_amount();
 
@@ -385,21 +378,17 @@ impl Executor for VaultGetResourceAddressInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let resource_address = vault.resource_address();
 
@@ -432,21 +421,17 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let ids = vault.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(

@@ -57,12 +57,12 @@ impl Executor for ClockCreateInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
+        let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -86,7 +86,7 @@ impl Executor for ClockCreateInvocation {
             }),
         );
 
-        system_api.create_node(
+        api.create_node(
             underlying_node_id,
             RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
@@ -97,7 +97,7 @@ impl Executor for ClockCreateInvocation {
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
             self.component_address,
         )));
-        system_api.create_node(
+        api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
@@ -144,10 +144,7 @@ impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
 impl Executor for ClockSetCurrentTimeExecutable {
     type Output = ();
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
@@ -158,9 +155,8 @@ impl Executor for ClockSetCurrentTimeExecutable {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_ref = system_api.get_ref_mut(handle)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = api.get_ref_mut(handle)?;
         substate_ref
             .current_time_rounded_to_minutes()
             .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
@@ -198,7 +194,7 @@ impl Executor for ClockGetCurrentTimeExecutable {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
@@ -209,13 +205,9 @@ impl Executor for ClockGetCurrentTimeExecutable {
         match precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = system_api.lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+                let substate_ref = api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
@@ -265,23 +257,20 @@ impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
 impl Executor for ClockCompareCurrentTimeExecutable {
     type Output = bool;
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match self.precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = system_api.lock_substate(
+                let handle = api.lock_substate(
                     self.node_id,
                     NodeModuleId::SELF,
                     offset,
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,

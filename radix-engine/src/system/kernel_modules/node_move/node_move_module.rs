@@ -96,20 +96,20 @@ impl NodeMoveModule {
 
     fn prepare_move_upstream<Y: KernelNodeApi + KernelSubstateApi>(
         node_id: RENodeId,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Bucket(..) => {
-                let handle = system_api.lock_substate(
+                let handle = api.lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let bucket = substate_ref.bucket();
                 let locked = bucket.is_locked();
-                system_api.drop_lock(handle)?;
+                api.drop_lock(handle)?;
                 if locked {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveUpstream(node_id),
@@ -146,10 +146,10 @@ impl NodeMoveModule {
     >(
         call_frame_update: &mut CallFrameUpdate,
         fn_identifier: &FnIdentifier,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, fn_identifier, system_api)?;
+            Self::prepare_move_downstream(*node_id, fn_identifier, api)?;
         }
 
         Ok(())
@@ -157,10 +157,10 @@ impl NodeMoveModule {
 
     pub fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &CallFrameUpdate,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_upstream(*node_id, system_api)?;
+            Self::prepare_move_upstream(*node_id, api)?;
         }
 
         Ok(())
