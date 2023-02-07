@@ -51,7 +51,6 @@ fn handle_transparent_describe(
 
     let output = match data {
         Data::Struct(s) => {
-            // TODO fix bug where it's generic over field type
             let FieldsData {
                 unskipped_field_types,
                 ..
