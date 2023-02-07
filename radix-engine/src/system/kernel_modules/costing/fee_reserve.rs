@@ -266,7 +266,7 @@ impl SystemLoanFeeReserve {
     }
 
     /// Repays loan and deferred costs in full.
-    fn repay_all(&mut self) -> Result<(), CostingError> {
+    pub fn repay_all(&mut self) -> Result<(), CostingError> {
         // Apply deferred execution costs
         let mut sum = 0;
         for v in self.execution_deferred.iter() {
@@ -294,10 +294,6 @@ impl SystemLoanFeeReserve {
         }
 
         Ok(())
-    }
-
-    fn attempt_to_repay_all(&mut self) {
-        self.repay_all().ok();
     }
 
     #[inline]
@@ -417,10 +413,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(mut self) -> FeeSummary {
-        // In case the transaction finishes before check point.
-        self.attempt_to_repay_all();
-
+    fn finalize(self) -> FeeSummary {
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
@@ -478,6 +471,7 @@ mod tests {
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_cost_units_consumed, 2);
@@ -564,6 +558,7 @@ mod tests {
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_cost_units_consumed, 4);

@@ -6,8 +6,8 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
-use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
+use crate::system::kernel_modules::costing::{CostingError, ExecutionCostingError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::kernel_modules::costing::{FeeTable, FinalizingFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
@@ -455,10 +455,24 @@ impl<'s> Track<'s> {
 
     pub fn finalize(
         self,
-        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
-        fee_reserve: SystemLoanFeeReserve,
+        mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        mut fee_reserve: SystemLoanFeeReserve,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
+        // We occasionally get `SuccessButFeeLoanNotRepaid` error despite enough fee has been locked, if the transaction
+        // finishes before SYSTEM_LOAN_AMOUNT is reached.
+        //
+        // This is caused by cost unit limit check failure within the `repay_all` method.
+        //
+        // Here, we purposely overwrite the error code for better user experience.
+        if let Err(err) = fee_reserve.repay_all() {
+            if invoke_result.is_ok() {
+                invoke_result = Err(RuntimeError::ModuleError(
+                    ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(err)),
+                ));
+            }
+        }
+
         // Close fee reserve
         let mut fee_summary = fee_reserve.finalize();
 
