@@ -44,7 +44,7 @@ fn test_basic_transfer() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10u32.into())
-        .withdraw_from_account_by_amount(account1, 100u32.into(), RADIX_TOKEN)
+        .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
             "deposit_batch",
@@ -75,7 +75,7 @@ fn test_basic_transfer() {
         + 21000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1370 /* TxPayloadCost */
+        + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 95000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
@@ -130,7 +130,7 @@ fn should_be_able_run_large_manifest() {
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
-    builder.withdraw_from_account_by_amount(account, 100u32.into(), RADIX_TOKEN);
+    builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..500 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
@@ -154,30 +154,6 @@ fn should_be_able_run_large_manifest() {
 }
 
 #[test]
-fn should_be_able_invoke_account_balance_100_times() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-
-    // Act
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(account, 100u32.into());
-    for _ in 0..100 {
-        builder.call_method(account, "balance", args!(RADIX_TOKEN));
-    }
-    let manifest = builder.build();
-
-    let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -187,7 +163,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Act
     let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
-        builder.create_proof_from_account_by_amount(account, 1.into(), resource_address);
+        builder.create_proof_from_account_by_amount(account, resource_address, 1.into());
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();
@@ -212,7 +188,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
+            .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", args!(bucket_id));
                 builder
