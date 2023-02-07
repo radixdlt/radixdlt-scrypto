@@ -144,6 +144,7 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::FeeReserve, RENodeInit::FeeReserve(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}

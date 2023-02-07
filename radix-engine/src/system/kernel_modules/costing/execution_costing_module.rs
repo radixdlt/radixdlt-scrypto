@@ -46,22 +46,21 @@ fn apply_execution_cost<F>(
 where
     F: Fn(&FeeTable) -> u32,
 {
-    let mut substate = heap
-        .get_substate_mut(
-            RENodeId::FeeReserve,
-            NodeModuleId::SELF,
-            &SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
-        )
-        .map_err(|e| {
-            ModuleError::ExecutionCostingError(ExecutionCostingError::CallFrameError(e))
-        })?;
-    let fee_reserve_substate = substate.fee_reserve();
+    if let Ok(mut substate) = heap.get_substate_mut(
+        RENodeId::FeeReserve,
+        NodeModuleId::SELF,
+        &SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+    ) {
+        let fee_reserve_substate = substate.fee_reserve();
 
-    let cost_units = base_price(&fee_reserve_substate.fee_table);
-    fee_reserve_substate
-        .fee_reserve
-        .consume_multiplied_execution(cost_units, multiplier, reason)
-        .map_err(|e| ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e)))
+        let cost_units = base_price(&fee_reserve_substate.fee_table);
+        fee_reserve_substate
+            .fee_reserve
+            .consume_multiplied_execution(cost_units, multiplier, reason)
+            .map_err(|e| ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(e)))
+    } else {
+        Ok(())
+    }
 }
 
 impl BaseModule for ExecutionCostingModule {

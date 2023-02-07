@@ -32,6 +32,10 @@ impl VisibilityProperties {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
+                RENodeId::FeeReserve => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
                 RENodeId::Bucket(..) => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Bucket(..))
                     | FnIdentifier::Native(NativeFn::Worktop(..))
@@ -114,7 +118,7 @@ impl VisibilityProperties {
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 _ => false,
             },
-            (ExecutionMode::TransactionModule, _offset) => false,
+            (ExecutionMode::TransactionRuntimeModule, _offset) => false,
             (ExecutionMode::MoveUpstream, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,

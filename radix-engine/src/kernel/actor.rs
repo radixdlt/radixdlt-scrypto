@@ -60,7 +60,7 @@ pub enum ExecutionMode {
     AuthModule,
     LoggerModule,
     EntityModule,
-    TransactionModule,
+    TransactionRuntimeModule,
     Application,
     DropNode,
 }

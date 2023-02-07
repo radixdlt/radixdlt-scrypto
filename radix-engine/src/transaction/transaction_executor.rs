@@ -227,17 +227,19 @@ where
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
+            // Set up kernel
             let mut kernel = Kernel::new(
-                auth_zone_params.clone(),
                 &mut id_allocator,
                 &mut track,
                 self.scrypto_interpreter,
                 &mut module,
+                transaction.transaction_hash().clone(),
+                auth_zone_params.clone(),
                 fee_reserve,
                 fee_table,
             );
 
-            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+            let mut invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {
@@ -250,9 +252,13 @@ where
                 blobs: Cow::Borrowed(blobs),
             });
 
+            let (fee_reserve_substate, module, optional_error) = kernel.destroy();
+            if let Some(error) = optional_error {
+                invoke_result = Err(error);
+            }
             let events = module.collect_events();
-            // TODO: install restore fee reserve
-            track.finalize(invoke_result, SystemLoanFeeReserve::no_fee(), events)
+
+            track.finalize(invoke_result, fee_reserve_substate.fee_reserve, events)
         };
 
         // Finish resources usage measurement and get results

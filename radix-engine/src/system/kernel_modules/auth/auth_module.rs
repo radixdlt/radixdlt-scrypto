@@ -3,12 +3,15 @@ use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
+use crate::system::node::RENodeInit;
+use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
 use radix_engine_interface::api::ClientActorApi;
+use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -27,6 +30,32 @@ pub enum AuthError {
 pub struct AuthModule;
 
 impl AuthModule {
+    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        auth_zone_params: AuthZoneParams,
+    ) -> Result<(), RuntimeError> {
+        let auth_zone = AuthZoneStackSubstate::new(
+            vec![],
+            auth_zone_params.virtualizable_proofs_resource_addresses,
+            auth_zone_params.initial_proofs.into_iter().collect(),
+        );
+        let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
+        api.create_node(
+            node_id,
+            RENodeInit::AuthZoneStack(auth_zone),
+            BTreeMap::new(),
+        )?;
+        Ok(())
+    }
+
+    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+    ) -> Result<AuthZoneStackSubstate, RuntimeError> {
+        let substate: AuthZoneStackSubstate = api.drop_node(RENodeId::AuthZoneStack)?.into();
+
+        Ok(substate)
+    }
+
     pub fn on_before_frame_start<Y>(
         actor: &ResolvedActor,
         system_api: &mut Y,

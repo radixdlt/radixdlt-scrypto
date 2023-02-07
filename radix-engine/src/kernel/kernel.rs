@@ -8,12 +8,12 @@ use crate::kernel::module::BaseModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
-use crate::system::kernel_modules::costing::{FeeTable, SystemLoanFeeReserve};
+use crate::system::kernel_modules::costing::{CostingModule, FeeTable, SystemLoanFeeReserve};
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
-use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
+use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate};
+use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -65,12 +65,13 @@ where
     M: BaseModule,
 {
     pub fn new(
-        auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
-        fee_reserve: SystemLoanFeeReserve, // TODO: merge with `module`
+        tx_hash: Hash,
+        auth_zone_params: AuthZoneParams,
+        fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> Self {
         let mut kernel = Self {
@@ -84,44 +85,30 @@ where
             module,
         };
 
-        // Initial authzone
-        // TODO: Move into module initialization
-        kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
-                let auth_zone = AuthZoneStackSubstate::new(
-                    vec![],
-                    auth_zone_params.virtualizable_proofs_resource_addresses,
-                    auth_zone_params.initial_proofs.into_iter().collect(),
-                );
-                let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(
-                    node_id,
-                    RENodeInit::AuthZoneStack(auth_zone),
-                    BTreeMap::new(),
-                )?;
-                Ok(())
-            })
-            .expect("AuthModule failed to initialize");
+        // Module initialization order when certain failure is enabled or disabled.
+        // See also `destroy()` impl when reordering items.
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::CostingModule, |api| {
-                let node_id = api.allocate_node_id(RENodeType::FeeReserve)?;
-                api.create_node(
-                    node_id,
-                    RENodeInit::FeeReserve(FeeReserveSubstate {
-                        fee_reserve,
-                        fee_table,
-                    }),
-                    BTreeMap::new(),
-                )?;
-                Ok(())
+                CostingModule::initialize(api, fee_reserve, fee_table)
             })
             .expect("CostingModule failed to initialize");
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::TransactionRuntimeModule, |api| {
+                TransactionRuntimeModule::initialize(api, tx_hash)
+            })
+            .expect("TransactionRuntimeModule failed to initialize");
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
                 LoggerModule::initialize(api)
             })
             .expect("LoggerModule failed to initialize");
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
+                AuthModule::initialize(api, auth_zone_params)
+            })
+            .expect("AuthModule failed to initialize");
 
+        // Add well-known global refs to current frame
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
             RENodeVisibilityOrigin::Normal,
@@ -152,6 +139,38 @@ where
         );
 
         kernel
+    }
+
+    pub fn destroy(mut self) -> (FeeReserveSubstate, &'g mut M, Option<RuntimeError>) {
+        // In reverse order
+        let possible_fee_reserve_substate = self
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
+                AuthModule::destroy(api)
+            })
+            .and_then(|_| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
+                    LoggerModule::destroy(api)
+                })
+            })
+            .and_then(|_| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
+                    TransactionRuntimeModule::destroy(api)
+                })
+            })
+            .and_then(|_| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
+                    CostingModule::destroy(api)
+                })
+            });
+
+        match possible_fee_reserve_substate {
+            Ok(fee_reserve_substate) => (fee_reserve_substate, self.module, None),
+            Err(e) => (
+                self.heap.remove_node(RENodeId::FeeReserve).unwrap().into(),
+                self.module,
+                Some(e),
+            ),
+        }
     }
 
     fn create_virtual_account(
@@ -364,6 +383,7 @@ where
                 }
                 RENodeId::Bucket(..) => Ok(()),
                 RENodeId::TransactionRuntime => Ok(()),
+                RENodeId::FeeReserve => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
@@ -429,8 +449,11 @@ where
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::TransactionModule, |system_api| {
-                TransactionHashModule::on_call_frame_enter(
+            self.execute_in_mode(ExecutionMode::CostingModule, |system_api| {
+                CostingModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
+            self.execute_in_mode(ExecutionMode::TransactionRuntimeModule, |system_api| {
+                TransactionRuntimeModule::on_call_frame_enter(
                     &mut call_frame_update,
                     &actor,
                     system_api,
@@ -678,13 +701,6 @@ where
         }
 
         let output = self.run(executor, actor, call_frame_update)?;
-
-        // TODO: Move to higher layer
-        if depth == 0 {
-            self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
-            self.drop_nodes_in_frame()?;
-        }
 
         Ok(output)
     }

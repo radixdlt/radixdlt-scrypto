@@ -1,28 +1,29 @@
 use crate::{
-    blueprints::transaction_runtime::TransactionRuntimeSubstate,
+    blueprints::fee_reserve::FeeReserveSubstate,
     errors::RuntimeError,
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     kernel::{CallFrameUpdate, ResolvedActor},
     system::node::RENodeInit,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
-use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 
-pub struct TransactionRuntimeModule;
+use super::{FeeTable, SystemLoanFeeReserve};
 
-impl TransactionRuntimeModule {
+pub struct CostingModule;
+
+impl CostingModule {
     pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
-        tx_hash: Hash,
+        fee_reserve: SystemLoanFeeReserve,
+        fee_table: FeeTable,
     ) -> Result<(), RuntimeError> {
-        let node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
+        let node_id = api.allocate_node_id(RENodeType::FeeReserve)?;
         api.create_node(
             node_id,
-            RENodeInit::TransactionRuntime(TransactionRuntimeSubstate {
-                hash: tx_hash,
-                next_id: 0u32,
-                instruction_index: 0u32,
+            RENodeInit::FeeReserve(FeeReserveSubstate {
+                fee_reserve,
+                fee_table,
             }),
             BTreeMap::new(),
         )?;
@@ -31,9 +32,8 @@ impl TransactionRuntimeModule {
 
     pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
-    ) -> Result<TransactionRuntimeSubstate, RuntimeError> {
-        let substate: TransactionRuntimeSubstate =
-            api.drop_node(RENodeId::TransactionRuntime)?.into();
+    ) -> Result<FeeReserveSubstate, RuntimeError> {
+        let substate: FeeReserveSubstate = api.drop_node(RENodeId::FeeReserve)?.into();
 
         Ok(substate)
     }
@@ -43,13 +43,10 @@ impl TransactionRuntimeModule {
         _actor: &ResolvedActor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        if api
-            .get_visible_node_data(RENodeId::TransactionRuntime)
-            .is_ok()
-        {
+        if api.get_visible_node_data(RENodeId::FeeReserve).is_ok() {
             call_frame_update
                 .node_refs_to_copy
-                .insert(RENodeId::TransactionRuntime);
+                .insert(RENodeId::FeeReserve);
         }
 
         Ok(())

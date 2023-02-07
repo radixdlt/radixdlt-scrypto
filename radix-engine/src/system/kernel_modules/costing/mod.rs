@@ -1,9 +1,11 @@
+mod costing_module;
 mod execution_costing_module;
 mod fee_reserve;
 mod fee_summary;
 mod fee_table;
 mod royalty_costing_module;
 
+pub use costing_module::*;
 pub use execution_costing_module::*;
 pub use fee_reserve::*;
 pub use fee_summary::*;

@@ -37,19 +37,20 @@ fn apply_royalty_cost(
     receiver: RoyaltyReceiver,
     amount: u32,
 ) -> Result<(), ModuleError> {
-    let mut substate = heap
-        .get_substate_mut(
-            RENodeId::FeeReserve,
-            NodeModuleId::SELF,
-            &SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
-        )
-        .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CallFrameError(e)))?;
-    let fee_reserve_substate = substate.fee_reserve();
+    if let Ok(mut substate) = heap.get_substate_mut(
+        RENodeId::FeeReserve,
+        NodeModuleId::SELF,
+        &SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+    ) {
+        let fee_reserve_substate = substate.fee_reserve();
 
-    fee_reserve_substate
-        .fee_reserve
-        .consume_royalty(receiver, amount)
-        .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e)))
+        fee_reserve_substate
+            .fee_reserve
+            .consume_royalty(receiver, amount)
+            .map_err(|e| ModuleError::RoyaltyCostingError(RoyaltyCostingError::CostingError(e)))
+    } else {
+        Ok(())
+    }
 }
 
 macro_rules! preload_vault {

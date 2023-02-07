@@ -1,4 +1,5 @@
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::*;
 
 pub enum CostingEntry {
     /*
@@ -50,7 +51,7 @@ pub enum CostingEntry {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeTable {
     tx_base_fee: u32,
     tx_payload_cost_per_byte: u32,

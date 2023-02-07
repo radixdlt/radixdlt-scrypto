@@ -1,5 +1,4 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -270,7 +269,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
-    ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -284,22 +283,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(
-            node_id,
-            RENodeInit::Worktop(WorktopSubstate::new()),
-            BTreeMap::new(),
-        )?;
-
-        let runtime_substate = TransactionRuntimeSubstate {
-            hash: self.transaction_hash,
-            next_id: 0u32,
-            instruction_index: 0u32,
-        };
-        let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
+        let worktop_node_id = api.allocate_node_id(RENodeType::Worktop)?;
         api.create_node(
-            runtime_node_id,
-            RENodeInit::TransactionRuntime(runtime_substate),
+            worktop_node_id,
+            RENodeInit::Worktop(WorktopSubstate::new()),
             BTreeMap::new(),
         )?;
 
@@ -855,7 +842,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
             {
                 let handle = api.lock_substate(
-                    runtime_node_id,
+                    RENodeId::TransactionRuntime,
                     NodeModuleId::SELF,
                     SubstateOffset::TransactionRuntime(
                         TransactionRuntimeOffset::TransactionRuntime,
@@ -869,7 +856,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             }
         }
 
-        api.drop_node(runtime_node_id)?;
+        api.drop_node(worktop_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

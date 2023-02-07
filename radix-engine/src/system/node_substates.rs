@@ -852,6 +852,36 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<FeeReserveSubstate> for RuntimeSubstate {
+    fn into(self) -> FeeReserveSubstate {
+        if let RuntimeSubstate::FeeReserve(substate) = self {
+            substate
+        } else {
+            panic!("Not a fee reserve");
+        }
+    }
+}
+
+impl Into<AuthZoneStackSubstate> for RuntimeSubstate {
+    fn into(self) -> AuthZoneStackSubstate {
+        if let RuntimeSubstate::AuthZoneStack(substate) = self {
+            substate
+        } else {
+            panic!("Not a auth zone stack");
+        }
+    }
+}
+
+impl Into<TransactionRuntimeSubstate> for RuntimeSubstate {
+    fn into(self) -> TransactionRuntimeSubstate {
+        if let RuntimeSubstate::TransactionRuntime(substate) = self {
+            substate
+        } else {
+            panic!("Not a transaction runtime");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),

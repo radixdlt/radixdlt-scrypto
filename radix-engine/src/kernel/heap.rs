@@ -1,11 +1,16 @@
+use crate::blueprints::fee_reserve::FeeReserveSubstate;
+use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
+use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    AuthZoneStackOffset, BucketOffset, FeeReserveOffset, LoggerOffset, NodeModuleId, ProofOffset,
+    RENodeId, SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -152,6 +157,54 @@ impl Into<ProofSubstate> for HeapRENode {
             .remove(&(
                 NodeModuleId::SELF,
                 SubstateOffset::Proof(ProofOffset::Proof),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<FeeReserveSubstate> for HeapRENode {
+    fn into(mut self) -> FeeReserveSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<LoggerSubstate> for HeapRENode {
+    fn into(mut self) -> LoggerSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::Logger(LoggerOffset::Logger),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<AuthZoneStackSubstate> for HeapRENode {
+    fn into(mut self) -> AuthZoneStackSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<TransactionRuntimeSubstate> for HeapRENode {
+    fn into(mut self) -> TransactionRuntimeSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             ))
             .unwrap()
             .into()
