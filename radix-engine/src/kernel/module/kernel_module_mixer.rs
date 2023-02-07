@@ -1,10 +1,18 @@
 use super::KernelModule;
+use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::auth::auth_module::AuthModule;
+use crate::system::kernel_modules::costing::CostingModule;
 use crate::system::kernel_modules::costing::ExecutionCostingModule;
+use crate::system::kernel_modules::costing::FeeTable;
 use crate::system::kernel_modules::costing::RoyaltyCostingModule;
+use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
+use crate::system::kernel_modules::logger::LoggerModule;
+use crate::system::kernel_modules::node_move::NodeMoveModule;
+use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::transaction::ExecutionConfig;
@@ -14,8 +22,11 @@ use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_interface::api::ClientActorApi;
+use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use transaction::model::AuthZoneParams;
 
 pub struct KernelModuleMixer {
     kernel_trace: bool,
@@ -457,5 +468,71 @@ impl KernelModule for KernelModuleMixer {
             .on_wasm_costing(current_frame, heap, track, units)?;
 
         Ok(())
+    }
+}
+
+impl KernelModuleMixer {
+    // Modules are initialized in the following order
+    //  * CostingModule
+    //  * TransactionRuntimeModule
+    //  * LoggerModule
+    //  * AuthModule
+    //  * NodeMoveModule
+    // and applied in the reverse order.
+
+    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        tx_hash: Hash,
+        auth_zone_params: AuthZoneParams,
+        fee_reserve: SystemLoanFeeReserve,
+        fee_table: FeeTable,
+    ) -> Result<(), RuntimeError> {
+        // Module initialization order decodes when certain features are enabled or disabled.
+        // See also `destroy()` implementation when reordering items.
+
+        CostingModule::initialize(api, fee_reserve, fee_table)?;
+        TransactionRuntimeModule::initialize(api, tx_hash)?;
+        LoggerModule::initialize(api)?;
+        AuthModule::initialize(api, auth_zone_params)?;
+
+        Ok(())
+    }
+
+    pub fn destroy<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+    ) -> Result<FeeReserveSubstate, RuntimeError> {
+        AuthModule::destroy(api)
+            .and_then(|_| LoggerModule::destroy(api))
+            .and_then(|_| TransactionRuntimeModule::destroy(api))
+            .and_then(|_| CostingModule::destroy(api))
+    }
+
+    pub fn on_before_frame_start<Y>(actor: &ResolvedActor, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        AuthModule::on_before_frame_start(actor, api)
+    }
+
+    pub fn on_call_frame_enter<
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
+    >(
+        update: &mut CallFrameUpdate,
+        actor: &ResolvedActor,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        NodeMoveModule::on_call_frame_enter(update, &actor.identifier, api)
+            .and_then(|_| AuthModule::on_call_frame_enter(update, actor, api))
+            .and_then(|_| LoggerModule::on_call_frame_enter(update, actor, api))
+            .and_then(|_| TransactionRuntimeModule::on_call_frame_enter(update, actor, api))
+            .and_then(|_| CostingModule::on_call_frame_enter(update, actor, api))
+    }
+
+    pub fn on_call_frame_exit<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
+    {
+        NodeMoveModule::on_call_frame_exit(update, api)
+            .and_then(|_| AuthModule::on_call_frame_exit(api))
     }
 }

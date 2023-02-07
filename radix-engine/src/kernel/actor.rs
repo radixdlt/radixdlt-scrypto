@@ -58,12 +58,7 @@ pub enum ExecutionMode {
     DropNode,
 
     /* Kernel modules */
-    CostingModule,
-    NodeMoveModule,
-    AuthModule,
-    LoggerModule,
-    EntityModule,
-    TransactionRuntimeModule,
+    KernelModule,
 
     /* Clients, e.g. blueprints and node modules */
     Application,

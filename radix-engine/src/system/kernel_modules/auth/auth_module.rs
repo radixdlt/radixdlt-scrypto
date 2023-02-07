@@ -56,10 +56,7 @@ impl AuthModule {
         Ok(substate)
     }
 
-    pub fn on_before_frame_start<Y>(
-        actor: &ResolvedActor,
-        system_api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn on_before_frame_start<Y>(actor: &ResolvedActor, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
@@ -99,7 +96,7 @@ impl AuthModule {
                             || matches!(method, NativeFn::Account(..))
                             || matches!(method, NativeFn::AccessController(..)) =>
                     {
-                        let handle = system_api.lock_substate(
+                        let handle = api.lock_substate(
                             resolved_receiver.receiver,
                             NodeModuleId::AccessRules,
                             SubstateOffset::AccessRulesChain(
@@ -107,10 +104,10 @@ impl AuthModule {
                             ),
                             LockFlags::read_only(),
                         )?;
-                        let substate_ref = system_api.get_ref(handle)?;
+                        let substate_ref = api.get_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
                         let auth = substate.native_fn_authorization(*method);
-                        system_api.drop_lock(handle)?;
+                        api.drop_lock(handle)?;
                         auth
                     }
                     (
@@ -121,23 +118,23 @@ impl AuthModule {
                         },
                     ) => {
                         let vault_node_id = RENodeId::Vault(*vault_id);
-                        let visibility = system_api.get_visible_node_data(vault_node_id)?;
+                        let visibility = api.get_visible_node_data(vault_node_id)?;
 
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                            let handle = system_api.lock_substate(
+                            let handle = api.lock_substate(
                                 vault_node_id,
                                 NodeModuleId::SELF,
                                 offset,
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref = system_api.get_ref(handle)?;
+                            let substate_ref = api.get_ref(handle)?;
                             let resource_address = substate_ref.vault().resource_address();
-                            system_api.drop_lock(handle)?;
+                            api.drop_lock(handle)?;
                             resource_address
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let handle = system_api.lock_substate(
+                        let handle = api.lock_substate(
                             node_id,
                             NodeModuleId::AccessRules1,
                             SubstateOffset::AccessRulesChain(
@@ -146,7 +143,7 @@ impl AuthModule {
                             LockFlags::read_only(),
                         )?;
 
-                        let substate_ref = system_api.get_ref(handle)?;
+                        let substate_ref = api.get_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
@@ -171,7 +168,7 @@ impl AuthModule {
                             },
                         };
 
-                        system_api.drop_lock(handle)?;
+                        api.drop_lock(handle)?;
                         auth
                     }
                     _ => vec![],
@@ -188,53 +185,49 @@ impl AuthModule {
                 let node_id =
                     RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
                 let offset = SubstateOffset::Package(PackageOffset::Info);
-                let handle = system_api.lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
+                let handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let package = substate_ref.package_info();
                 let schema = package
                     .blueprint_abi(&method_identifier.blueprint_name)
                     .expect("Blueprint not found for existing component")
                     .structure
                     .clone();
-                system_api.drop_lock(handle)?;
+                api.drop_lock(handle)?;
 
                 let component_node_id = RENodeId::Component(*component_id);
                 let state = {
                     let offset = SubstateOffset::Component(ComponentOffset::State0);
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         component_node_id,
                         NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = system_api.get_ref(handle)?;
+                    let substate_ref = api.get_ref(handle)?;
                     let state = substate_ref.component_state().clone(); // TODO: Remove clone
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
                     state
                 };
                 {
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         component_node_id,
                         NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = system_api.get_ref(handle)?;
+                    let substate_ref = api.get_ref(handle)?;
                     let access_rules = substate_ref.access_rules_chain();
                     let auth = access_rules.method_authorization(
                         &state,
                         &schema,
                         method_identifier.ident.clone(),
                     );
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
                     auth
                 }
             }
@@ -242,13 +235,13 @@ impl AuthModule {
             _ => vec![],
         };
 
-        let handle = system_api.lock_substate(
+        let handle = api.lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let substate_ref = system_api.get_ref(handle)?;
+        let substate_ref = api.get_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
         let is_barrier = Self::is_barrier(actor);
 
@@ -263,7 +256,7 @@ impl AuthModule {
                 }))
             })?;
 
-        system_api.drop_lock(handle)?;
+        api.drop_lock(handle)?;
 
         Ok(())
     }
@@ -271,7 +264,7 @@ impl AuthModule {
     pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         call_frame_update
             .node_refs_to_copy
@@ -282,13 +275,13 @@ impl AuthModule {
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
                 | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
         ) {
-            let handle = system_api.lock_substate(
+            let handle = api.lock_substate(
                 RENodeId::AuthZoneStack,
                 NodeModuleId::SELF,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let mut substate_ref_mut = api.get_ref_mut(handle)?;
             let auth_zone_stack = substate_ref_mut.auth_zone_stack();
 
             // New auth zone frame managed by the AuthModule
@@ -302,7 +295,7 @@ impl AuthModule {
             virtual_non_fungibles.insert(non_fungible_global_id);
 
             auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
-            system_api.drop_lock(handle)?;
+            api.drop_lock(handle)?;
         }
 
         Ok(())

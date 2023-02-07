@@ -14,28 +14,19 @@ impl VisibilityProperties {
         node_id: RENodeId,
     ) -> bool {
         match mode {
-            ExecutionMode::LoggerModule => match node_id {
+            ExecutionMode::KernelModule => match node_id {
                 RENodeId::Logger => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
                 },
-                _ => false,
-            },
-            ExecutionMode::TransactionRuntimeModule => match node_id {
                 RENodeId::TransactionRuntime => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
                 },
-                _ => false,
-            },
-            ExecutionMode::CostingModule => match node_id {
                 RENodeId::FeeReserve => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
                 },
-                _ => false,
-            },
-            ExecutionMode::AuthModule => match node_id {
                 RENodeId::AuthZoneStack => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
@@ -118,6 +109,13 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Resolver, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
+                SubstateOffset::Package(PackageOffset::Info) => read_only,
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                _ => false,
+            },
             (ExecutionMode::Deref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
@@ -126,21 +124,11 @@ impl VisibilityProperties {
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 _ => false,
             },
-            (ExecutionMode::LoggerModule, ..) => false,
-            (ExecutionMode::NodeMoveModule, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                _ => false,
-            },
-            (ExecutionMode::TransactionRuntimeModule, _offset) => false,
             (ExecutionMode::MoveUpstream, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
-            (ExecutionMode::CostingModule, offset) => match offset {
-                SubstateOffset::FeeReserve(_) => true,
-                _ => false,
-            },
+
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
@@ -148,14 +136,16 @@ impl VisibilityProperties {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
-            (ExecutionMode::EntityModule, _offset) => false,
-            (ExecutionMode::AuthModule, offset) => match offset {
+            (ExecutionMode::KernelModule, offset) => match offset {
+                // TODO: refine based on actor
+
+                /* Auth */
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 SubstateOffset::Vault(VaultOffset::Vault) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
@@ -163,13 +153,11 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     read_only
                 }
-                _ => false,
-            },
-            (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                /* Node move */
+                //SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                /* Costing */
+                SubstateOffset::FeeReserve(_) => true,
                 _ => false,
             },
             (ExecutionMode::Application, offset) => {
