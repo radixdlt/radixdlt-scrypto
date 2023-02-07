@@ -85,8 +85,8 @@ where
             module,
         };
 
-        // Module initialization order decodes the time certain failure is enabled or disabled.
-        // See also `destroy()` impl when reordering items.
+        // Module initialization order decodes when certain features are enabled or disabled.
+        // See also `destroy()` implementation when reordering items.
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::CostingModule, |api| {
                 CostingModule::initialize(api, fee_reserve, fee_table)
