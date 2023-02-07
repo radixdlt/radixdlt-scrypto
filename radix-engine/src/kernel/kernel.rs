@@ -523,6 +523,7 @@ where
                     &mut self.current_frame,
                     &mut self.heap,
                     &mut self.track,
+                    &self.prev_frame_stack.last().unwrap().actor,
                     &update,
                 )
                 .map_err(RuntimeError::ModuleError)?;

@@ -74,6 +74,7 @@ impl KernelModule for KernelTraceModule {
         current_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track,
+        caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         log!(

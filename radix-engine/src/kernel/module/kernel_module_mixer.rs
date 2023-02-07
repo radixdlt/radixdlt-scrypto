@@ -151,17 +151,39 @@ impl KernelModule for KernelModuleMixer {
         current_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track,
+        caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         if self.kernel_trace {
-            KernelTraceModule.post_kernel_execute(current_frame, heap, track, nodes_and_refs)?;
+            KernelTraceModule.post_kernel_execute(
+                current_frame,
+                heap,
+                track,
+                caller,
+                nodes_and_refs,
+            )?;
         }
-        self.execution_costing
-            .post_kernel_execute(current_frame, heap, track, nodes_and_refs)?;
-        self.royalty_costing
-            .post_kernel_execute(current_frame, heap, track, nodes_and_refs)?;
-        self.execution_trace
-            .post_kernel_execute(current_frame, heap, track, nodes_and_refs)?;
+        self.execution_costing.post_kernel_execute(
+            current_frame,
+            heap,
+            track,
+            caller,
+            nodes_and_refs,
+        )?;
+        self.royalty_costing.post_kernel_execute(
+            current_frame,
+            heap,
+            track,
+            caller,
+            nodes_and_refs,
+        )?;
+        self.execution_trace.post_kernel_execute(
+            current_frame,
+            heap,
+            track,
+            caller,
+            nodes_and_refs,
+        )?;
 
         Ok(())
     }

@@ -84,8 +84,8 @@ impl TracedKernelCallData {
 pub struct KernelCallTrace {
     pub origin: KernelCallTraceOrigin,
     pub kernel_call_depth: usize,
-    pub call_frame_actor: ResolvedActor,
-    pub call_frame_depth: usize,
+    pub current_frame_actor: ResolvedActor,
+    pub current_frame_depth: usize,
     pub instruction_index: Option<u32>,
     pub input: TracedKernelCallData,
     pub output: TracedKernelCallData,
@@ -145,7 +145,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn pre_kernel_execute(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track,
         callee: &ResolvedActor,
@@ -165,7 +165,7 @@ impl KernelModule for ExecutionTraceModule {
                 }
             };
 
-            let instruction_index = Self::get_instruction_index(call_frame, heap);
+            let instruction_index = Self::get_instruction_index(current_frame, heap);
 
             let trace_data = Self::extract_trace_data(update, heap)?;
             self.traced_kernel_call_inputs_stack
@@ -182,7 +182,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_put_input(update, heap, track, &call_frame.actor, vault_id),
+            } => Self::handle_vault_put_input(update, heap, track, &current_frame.actor, vault_id),
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
                 receiver:
@@ -190,7 +190,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_lock_fee_input(track, &call_frame.actor, vault_id),
+            } => Self::handle_vault_lock_fee_input(track, &current_frame.actor, vault_id),
             _ => {}
         }
 
@@ -199,12 +199,13 @@ impl KernelModule for ExecutionTraceModule {
 
     fn post_kernel_execute(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track,
+        caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
-        match &call_frame.actor {
+        match &current_frame.actor {
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Take)),
                 receiver:
@@ -212,7 +213,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => Self::handle_vault_take_output(update, heap, track, &call_frame.actor, vault_id),
+            } => Self::handle_vault_take_output(update, heap, track, caller, vault_id),
             _ => {}
         }
 
@@ -225,7 +226,7 @@ impl KernelModule for ExecutionTraceModule {
         }
 
         let traced_output = Self::extract_trace_data(update, heap)?;
-        self.finalize_kernel_call_trace(call_frame, traced_output)
+        self.finalize_kernel_call_trace(current_frame, traced_output)
     }
 }
 
@@ -239,8 +240,8 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn get_instruction_index(call_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        if call_frame
+    fn get_instruction_index(current_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
+        if current_frame
             .get_node_visibility(RENodeId::TransactionRuntime)
             .is_ok()
         {
@@ -261,11 +262,11 @@ impl ExecutionTraceModule {
 
     fn handle_pre_create_node(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
     ) -> Result<(), ModuleError> {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::get_instruction_index(call_frame, heap);
+            let instruction_index = Self::get_instruction_index(current_frame, heap);
 
             let traced_input = (
                 TracedKernelCallData::new_empty(),
@@ -281,12 +282,12 @@ impl ExecutionTraceModule {
 
     fn handle_pre_drop_node(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
         node_id: &RENodeId,
     ) -> Result<(), ModuleError> {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::get_instruction_index(call_frame, heap);
+            let instruction_index = Self::get_instruction_index(current_frame, heap);
 
             let traced_input = {
                 // Buckets can't be dropped, so only tracking Proofs here
@@ -312,7 +313,7 @@ impl ExecutionTraceModule {
 
     fn handle_post_create_node(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
         node_id: &RENodeId,
     ) -> Result<(), ModuleError> {
@@ -342,10 +343,10 @@ impl ExecutionTraceModule {
             _ => TracedKernelCallData::new_empty(),
         };
 
-        self.finalize_kernel_call_trace(call_frame, traced_output)
+        self.finalize_kernel_call_trace(current_frame, traced_output)
     }
 
-    fn handle_post_drop_node(&mut self, call_frame: &CallFrame) -> Result<(), ModuleError> {
+    fn handle_post_drop_node(&mut self, current_frame: &CallFrame) -> Result<(), ModuleError> {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -356,12 +357,12 @@ impl ExecutionTraceModule {
 
         let traced_output = TracedKernelCallData::new_empty();
 
-        self.finalize_kernel_call_trace(call_frame, traced_output)
+        self.finalize_kernel_call_trace(current_frame, traced_output)
     }
 
     fn finalize_kernel_call_trace(
         &mut self,
-        call_frame: &CallFrame,
+        current_frame: &CallFrame,
         traced_output: TracedKernelCallData,
     ) -> Result<(), ModuleError> {
         let child_traces = self
@@ -383,8 +384,8 @@ impl ExecutionTraceModule {
             let trace = KernelCallTrace {
                 origin,
                 kernel_call_depth: self.current_kernel_call_depth,
-                call_frame_actor: call_frame.actor.clone(),
-                call_frame_depth: call_frame.depth,
+                current_frame_actor: current_frame.actor.clone(),
+                current_frame_depth: current_frame.depth,
                 instruction_index,
                 input: traced_input,
                 output: traced_output,
@@ -414,13 +415,13 @@ impl ExecutionTraceModule {
     }
 
     fn extract_trace_data(
-        call_frame_update: &CallFrameUpdate,
+        current_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
     ) -> Result<TracedKernelCallData, ModuleError> {
         let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
         let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
 
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &current_frame_update.nodes_to_move {
             match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
@@ -469,13 +470,13 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put_input<'s>(
-        call_frame_update: &CallFrameUpdate,
+        current_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
         track: &mut Track<'s>,
         actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &current_frame_update.nodes_to_move {
             match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     if let Ok(bucket_substate) = heap.get_substate(
@@ -509,7 +510,7 @@ impl ExecutionTraceModule {
         update: &CallFrameUpdate,
         heap: &mut Heap,
         track: &mut Track<'s>,
-        actor: &ResolvedActor,
+        caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
         for node_id in &update.nodes_to_move {
@@ -521,7 +522,7 @@ impl ExecutionTraceModule {
                         &SubstateOffset::Bucket(BucketOffset::Bucket),
                     ) {
                         track.vault_ops.push((
-                            actor.clone(),
+                            caller.clone(),
                             vault_id.clone(),
                             VaultOp::Take(bucket_substate.bucket().total_amount()),
                         ));
