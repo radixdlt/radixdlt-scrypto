@@ -76,7 +76,7 @@ mod tests {
                             },
                             1u8 => {
                                 decoder.read_and_check_size(1)?;
-                                Ok(Self::B(decoder.decode::<String>()?))
+                                Ok(Self::B(decoder.decode::<String>()?,))
                             },
                             2u8 => {
                                 decoder.read_and_check_size(0)?;
