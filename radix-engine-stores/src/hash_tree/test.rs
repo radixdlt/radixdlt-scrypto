@@ -1,6 +1,10 @@
-use super::tree_store::MemoryTreeStore;
-use super::types::{Nibble, NibblePath, NodeKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
-use crate::hash_tree::put_at_next_version;
+use super::put_at_next_version;
+use super::tree_store::{
+    SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    TypedInMemoryTreeStore,
+};
+use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use itertools::Itertools;
 use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::PackageAddress;
@@ -8,12 +12,11 @@ use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
-use sbor::rust::collections::BTreeSet;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(&mut store, None, &[(substate_id(1, 2), value_hash(30))]);
     let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), value_hash(70))]);
     assert_ne!(hash_v1, hash_v2);
@@ -21,7 +24,7 @@ fn hash_of_next_version_differs_when_value_changed() {
 
 #[test]
 fn hash_of_next_version_same_when_write_repeated() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
@@ -36,7 +39,7 @@ fn hash_of_next_version_same_when_write_repeated() {
 
 #[test]
 fn hash_of_next_version_same_when_write_empty() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
@@ -51,7 +54,7 @@ fn hash_of_next_version_same_when_write_empty() {
 
 #[test]
 fn hash_of_next_version_differs_when_substate_added() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(&mut store, None, &[(substate_id(1, 2), value_hash(30))]);
     let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 8), value_hash(30))]);
     assert_ne!(hash_v1, hash_v2);
@@ -59,7 +62,7 @@ fn hash_of_next_version_differs_when_substate_added() {
 
 #[test]
 fn hash_of_next_version_differs_when_substate_removed() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
@@ -74,7 +77,7 @@ fn hash_of_next_version_differs_when_substate_removed() {
 
 #[test]
 fn hash_returns_to_same_when_previous_state_restored() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
@@ -106,16 +109,16 @@ fn hash_returns_to_same_when_previous_state_restored() {
 
 #[test]
 fn hash_differs_when_states_only_differ_by_keys() {
-    let mut store_1 = MemoryTreeStore::new();
+    let mut store_1 = TypedInMemoryTreeStore::new();
     let hash_1 = put_at_next_version(&mut store_1, None, &[(substate_id(1, 2), value_hash(30))]);
-    let mut store_2 = MemoryTreeStore::new();
+    let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(&mut store_2, None, &[(substate_id(1, 3), value_hash(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
 fn supports_empty_state() {
-    let mut store = MemoryTreeStore::new();
+    let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(&mut store, None, &[]);
     assert_eq!(hash_v1, SPARSE_MERKLE_PLACEHOLDER_HASH);
     let hash_v2 = put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), value_hash(30))]);
@@ -124,37 +127,82 @@ fn supports_empty_state() {
     assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
 }
 
-// Note: this test relies on the impl details of underlying tree structure.
-// In particular, it is now assuming a single tree, keyed by hash(substate_id).
-// The asserts will need to be adjusted after introducing separate ReNode tree
-// vs Substate trees.
 #[test]
-#[ignore]
 fn records_stale_tree_node_keys() {
-    let mut store = MemoryTreeStore::new();
-    // the substate_id(4, 6) and substate_id(3, 9) below are deliberately
-    // chosen so that their hashes have a common prefix (a nibble 8).
+    let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(&mut store, None, &[(substate_id(4, 6), value_hash(30))]);
     put_at_next_version(&mut store, Some(1), &[(substate_id(3, 9), value_hash(70))]);
     put_at_next_version(&mut store, Some(2), &[(substate_id(3, 9), value_hash(80))]);
-    assert_eq!(
-        store.stale_key_buffer.iter().collect::<BTreeSet<_>>(),
-        vec![
-            // tree nodes obsoleted by v=2:
-            // the only node == root == leaf for substate_id(4, 6)
-            NodeKey::new(1, nibbles("")),
-            // tree nodes obsoleted by v=3:
-            // the leaf for substate_id(3, 9)
-            NodeKey::new(2, nibbles("")),
-            // the common parent of 2 leaves at v=2
-            NodeKey::new(2, nibbles("2")),
-            // the root at v=2
-            NodeKey::new(2, nibbles("2a")),
-            NodeKey::new(2, nibbles("2a1")),
-        ]
+    let stale_versions = store
+        .stale_key_buffer
         .iter()
-        .collect::<BTreeSet<_>>()
-    );
+        .map(|key| key.version())
+        .unique()
+        .sorted()
+        .collect::<Vec<Version>>();
+    assert_eq!(stale_versions, vec![1, 2]);
+}
+
+#[test]
+fn sbor_uses_custom_direct_codecs_for_nibbles() {
+    let nibbles = nibbles("a1a2a3");
+    let direct_bytes = nibbles.bytes().to_vec();
+    let node = TreeNode::Leaf(TreeLeafNode {
+        key_suffix: nibbles,
+        substate_id: substate_id(13, 37),
+        value_hash: Hash([7; 32]),
+    });
+    let encoded = scrypto_encode(&node).unwrap();
+    assert!(encoded
+        .windows(direct_bytes.len())
+        .position(|bytes| bytes == direct_bytes)
+        .is_some());
+}
+
+#[test]
+fn sbor_decodes_what_was_encoded() {
+    let nodes = vec![
+        TreeNode::Internal(TreeInternalNode {
+            children: vec![
+                TreeChildEntry {
+                    nibble: Nibble::from(15),
+                    version: 999,
+                    hash: Hash([3; 32]),
+                    is_leaf: false,
+                },
+                TreeChildEntry {
+                    nibble: Nibble::from(8),
+                    version: 2,
+                    hash: Hash([254; 32]),
+                    is_leaf: true,
+                },
+            ],
+        }),
+        TreeNode::Leaf(TreeLeafNode {
+            key_suffix: nibbles("abc"),
+            substate_id: substate_id(13, 37),
+            value_hash: Hash([7; 32]),
+        }),
+        TreeNode::Null,
+    ];
+    let encoded = scrypto_encode(&nodes).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode>>(&encoded).unwrap();
+    assert_eq!(nodes, decoded);
+}
+
+#[test]
+fn serialized_keys_are_strictly_increasing() {
+    let mut store = SerializedInMemoryTreeStore::new();
+    put_at_next_version(&mut store, None, &[(substate_id(3, 4), value_hash(90))]);
+    let previous_key = store.memory.keys().collect_vec()[0].clone();
+    put_at_next_version(&mut store, Some(1), &[(substate_id(1, 2), value_hash(80))]);
+    let next_key = store
+        .memory
+        .keys()
+        .filter(|key| **key != previous_key)
+        .collect_vec()[0]
+        .clone();
+    assert!(next_key > previous_key);
 }
 
 fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {

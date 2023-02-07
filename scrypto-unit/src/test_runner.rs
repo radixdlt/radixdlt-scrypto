@@ -34,7 +34,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::put_at_next_version;
-use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
+use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -1074,7 +1074,7 @@ impl TestRunner {
 }
 
 pub struct StateHashSupport {
-    tree_store: MemoryTreeStore,
+    tree_store: TypedInMemoryTreeStore,
     current_version: Version,
     current_hash: Hash,
 }
@@ -1082,7 +1082,7 @@ pub struct StateHashSupport {
 impl StateHashSupport {
     fn new() -> Self {
         StateHashSupport {
-            tree_store: MemoryTreeStore::new(),
+            tree_store: TypedInMemoryTreeStore::new(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
         }
