@@ -22,7 +22,6 @@ use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
@@ -515,7 +514,7 @@ impl KernelModuleMixer {
     }
 
     pub fn on_call_frame_enter<
-        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
     >(
         update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
@@ -530,7 +529,7 @@ impl KernelModuleMixer {
 
     pub fn on_call_frame_exit<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
     {
         NodeMoveModule::on_call_frame_exit(update, api)
             .and_then(|_| AuthModule::on_call_frame_exit(api))

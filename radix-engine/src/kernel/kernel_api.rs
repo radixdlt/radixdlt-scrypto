@@ -48,6 +48,10 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
+pub trait KernelActorApi<E> {
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+}
+
 pub trait KernelNodeApi {
     fn get_visible_node_data(
         &mut self,
@@ -251,6 +255,6 @@ pub trait KernelInvokeApi<E>:
 
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
+    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
 {
 }

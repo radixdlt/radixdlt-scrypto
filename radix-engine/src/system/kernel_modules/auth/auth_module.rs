@@ -1,3 +1,6 @@
+use super::auth_converter::convert_contextless;
+use super::method_authorization::MethodAuthorization;
+use super::method_authorization::MethodAuthorizationError;
 use crate::blueprints::clock::Clock;
 use crate::blueprints::epoch_manager::EpochManager;
 use crate::errors::*;
@@ -10,12 +13,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
-use radix_engine_interface::api::ClientActorApi;
 use transaction::model::AuthZoneParams;
-
-use super::auth_converter::convert_contextless;
-use super::method_authorization::MethodAuthorization;
-use super::method_authorization::MethodAuthorizationError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthError {
@@ -316,7 +314,7 @@ impl AuthModule {
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientActorApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
     {
         if matches!(
             api.fn_identifier()?,

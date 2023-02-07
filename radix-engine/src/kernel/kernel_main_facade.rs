@@ -12,6 +12,16 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 
+impl<'g, 's, W, M> KernelActorApi<RuntimeError> for Kernel<'g, 's, W, M>
+where
+    W: WasmEngine,
+    M: KernelModule,
+{
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
+    }
+}
+
 impl<'g, 's, W, M> KernelNodeApi for Kernel<'g, 's, W, M>
 where
     W: WasmEngine,
