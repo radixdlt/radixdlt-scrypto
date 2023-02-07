@@ -67,7 +67,6 @@ pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -97,7 +96,6 @@ impl<'s> Track<'s> {
             substate_store,
             loaded_substates: BTreeMap::new(),
             new_global_addresses: Vec::new(),
-            vault_ops: Vec::new(),
         }
     }
 
@@ -455,6 +453,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
+        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
         // We occasionally get `SuccessButFeeLoanNotRepaid` error despite enough fee has been locked, if the transaction
@@ -480,9 +479,8 @@ impl<'s> Track<'s> {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates,
-                    vault_ops: self.vault_ops,
                 };
-                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary)
+                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary, vault_ops)
             }
             TransactionResultType::Reject(rejection_error) => {
                 TransactionResult::Reject(RejectResult {
@@ -567,7 +565,6 @@ struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     new_global_addresses: Vec<GlobalAddress>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
-    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 impl<'s> FinalizingTrack<'s> {
@@ -575,6 +572,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
+        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
@@ -754,7 +752,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Generate commit result
         let execution_trace_receipt = ExecutionTraceReceipt::new(
-            self.vault_ops,
+            vault_ops,
             fee_summary.vault_payments_xrd.as_ref().unwrap(),
             &mut to_persist,
             invoke_result.is_ok(),
