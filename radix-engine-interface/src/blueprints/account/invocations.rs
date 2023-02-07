@@ -17,6 +17,7 @@ pub struct AccountCreateInvocation {
     pub withdraw_rule: AccessRule,
 }
 
+/*
 impl Invocation for AccountCreateInvocation {
     type Output = ComponentId;
 
@@ -38,6 +39,7 @@ impl Into<CallTableInvocation> for AccountCreateInvocation {
         NativeInvocation::Account(AccountInvocation::Create(self)).into()
     }
 }
+ */
 
 //=============
 // Account New
@@ -50,6 +52,7 @@ pub struct AccountNewInvocation {
     pub withdraw_rule: AccessRule,
 }
 
+/*
 impl Invocation for AccountNewInvocation {
     type Output = ComponentAddress;
 
@@ -71,6 +74,7 @@ impl Into<CallTableInvocation> for AccountNewInvocation {
         NativeInvocation::Account(AccountInvocation::New(self)).into()
     }
 }
+ */
 
 //=================
 // Account Balance

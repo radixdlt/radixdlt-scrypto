@@ -821,10 +821,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
-                    let rtn = api.invoke(AccountNewInvocation {
-                        withdraw_rule: withdraw_rule.clone(),
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let invocation = ScryptoInvocation {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        fn_name: "new".to_string(),
+                        receiver: None,
+                        args: args!(withdraw_rule),
+                    };
+                    let result = invoke_scrypto_fn(invocation, api)?;
+                    InstructionOutput::Scrypto(result)
                 }
                 Instruction::System(invocation) => {
                     let mut invocation = invocation.clone();

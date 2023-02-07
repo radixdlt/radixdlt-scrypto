@@ -234,10 +234,6 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::Create => self.fixed_low,
-
-                AccountFn::New => self.fixed_low,
-
                 AccountFn::Balance => self.fixed_low,
 
                 AccountFn::LockFee => self.fixed_low,

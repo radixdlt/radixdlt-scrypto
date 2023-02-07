@@ -42,6 +42,7 @@ impl From<AccountError> for RuntimeError {
 // Account Create
 //================
 
+/*
 impl ExecutableInvocation for AccountCreateInvocation {
     type Exec = Self;
 
@@ -57,6 +58,7 @@ impl ExecutableInvocation for AccountCreateInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for AccountCreateInvocation {
     type Output = ComponentId;
@@ -118,6 +120,7 @@ impl Executor for AccountCreateInvocation {
 // Account New
 //=============
 
+/*
 impl ExecutableInvocation for AccountNewInvocation {
     type Exec = Self;
 
@@ -133,6 +136,7 @@ impl ExecutableInvocation for AccountNewInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for AccountNewInvocation {
     type Output = ComponentAddress;

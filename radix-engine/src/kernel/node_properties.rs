@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::{
     ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
-use radix_engine_interface::constants::{CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
+use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
 
 use super::LockFlags;
 
@@ -93,6 +93,9 @@ impl VisibilityProperties {
                 }
                 RENodeInit::Clock(..) | RENodeInit::Global(GlobalAddressSubstate::Clock(..)) => {
                     package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
+                }
+                RENodeInit::Account(..) | RENodeInit::Global(GlobalAddressSubstate::Account(..)) => {
+                    package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore(..) => true,
                 RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,

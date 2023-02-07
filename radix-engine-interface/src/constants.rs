@@ -30,7 +30,10 @@ pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const CLOCK_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
 pub const CLOCK_BLUEPRINT: &str = "Clock";
 
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
+pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
+
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.

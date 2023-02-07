@@ -118,7 +118,7 @@ impl NodeMoveModule {
                     Ok(())
                 }
             }
-            RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
+            RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) | RENodeId::Account(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -134,10 +134,12 @@ impl NodeMoveModule {
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..)
-            | RENodeId::Account(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
+            //| RENodeId::Account(..)
+            | RENodeId::AccessController(..) => {
+                Err(RuntimeError::ModuleError(
+                    ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
+                ))
+            },
         }
     }
 

@@ -751,6 +751,7 @@ where
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
+            /*
             AccountFn::Create => {
                 let invocation = scrypto_decode::<AccountCreateInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -763,6 +764,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+             */
             AccountFn::Balance => {
                 let invocation = scrypto_decode::<AccountBalanceInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
