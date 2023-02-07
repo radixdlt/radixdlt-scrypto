@@ -128,6 +128,13 @@ mod schema {
         ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
             None
         }
+
+        fn validate_custom_schema_type(
+            _: &TypeValidationContext,
+            _: CustomSchemaTypeValidationRequest<Self>,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
+        }
     }
 
     pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;

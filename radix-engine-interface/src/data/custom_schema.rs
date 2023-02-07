@@ -141,6 +141,47 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             TypeKind::Custom(custom_type_kind),
         ))
     }
+
+    fn validate_custom_schema_type(
+        context: &TypeValidationContext,
+        request: CustomSchemaTypeValidationRequest<Self>,
+    ) -> Result<(), SchemaValidationError> {
+        let CustomSchemaTypeValidationRequest {
+            custom_type_kind,
+            type_metadata,
+        } = request;
+
+        match custom_type_kind {
+            ScryptoCustomTypeKind::PackageAddress
+            | ScryptoCustomTypeKind::ComponentAddress
+            | ScryptoCustomTypeKind::ResourceAddress
+            | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::NonFungibleGlobalId
+            | ScryptoCustomTypeKind::Blob
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Expression
+            | ScryptoCustomTypeKind::Hash
+            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
+            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
+            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
+            | ScryptoCustomTypeKind::EddsaEd25519Signature
+            | ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::PreciseDecimal
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
+                validate_childless_metadata(type_metadata)?;
+            }
+            ScryptoCustomTypeKind::KeyValueStore {
+                key_type,
+                value_type,
+            } => {
+                validate_childless_metadata(type_metadata)?;
+                validate_index::<Self>(context, key_type)?;
+                validate_index::<Self>(context, value_type)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 use well_known_scrypto_types::*;

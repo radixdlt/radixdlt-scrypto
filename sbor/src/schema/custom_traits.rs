@@ -30,4 +30,9 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq {
     fn resolve_custom_well_known_type(
         well_known_index: u8,
     ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
+
+    fn validate_custom_schema_type(
+        context: &TypeValidationContext,
+        request: CustomSchemaTypeValidationRequest<Self>,
+    ) -> Result<(), SchemaValidationError>;
 }
