@@ -160,9 +160,12 @@ pub fn create_genesis(
     {
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        instructions.push(Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::Create(ClockCreateInvocation { component_address }),
-        )));
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: CLOCK_PACKAGE,
+            blueprint_name: CLOCK_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: args!(component_address),
+        }));
     }
 
     {

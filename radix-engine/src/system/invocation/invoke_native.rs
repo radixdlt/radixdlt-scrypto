@@ -358,10 +358,12 @@ where
             }
         },
         NativeInvocation::Clock(clock_invocation) => match clock_invocation {
+            /*
             ClockInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+             */
             ClockInvocation::SetCurrentTime(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

@@ -126,7 +126,6 @@ impl FeeTable {
                 ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
-                ClockFn::Create => self.fixed_low,
                 ClockFn::SetCurrentTime => self.fixed_low,
                 ClockFn::GetCurrentTime => self.fixed_high,
                 ClockFn::CompareCurrentTime => self.fixed_high,

@@ -10,6 +10,7 @@ pub struct ClockCreateInvocation {
     pub component_address: [u8; 26], // TODO: Clean this up
 }
 
+/*
 impl Invocation for ClockCreateInvocation {
     type Output = ComponentAddress;
 
@@ -31,6 +32,7 @@ impl Into<CallTableInvocation> for ClockCreateInvocation {
         NativeInvocation::Clock(ClockInvocation::Create(self)).into()
     }
 }
+ */
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockGetCurrentTimeMethodArgs {

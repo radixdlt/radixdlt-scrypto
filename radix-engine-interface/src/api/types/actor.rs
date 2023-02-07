@@ -106,7 +106,6 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
-    Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
     Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
@@ -121,6 +120,7 @@ pub enum NativeFn {
     TransactionProcessor(TransactionProcessorFn),
     Account(AccountFn),
     AccessController(AccessControllerFn),
+    Metadata(MetadataFn),
 }
 
 impl NativeFn {
@@ -690,7 +690,7 @@ pub enum WorktopFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
-    Create,
+    //Create,
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
@@ -706,9 +706,11 @@ impl ClockPackage {
     ) -> Result<ClockInvocation, ResolveError> {
         let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match clock_fn {
+            /*
             ClockFn::Create => {
                 return Err(ResolveError::NotAMethod);
             }
+             */
             ClockFn::CompareCurrentTime => {
                 let args: ClockCompareCurrentTimeMethodArgs =
                     scrypto_decode(args).map_err(ResolveError::DecodeError)?;

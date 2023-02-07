@@ -131,7 +131,7 @@ pub enum MetadataInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ClockInvocation {
-    Create(ClockCreateInvocation),
+    //Create(ClockCreateInvocation),
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
@@ -561,7 +561,7 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
-                ClockInvocation::Create(..) => {}
+                //ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,

@@ -546,12 +546,14 @@ where
             }
         },
         NativeFn::Clock(clock_fn) => match clock_fn {
+            /*
             ClockFn::Create => {
                 let invocation = scrypto_decode::<ClockCreateInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+             */
             ClockFn::SetCurrentTime => {
                 let invocation = scrypto_decode::<ClockSetCurrentTimeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

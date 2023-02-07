@@ -33,6 +33,7 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
+/*
 impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
@@ -49,6 +50,7 @@ impl ExecutableInvocation for ClockCreateInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for ClockCreateInvocation {
     type Output = ComponentAddress;
