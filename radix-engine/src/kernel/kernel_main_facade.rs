@@ -2,7 +2,6 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
-use crate::kernel::module::KernelApiCallOutput;
 use crate::kernel::module::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -28,11 +27,11 @@ where
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.module
-            .pre_kernel_api_call(
+            .pre_drop_node(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallInput::DropNode { node_id: &node_id },
+                &node_id,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -60,12 +59,7 @@ where
         self.execution_mode = current_mode;
 
         self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::DropNode { node: &node },
-            )
+            .post_drop_node(&self.current_frame, &mut self.heap, &mut self.track)
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(node)
@@ -85,11 +79,13 @@ where
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         self.module
-            .pre_kernel_api_call(
+            .pre_create_node(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallInput::CreateNode { node: &re_node },
+                &node_id,
+                &re_node,
+                &module_init,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -185,11 +181,11 @@ where
         self.execution_mode = current_mode;
 
         self.module
-            .post_kernel_api_call(
+            .post_create_node(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallOutput::CreateNode { node_id: &node_id },
+                &node_id,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -210,15 +206,14 @@ where
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.module
-            .pre_kernel_api_call(
+            .on_lock_substate(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallInput::LockSubstate {
-                    node_id: &node_id,
-                    offset: &offset,
-                    flags: &flags,
-                },
+                &node_id,
+                &module_id,
+                &offset,
+                &flags,
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -326,15 +321,6 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::LockSubstate { lock_handle },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         Ok(lock_handle)
     }
 
@@ -344,55 +330,35 @@ where
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.module
-            .pre_kernel_api_call(
+            .on_drop_lock(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallInput::DropLock {
-                    lock_handle: &lock_handle,
-                },
+                lock_handle,
             )
             .map_err(RuntimeError::ModuleError)?;
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::DropLock,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         Ok(())
     }
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::GetRef {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
+
         self.module
-            .post_kernel_api_call(
+            .on_read_substate(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallOutput::GetRef { lock_handle },
+                lock_handle,
+                0, //  TODO: pass the right size
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -404,29 +370,20 @@ where
     }
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::GetRefMut {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
+
         self.module
-            .post_kernel_api_call(
+            .on_write_substate(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallOutput::GetRefMut,
+                lock_handle,
+                0, //  TODO: pass the right size
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -464,15 +421,12 @@ where
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         self.module
-            .pre_kernel_api_call(
+            .pre_kernel_invoke(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallInput::Invoke {
-                    fn_identifier: invocation.fn_identifier(),
-                    input_size: 0, // TODO: Fix this
-                    depth: self.current_frame.depth,
-                },
+                &invocation.fn_identifier(),
+                0, // TODO: Pass the right size
             )
             .map_err(RuntimeError::ModuleError)?;
 
@@ -489,11 +443,11 @@ where
         self.execution_mode = saved_mode;
 
         self.module
-            .post_kernel_api_call(
+            .post_kernel_invoke(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                KernelApiCallOutput::Invoke { rtn: &rtn },
+                0, // TODO: Pass the right size
             )
             .map_err(RuntimeError::ModuleError)?;
 

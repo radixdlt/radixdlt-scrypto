@@ -80,18 +80,18 @@ macro_rules! preload_vault {
 }
 
 impl KernelModule for RoyaltyCostingModule {
-    fn pre_execute_invocation(
+    fn pre_kernel_execute(
         &mut self,
-        actor: &ResolvedActor,
-        _update: &CallFrameUpdate,
-        _call_frame: &CallFrame,
+        _current_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track,
+        callee: &ResolvedActor,
+        _nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
-        let (scrypto_fn_identifier, optional_component_address) = match &actor.identifier {
+        let (scrypto_fn_identifier, optional_component_address) = match &callee.identifier {
             FnIdentifier::Scrypto(scrypto_fn_identifier) => {
-                let maybe_component = match &actor.receiver {
+                let maybe_component = match &callee.receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
                             Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),

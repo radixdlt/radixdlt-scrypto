@@ -64,93 +64,129 @@ where
 }
 
 impl KernelModule for ExecutionCostingModule {
-    fn pre_kernel_api_call(
+    fn pre_kernel_invoke(
         &mut self,
-        _call_frame: &CallFrame,
+        current_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track,
-        input: KernelApiCallInput,
+        _fn_identifier: &FnIdentifier,
+        input_size: usize,
     ) -> Result<(), ModuleError> {
-        match input {
-            KernelApiCallInput::Invoke {
-                depth, input_size, ..
-            } => {
-                if depth == self.max_depth {
-                    return Err(ModuleError::ExecutionCostingError(
-                        ExecutionCostingError::MaxCallDepthLimitReached,
-                    ));
-                }
+        if current_frame.depth == self.max_depth {
+            return Err(ModuleError::ExecutionCostingError(
+                ExecutionCostingError::MaxCallDepthLimitReached,
+            ));
+        }
 
-                if depth > 0 {
-                    apply_execution_cost(
-                        heap,
-                        CostingReason::Invoke,
-                        |fee_table| fee_table.kernel_api_cost(CostingEntry::Invoke { input_size }),
-                        1,
-                    )?;
-                }
-            }
-            KernelApiCallInput::DropNode { .. } => {
-                // TODO: get size of the value
-                apply_execution_cost(
-                    heap,
-                    CostingReason::DropNode,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
-                    1,
-                )?;
-            }
-            KernelApiCallInput::CreateNode { .. } => {
-                // TODO: get size of the value
-                apply_execution_cost(
-                    heap,
-                    CostingReason::CreateNode,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
-                    1,
-                )?;
-            }
-            KernelApiCallInput::LockSubstate { .. } => {
-                // TODO: get size of the value
-                apply_execution_cost(
-                    heap,
-                    CostingReason::LockSubstate,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate { size: 0 }),
-                    1,
-                )?;
-            }
-            KernelApiCallInput::GetRef { .. } => {
-                // TODO: get size of the value
-                apply_execution_cost(
-                    heap,
-                    CostingReason::ReadSubstate,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: 0 }),
-                    1,
-                )?;
-            }
-            KernelApiCallInput::GetRefMut { .. } => {
-                // TODO: get size of the value
-                apply_execution_cost(
-                    heap,
-                    CostingReason::WriteSubstate,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: 0 }),
-                    1,
-                )?;
-            }
-            KernelApiCallInput::DropLock { .. } => {
-                apply_execution_cost(
-                    heap,
-                    CostingReason::DropLock,
-                    |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
-                    1,
-                )?;
-            }
+        if current_frame.depth > 0 {
+            apply_execution_cost(
+                heap,
+                CostingReason::Invoke,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::Invoke {
+                        input_size: input_size as u32,
+                    })
+                },
+                1,
+            )?;
         }
 
         Ok(())
     }
 
+    fn pre_kernel_execute(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        callee: &ResolvedActor,
+        _nodes_and_refs: &CallFrameUpdate,
+    ) -> Result<(), ModuleError> {
+        match &callee.identifier {
+            FnIdentifier::Native(native_fn) => apply_execution_cost(
+                heap,
+                CostingReason::RunNative,
+                |fee_table| fee_table.run_native_fn_cost(&native_fn),
+                1,
+            ),
+            _ => Ok(()),
+        }
+    }
+
+    fn on_lock_substate(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        _node_id: &RENodeId,
+        _module_id: &NodeModuleId,
+        _offset: &SubstateOffset,
+        _flags: &LockFlags,
+    ) -> Result<(), ModuleError> {
+        apply_execution_cost(
+            heap,
+            CostingReason::LockSubstate,
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
+            1,
+        )?;
+        Ok(())
+    }
+
+    fn on_read_substate(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        _lock_handle: LockHandle,
+        size: usize,
+    ) -> Result<(), ModuleError> {
+        apply_execution_cost(
+            heap,
+            CostingReason::ReadSubstate,
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
+            1,
+        )?;
+        Ok(())
+    }
+
+    fn on_write_substate(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        _lock_handle: LockHandle,
+        size: usize,
+    ) -> Result<(), ModuleError> {
+        apply_execution_cost(
+            heap,
+            CostingReason::WriteSubstate,
+            |fee_table| {
+                fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
+            },
+            1,
+        )?;
+        Ok(())
+    }
+
+    fn on_drop_lock(
+        &mut self,
+        _current_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track,
+        _lock_handle: LockHandle,
+    ) -> Result<(), ModuleError> {
+        apply_execution_cost(
+            heap,
+            CostingReason::WriteSubstate,
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
+            1,
+        )?;
+        Ok(())
+    }
+
     fn on_wasm_instantiation(
         &mut self,
-        _call_frame: &CallFrame,
+        _current_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track,
         code: &[u8],
@@ -165,7 +201,7 @@ impl KernelModule for ExecutionCostingModule {
 
     fn on_wasm_costing(
         &mut self,
-        _call_frame: &CallFrame,
+        _current_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track,
         units: u32,
@@ -173,24 +209,5 @@ impl KernelModule for ExecutionCostingModule {
         // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
         // These values will be tweaked, alongside the whole fee table.
         apply_execution_cost(heap, CostingReason::RunWasm, |_| units, 5)
-    }
-
-    fn pre_execute_invocation(
-        &mut self,
-        actor: &ResolvedActor,
-        _call_frame_update: &CallFrameUpdate,
-        _call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
-    ) -> Result<(), ModuleError> {
-        match &actor.identifier {
-            FnIdentifier::Native(native_fn) => apply_execution_cost(
-                heap,
-                CostingReason::RunNative,
-                |fee_table| fee_table.run_native_fn_cost(&native_fn),
-                1,
-            ),
-            _ => Ok(()),
-        }
     }
 }

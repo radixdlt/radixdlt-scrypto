@@ -37,9 +37,9 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
+    pub kernel_trace: bool,
     pub max_call_depth: usize,
-    pub trace: bool,
-    pub max_sys_call_trace_depth: usize,
+    pub max_kernel_call_depth_traced: usize,
     pub abort_when_loan_repaid: bool,
 }
 
@@ -52,16 +52,16 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
+            kernel_trace: false,
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            trace: false,
-            max_sys_call_trace_depth: 1,
+            max_kernel_call_depth_traced: 1,
             abort_when_loan_repaid: false,
         }
     }
 
     pub fn debug() -> Self {
         Self {
-            trace: true,
+            kernel_trace: true,
             ..Self::default()
         }
     }
@@ -84,7 +84,7 @@ impl ExecutionConfig {
     pub fn up_to_loan_repayment_with_debug() -> Self {
         Self {
             abort_when_loan_repaid: true,
-            trace: true,
+            kernel_trace: true,
             ..Self::default()
         }
     }
@@ -182,7 +182,7 @@ where
         let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.trace {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction auth zone params: {:?}", auth_zone_params);
@@ -281,7 +281,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if execution_config.trace {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution

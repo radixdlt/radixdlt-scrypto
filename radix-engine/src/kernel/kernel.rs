@@ -484,22 +484,22 @@ where
             })?;
 
             self.module
-                .pre_execute_invocation(
-                    &actor,
-                    &call_frame_update,
+                .pre_kernel_execute(
                     &mut self.current_frame,
                     &mut self.heap,
                     &mut self.track,
+                    &actor,
+                    &call_frame_update,
                 )
                 .map_err(RuntimeError::ModuleError)?;
-            self.id_allocator.pre_execute_invocation();
+            self.id_allocator.pre_kernel_execute();
         }
 
         // Call Frame Push
         {
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor,
+                actor.clone(),
                 call_frame_update,
             )?;
             let parent = mem::replace(&mut self.current_frame, frame);
@@ -517,14 +517,13 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
-            self.id_allocator.post_execute_invocation()?;
+            self.id_allocator.post_kernel_execute()?;
             self.module
-                .post_execute_invocation(
-                    &self.prev_frame_stack.last().unwrap().actor,
-                    &update,
+                .post_kernel_execute(
                     &mut self.current_frame,
                     &mut self.heap,
                     &mut self.track,
+                    &update,
                 )
                 .map_err(RuntimeError::ModuleError)?;
 
