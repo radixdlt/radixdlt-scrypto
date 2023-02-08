@@ -230,14 +230,6 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
-            TokenKind::CreateFungibleResourceWithOwner => {
-                Instruction::CreateFungibleResourceWithOwner {
-                    divisibility: self.parse_value()?,
-                    metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
-                    initial_supply: self.parse_value()?,
-                }
-            }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
                 id_type: self.parse_value()?,
                 metadata: self.parse_value()?,

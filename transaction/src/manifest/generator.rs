@@ -487,19 +487,6 @@ pub fn generate_instruction(
                 blobs,
             )?,
         },
-
-        ast::Instruction::CreateFungibleResourceWithOwner {
-            divisibility,
-            metadata,
-            owner_badge,
-            initial_supply,
-        } => BasicInstruction::CreateFungibleResourceWithOwner {
-            divisibility: generate_u8(divisibility)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
-        },
-
         ast::Instruction::CreateNonFungibleResource {
             id_type,
             metadata,
@@ -1744,25 +1731,6 @@ mod tests {
             },
             "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
-        );
-
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Decimal("500"));"#,
-            BasicInstruction::CreateFungibleResourceWithOwner {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: Some("500".parse().unwrap())
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") None;"#,
-            BasicInstruction::CreateFungibleResourceWithOwner {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: None
-            },
         );
 
         generate_instruction_ok!(

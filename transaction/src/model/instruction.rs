@@ -169,13 +169,6 @@ pub enum BasicInstruction {
         entries: Vec<(Vec<u8>, Vec<u8>)>,
     },
 
-    CreateFungibleResourceWithOwner {
-        divisibility: u8,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleGlobalId,
-        initial_supply: Option<Decimal>,
-    },
-
     CreateNonFungibleResource {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,

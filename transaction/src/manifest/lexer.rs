@@ -127,7 +127,6 @@ pub enum TokenKind {
     MintUuidNonFungible,
     CreateFungibleResource,
     CreateFungibleResourceWithInitialSupply,
-    CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
     CreateValidator,
@@ -475,7 +474,6 @@ impl Lexer {
                 Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
             }
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }

@@ -303,23 +303,6 @@ impl ManifestBuilder {
         self
     }
 
-    /// Creates a fungible resource with an owner badge
-    pub fn create_fungible_resource_with_owner(
-        &mut self,
-        divisibility: u8,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleGlobalId,
-        initial_supply: Option<Decimal>,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
-            divisibility,
-            metadata,
-            owner_badge,
-            initial_supply,
-        });
-        self
-    }
-
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,

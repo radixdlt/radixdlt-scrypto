@@ -293,7 +293,6 @@ impl NotarizedTransactionValidator {
                 | BasicInstruction::MintFungible { .. }
                 | BasicInstruction::MintNonFungible { .. }
                 | BasicInstruction::MintUuidNonFungible { .. }
-                | BasicInstruction::CreateFungibleResourceWithOwner { .. }
                 | BasicInstruction::CreateNonFungibleResource { .. }
                 | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
                 | BasicInstruction::CreateValidator { .. }
