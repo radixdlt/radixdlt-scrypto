@@ -283,14 +283,46 @@ impl CallFrame {
     }
 
     pub fn new_root() -> Self {
-        Self {
+        let frame = Self {
             depth: 0,
             actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::Root)),
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
-        }
+        };
+
+        // Add well-known global refs to current frame
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Component(CLOCK)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
+            RENodeVisibilityOrigin::Normal,
+        );
+
+        frame
     }
 
     pub fn new_child_from_parent(

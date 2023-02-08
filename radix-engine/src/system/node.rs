@@ -2,7 +2,6 @@ use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
@@ -88,7 +87,6 @@ pub enum RENodeInit {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
@@ -209,12 +207,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     current_time_rounded_to_minutes_substate.into(),
-                );
-            }
-            RENodeInit::FeeReserve(fee_reserve) => {
-                substates.insert(
-                    SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
-                    fee_reserve.into(),
                 );
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {

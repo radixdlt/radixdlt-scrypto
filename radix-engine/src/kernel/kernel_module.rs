@@ -1,166 +1,161 @@
-use crate::errors::ModuleError;
+use crate::errors::RuntimeError;
 use crate::kernel::*;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
-    fn pre_kernel_invoke(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(_api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(_api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
+        _actor: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+        _api: &mut Y,
+        _update: &mut CallFrameUpdate,
+        _actor: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+        _api: &mut Y,
+        _update: &CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _fn_identifier: &FnIdentifier,
         _input_size: usize,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn post_kernel_invoke(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _output_size: usize,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn pre_kernel_execute(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _callee: &ResolvedActor,
         _update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn post_kernel_execute(
-        &mut self,
-        _current_frame: &CallFrame, // The callee frame
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_allocate_node_id(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_allocate_node_id<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _node_type: &RENodeType,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn pre_create_node(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn post_create_node(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn pre_drop_node(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn post_drop_node(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
-    ) -> Result<(), ModuleError> {
+    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_lock_substate(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_lock_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _node_id: &RENodeId,
         _module_id: &NodeModuleId,
         _offset: &SubstateOffset,
         _flags: &LockFlags,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_read_substate(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_read_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_write_substate(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_write_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_drop_lock(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_drop_lock<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _lock_handle: LockHandle,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_wasm_instantiation(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_wasm_instantiation<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _code: &[u8],
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_wasm_costing(
-        &mut self,
-        _current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
+    fn on_consume_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
         _units: u32,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
         Ok(())
+    }
+
+    fn on_credit_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+        _api: &mut Y,
+        _vault_id: VaultId,
+        locked_fee: Resource,
+        _contingent: bool,
+    ) -> Result<Resource, RuntimeError> {
+        Ok(locked_fee)
     }
 }

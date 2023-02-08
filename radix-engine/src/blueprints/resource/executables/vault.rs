@@ -16,8 +16,8 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientMeteringApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::blueprints::fee_reserve::FeeReserveLockFeeInvocation;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -184,7 +184,10 @@ impl Executor for VaultLockFeeInvocation {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientMeteringApi<RuntimeError>,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -195,6 +198,7 @@ impl Executor for VaultLockFeeInvocation {
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
+        // Take by amount
         let fee = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
@@ -214,29 +218,19 @@ impl Executor for VaultLockFeeInvocation {
             })?
         };
 
-        // Invoke fee reserve
-        let bucket_node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            bucket_node_id,
-            RENodeInit::Bucket(BucketSubstate::new(fee)),
-            btreemap!(),
-        )?;
-        let changes: Bucket = api.call_native(FeeReserveLockFeeInvocation {
-            receiver: RENodeId::FeeReserve.into(),
-            bucket: Bucket(bucket_node_id.into()),
-            vault_id: self.receiver,
-            contingent: self.contingent,
-        })?;
+        // Credit cost units
+        let changes: Resource = api.credit_cost_units(self.receiver, fee, self.contingent)?;
 
         // Keep changes
-        let changes_resource: BucketSubstate = api.drop_node(RENodeId::Bucket(changes.0))?.into();
-        let mut substate_mut = api.get_ref_mut(vault_handle)?;
-        let vault = substate_mut.vault();
-        vault.put(changes_resource).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceOperationError(e),
-            ))
-        })?;
+        {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.put(BucketSubstate::new(changes)).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::ResourceOperationError(e),
+                ))
+            })?;
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }

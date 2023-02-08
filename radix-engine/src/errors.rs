@@ -1,7 +1,6 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
-use crate::blueprints::fee_reserve::FeeReserveError;
 use crate::blueprints::resource::{
     BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
 };
@@ -10,8 +9,7 @@ use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
 use crate::system::kernel_modules::auth::auth_module::AuthError;
-use crate::system::kernel_modules::costing::ExecutionCostingError;
-use crate::system::kernel_modules::costing::RoyaltyCostingError;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
@@ -209,15 +207,14 @@ pub enum InterpreterError {
 pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
-    ExecutionCostingError(ExecutionCostingError),
-    RoyaltyCostingError(RoyaltyCostingError),
+    CostingError(CostingError),
     ExecutionTraceError(ExecutionTraceError),
 }
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            Self::ExecutionCostingError(err) => err.abortion(),
+            Self::CostingError(err) => err.abortion(),
             _ => None,
         }
     }
@@ -235,15 +232,9 @@ impl From<AuthError> for ModuleError {
     }
 }
 
-impl From<ExecutionCostingError> for ModuleError {
-    fn from(error: ExecutionCostingError) -> Self {
-        Self::ExecutionCostingError(error)
-    }
-}
-
-impl From<RoyaltyCostingError> for ModuleError {
-    fn from(error: RoyaltyCostingError) -> Self {
-        Self::RoyaltyCostingError(error)
+impl From<CostingError> for ModuleError {
+    fn from(error: CostingError) -> Self {
+        Self::CostingError(error)
     }
 }
 
@@ -321,8 +312,6 @@ pub enum ApplicationError {
 
     TransactionRuntimeError(TransactionRuntimeError),
 
-    FeeReserveError(FeeReserveError),
-
     BucketError(BucketError),
 
     ProofError(ProofError),
@@ -371,18 +360,6 @@ impl From<AccessRulesChainError> for ApplicationError {
 impl From<TransactionRuntimeError> for ApplicationError {
     fn from(value: TransactionRuntimeError) -> Self {
         Self::TransactionRuntimeError(value)
-    }
-}
-
-impl From<FeeReserveError> for ApplicationError {
-    fn from(value: FeeReserveError) -> Self {
-        Self::FeeReserveError(value)
-    }
-}
-
-impl From<FeeReserveError> for RuntimeError {
-    fn from(value: FeeReserveError) -> Self {
-        RuntimeError::ApplicationError(ApplicationError::FeeReserveError(value))
     }
 }
 

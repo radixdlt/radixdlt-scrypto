@@ -6,9 +6,9 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
-use crate::system::kernel_modules::costing::{CostingError, ExecutionCostingError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::node_substates::{
@@ -464,9 +464,9 @@ impl<'s> Track<'s> {
         // Here, we purposely overwrite the error code for better user experience.
         if let Err(err) = fee_reserve.repay_all() {
             if invoke_result.is_ok() {
-                invoke_result = Err(RuntimeError::ModuleError(
-                    ModuleError::ExecutionCostingError(ExecutionCostingError::CostingError(err)),
-                ));
+                invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(
+                    CostingError::FeeReserveError(err),
+                )));
             }
         }
 

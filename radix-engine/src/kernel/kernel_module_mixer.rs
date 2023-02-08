@@ -1,22 +1,15 @@
 use super::KernelModule;
-use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::errors::*;
 use crate::kernel::*;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
-use crate::system::kernel_modules::costing::ExecutionCostingModule;
-use crate::system::kernel_modules::costing::FeeTable;
-use crate::system::kernel_modules::costing::RoyaltyCostingModule;
-use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
 use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
-use crate::system::kernel_modules::execution_trace::VaultOp;
-use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
+use crate::system::kernel_modules::kernel_debug::KernelDebugModule;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
@@ -24,474 +17,369 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
-use transaction::model::AuthZoneParams;
 
-pub struct KernelModuleMixer {
-    kernel_trace: bool,
-    execution_trace: ExecutionTraceModule,
-    execution_costing: ExecutionCostingModule,
-    royalty_costing: RoyaltyCostingModule,
-}
+pub struct KernelModuleMixer;
 
-impl KernelModuleMixer {
-    pub fn new(config: &ExecutionConfig) -> Self {
-        Self {
-            kernel_trace: config.kernel_trace,
-            execution_trace: ExecutionTraceModule::new(config.max_kernel_call_depth_traced),
-            execution_costing: ExecutionCostingModule::new(config.max_call_depth),
-            royalty_costing: RoyaltyCostingModule::default(),
-        }
-    }
-}
-
-impl KernelModuleMixer {
-    pub fn destroy(self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
-        self.execution_trace.destroy()
-    }
-}
+//====================================================================
+// NOTE: Modules are applied in the opposite order of initialization!
+//====================================================================
 
 impl KernelModule for KernelModuleMixer {
-    fn pre_kernel_invoke(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Enable execution trace
+        ExecutionTraceModule::on_init(api)?;
+
+        // Enable transaction runtime
+        TransactionRuntimeModule::on_init(api)?;
+
+        // Enable logger
+        LoggerModule::on_init(api)?;
+
+        // Enable auth
+        AuthModule::on_init(api)?;
+
+        // Enable node move
+        NodeMoveModule::on_init(api)?;
+
+        // Enable costing
+        CostingModule::on_init(api)?;
+
+        // Enable debug
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_init(api)?;
+        }
+
+        Ok(())
+    }
+
+    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_teardown(api)?;
+        }
+        CostingModule::on_teardown(api)?;
+        NodeMoveModule::on_teardown(api)?;
+        AuthModule::on_teardown(api)?;
+        LoggerModule::on_teardown(api)?;
+        TransactionRuntimeModule::on_teardown(api)?;
+        ExecutionTraceModule::on_teardown(api)?;
+        Ok(())
+    }
+
+    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        actor: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_before_frame_start(api, actor)?;
+        }
+        CostingModule::on_before_frame_start(api, actor)?;
+        NodeMoveModule::on_before_frame_start(api, actor)?;
+        AuthModule::on_before_frame_start(api, actor)?;
+        LoggerModule::on_before_frame_start(api, actor)?;
+        TransactionRuntimeModule::on_before_frame_start(api, actor)?;
+        ExecutionTraceModule::on_before_frame_start(api, actor)?;
+        Ok(())
+    }
+
+    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+        api: &mut Y,
+        update: &mut CallFrameUpdate,
+        actor: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_call_frame_enter(api, update, actor)?;
+        }
+        CostingModule::on_call_frame_enter(api, update, actor)?;
+        NodeMoveModule::on_call_frame_enter(api, update, actor)?;
+        AuthModule::on_call_frame_enter(api, update, actor)?;
+        LoggerModule::on_call_frame_enter(api, update, actor)?;
+        TransactionRuntimeModule::on_call_frame_enter(api, update, actor)?;
+        ExecutionTraceModule::on_call_frame_enter(api, update, actor)?;
+        Ok(())
+    }
+
+    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+        api: &mut Y,
+        update: &CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_call_frame_exit(api, update)?;
+        }
+        CostingModule::on_call_frame_exit(api, update)?;
+        NodeMoveModule::on_call_frame_exit(api, update)?;
+        AuthModule::on_call_frame_exit(api, update)?;
+        LoggerModule::on_call_frame_exit(api, update)?;
+        TransactionRuntimeModule::on_call_frame_exit(api, update)?;
+        ExecutionTraceModule::on_call_frame_exit(api, update)?;
+        Ok(())
+    }
+
+    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         fn_identifier: &FnIdentifier,
         input_size: usize,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.pre_kernel_invoke(
-                current_frame,
-                heap,
-                track,
-                fn_identifier,
-                input_size,
-            )?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
         }
-        self.execution_costing.pre_kernel_invoke(
-            current_frame,
-            heap,
-            track,
-            fn_identifier,
-            input_size,
-        )?;
-        self.royalty_costing.pre_kernel_invoke(
-            current_frame,
-            heap,
-            track,
-            fn_identifier,
-            input_size,
-        )?;
-        self.execution_trace.pre_kernel_invoke(
-            current_frame,
-            heap,
-            track,
-            fn_identifier,
-            input_size,
-        )?;
-
+        CostingModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        NodeMoveModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        AuthModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        LoggerModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        TransactionRuntimeModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        ExecutionTraceModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
         Ok(())
     }
 
-    fn post_kernel_invoke(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         output_size: usize,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.post_kernel_invoke(current_frame, heap, track, output_size)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::post_kernel_invoke(api, output_size)?;
         }
-        self.execution_costing
-            .post_kernel_invoke(current_frame, heap, track, output_size)?;
-        self.royalty_costing
-            .post_kernel_invoke(current_frame, heap, track, output_size)?;
-        self.execution_trace
-            .post_kernel_invoke(current_frame, heap, track, output_size)?;
-
+        CostingModule::post_kernel_invoke(api, output_size)?;
+        NodeMoveModule::post_kernel_invoke(api, output_size)?;
+        AuthModule::post_kernel_invoke(api, output_size)?;
+        LoggerModule::post_kernel_invoke(api, output_size)?;
+        TransactionRuntimeModule::post_kernel_invoke(api, output_size)?;
+        ExecutionTraceModule::post_kernel_invoke(api, output_size)?;
         Ok(())
     }
 
-    fn pre_kernel_execute(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         callee: &ResolvedActor,
         update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.pre_kernel_execute(current_frame, heap, track, callee, update)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::pre_kernel_execute(api, callee, update)?;
         }
-        self.execution_costing
-            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
-        self.royalty_costing
-            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
-        self.execution_trace
-            .pre_kernel_execute(current_frame, heap, track, callee, update)?;
-
+        CostingModule::pre_kernel_execute(api, callee, update)?;
+        NodeMoveModule::pre_kernel_execute(api, callee, update)?;
+        AuthModule::pre_kernel_execute(api, callee, update)?;
+        LoggerModule::pre_kernel_execute(api, callee, update)?;
+        TransactionRuntimeModule::pre_kernel_execute(api, callee, update)?;
+        ExecutionTraceModule::pre_kernel_execute(api, callee, update)?;
         Ok(())
     }
 
-    fn post_kernel_execute(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.post_kernel_execute(current_frame, heap, track, caller, update)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::post_kernel_execute(api, caller, update)?;
         }
-        self.execution_costing
-            .post_kernel_execute(current_frame, heap, track, caller, update)?;
-        self.royalty_costing
-            .post_kernel_execute(current_frame, heap, track, caller, update)?;
-        self.execution_trace
-            .post_kernel_execute(current_frame, heap, track, caller, update)?;
-
+        CostingModule::post_kernel_execute(api, caller, update)?;
+        NodeMoveModule::post_kernel_execute(api, caller, update)?;
+        AuthModule::post_kernel_execute(api, caller, update)?;
+        LoggerModule::post_kernel_execute(api, caller, update)?;
+        TransactionRuntimeModule::post_kernel_execute(api, caller, update)?;
+        ExecutionTraceModule::post_kernel_execute(api, caller, update)?;
         Ok(())
     }
 
-    fn on_allocate_node_id(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_allocate_node_id<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_type: &RENodeType,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_allocate_node_id(current_frame, heap, track, node_type)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_allocate_node_id(api, node_type)?;
         }
-        self.execution_costing
-            .on_allocate_node_id(current_frame, heap, track, node_type)?;
-        self.royalty_costing
-            .on_allocate_node_id(current_frame, heap, track, node_type)?;
-        self.execution_trace
-            .on_allocate_node_id(current_frame, heap, track, node_type)?;
+        CostingModule::on_allocate_node_id(api, node_type)?;
+        NodeMoveModule::on_allocate_node_id(api, node_type)?;
+        AuthModule::on_allocate_node_id(api, node_type)?;
+        LoggerModule::on_allocate_node_id(api, node_type)?;
+        TransactionRuntimeModule::on_allocate_node_id(api, node_type)?;
+        ExecutionTraceModule::on_allocate_node_id(api, node_type)?;
         Ok(())
     }
 
-    fn pre_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.pre_create_node(
-                current_frame,
-                heap,
-                track,
-                node_id,
-                node_init,
-                node_module_init,
-            )?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::pre_create_node(api, node_id, node_init, node_module_init)?;
         }
-        self.execution_costing.pre_create_node(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            node_init,
-            node_module_init,
-        )?;
-        self.royalty_costing.pre_create_node(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            node_init,
-            node_module_init,
-        )?;
-        self.execution_trace.pre_create_node(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            node_init,
-            node_module_init,
-        )?;
+        CostingModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        NodeMoveModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        AuthModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        LoggerModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        TransactionRuntimeModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        ExecutionTraceModule::pre_create_node(api, node_id, node_init, node_module_init)?;
         Ok(())
     }
 
-    fn post_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.post_create_node(current_frame, heap, track, node_id)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::post_create_node(api, node_id)?;
         }
-        self.execution_costing
-            .post_create_node(current_frame, heap, track, node_id)?;
-        self.royalty_costing
-            .post_create_node(current_frame, heap, track, node_id)?;
-        self.execution_trace
-            .post_create_node(current_frame, heap, track, node_id)?;
+        CostingModule::post_create_node(api, node_id)?;
+        NodeMoveModule::post_create_node(api, node_id)?;
+        AuthModule::post_create_node(api, node_id)?;
+        LoggerModule::post_create_node(api, node_id)?;
+        TransactionRuntimeModule::post_create_node(api, node_id)?;
+        ExecutionTraceModule::post_create_node(api, node_id)?;
         Ok(())
     }
 
-    fn pre_drop_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.pre_drop_node(current_frame, heap, track, node_id)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::pre_drop_node(api, node_id)?;
         }
-        self.execution_costing
-            .pre_drop_node(current_frame, heap, track, node_id)?;
-        self.royalty_costing
-            .pre_drop_node(current_frame, heap, track, node_id)?;
-        self.execution_trace
-            .pre_drop_node(current_frame, heap, track, node_id)?;
+        CostingModule::pre_drop_node(api, node_id)?;
+        NodeMoveModule::pre_drop_node(api, node_id)?;
+        AuthModule::pre_drop_node(api, node_id)?;
+        LoggerModule::pre_drop_node(api, node_id)?;
+        TransactionRuntimeModule::pre_drop_node(api, node_id)?;
+        ExecutionTraceModule::pre_drop_node(api, node_id)?;
         Ok(())
     }
 
-    fn post_drop_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.post_drop_node(current_frame, heap, track)?;
+    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::post_drop_node(api)?;
         }
-        self.execution_costing
-            .post_drop_node(current_frame, heap, track)?;
-        self.royalty_costing
-            .post_drop_node(current_frame, heap, track)?;
-        self.execution_trace
-            .post_drop_node(current_frame, heap, track)?;
+        CostingModule::post_drop_node(api)?;
+        NodeMoveModule::post_drop_node(api)?;
+        AuthModule::post_drop_node(api)?;
+        LoggerModule::post_drop_node(api)?;
+        TransactionRuntimeModule::post_drop_node(api)?;
+        ExecutionTraceModule::post_drop_node(api)?;
         Ok(())
     }
 
-    fn on_lock_substate(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_lock_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         offset: &SubstateOffset,
         flags: &LockFlags,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_lock_substate(
-                current_frame,
-                heap,
-                track,
-                node_id,
-                module_id,
-                offset,
-                flags,
-            )?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
         }
-        self.execution_costing.on_lock_substate(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            module_id,
-            offset,
-            flags,
-        )?;
-        self.royalty_costing.on_lock_substate(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            module_id,
-            offset,
-            flags,
-        )?;
-        self.execution_trace.on_lock_substate(
-            current_frame,
-            heap,
-            track,
-            node_id,
-            module_id,
-            offset,
-            flags,
-        )?;
+        CostingModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+        NodeMoveModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+        AuthModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+        LoggerModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+        TransactionRuntimeModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+        ExecutionTraceModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
         Ok(())
     }
 
-    fn on_read_substate(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_read_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_read_substate(current_frame, heap, track, lock_handle, size)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_read_substate(api, lock_handle, size)?;
         }
-        self.execution_costing
-            .on_read_substate(current_frame, heap, track, lock_handle, size)?;
-        self.royalty_costing
-            .on_read_substate(current_frame, heap, track, lock_handle, size)?;
-        self.execution_trace
-            .on_read_substate(current_frame, heap, track, lock_handle, size)?;
+        CostingModule::on_read_substate(api, lock_handle, size)?;
+        NodeMoveModule::on_read_substate(api, lock_handle, size)?;
+        AuthModule::on_read_substate(api, lock_handle, size)?;
+        LoggerModule::on_read_substate(api, lock_handle, size)?;
+        TransactionRuntimeModule::on_read_substate(api, lock_handle, size)?;
+        ExecutionTraceModule::on_read_substate(api, lock_handle, size)?;
         Ok(())
     }
 
-    fn on_write_substate(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_write_substate<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_write_substate(current_frame, heap, track, lock_handle, size)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_write_substate(api, lock_handle, size)?;
         }
-        self.execution_costing
-            .on_write_substate(current_frame, heap, track, lock_handle, size)?;
-        self.royalty_costing
-            .on_write_substate(current_frame, heap, track, lock_handle, size)?;
-        self.execution_trace
-            .on_write_substate(current_frame, heap, track, lock_handle, size)?;
+        CostingModule::on_write_substate(api, lock_handle, size)?;
+        NodeMoveModule::on_write_substate(api, lock_handle, size)?;
+        AuthModule::on_write_substate(api, lock_handle, size)?;
+        LoggerModule::on_write_substate(api, lock_handle, size)?;
+        TransactionRuntimeModule::on_write_substate(api, lock_handle, size)?;
+        ExecutionTraceModule::on_write_substate(api, lock_handle, size)?;
         Ok(())
     }
 
-    fn on_drop_lock(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_drop_lock<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         lock_handle: LockHandle,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_drop_lock(current_frame, heap, track, lock_handle)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_drop_lock(api, lock_handle)?;
         }
-        self.execution_costing
-            .on_drop_lock(current_frame, heap, track, lock_handle)?;
-        self.royalty_costing
-            .on_drop_lock(current_frame, heap, track, lock_handle)?;
-        self.execution_trace
-            .on_drop_lock(current_frame, heap, track, lock_handle)?;
+        CostingModule::on_drop_lock(api, lock_handle)?;
+        NodeMoveModule::on_drop_lock(api, lock_handle)?;
+        AuthModule::on_drop_lock(api, lock_handle)?;
+        LoggerModule::on_drop_lock(api, lock_handle)?;
+        TransactionRuntimeModule::on_drop_lock(api, lock_handle)?;
+        ExecutionTraceModule::on_drop_lock(api, lock_handle)?;
         Ok(())
     }
 
-    fn on_wasm_instantiation(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_wasm_instantiation<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         code: &[u8],
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_wasm_instantiation(current_frame, heap, track, code)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_wasm_instantiation(api, code)?;
         }
-        self.execution_costing
-            .on_wasm_instantiation(current_frame, heap, track, code)?;
-        self.royalty_costing
-            .on_wasm_instantiation(current_frame, heap, track, code)?;
-        self.execution_trace
-            .on_wasm_instantiation(current_frame, heap, track, code)?;
-
+        CostingModule::on_wasm_instantiation(api, code)?;
+        NodeMoveModule::on_wasm_instantiation(api, code)?;
+        AuthModule::on_wasm_instantiation(api, code)?;
+        LoggerModule::on_wasm_instantiation(api, code)?;
+        TransactionRuntimeModule::on_wasm_instantiation(api, code)?;
+        ExecutionTraceModule::on_wasm_instantiation(api, code)?;
         Ok(())
     }
 
-    fn on_wasm_costing(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track,
+    fn on_consume_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         units: u32,
-    ) -> Result<(), ModuleError> {
-        if self.kernel_trace {
-            KernelTraceModule.on_wasm_costing(current_frame, heap, track, units)?;
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            KernelDebugModule::on_consume_cost_units(api, units)?;
         }
-        self.execution_costing
-            .on_wasm_costing(current_frame, heap, track, units)?;
-        self.royalty_costing
-            .on_wasm_costing(current_frame, heap, track, units)?;
-        self.execution_trace
-            .on_wasm_costing(current_frame, heap, track, units)?;
-
-        Ok(())
-    }
-}
-
-impl KernelModuleMixer {
-    // Modules are initialized in the following order
-    //  * CostingModule
-    //  * TransactionRuntimeModule
-    //  * LoggerModule
-    //  * AuthModule
-    //  * NodeMoveModule
-    // and applied in the reverse order.
-
-    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        tx_hash: Hash,
-        auth_zone_params: AuthZoneParams,
-        fee_reserve: SystemLoanFeeReserve,
-        fee_table: FeeTable,
-    ) -> Result<(), RuntimeError> {
-        // Module initialization order decodes when certain features are enabled or disabled.
-        // See also `destroy()` implementation when reordering items.
-
-        CostingModule::initialize(api, fee_reserve, fee_table)?;
-        TransactionRuntimeModule::initialize(api, tx_hash)?;
-        LoggerModule::initialize(api)?;
-        AuthModule::initialize(api, auth_zone_params)?;
-
+        CostingModule::on_consume_cost_units(api, units)?;
+        NodeMoveModule::on_consume_cost_units(api, units)?;
+        AuthModule::on_consume_cost_units(api, units)?;
+        LoggerModule::on_consume_cost_units(api, units)?;
+        TransactionRuntimeModule::on_consume_cost_units(api, units)?;
+        ExecutionTraceModule::on_consume_cost_units(api, units)?;
         Ok(())
     }
 
-    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_credit_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
-    ) -> Result<FeeReserveSubstate, RuntimeError> {
-        AuthModule::teardown(api)
-            .and_then(|_| LoggerModule::teardown(api))
-            .and_then(|_| TransactionRuntimeModule::teardown(api))
-            .and_then(|_| CostingModule::teardown(api))
-    }
-
-    pub fn on_before_frame_start<Y>(actor: &ResolvedActor, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        AuthModule::on_before_frame_start(actor, api)
-    }
-
-    pub fn on_call_frame_enter<
-        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
-    >(
-        update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        NodeMoveModule::on_call_frame_enter(update, &actor.identifier, api)
-            .and_then(|_| AuthModule::on_call_frame_enter(update, actor, api))
-            .and_then(|_| LoggerModule::on_call_frame_enter(update, actor, api))
-            .and_then(|_| TransactionRuntimeModule::on_call_frame_enter(update, actor, api))
-            .and_then(|_| CostingModule::on_call_frame_enter(update, actor, api))
-    }
-
-    pub fn on_call_frame_exit<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
-    {
-        NodeMoveModule::on_call_frame_exit(update, api)
-            .and_then(|_| AuthModule::on_call_frame_exit(api))
+        vault_id: VaultId,
+        fee: Resource,
+        contingent: bool,
+    ) -> Result<Resource, RuntimeError> {
+        if api.get_module_state::<KernelDebugModule>().enabled {
+            fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        }
+        fee = CostingModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        fee = NodeMoveModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        fee = AuthModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        fee = LoggerModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        fee = TransactionRuntimeModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        fee = ExecutionTraceModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
+        Ok(fee)
     }
 }

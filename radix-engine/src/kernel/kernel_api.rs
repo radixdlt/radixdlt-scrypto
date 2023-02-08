@@ -17,7 +17,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::fee_reserve::FeeReserveLockFeeInvocation;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -72,6 +71,24 @@ pub trait KernelNodeApi {
         init: RENodeInit,
         node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError>;
+
+    // TODO: move to KernelModuleApi
+    fn get_module_state<T: KernelModuleState>(&mut self) -> &mut T;
+}
+
+pub trait KernelModuleState: ScryptoEncode + ScryptoDecode {
+    const ID: u8;
+}
+
+#[repr(u8)]
+pub enum KernelModuleId {
+    KernelDebug,
+    Costing,
+    NodeMove,
+    Auth,
+    Logger,
+    TransactionRuntime,
+    ExecutionTrace,
 }
 
 pub trait KernelSubstateApi {
@@ -220,7 +237,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<IdentityCreateInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
-    + Invokable<FeeReserveLockFeeInvocation, E>
     + Invokable<LoggerLogInvocation, E>
     + Invokable<AccessControllerCreateGlobalInvocation, E>
     + Invokable<AccessControllerCreateProofInvocation, E>

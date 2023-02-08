@@ -8,28 +8,24 @@ use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
 
-impl LoggerModule {
-    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+impl KernelModule for LoggerModule {
+    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
         api.create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
         Ok(())
     }
 
-    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<LoggerSubstate, RuntimeError> {
-        let substate: LoggerSubstate = api.drop_node(RENodeId::Logger)?.into();
+    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        api.drop_node(RENodeId::Logger)?;
 
-        Ok(substate)
+        Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         call_frame_update: &mut CallFrameUpdate,
         _actor: &ResolvedActor,
-        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         if api.get_visible_node_data(RENodeId::Logger).is_ok() {
             call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);

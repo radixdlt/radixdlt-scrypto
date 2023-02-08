@@ -28,10 +28,22 @@ pub enum AuthError {
 pub struct AuthModule;
 
 impl AuthModule {
-    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        auth_zone_params: AuthZoneParams,
-    ) -> Result<(), RuntimeError> {
+    fn is_barrier(actor: &ResolvedActor) -> bool {
+        matches!(
+            actor,
+            ResolvedActor {
+                identifier: FnIdentifier::Scrypto(..),
+                receiver: Some(ResolvedReceiver {
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    ..
+                })
+            }
+        )
+    }
+}
+
+impl KernelModule for AuthModule {
+    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
         let auth_zone = AuthZoneStackSubstate::new(
             vec![],
             auth_zone_params.virtualizable_proofs_resource_addresses,
@@ -46,18 +58,16 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn teardown<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<AuthZoneStackSubstate, RuntimeError> {
-        let substate: AuthZoneStackSubstate = api.drop_node(RENodeId::AuthZoneStack)?.into();
+    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        api.drop_node(RENodeId::AuthZoneStack)?;
 
-        Ok(substate)
+        Ok(())
     }
 
-    pub fn on_before_frame_start<Y>(actor: &ResolvedActor, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
+    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        actor: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
         if matches!(
             actor.identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
@@ -259,10 +269,10 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
-        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         call_frame_update
             .node_refs_to_copy
@@ -299,23 +309,9 @@ impl AuthModule {
         Ok(())
     }
 
-    fn is_barrier(actor: &ResolvedActor) -> bool {
-        matches!(
-            actor,
-            ResolvedActor {
-                identifier: FnIdentifier::Scrypto(..),
-                receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
-                    ..
-                })
-            }
-        )
-    }
-
-    pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
-    {
+    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         if matches!(
             api.fn_identifier()?,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))

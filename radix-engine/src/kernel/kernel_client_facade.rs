@@ -431,11 +431,16 @@ where
     M: KernelModule,
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-            .map_err(RuntimeError::ModuleError)?;
-
+        M::on_consume_cost_units(self, units)?;
         Ok(())
+    }
+    fn credit_cost_units(
+        &mut self,
+        vault_id: VaultId,
+        locked_fee: Resource,
+        contingent: bool,
+    ) -> Result<Resource, RuntimeError> {
+        M::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 }
 

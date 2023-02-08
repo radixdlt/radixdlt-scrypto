@@ -126,7 +126,6 @@ pub enum NativeFn {
     TransactionProcessor(TransactionProcessorFn),
     Account(AccountFn),
     AccessController(AccessControllerFn),
-    FeeReserve(FeeReserveFn),
     Root,
 }
 
@@ -150,7 +149,6 @@ impl NativeFn {
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
-            NativeFn::FeeReserve(_) => NativePackage::FeeReserve,
             NativeFn::Root => NativePackage::Root,
         }
     }

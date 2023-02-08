@@ -1,5 +1,4 @@
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::fee_reserve::FeeReserveSubstate;
 use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -7,7 +6,6 @@ use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
@@ -23,7 +21,6 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use transaction::model::AuthZoneParams;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -53,6 +50,7 @@ pub struct Kernel<
     pub(super) scrypto_interpreter: &'g ScryptoInterpreter<W>,
     /// Kernel module
     pub(super) module: &'g mut M,
+    pub(super) module_states: HashMap<u8, Vec<u8>>,
 }
 
 impl<'g, 's, W, M> Kernel<'g, 's, W, M>
@@ -65,10 +63,6 @@ where
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
-        tx_hash: Hash,
-        auth_zone_params: AuthZoneParams,
-        fee_reserve: SystemLoanFeeReserve,
-        fee_table: FeeTable,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
@@ -79,54 +73,19 @@ where
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             module,
+            module_states: HashMap::new(),
         };
 
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::initialize(
-                    api,
-                    tx_hash,
-                    auth_zone_params,
-                    fee_reserve,
-                    fee_table,
-                )
+                M::on_init(api)
             })
             .expect("Failed to initialize kernel modules");
-
-        // Add well-known global refs to current frame
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(CLOCK)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
-        );
 
         kernel
     }
 
-    pub fn destroy(mut self) -> (FeeReserveSubstate, Option<RuntimeError>) {
+    pub fn teardown(mut self) -> (HashMap<u8, Vec<u8>>, Option<RuntimeError>) {
         // Rewind call stack
         loop {
             if let Some(f) = self.prev_frame_stack.pop() {
@@ -136,18 +95,15 @@ where
             }
         }
 
-        // Attempt to teardown all kernel modules
-        let possible_fee_reserve_substate = self
+        // Teardown all kernel modules
+        let result = self
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::teardown(api)
+                M::on_teardown(api)
             });
 
-        match possible_fee_reserve_substate {
-            Ok(fee_reserve_substate) => (fee_reserve_substate, None),
-            Err(e) => (
-                self.heap.remove_node(RENodeId::FeeReserve).unwrap().into(),
-                Some(e),
-            ),
+        match result {
+            Ok(_) => (self.module_states, None),
+            Err(e) => (self.module_states, Some(e)),
         }
     }
 
@@ -419,25 +375,19 @@ where
 
         // Filter
         self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-            KernelModuleMixer::on_before_frame_start(&actor, api)
+            M::on_before_frame_start(api, &actor)
         })?;
 
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_call_frame_enter(&mut call_frame_update, &actor, api)
+                M::on_call_frame_enter(api, &mut call_frame_update, &actor)
+            })?;
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                M::pre_kernel_execute(api, &actor, &call_frame_update)
             })?;
 
-            self.module
-                .pre_kernel_execute(
-                    &mut self.current_frame,
-                    &mut self.heap,
-                    &mut self.track,
-                    &actor,
-                    &call_frame_update,
-                )
-                .map_err(RuntimeError::ModuleError)?;
             self.id_allocator.pre_kernel_execute();
         }
 
@@ -463,19 +413,13 @@ where
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
             self.id_allocator.post_kernel_execute()?;
-            self.module
-                .post_kernel_execute(
-                    &mut self.current_frame,
-                    &mut self.heap,
-                    &mut self.track,
-                    &self.prev_frame_stack.last().unwrap().actor,
-                    &update,
-                )
-                .map_err(RuntimeError::ModuleError)?;
 
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_call_frame_exit(&update, api)
+                M::post_kernel_execute(api, &self.prev_frame_stack.last().unwrap().actor, &update)
+            })?;
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                M::on_call_frame_exit(api, &update)
             })?;
 
             // Auto-drop locks again in case module forgot to drop

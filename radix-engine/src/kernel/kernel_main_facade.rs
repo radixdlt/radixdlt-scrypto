@@ -36,14 +36,7 @@ where
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        self.module
-            .pre_drop_node(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &node_id,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::pre_drop_node(self, &node_id)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -68,9 +61,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_drop_node(&self.current_frame, &mut self.heap, &mut self.track)
-            .map_err(RuntimeError::ModuleError)?;
+        M::post_drop_node(self)?;
 
         Ok(node)
     }
@@ -88,16 +79,7 @@ where
         re_node: RENodeInit,
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        self.module
-            .pre_create_node(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &node_id,
-                &re_node,
-                &module_init,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::pre_create_node(self, &node_id, &re_node, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -150,7 +132,6 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
-            (RENodeId::FeeReserve, RENodeInit::FeeReserve(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
@@ -190,16 +171,13 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_create_node(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &node_id,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::post_create_node(self, &node_id)?;
 
         Ok(())
+    }
+
+    fn get_module_state<T: KernelModuleState>(&mut self) -> &mut T {
+        todo!()
     }
 }
 
@@ -215,17 +193,7 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        self.module
-            .on_lock_substate(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &node_id,
-                &module_id,
-                &offset,
-                &flags,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::on_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -339,14 +307,7 @@ where
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.module
-            .on_drop_lock(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                lock_handle,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
@@ -362,15 +323,11 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
 
-        self.module
-            .on_read_substate(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                lock_handle,
-                0, //  TODO: pass the right size
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
 
         let substate_ref =
             self.current_frame
@@ -387,15 +344,11 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
 
-        self.module
-            .on_write_substate(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                lock_handle,
-                0, //  TODO: pass the right size
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::on_write_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
 
         let substate_ref_mut =
             self.current_frame
@@ -415,9 +368,7 @@ where
     }
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
-            .map_err(RuntimeError::ModuleError)?;
+        M::on_wasm_instantiation(self, code)?;
 
         Ok(())
     }
@@ -430,15 +381,11 @@ where
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        self.module
-            .pre_kernel_invoke(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &invocation.fn_identifier(),
-                0, // TODO: Pass the right size
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::pre_kernel_invoke(
+            self,
+            &invocation.fn_identifier(),
+            0, // TODO: Pass the right size
+        )?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
@@ -452,14 +399,9 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        self.module
-            .post_kernel_invoke(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                0, // TODO: Pass the right size
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        M::post_kernel_invoke(
+            self, 0, // TODO: Pass the right size
+        )?;
 
         Ok(rtn)
     }

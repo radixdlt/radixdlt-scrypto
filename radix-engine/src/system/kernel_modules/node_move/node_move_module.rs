@@ -1,6 +1,7 @@
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::{CallFrameUpdate, KernelActorApi, KernelNodeApi};
+use crate::kernel::KernelModule;
+use crate::kernel::{CallFrameUpdate, KernelActorApi, KernelNodeApi, ResolvedActor};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 
@@ -139,24 +140,24 @@ impl NodeMoveModule {
             )),
         }
     }
+}
 
-    pub fn on_call_frame_enter<
-        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
-    >(
-        call_frame_update: &mut CallFrameUpdate,
-        fn_identifier: &FnIdentifier,
+impl KernelModule for NodeMoveModule {
+    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
+        call_frame_update: &mut CallFrameUpdate,
+        actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, fn_identifier, api)?;
+            Self::prepare_move_downstream(*node_id, &actor.identifier, api)?;
         }
 
         Ok(())
     }
 
-    pub fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi>(
-        call_frame_update: &CallFrameUpdate,
+    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
+        call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_upstream(*node_id, api)?;
