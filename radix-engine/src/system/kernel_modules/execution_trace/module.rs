@@ -31,11 +31,7 @@ pub enum VaultOp {
     LockFee,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ExecutionTraceError {
-    CallFrameError(CallFrameError),
-}
-
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ExecutionTraceModule {
     /// Maximum depth up to which kernel calls are being traced.
     max_kernel_call_depth_traced: usize,
@@ -46,13 +42,17 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack:
-        Vec<(TracedKernelCallData, KernelCallTraceOrigin, Option<u32>)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, KernelCallTraceOrigin, Option<u32>)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
 
+    /// Vault operations: (Caller, Vault ID, operation)
     vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+}
+
+impl KernelModuleState for ExecutionTraceModule {
+    const ID: u8 = KernelModuleId::ExecutionTrace as u8;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -64,22 +64,9 @@ pub struct ProofSnapshot {
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TracedKernelCallData {
+pub struct ResourceMovement {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
-}
-
-impl TracedKernelCallData {
-    pub fn new_empty() -> Self {
-        Self {
-            buckets: HashMap::new(),
-            proofs: HashMap::new(),
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.buckets.is_empty() && self.proofs.is_empty()
-    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -89,8 +76,8 @@ pub struct KernelCallTrace {
     pub current_frame_actor: ResolvedActor,
     pub current_frame_depth: usize,
     pub instruction_index: Option<u32>,
-    pub input: TracedKernelCallData,
-    pub output: TracedKernelCallData,
+    pub input: ResourceMovement,
+    pub output: ResourceMovement,
     pub children: Vec<KernelCallTrace>,
 }
 
@@ -103,56 +90,235 @@ pub enum KernelCallTraceOrigin {
     DropNode,
 }
 
+//===================================================================================
+// Note: execution trace should not produce error or any transactional side-effects!
+//===================================================================================
+
+impl ResourceMovement {
+    pub fn new_empty() -> Self {
+        Self {
+            buckets: HashMap::new(),
+            proofs: HashMap::new(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buckets.is_empty() && self.proofs.is_empty()
+    }
+
+    pub fn from_call_frame_update<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        call_frame_update: &CallFrameUpdate,
+    ) -> Self {
+        let mut buckets = HashMap::new();
+        let mut proofs = HashMap::new();
+        for node_id in &call_frame_update.nodes_to_move {
+            match &node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    if let Some(x) = api.read_bucket(*bucket_id) {
+                        buckets.insert(*bucket_id, x);
+                    }
+                }
+                RENodeId::Proof(proof_id) => {
+                    if let Some(x) = api.read_proof(*proof_id) {
+                        proofs.insert(*proof_id, x);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Self { buckets, proofs }
+    }
+
+    pub fn from_node_id<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        node_id: &RENodeId,
+    ) -> Self {
+        let mut buckets = HashMap::new();
+        let mut proofs = HashMap::new();
+        match node_id {
+            RENodeId::Bucket(bucket_id) => {
+                if let Some(x) = api.read_bucket(*bucket_id) {
+                    buckets.insert(*bucket_id, x);
+                }
+            }
+            RENodeId::Proof(proof_id) => {
+                if let Some(x) = api.read_proof(*proof_id) {
+                    proofs.insert(*proof_id, x);
+                }
+            }
+            _ => {}
+        }
+        Self { buckets, proofs }
+    }
+}
+
 impl KernelModule for ExecutionTraceModule {
-    fn pre_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
-    ) -> Result<(), ModuleError> {
-        self.handle_pre_create_node(current_frame, heap)
+    ) -> Result<(), RuntimeError> {
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_pre_create_node();
+        }
+        Ok(())
     }
 
-    fn post_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
+    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        self.handle_post_create_node(current_frame, heap, node_id)
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.get_current_actor();
+        let current_depth = api.get_current_depth();
+        let resource_movement = ResourceMovement::from_node_id(api, node_id);
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_post_create_node(current_actor, current_depth, resource_movement);
+        }
+        Ok(())
     }
 
-    fn pre_drop_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        self.handle_pre_drop_node(current_frame, heap, node_id)
+    ) -> Result<(), RuntimeError> {
+        let resource_movement = ResourceMovement::from_node_id(api, node_id);
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_pre_drop_node(resource_movement);
+        }
+        Ok(())
     }
 
-    fn post_drop_node(
-        &mut self,
-        current_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track,
-    ) -> Result<(), ModuleError> {
-        self.handle_post_drop_node(current_frame)
+    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.get_current_actor();
+        let current_depth = api.get_current_depth();
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_post_drop_node(current_actor, current_depth);
+        }
+        Ok(())
     }
 
-    fn pre_kernel_execute(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
+    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
         callee: &ResolvedActor,
         update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.get_current_actor();
+        let current_depth = api.get_current_depth();
+        let resource_movement = ResourceMovement::from_call_frame_update(api, update);
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_pre_kernel_execute(
+                current_actor,
+                current_depth,
+                callee,
+                resource_movement,
+            );
+        }
+        Ok(())
+    }
+
+    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+        api: &mut Y,
+        caller: &ResolvedActor,
+        update: &CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.get_current_actor();
+        let current_depth = api.get_current_depth();
+        let resource_movement = ResourceMovement::from_call_frame_update(api, update);
+        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
+            state.handle_post_kernel_execute(
+                current_actor,
+                current_depth,
+                caller,
+                resource_movement,
+            );
+        }
+        Ok(())
+    }
+}
+
+impl ExecutionTraceModule {
+    pub fn new(max_kernel_call_depth_traced: usize) -> ExecutionTraceModule {
+        Self {
+            max_kernel_call_depth_traced,
+            current_kernel_call_depth: 0,
+            traced_kernel_call_inputs_stack: vec![],
+            kernel_call_traces_stacks: HashMap::new(),
+            vault_ops: Vec::new(),
+        }
+    }
+
+    fn handle_pre_create_node(&mut self) {
+        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
+            let instruction_index = Self::read_instruction_index(current_frame, heap);
+
+            let traced_input = (
+                ResourceMovement::new_empty(),
+                KernelCallTraceOrigin::CreateNode,
+                instruction_index,
+            );
+            self.traced_kernel_call_inputs_stack.push(traced_input);
+        }
+
+        self.current_kernel_call_depth += 1;
+    }
+
+    fn handle_post_create_node(
+        &mut self,
+        current_actor: ResolvedActor,
+        current_depth: usize,
+        resource_movement: ResourceMovement,
+    ) {
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth -= 1;
+
+        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
+            // Nothing to trace at this depth, exit.
+            return;
+        }
+
+        self.finalize_kernel_call_trace(resource_movement, current_actor, current_depth)
+    }
+
+    fn handle_pre_drop_node(&mut self, resource_movement: ResourceMovement) {
+        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
+            let instruction_index = Self::read_instruction_index(current_frame, heap);
+
+            let traced_input = (
+                resource_movement,
+                KernelCallTraceOrigin::DropNode,
+                instruction_index,
+            );
+            self.traced_kernel_call_inputs_stack.push(traced_input);
+        }
+
+        self.current_kernel_call_depth += 1;
+    }
+
+    fn handle_post_drop_node(&mut self, current_actor: ResolvedActor, current_depth: usize) {
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth -= 1;
+
+        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
+            // Nothing to trace at this depth, exit.
+            return;
+        }
+
+        let traced_output = ResourceMovement::new_empty();
+
+        self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
+    }
+
+    fn handle_pre_kernel_execute(
+        &mut self,
+        current_actor: ResolvedActor,
+        current_depth: usize,
+        callee: &ResolvedActor,
+        resource_movement: ResourceMovement,
+    ) -> Result<(), RuntimeError> {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee.identifier {
                 FnIdentifier::Scrypto(scrypto_fn) => {
@@ -169,9 +335,11 @@ impl KernelModule for ExecutionTraceModule {
 
             let instruction_index = Self::get_instruction_index(current_frame, heap);
 
-            let trace_data = Self::extract_trace_data(update, heap)?;
-            self.traced_kernel_call_inputs_stack
-                .push((trace_data, origin, instruction_index));
+            self.traced_kernel_call_inputs_stack.push((
+                resource_movement,
+                origin,
+                instruction_index,
+            ));
         }
 
         self.current_kernel_call_depth += 1;
@@ -184,7 +352,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_put_input(update, heap, &current_frame.actor, vault_id),
+            } => self.handle_vault_put_input(&resource_movement, &current_actor, vault_id),
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
                 receiver:
@@ -192,22 +360,21 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_lock_fee_input(&current_frame.actor, vault_id),
+            } => self.handle_vault_lock_fee_input(&current_actor, vault_id),
             _ => {}
         }
 
         Ok(())
     }
 
-    fn post_kernel_execute(
+    fn handle_post_kernel_execute(
         &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track,
-        caller: &ResolvedActor,
-        update: &CallFrameUpdate,
-    ) -> Result<(), ModuleError> {
-        match &current_frame.actor {
+        current_actor: ResolvedActor,
+        current_depth: usize,
+        return_to: &ResolvedActor,
+        resource_movement: ResourceMovement,
+    ) {
+        match &current_actor {
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Take)),
                 receiver:
@@ -215,7 +382,7 @@ impl KernelModule for ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_take_output(update, heap, caller, vault_id),
+            } => self.handle_vault_take_output(&resource_movement, return_to, vault_id),
             _ => {}
         }
 
@@ -224,150 +391,18 @@ impl KernelModule for ExecutionTraceModule {
 
         if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
             // Nothing to trace at this depth, exit.
-            return Ok(());
+            return;
         }
 
-        let traced_output = Self::extract_trace_data(update, heap)?;
-        self.finalize_kernel_call_trace(current_frame, traced_output)
-    }
-}
-
-impl ExecutionTraceModule {
-    pub fn new(max_kernel_call_depth_traced: usize) -> ExecutionTraceModule {
-        Self {
-            max_kernel_call_depth_traced,
-            current_kernel_call_depth: 0,
-            traced_kernel_call_inputs_stack: vec![],
-            kernel_call_traces_stacks: HashMap::new(),
-            vault_ops: Vec::new(),
-        }
-    }
-
-    fn get_instruction_index(current_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        if current_frame
-            .get_node_visibility(RENodeId::TransactionRuntime)
-            .is_ok()
-        {
-            let substate_ref = heap
-                .get_substate(
-                    RENodeId::TransactionRuntime,
-                    NodeModuleId::SELF,
-                    &SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                )
-                .unwrap();
-            Some(substate_ref.transaction_runtime().instruction_index)
-        } else {
-            None
-        }
-    }
-
-    fn handle_pre_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-    ) -> Result<(), ModuleError> {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::get_instruction_index(current_frame, heap);
-
-            let traced_input = (
-                TracedKernelCallData::new_empty(),
-                KernelCallTraceOrigin::CreateNode,
-                instruction_index,
-            );
-            self.traced_kernel_call_inputs_stack.push(traced_input);
-        }
-
-        self.current_kernel_call_depth += 1;
-        Ok(())
-    }
-
-    fn handle_pre_drop_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::get_instruction_index(current_frame, heap);
-
-            let traced_input = {
-                // Buckets can't be dropped, so only tracking Proofs here
-                let data = if let RENodeId::Proof(proof_id) = node_id {
-                    let proof = Self::read_proof(heap, proof_id)?;
-                    TracedKernelCallData {
-                        buckets: HashMap::new(),
-                        proofs: HashMap::from([(proof_id.clone(), proof)]),
-                    }
-                } else {
-                    // Not a proof, so nothing to trace
-                    TracedKernelCallData::new_empty()
-                };
-
-                (data, KernelCallTraceOrigin::DropNode, instruction_index)
-            };
-            self.traced_kernel_call_inputs_stack.push(traced_input);
-        }
-
-        self.current_kernel_call_depth += 1;
-        Ok(())
-    }
-
-    fn handle_post_create_node(
-        &mut self,
-        current_frame: &CallFrame,
-        heap: &mut Heap,
-        node_id: &RENodeId,
-    ) -> Result<(), ModuleError> {
-        // Important to always update the counter (even if we're over the depth limit).
-        self.current_kernel_call_depth -= 1;
-
-        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
-            // Nothing to trace at this depth, exit.
-            return Ok(());
-        }
-
-        let traced_output = match node_id {
-            RENodeId::Bucket(bucket_id) => {
-                let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
-                TracedKernelCallData {
-                    buckets: HashMap::from([(bucket_id.clone(), bucket_resource)]),
-                    proofs: HashMap::new(),
-                }
-            }
-            RENodeId::Proof(proof_id) => {
-                let proof = Self::read_proof(heap, proof_id)?;
-                TracedKernelCallData {
-                    buckets: HashMap::new(),
-                    proofs: HashMap::from([(proof_id.clone(), proof)]),
-                }
-            }
-            _ => TracedKernelCallData::new_empty(),
-        };
-
-        self.finalize_kernel_call_trace(current_frame, traced_output)
-    }
-
-    fn handle_post_drop_node(&mut self, current_frame: &CallFrame) -> Result<(), ModuleError> {
-        // Important to always update the counter (even if we're over the depth limit).
-        self.current_kernel_call_depth -= 1;
-
-        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
-            // Nothing to trace at this depth, exit.
-            return Ok(());
-        }
-
-        let traced_output = TracedKernelCallData::new_empty();
-
-        self.finalize_kernel_call_trace(current_frame, traced_output)
+        self.finalize_kernel_call_trace(resource_movement, current_actor, current_depth)
     }
 
     fn finalize_kernel_call_trace(
         &mut self,
-        current_frame: &CallFrame,
-        traced_output: TracedKernelCallData,
-    ) -> Result<(), ModuleError> {
+        traced_output: ResourceMovement,
+        current_actor: ResolvedActor,
+        current_depth: usize,
+    ) {
         let child_traces = self
             .kernel_call_traces_stacks
             .remove(&(self.current_kernel_call_depth + 1))
@@ -387,8 +422,8 @@ impl ExecutionTraceModule {
             let trace = KernelCallTrace {
                 origin,
                 kernel_call_depth: self.current_kernel_call_depth,
-                current_frame_actor: current_frame.actor.clone(),
-                current_frame_depth: current_frame.depth,
+                current_frame_actor: current_actor,
+                current_frame_depth: current_depth,
                 instruction_index,
                 input: traced_input,
                 output: traced_output,
@@ -401,8 +436,6 @@ impl ExecutionTraceModule {
                 .or_insert(vec![]);
             siblings.push(trace);
         }
-
-        Ok(())
     }
 
     pub fn destroy(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
@@ -417,117 +450,58 @@ impl ExecutionTraceModule {
         (self.vault_ops, events)
     }
 
-    fn extract_trace_data(
-        current_frame_update: &CallFrameUpdate,
-        heap: &mut Heap,
-    ) -> Result<TracedKernelCallData, ModuleError> {
-        let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
-        let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-
-        for node_id in &current_frame_update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
-                    buckets.insert(*bucket_id, bucket_resource);
-                }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Self::read_proof(heap, &proof_id)?;
-                    proofs.insert(*proof_id, proof);
-                }
-                _ => {}
-            }
+    fn read_instruction_index(current_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
+        if current_frame
+            .get_node_visibility(RENodeId::TransactionRuntime)
+            .is_ok()
+        {
+            let substate_ref = heap
+                .get_substate(
+                    RENodeId::TransactionRuntime,
+                    NodeModuleId::SELF,
+                    &SubstateOffset::TransactionRuntime(
+                        TransactionRuntimeOffset::TransactionRuntime,
+                    ),
+                )
+                .unwrap();
+            Some(substate_ref.transaction_runtime().instruction_index)
+        } else {
+            None
         }
-
-        Ok(TracedKernelCallData { buckets, proofs })
-    }
-
-    fn read_proof(heap: &mut Heap, proof_id: &ProofId) -> Result<ProofSnapshot, ModuleError> {
-        let node_id = RENodeId::Proof(proof_id.clone());
-        let substate_ref = heap
-            .get_substate(
-                node_id,
-                NodeModuleId::SELF,
-                &SubstateOffset::Proof(ProofOffset::Proof),
-            )
-            .map_err(|e| {
-                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
-            })?;
-        Ok(substate_ref.proof().snapshot())
-    }
-
-    fn read_bucket_resource(
-        heap: &mut Heap,
-        bucket_id: &BucketId,
-    ) -> Result<Resource, ModuleError> {
-        let node_id = RENodeId::Bucket(bucket_id.clone());
-        let substate_ref = heap
-            .get_substate(
-                node_id,
-                NodeModuleId::SELF,
-                &SubstateOffset::Bucket(BucketOffset::Bucket),
-            )
-            .map_err(|e| {
-                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
-            })?;
-        Ok(substate_ref.bucket().peek_resource())
     }
 
     fn handle_vault_put_input<'s>(
         &mut self,
-        current_frame_update: &CallFrameUpdate,
-        heap: &mut Heap,
-        actor: &ResolvedActor,
+        resource_movement: &ResourceMovement,
+        caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for node_id in &current_frame_update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    if let Ok(bucket_substate) = heap.get_substate(
-                        RENodeId::Bucket(*bucket_id),
-                        NodeModuleId::SELF,
-                        &SubstateOffset::Bucket(BucketOffset::Bucket),
-                    ) {
-                        self.vault_ops.push((
-                            actor.clone(),
-                            vault_id.clone(),
-                            VaultOp::Put(bucket_substate.bucket().total_amount()),
-                        ));
-                    }
-                }
-                _ => {}
-            }
+        for (bucket_id, resource) in resource_movement.buckets {
+            self.vault_ops.push((
+                caller.clone(),
+                vault_id.clone(),
+                VaultOp::Put(resource.amount()),
+            ));
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, actor: &ResolvedActor, vault_id: &VaultId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &ResolvedActor, vault_id: &VaultId) {
         self.vault_ops
-            .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
+            .push((caller.clone(), vault_id.clone(), VaultOp::LockFee));
     }
 
     fn handle_vault_take_output<'s>(
         &mut self,
-        update: &CallFrameUpdate,
-        heap: &mut Heap,
+        resource_movement: &ResourceMovement,
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for node_id in &update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    if let Ok(bucket_substate) = heap.get_substate(
-                        RENodeId::Bucket(*bucket_id),
-                        NodeModuleId::SELF,
-                        &SubstateOffset::Bucket(BucketOffset::Bucket),
-                    ) {
-                        self.vault_ops.push((
-                            caller.clone(),
-                            vault_id.clone(),
-                            VaultOp::Take(bucket_substate.bucket().total_amount()),
-                        ));
-                    }
-                }
-                _ => {}
-            }
+        for (bucket_id, resource) in resource_movement.buckets {
+            self.vault_ops.push((
+                caller.clone(),
+                vault_id.clone(),
+                VaultOp::Take(resource.amount()),
+            ));
         }
     }
 }

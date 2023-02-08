@@ -23,10 +23,6 @@ impl VisibilityProperties {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
                 },
-                RENodeId::FeeReserve => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Root) => true,
-                    _ => false,
-                },
                 RENodeId::AuthZoneStack => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,

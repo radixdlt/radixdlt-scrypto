@@ -47,17 +47,13 @@ impl KernelModule for KernelModuleMixer {
         CostingModule::on_init(api)?;
 
         // Enable debug
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_init(api)?;
-        }
+        KernelDebugModule::on_init(api)?;
 
         Ok(())
     }
 
     fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_teardown(api)?;
-        }
+        KernelDebugModule::on_teardown(api)?;
         CostingModule::on_teardown(api)?;
         NodeMoveModule::on_teardown(api)?;
         AuthModule::on_teardown(api)?;
@@ -71,9 +67,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_before_frame_start(api, actor)?;
-        }
+        KernelDebugModule::on_before_frame_start(api, actor)?;
         CostingModule::on_before_frame_start(api, actor)?;
         NodeMoveModule::on_before_frame_start(api, actor)?;
         AuthModule::on_before_frame_start(api, actor)?;
@@ -88,9 +82,7 @@ impl KernelModule for KernelModuleMixer {
         update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_call_frame_enter(api, update, actor)?;
-        }
+        KernelDebugModule::on_call_frame_enter(api, update, actor)?;
         CostingModule::on_call_frame_enter(api, update, actor)?;
         NodeMoveModule::on_call_frame_enter(api, update, actor)?;
         AuthModule::on_call_frame_enter(api, update, actor)?;
@@ -104,9 +96,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_call_frame_exit(api, update)?;
-        }
+        KernelDebugModule::on_call_frame_exit(api, update)?;
         CostingModule::on_call_frame_exit(api, update)?;
         NodeMoveModule::on_call_frame_exit(api, update)?;
         AuthModule::on_call_frame_exit(api, update)?;
@@ -121,9 +111,7 @@ impl KernelModule for KernelModuleMixer {
         fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        }
+        KernelDebugModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
         CostingModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
         NodeMoveModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
         AuthModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
@@ -137,9 +125,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::post_kernel_invoke(api, output_size)?;
-        }
+        KernelDebugModule::post_kernel_invoke(api, output_size)?;
         CostingModule::post_kernel_invoke(api, output_size)?;
         NodeMoveModule::post_kernel_invoke(api, output_size)?;
         AuthModule::post_kernel_invoke(api, output_size)?;
@@ -154,9 +140,7 @@ impl KernelModule for KernelModuleMixer {
         callee: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::pre_kernel_execute(api, callee, update)?;
-        }
+        KernelDebugModule::pre_kernel_execute(api, callee, update)?;
         CostingModule::pre_kernel_execute(api, callee, update)?;
         NodeMoveModule::pre_kernel_execute(api, callee, update)?;
         AuthModule::pre_kernel_execute(api, callee, update)?;
@@ -171,9 +155,7 @@ impl KernelModule for KernelModuleMixer {
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::post_kernel_execute(api, caller, update)?;
-        }
+        KernelDebugModule::post_kernel_execute(api, caller, update)?;
         CostingModule::post_kernel_execute(api, caller, update)?;
         NodeMoveModule::post_kernel_execute(api, caller, update)?;
         AuthModule::post_kernel_execute(api, caller, update)?;
@@ -187,9 +169,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_allocate_node_id(api, node_type)?;
-        }
+        KernelDebugModule::on_allocate_node_id(api, node_type)?;
         CostingModule::on_allocate_node_id(api, node_type)?;
         NodeMoveModule::on_allocate_node_id(api, node_type)?;
         AuthModule::on_allocate_node_id(api, node_type)?;
@@ -205,9 +185,7 @@ impl KernelModule for KernelModuleMixer {
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        }
+        KernelDebugModule::pre_create_node(api, node_id, node_init, node_module_init)?;
         CostingModule::pre_create_node(api, node_id, node_init, node_module_init)?;
         NodeMoveModule::pre_create_node(api, node_id, node_init, node_module_init)?;
         AuthModule::pre_create_node(api, node_id, node_init, node_module_init)?;
@@ -221,9 +199,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::post_create_node(api, node_id)?;
-        }
+        KernelDebugModule::post_create_node(api, node_id)?;
         CostingModule::post_create_node(api, node_id)?;
         NodeMoveModule::post_create_node(api, node_id)?;
         AuthModule::post_create_node(api, node_id)?;
@@ -237,9 +213,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::pre_drop_node(api, node_id)?;
-        }
+        KernelDebugModule::pre_drop_node(api, node_id)?;
         CostingModule::pre_drop_node(api, node_id)?;
         NodeMoveModule::pre_drop_node(api, node_id)?;
         AuthModule::pre_drop_node(api, node_id)?;
@@ -252,9 +226,7 @@ impl KernelModule for KernelModuleMixer {
     fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::post_drop_node(api)?;
-        }
+        KernelDebugModule::post_drop_node(api)?;
         CostingModule::post_drop_node(api)?;
         NodeMoveModule::post_drop_node(api)?;
         AuthModule::post_drop_node(api)?;
@@ -271,9 +243,7 @@ impl KernelModule for KernelModuleMixer {
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
-        }
+        KernelDebugModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
         CostingModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
         NodeMoveModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
         AuthModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
@@ -288,9 +258,7 @@ impl KernelModule for KernelModuleMixer {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_read_substate(api, lock_handle, size)?;
-        }
+        KernelDebugModule::on_read_substate(api, lock_handle, size)?;
         CostingModule::on_read_substate(api, lock_handle, size)?;
         NodeMoveModule::on_read_substate(api, lock_handle, size)?;
         AuthModule::on_read_substate(api, lock_handle, size)?;
@@ -305,9 +273,7 @@ impl KernelModule for KernelModuleMixer {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_write_substate(api, lock_handle, size)?;
-        }
+        KernelDebugModule::on_write_substate(api, lock_handle, size)?;
         CostingModule::on_write_substate(api, lock_handle, size)?;
         NodeMoveModule::on_write_substate(api, lock_handle, size)?;
         AuthModule::on_write_substate(api, lock_handle, size)?;
@@ -321,9 +287,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_drop_lock(api, lock_handle)?;
-        }
+        KernelDebugModule::on_drop_lock(api, lock_handle)?;
         CostingModule::on_drop_lock(api, lock_handle)?;
         NodeMoveModule::on_drop_lock(api, lock_handle)?;
         AuthModule::on_drop_lock(api, lock_handle)?;
@@ -337,9 +301,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         code: &[u8],
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_wasm_instantiation(api, code)?;
-        }
+        KernelDebugModule::on_wasm_instantiation(api, code)?;
         CostingModule::on_wasm_instantiation(api, code)?;
         NodeMoveModule::on_wasm_instantiation(api, code)?;
         AuthModule::on_wasm_instantiation(api, code)?;
@@ -353,9 +315,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         units: u32,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            KernelDebugModule::on_consume_cost_units(api, units)?;
-        }
+        KernelDebugModule::on_consume_cost_units(api, units)?;
         CostingModule::on_consume_cost_units(api, units)?;
         NodeMoveModule::on_consume_cost_units(api, units)?;
         AuthModule::on_consume_cost_units(api, units)?;
@@ -371,9 +331,7 @@ impl KernelModule for KernelModuleMixer {
         fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        if api.get_module_state::<KernelDebugModule>().enabled {
-            fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
+        fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         fee = CostingModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         fee = NodeMoveModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         fee = AuthModule::on_credit_cost_units(api, vault_id, fee, contingent)?;

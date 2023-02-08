@@ -1,9 +1,10 @@
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::KernelModule;
 use crate::kernel::{CallFrameUpdate, KernelActorApi, KernelNodeApi, ResolvedActor};
+use crate::kernel::{KernelModule, KernelModuleId, KernelModuleState};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NodeMoveError {
@@ -11,7 +12,12 @@ pub enum NodeMoveError {
     CantMoveUpstream(RENodeId),
 }
 
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NodeMoveModule;
+
+impl KernelModuleState for NodeMoveModule {
+    const ID: u8 = KernelModuleId::NodeMove as u8;
+}
 
 impl NodeMoveModule {
     fn prepare_move_downstream<
@@ -75,7 +81,6 @@ impl NodeMoveModule {
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
             | RENodeId::Logger
-            | RENodeId::FeeReserve
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
@@ -122,7 +127,6 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::FeeReserve
             | RENodeId::Logger
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
@@ -148,6 +152,10 @@ impl KernelModule for NodeMoveModule {
         call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<NodeMoveModule>().is_none() {
+            return Ok(());
+        }
+
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_downstream(*node_id, &actor.identifier, api)?;
         }
@@ -159,6 +167,10 @@ impl KernelModule for NodeMoveModule {
         api: &mut Y,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
+        if api.get_module_state::<NodeMoveModule>().is_none() {
+            return Ok(());
+        }
+
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_upstream(*node_id, api)?;
         }

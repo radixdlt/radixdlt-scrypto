@@ -23,7 +23,6 @@ pub enum RENodeType {
     Bucket,
     Proof,
     AuthZoneStack,
-    FeeReserve,
     Worktop,
     GlobalAccount,
     GlobalComponent,
@@ -70,7 +69,6 @@ pub enum RENodeId {
     Worktop,
     Logger,
     TransactionRuntime,
-    FeeReserve,
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -113,7 +111,6 @@ impl Into<u32> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack => 0x10000000u32, // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => 0x20000000u32, // TODO: Remove, this here to preserve receiver in invocation for now
-            RENodeId::FeeReserve => 0x30000000u32, // TODO: Remove, this here to preserve receiver in invocation for now
             _ => panic!("Not a transient id"),
         }
     }

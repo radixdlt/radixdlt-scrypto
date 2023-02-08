@@ -3,10 +3,10 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{
     CostingReason, FeeTable, PreExecutionFeeReserve, SystemLoanFeeReserve,
 };
-use crate::system::kernel_modules::costing::{ExecutionCostingError, FinalizingFeeReserve};
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -209,9 +209,7 @@ where
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::ExecutionCostingError(
-                                ExecutionCostingError::CostingError(err.error),
-                            ),
+                            ModuleError::CostingError(err.error),
                         )),
                     }),
                 };

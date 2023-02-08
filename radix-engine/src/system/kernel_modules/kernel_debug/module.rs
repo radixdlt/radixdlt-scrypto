@@ -10,12 +10,20 @@ use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KernelDebugModule {
-    pub enabled: bool,
-}
+pub struct KernelDebugModule;
 
 impl KernelModuleState for KernelDebugModule {
     const ID: u8 = KernelModuleId::KernelDebug as u8;
+}
+
+#[macro_export]
+macro_rules! log {
+    ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
+        if let Some(state) = $api.get_module_state::<KernelDebugModule>() {
+            #[cfg(not(feature = "alloc"))]
+            println!("{}[{}] {}", "    ".repeat($api.get_current_depth()), $api.get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        }
+    };
 }
 
 #[allow(unused_variables)] // for no_std
@@ -25,9 +33,11 @@ impl KernelModule for KernelDebugModule {
         fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        println!(
+        log!(
+            api,
             "Invoking: fn = {:?}, input size = {}",
-            fn_identifier, input_size
+            fn_identifier,
+            input_size
         );
         Ok(())
     }
@@ -36,7 +46,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        println!("Exiting: output size = {}", output_size);
+        log!(api, "Exiting: output size = {}", output_size);
         Ok(())
     }
 
@@ -45,8 +55,8 @@ impl KernelModule for KernelDebugModule {
         callee: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        println!("Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
-        println!("Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
+        log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
         Ok(())
     }
 
@@ -55,8 +65,8 @@ impl KernelModule for KernelDebugModule {
         caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        println!("Received nodes: {:?}", nodes_and_refs.nodes_to_move);
-        println!("Received refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Received nodes: {:?}", nodes_and_refs.nodes_to_move);
+        log!(api, "Received refs: {:?}", nodes_and_refs.node_refs_to_copy);
         Ok(())
     }
 
@@ -64,7 +74,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
-        println!("Allocating node id: type = {:?}", node_type);
+        log!(api, "Allocating node id: type = {:?}", node_type);
         Ok(())
     }
 
@@ -74,9 +84,12 @@ impl KernelModule for KernelDebugModule {
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        println!(
+        log!(
+            api,
             "Creating node: id = {:?}, init = {:?}, module_init = {:?}",
-            node_id, node_init, node_module_init
+            node_id,
+            node_init,
+            node_module_init
         );
         Ok(())
     }
@@ -85,7 +98,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        println!("Dropping node: id = {:?}", node_id);
+        log!(api, "Dropping node: id = {:?}", node_id);
         Ok(())
     }
 
@@ -96,9 +109,13 @@ impl KernelModule for KernelDebugModule {
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        println!(
+        log!(
+            api,
             "Locking substate: node id = {:?}, module_id = {:?}, offset = {:?}, flags = {:?}",
-            node_id, module_id, offset, flags
+            node_id,
+            module_id,
+            offset,
+            flags
         );
         Ok(())
     }
@@ -108,9 +125,11 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        println!(
+        log!(
+            api,
             "Reading substate: handle = {}, size = {:?}",
-            lock_handle, size
+            lock_handle,
+            size
         );
         Ok(())
     }
@@ -120,9 +139,11 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        println!(
+        log!(
+            api,
             "Writing substate: handle = {}, size = {:?}",
-            lock_handle, size
+            lock_handle,
+            size
         );
         Ok(())
     }
@@ -131,7 +152,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        println!("Dropping lock: handle = {} ", lock_handle);
+        log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())
     }
 }

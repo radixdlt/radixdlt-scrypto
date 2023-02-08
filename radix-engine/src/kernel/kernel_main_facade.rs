@@ -176,7 +176,11 @@ where
         Ok(())
     }
 
-    fn get_module_state<T: KernelModuleState>(&mut self) -> &mut T {
+    fn get_module_state<T: KernelModuleState>(&mut self) -> Option<&mut T> {
+        todo!()
+    }
+
+    fn get_current_depth(&mut self) -> usize {
         todo!()
     }
 }

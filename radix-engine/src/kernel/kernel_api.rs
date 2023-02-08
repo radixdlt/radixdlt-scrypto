@@ -1,5 +1,6 @@
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -73,7 +74,11 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 
     // TODO: move to KernelModuleApi
-    fn get_module_state<T: KernelModuleState>(&mut self) -> &mut T;
+    fn get_module_state<T: KernelModuleState>(&mut self) -> Option<&mut T>;
+    fn get_current_depth(&self) -> usize;
+    fn get_current_actor(&self) -> ResolvedActor;
+    fn read_bucket(&self, bucket_id: BucketId) -> Option<Resource>;
+    fn read_proof(&self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleState: ScryptoEncode + ScryptoDecode {

@@ -6,9 +6,9 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
-use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
+use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
 use crate::system::node_substates::{
@@ -86,7 +86,7 @@ pub struct TrackReceipt {
 
 pub struct PreExecutionError {
     pub fee_summary: FeeSummary,
-    pub error: CostingError,
+    pub error: FeeReserveError,
 }
 
 impl<'s> Track<'s> {

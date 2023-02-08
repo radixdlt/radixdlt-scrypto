@@ -264,7 +264,6 @@ where
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
             RENodeId::Logger => Ok(()),
             RENodeId::TransactionRuntime => Ok(()),
-            RENodeId::FeeReserve => Ok(()),
             RENodeId::AuthZoneStack => {
                 let handle = api.lock_substate(
                     node_id,
