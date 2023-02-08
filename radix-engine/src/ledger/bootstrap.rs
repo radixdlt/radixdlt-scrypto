@@ -8,7 +8,6 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::ManifestValidatorInit;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;

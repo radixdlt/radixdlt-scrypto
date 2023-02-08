@@ -634,18 +634,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(ids) = initial_supply {
-                        let rtn = api.invoke(
-                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                        let rtn = api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            "create_non_fungible_with_initial_supply".to_string(),
+                            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
                                 entries: ids.clone(),
-                            },
+                            }).unwrap()
                         )?;
 
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                            &rtn, api,
+                        )?;
 
-                        InstructionOutput::Native(Box::new(rtn))
+                        InstructionOutput::Scrypto(rtn)
                     } else {
 
                         let rtn = api.call_function(
@@ -670,18 +675,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(ids) = initial_supply {
-                        let rtn = api.invoke(
-                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                        let rtn = api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            "create_non_fungible_with_initial_supply".to_string(),
+                            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
                                 entries: ids.clone(),
-                            },
+                            }).unwrap()
                         )?;
 
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                            &rtn, api,
+                        )?;
 
-                        InstructionOutput::Native(Box::new(rtn))
+                        InstructionOutput::Scrypto(rtn)
                     } else {
                         let rtn = api.call_function(
                             RESOURCE_MANAGER_PACKAGE,

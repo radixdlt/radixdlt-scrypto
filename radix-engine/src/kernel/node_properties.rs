@@ -82,7 +82,8 @@ impl VisibilityProperties {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENodeInit::ResourceManager(..) | RENodeInit::Global(GlobalAddressSubstate::Resource(..)) | RENodeInit::NonFungibleStore(..) => {
+                RENodeInit::ResourceManager(..) | RENodeInit::Bucket(..)
+                | RENodeInit::Global(GlobalAddressSubstate::Resource(..)) | RENodeInit::NonFungibleStore(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
                 }
                 RENodeInit::Identity() | RENodeInit::Global(GlobalAddressSubstate::Identity(..)) => {
@@ -178,6 +179,9 @@ impl VisibilityProperties {
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
+                        FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                                                  package_address, ..
+                                              }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
@@ -224,6 +228,9 @@ impl VisibilityProperties {
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
+                        FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                            package_address, ..
+                                              }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
 
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {

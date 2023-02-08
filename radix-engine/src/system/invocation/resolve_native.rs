@@ -329,14 +329,6 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            ResourceManagerFn::CreateNonFungibleWithInitialSupply => {
-                let invocation = scrypto_decode::<
-                    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
-                >(&invocation)
-                .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => {
                 let invocation = scrypto_decode::<
                     ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,

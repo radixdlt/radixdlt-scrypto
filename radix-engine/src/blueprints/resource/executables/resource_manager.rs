@@ -537,6 +537,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
     }
 }
 
+/*
 impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
@@ -551,6 +552,7 @@ impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyI
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);

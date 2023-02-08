@@ -103,6 +103,7 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
+/*
 impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
@@ -129,6 +130,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleWithInitialSu
         .into()
     }
 }
+ */
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {

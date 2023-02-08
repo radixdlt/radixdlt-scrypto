@@ -11,6 +11,8 @@ pub struct Sandwich {
 
 #[blueprint]
 mod non_fungible_test {
+    use std::collections::BTreeMap;
+
     struct NonFungibleTest {
         vault: Vault,
     }
@@ -301,16 +303,18 @@ mod non_fungible_test {
             );
 
             // creating non-fungible id with id type set to default (UUID)
-            let (_, bucket) = ScryptoEnv
-                .invoke(
-                    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                        id_type: NonFungibleIdType::UUID,
-                        metadata: BTreeMap::new(),
-                        access_rules: BTreeMap::new(),
-                        entries: encoded,
-                    },
-                )
-                .unwrap();
+            let rtn = ScryptoEnv.call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible_with_initial_supply",
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                    id_type: NonFungibleIdType::UUID,
+                    metadata: BTreeMap::new(),
+                    access_rules: BTreeMap::new(),
+                    entries: encoded,
+                }).unwrap()
+            ).unwrap();
+            let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
 
             bucket
         }

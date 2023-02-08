@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::access_controller::AccessControllerCreat
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
-use radix_engine_interface::blueprints::resource::ResourceManagerCreateNonFungibleInvocation;
+use radix_engine_interface::blueprints::resource::{ResourceManagerCreateNonFungibleInvocation, ResourceManagerCreateNonFungibleWithInitialSupplyInvocation};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 use crate::blueprints::identity::IdentityCreateExecutable;
@@ -137,7 +137,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE | RESOURCE_MANAGER_PACKAGE => {
                 let executor = ScryptoExecutor {
                     package_address: self.package_address,
-                    export_name: "test".to_string(),
+                    export_name: self.fn_name.to_string(),
                     component_id: receiver,
                     args: args.into(),
                 };
@@ -296,9 +296,21 @@ impl Executor for ScryptoExecutor {
                 return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
             }
             RESOURCE_MANAGER_PACKAGE => {
-                let invocation: ResourceManagerCreateNonFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                match self.export_name.as_str() {
+                    "create_non_fungible" => {
+                        let invocation: ResourceManagerCreateNonFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                        let rtn = invocation.execute(api)?;
+                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                    }
+                    "create_non_fungible_with_initial_supply" => {
+                        let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                        let rtn = invocation.execute(api)?;
+                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                    }
+                    _ => {
+                        panic!("Does not exist.");
+                    }
+                }
             }
             _ => {
             }
