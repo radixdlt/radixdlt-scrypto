@@ -6,15 +6,15 @@ use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
-    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &ResolvedActor,
         _update: &mut CallFrameUpdate,
@@ -22,7 +22,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
@@ -30,7 +30,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _fn_identifier: &FnIdentifier,
         _input_size: usize,
@@ -38,21 +38,21 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn after_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _output_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
@@ -61,27 +61,25 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn after_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_lock_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
         _module_id: &NodeModuleId,
@@ -91,7 +89,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
@@ -99,7 +97,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
@@ -107,28 +105,28 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _code: &[u8],
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_consume_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _units: u32,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_credit_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _vault_id: VaultId,
         locked_fee: Resource,

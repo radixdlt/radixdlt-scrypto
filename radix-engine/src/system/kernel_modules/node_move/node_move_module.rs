@@ -1,7 +1,9 @@
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::{CallFrameUpdate, KernelActorApi, KernelNodeApi, ResolvedActor};
-use crate::kernel::{KernelModule, KernelModuleId, KernelModuleState};
+use crate::kernel::KernelModule;
+use crate::kernel::{
+    CallFrameUpdate, KernelActorApi, KernelModuleApi, KernelNodeApi, ResolvedActor,
+};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::*;
@@ -12,12 +14,8 @@ pub enum NodeMoveError {
     CantMoveUpstream(RENodeId),
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct NodeMoveModule;
-
-impl KernelModuleState for NodeMoveModule {
-    const ID: u8 = KernelModuleId::NodeMove as u8;
-}
+#[derive(Debug, Clone)]
+pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
     fn prepare_move_downstream<
@@ -99,7 +97,7 @@ impl NodeMoveModule {
         }
     }
 
-    fn prepare_move_upstream<Y: KernelNodeApi + KernelSubstateApi>(
+    fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -147,15 +145,11 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<NodeMoveModule>().is_none() {
-            return Ok(());
-        }
-
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_downstream(*node_id, &actor.identifier, api)?;
         }
@@ -163,15 +157,11 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        _caller: &ResolvedActor,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<NodeMoveModule>().is_none() {
-            return Ok(());
-        }
-
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_upstream(*node_id, api)?;
         }

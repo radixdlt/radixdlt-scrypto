@@ -1,4 +1,5 @@
 use super::Invokable;
+use super::KernelModuleMixer;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
@@ -36,10 +37,9 @@ use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.drop_node(node_id)?;
@@ -47,10 +47,9 @@ where
     }
 }
 
-impl<'g, 's, W, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn sys_lock_substate(
         &mut self,
@@ -101,30 +100,27 @@ where
     }
 }
 
-impl<'g, 's, W, M> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
     }
 }
 
-impl<'g, 's, W, M> ClientActorApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
 }
 
-impl<'g, 's, W, M> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn call_native_raw(
         &mut self,
@@ -154,10 +150,9 @@ where
     }
 }
 
-impl<'g, 's, W, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn new_package(
         &mut self,
@@ -282,10 +277,9 @@ where
     }
 }
 
-impl<'g, 's, W, M> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn lookup_global_component(
         &mut self,
@@ -425,13 +419,12 @@ where
     }
 }
 
-impl<'g, 's, W, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        M::on_consume_cost_units(self, units)?;
+        KernelModuleMixer::on_consume_cost_units(self, units)?;
         Ok(())
     }
     fn credit_cost_units(
@@ -440,13 +433,8 @@ where
         locked_fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        M::on_credit_cost_units(self, vault_id, locked_fee, contingent)
+        KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 }
 
-impl<'g, 's, W, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, M>
-where
-    W: WasmEngine,
-    M: KernelModule,
-{
-}
+impl<'g, 's, W> ClientApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}

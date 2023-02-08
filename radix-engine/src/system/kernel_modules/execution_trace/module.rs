@@ -23,7 +23,7 @@ pub struct ExecutionTraceReceipt {
     pub resource_changes: Vec<ResourceChange>,
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone)]
 pub enum VaultOp {
     Create(Decimal), // TODO: add trace of vault creation
     Put(Decimal),    // TODO: add non-fungible support
@@ -31,7 +31,7 @@ pub enum VaultOp {
     LockFee,
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone)]
 pub struct ExecutionTraceModule {
     /// Maximum depth up to which kernel calls are being traced.
     max_kernel_call_depth_traced: usize,
@@ -49,10 +49,6 @@ pub struct ExecutionTraceModule {
 
     /// Vault operations: (Caller, Vault ID, operation)
     vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
-}
-
-impl KernelModuleState for ExecutionTraceModule {
-    const ID: u8 = KernelModuleId::ExecutionTrace as u8;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -106,7 +102,7 @@ impl ResourceMovement {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
 
-    pub fn from_call_frame_update<Y: KernelNodeApi + KernelSubstateApi>(
+    pub fn from_call_frame_update<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         call_frame_update: &CallFrameUpdate,
     ) -> Self {
@@ -130,10 +126,7 @@ impl ResourceMovement {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        node_id: &RENodeId,
-    ) -> Self {
+    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &RENodeId) -> Self {
         let mut buckets = HashMap::new();
         let mut proofs = HashMap::new();
         match node_id {
@@ -154,68 +147,65 @@ impl ResourceMovement {
 }
 
 impl KernelModule for ExecutionTraceModule {
-    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_before_create_node();
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_before_create_node();
         Ok(())
     }
 
-    fn after_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_node_id(api, node_id);
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_after_create_node(current_actor, current_depth, resource_movement);
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_after_create_node(current_actor, current_depth, resource_movement);
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         let resource_movement = ResourceMovement::from_node_id(api, node_id);
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_before_drop_node(resource_movement);
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_before_drop_node(resource_movement);
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_after_drop_node(current_actor, current_depth);
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_after_drop_node(current_actor, current_depth);
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
-        let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_call_frame_update(api, update);
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_before_new_frame(current_actor, current_depth, callee, resource_movement);
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_before_new_frame(current_actor, callee, resource_movement);
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
@@ -223,9 +213,9 @@ impl KernelModule for ExecutionTraceModule {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_call_frame_update(api, update);
-        if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_after_actor_run(current_actor, current_depth, caller, resource_movement);
-        }
+        api.get_module_state()
+            .execution_trace
+            .handle_after_actor_run(current_actor, current_depth, caller, resource_movement);
         Ok(())
     }
 }
@@ -305,10 +295,9 @@ impl ExecutionTraceModule {
     fn handle_before_new_frame(
         &mut self,
         current_actor: ResolvedActor,
-        current_depth: usize,
         callee: &ResolvedActor,
         resource_movement: ResourceMovement,
-    ) -> Result<(), RuntimeError> {
+    ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee.identifier {
                 FnIdentifier::Scrypto(scrypto_fn) => {
@@ -326,7 +315,7 @@ impl ExecutionTraceModule {
             let instruction_index = self.instruction_index();
 
             self.traced_kernel_call_inputs_stack.push((
-                resource_movement,
+                resource_movement.clone(),
                 origin,
                 instruction_index,
             ));
@@ -353,8 +342,6 @@ impl ExecutionTraceModule {
             } => self.handle_vault_lock_fee_input(&current_actor, vault_id),
             _ => {}
         }
-
-        Ok(())
     }
 
     fn handle_after_actor_run(
@@ -428,7 +415,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn destroy(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
+    pub fn collect_events(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain() {
             // Emit an output event for each "root" kernel call trace
@@ -451,7 +438,7 @@ impl ExecutionTraceModule {
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for (bucket_id, resource) in resource_movement.buckets {
+        for (_, resource) in &resource_movement.buckets {
             self.vault_ops.push((
                 caller.clone(),
                 vault_id.clone(),
@@ -471,7 +458,7 @@ impl ExecutionTraceModule {
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for (bucket_id, resource) in resource_movement.buckets {
+        for (_, resource) in &resource_movement.buckets {
             self.vault_ops.push((
                 caller.clone(),
                 vault_id.clone(),

@@ -8,7 +8,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
-use crate::system::kernel_modules::auth::auth_module::AuthError;
+use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};

@@ -124,7 +124,7 @@ pub enum CostingReason {
     RunNative,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: u128,

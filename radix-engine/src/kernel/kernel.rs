@@ -26,10 +26,8 @@ pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
-    M,
 > where
     W: WasmEngine,
-    M: KernelModule,
 {
     /// Current execution mode, specifies permissions into state/invocations
     pub(super) execution_mode: ExecutionMode,
@@ -48,23 +46,21 @@ pub struct Kernel<
     pub(super) id_allocator: &'g mut IdAllocator,
     /// Interpreter capable of running scrypto programs
     pub(super) scrypto_interpreter: &'g ScryptoInterpreter<W>,
-    /// Kernel module
-    pub(super) module: &'g mut M,
-    pub(super) module_states: HashMap<u8, Vec<u8>>,
+    /// Kernel module mixer
+    pub(super) module: KernelModuleMixer,
 }
 
-impl<'g, 's, W, M> Kernel<'g, 's, W, M>
+impl<'g, 's, W> Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     pub fn new(
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: &'g mut M,
+        module: KernelModuleMixer,
     ) -> Self {
-        let mut kernel = Self {
+        Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             track,
@@ -73,19 +69,16 @@ where
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             module,
-            module_states: HashMap::new(),
-        };
-
-        kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                M::on_init(api)
-            })
-            .expect("Failed to initialize kernel modules");
-
-        kernel
+        }
     }
 
-    pub fn teardown(mut self) -> (HashMap<u8, Vec<u8>>, Option<RuntimeError>) {
+    pub fn initialize(&mut self) -> Result<(), RuntimeError> {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+            KernelModuleMixer::on_init(api)
+        })
+    }
+
+    pub fn teardown(mut self) -> (KernelModuleMixer, Option<RuntimeError>) {
         // Rewind call stack
         loop {
             if let Some(f) = self.prev_frame_stack.pop() {
@@ -98,12 +91,12 @@ where
         // Teardown all kernel modules
         let result = self
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                M::on_teardown(api)
+                KernelModuleMixer::on_teardown(api)
             });
 
         match result {
-            Ok(_) => (self.module_states, None),
-            Err(e) => (self.module_states, Some(e)),
+            Ok(_) => (self.module, None),
+            Err(e) => (self.module, Some(e)),
         }
     }
 
@@ -375,7 +368,7 @@ where
         // New Call Frame pre-processing
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::before_new_frame(api, &actor, &mut call_frame_update)
+                KernelModuleMixer::before_new_frame(api, &actor, &mut call_frame_update)
             })?;
         }
 
@@ -395,8 +388,10 @@ where
         // Execute
         let (output, update) =
             self.execute_in_mode(ExecutionMode::Application, |api| executor.execute(api))?;
+
+        let caller = self.prev_frame_stack.last().unwrap().actor.clone();
         self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-            M::after_actor_run(api, &self.prev_frame_stack.last().unwrap().actor, &update)
+            KernelModuleMixer::after_actor_run(api, &caller, &update)
         })?;
 
         // Call Frame post-processing

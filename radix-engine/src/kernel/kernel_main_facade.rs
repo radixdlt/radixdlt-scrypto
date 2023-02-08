@@ -12,20 +12,18 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 
-impl<'g, 's, W, M> KernelActorApi<RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
 }
 
-impl<'g, 's, W, M> KernelNodeApi for Kernel<'g, 's, W, M>
+impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn get_visible_node_data(
         &mut self,
@@ -36,7 +34,7 @@ where
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        M::before_drop_node(self, &node_id)?;
+        KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -61,7 +59,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        M::after_drop_node(self)?;
+        KernelModuleMixer::after_drop_node(self)?;
 
         Ok(node)
     }
@@ -79,7 +77,7 @@ where
         re_node: RENodeInit,
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(self, &node_id, &re_node, &module_init)?;
+        KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -171,12 +169,17 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        M::after_create_node(self, &node_id)?;
+        KernelModuleMixer::after_create_node(self, &node_id)?;
 
         Ok(())
     }
+}
 
-    fn get_module_state<T: KernelModuleState>(&mut self) -> Option<&mut T> {
+impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_module_state(&mut self) -> &mut KernelModuleMixer {
         todo!()
     }
 
@@ -200,10 +203,9 @@ where
     }
 }
 
-impl<'g, 's, W, M> KernelSubstateApi for Kernel<'g, 's, W, M>
+impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn lock_substate(
         &mut self,
@@ -212,7 +214,7 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        M::on_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
+        KernelModuleMixer::on_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -326,7 +328,7 @@ where
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        M::on_drop_lock(self, lock_handle)?;
+        KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
@@ -342,7 +344,7 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
 
-        M::on_read_substate(
+        KernelModuleMixer::on_read_substate(
             self,
             lock_handle,
             0, //  TODO: pass the right size
@@ -363,7 +365,7 @@ where
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
 
-        M::on_write_substate(
+        KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
             0, //  TODO: pass the right size
@@ -377,30 +379,29 @@ where
     }
 }
 
-impl<'g, 's, W, M> KernelWasmApi<W> for Kernel<'g, 's, W, M>
+impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
 {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        M::on_wasm_instantiation(self, code)?;
+        KernelModuleMixer::on_wasm_instantiation(self, code)?;
 
         Ok(())
     }
 }
 
-impl<'g, 's, W, M, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, M>
+impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    M: KernelModule,
+
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        M::before_invoke(
+        KernelModuleMixer::before_invoke(
             self,
             &invocation.fn_identifier(),
             0, // TODO: Pass the right size
@@ -418,7 +419,7 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        M::after_invoke(
+        KernelModuleMixer::after_invoke(
             self, 0, // TODO: Pass the right size
         )?;
 
@@ -426,16 +427,8 @@ where
     }
 }
 
-impl<'g, 's, W, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, M>
-where
-    W: WasmEngine,
-    M: KernelModule,
-{
-}
+impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 
-impl<'g, 's, W, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, M>
-where
-    W: WasmEngine,
-    M: KernelModule,
-{
-}
+impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+
+impl<'g, 's, W> KernelModuleApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}

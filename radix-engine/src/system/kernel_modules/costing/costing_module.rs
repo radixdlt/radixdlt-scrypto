@@ -1,11 +1,11 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::LockFlags;
+use crate::kernel::{KernelModuleApi, LockFlags};
 use crate::system::node::RENodeModuleInit;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    kernel::{kernel_api::KernelSubstateApi, KernelModule, KernelNodeApi},
-    kernel::{CallFrameUpdate, KernelModuleId, KernelModuleState, ResolvedActor},
+    kernel::KernelModule,
+    kernel::{CallFrameUpdate, ResolvedActor},
     system::node::RENodeInit,
     transaction::AbortReason,
 };
@@ -28,18 +28,20 @@ impl CanBeAbortion for CostingError {
     }
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone)]
 pub struct CostingModule {
-    fee_reserve: SystemLoanFeeReserve,
-    fee_table: FeeTable,
-    max_depth: usize,
+    pub fee_reserve: SystemLoanFeeReserve,
+    pub fee_table: FeeTable,
+    pub max_call_depth: usize,
 }
 
-impl KernelModuleState for CostingModule {
-    const ID: u8 = KernelModuleId::Costing as u8;
+impl CostingModule {
+    pub fn take_fee_reserve(self) -> SystemLoanFeeReserve {
+        self.fee_reserve
+    }
 }
 
-fn apply_execution_cost<Y: KernelNodeApi + KernelSubstateApi, F>(
+fn apply_execution_cost<Y: KernelModuleApi<RuntimeError>, F>(
     api: &mut Y,
     reason: CostingReason,
     base_price: F,
@@ -48,73 +50,61 @@ fn apply_execution_cost<Y: KernelNodeApi + KernelSubstateApi, F>(
 where
     F: Fn(&FeeTable) -> u32,
 {
-    if let Some(state) = api.get_module_state::<CostingModule>() {
-        let cost_units = base_price(&state.fee_table);
-        state
-            .fee_reserve
-            .consume_multiplied_execution(cost_units, multiplier, reason)
-            .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
-            })
-    } else {
-        Ok(())
-    }
+    let cost_units = base_price(&api.get_module_state().costing.fee_table);
+    api.get_module_state()
+        .costing
+        .fee_reserve
+        .consume_multiplied_execution(cost_units, multiplier, reason)
+        .map_err(|e| {
+            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
+        })
 }
 
-fn apply_royalty_cost<Y: KernelNodeApi + KernelSubstateApi>(
+fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
     receiver: RoyaltyReceiver,
     amount: u32,
 ) -> Result<(), RuntimeError> {
-    if let Some(state) = api.get_module_state::<CostingModule>() {
-        state
-            .fee_reserve
-            .consume_royalty(receiver, amount)
-            .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
-            })
-    } else {
-        Ok(())
-    }
+    api.get_module_state()
+        .costing
+        .fee_reserve
+        .consume_royalty(receiver, amount)
+        .map_err(|e| {
+            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
+        })
 }
 
 impl KernelModule for CostingModule {
-    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.get_current_depth();
 
-        if let Some(state) = api.get_module_state::<CostingModule>() {
-            if current_depth == state.max_depth {
-                return Err(RuntimeError::ModuleError(ModuleError::CostingError(
-                    CostingError::MaxCallDepthLimitReached,
-                )));
-            }
+        if current_depth == api.get_module_state().costing.max_call_depth {
+            return Err(RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached,
+            )));
+        }
 
-            if current_depth > 0 {
-                apply_execution_cost(
-                    api,
-                    CostingReason::Invoke,
-                    |fee_table| {
-                        fee_table.kernel_api_cost(CostingEntry::Invoke {
-                            input_size: input_size as u32,
-                        })
-                    },
-                    1,
-                )?;
-            }
+        if current_depth > 0 {
+            apply_execution_cost(
+                api,
+                CostingReason::Invoke,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::Invoke {
+                        input_size: input_size as u32,
+                    })
+                },
+                1,
+            )?;
         }
 
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -130,7 +120,7 @@ impl KernelModule for CostingModule {
         }
     }
 
-    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
@@ -146,9 +136,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
         apply_execution_cost(
             api,
@@ -160,7 +148,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_lock_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &RENodeId,
         _module_id: &NodeModuleId,
@@ -176,7 +164,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -190,7 +178,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -206,7 +194,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
@@ -219,7 +207,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         code: &[u8],
     ) -> Result<(), RuntimeError> {
@@ -231,7 +219,7 @@ impl KernelModule for CostingModule {
         )
     }
 
-    fn on_consume_cost_units<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         units: u32,
     ) -> Result<(), RuntimeError> {

@@ -283,7 +283,7 @@ impl CallFrame {
     }
 
     pub fn new_root() -> Self {
-        let frame = Self {
+        let mut frame = Self {
             depth: 0,
             actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::Root)),
             node_refs: HashMap::new(),

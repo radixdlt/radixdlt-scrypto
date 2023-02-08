@@ -6,29 +6,22 @@ use crate::{
 use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
-use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct KernelDebugModule;
-
-impl KernelModuleState for KernelDebugModule {
-    const ID: u8 = KernelModuleId::KernelDebug as u8;
-}
+#[derive(Debug, Clone)]
+pub struct KernelDebugModule {}
 
 #[macro_export]
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
-        if let Some(state) = $api.get_module_state::<KernelDebugModule>() {
-            #[cfg(not(feature = "alloc"))]
-            println!("{}[{}] {}", "    ".repeat($api.get_current_depth()), $api.get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
-        }
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{}] {}", "    ".repeat($api.get_current_depth()), $api.get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
 #[allow(unused_variables)] // for no_std
 impl KernelModule for KernelDebugModule {
-    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         fn_identifier: &FnIdentifier,
         input_size: usize,
@@ -42,7 +35,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn after_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -50,7 +43,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -60,7 +53,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
@@ -74,7 +67,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
@@ -82,7 +75,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
         node_init: &RENodeInit,
@@ -98,7 +91,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
@@ -106,7 +99,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn on_lock_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
         module_id: &NodeModuleId,
@@ -124,7 +117,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -138,7 +131,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -152,7 +145,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelNodeApi + KernelSubstateApi>(
+    fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

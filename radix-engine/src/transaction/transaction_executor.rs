@@ -3,10 +3,7 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::costing::{CostingError, FinalizingFeeReserve};
-use crate::system::kernel_modules::costing::{
-    CostingReason, FeeTable, PreExecutionFeeReserve, SystemLoanFeeReserve,
-};
+use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -37,9 +34,9 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
-    pub kernel_trace: bool,
+    pub debug: bool,
     pub max_call_depth: usize,
-    pub max_kernel_call_depth_traced: usize,
+    pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
 }
 
@@ -52,16 +49,16 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            kernel_trace: false,
+            debug: false,
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            max_kernel_call_depth_traced: 1,
+            max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
         }
     }
 
     pub fn debug() -> Self {
         Self {
-            kernel_trace: true,
+            debug: true,
             ..Self::default()
         }
     }
@@ -84,7 +81,7 @@ impl ExecutionConfig {
     pub fn up_to_loan_repayment_with_debug() -> Self {
         Self {
             abort_when_loan_repaid: true,
-            kernel_trace: true,
+            debug: true,
             ..Self::default()
         }
     }
@@ -182,7 +179,7 @@ where
         let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config.debug {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction auth zone params: {:?}", auth_zone_params);
@@ -224,17 +221,27 @@ where
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
-            // Set up kernel
+            // Create kernel
+            let modules = KernelModuleMixer::standard(
+                execution_config.debug,
+                transaction.transaction_hash().clone(),
+                transaction.auth_zone_params().clone(),
+                fee_reserve,
+                fee_table,
+                execution_config.max_call_depth,
+                execution_config.max_kernel_call_depth_traced,
+            );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
                 &mut track,
                 self.scrypto_interpreter,
-                transaction.transaction_hash().clone(),
-                auth_zone_params.clone(),
-                fee_reserve,
-                fee_table,
+                modules,
             );
 
+            // Initialize
+            kernel.initialize().expect("Failed to initialize kernel");
+
+            // Invoke transaction processor
             let mut invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
@@ -248,21 +255,19 @@ where
                 blobs: Cow::Borrowed(blobs),
             });
 
-            let (fee_reserve_substate, optional_error) = kernel.destroy();
+            // Teardown
+            let (modules, optional_error) = kernel.teardown();
             if let Some(error) = optional_error {
                 if invoke_result.is_ok() {
                     // Overwrites invoke result
                     invoke_result = Err(error);
                 }
             }
-            let (vault_ops, events) = kernel_module_mixer.destroy();
+            let fee_reserve = modules.costing.take_fee_reserve();
+            let (vault_ops, events) = modules.execution_trace.collect_events();
 
-            track.finalize(
-                invoke_result,
-                fee_reserve_substate.fee_reserve,
-                vault_ops,
-                events,
-            )
+            // Finalize track
+            track.finalize(invoke_result, fee_reserve, vault_ops, events)
         };
 
         // Finish resources usage measurement and get results
@@ -282,7 +287,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config.debug {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution

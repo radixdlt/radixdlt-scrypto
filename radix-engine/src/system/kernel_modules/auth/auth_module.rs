@@ -25,13 +25,9 @@ pub enum AuthError {
     },
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone)]
 pub struct AuthModule {
-    params: AuthZoneParams,
-}
-
-impl KernelModuleState for AuthModule {
-    const ID: u8 = KernelModuleId::Auth as u8;
+    pub params: AuthZoneParams,
 }
 
 impl AuthModule {
@@ -50,44 +46,33 @@ impl AuthModule {
 }
 
 impl KernelModule for AuthModule {
-    fn on_init<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
-        if let Some(state) = api.get_module_state::<AuthModule>() {
-            let auth_zone_params = state.params.clone();
-
-            let auth_zone = AuthZoneStackSubstate::new(
-                vec![],
-                auth_zone_params.virtualizable_proofs_resource_addresses,
-                auth_zone_params.initial_proofs.into_iter().collect(),
-            );
-            let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-            api.create_node(
-                node_id,
-                RENodeInit::AuthZoneStack(auth_zone),
-                BTreeMap::new(),
-            )?;
-        }
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let auth_zone_params = api.get_module_state().auth.params.clone();
+        let auth_zone = AuthZoneStackSubstate::new(
+            vec![],
+            auth_zone_params.virtualizable_proofs_resource_addresses,
+            auth_zone_params.initial_proofs.into_iter().collect(),
+        );
+        let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
+        api.create_node(
+            node_id,
+            RENodeInit::AuthZoneStack(auth_zone),
+            BTreeMap::new(),
+        )?;
         Ok(())
     }
 
-    fn on_teardown<Y: KernelNodeApi + KernelSubstateApi>(api: &mut Y) -> Result<(), RuntimeError> {
-        if api.get_module_state::<AuthModule>().is_none() {
-            return Ok(());
-        }
-
+    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.drop_node(RENodeId::AuthZoneStack)?;
 
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<AuthModule>().is_none() {
-            return Ok(());
-        }
-
         if matches!(
             actor.identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
@@ -323,15 +308,11 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<AuthModule>().is_none() {
-            return Ok(());
-        }
-
         if matches!(
             api.fn_identifier()?,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))

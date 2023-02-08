@@ -72,17 +72,14 @@ pub trait KernelNodeApi {
         init: RENodeInit,
         node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError>;
+}
 
-    // TODO: move to KernelModuleApi
-    fn get_module_state<T: KernelModuleState>(&mut self) -> Option<&mut T>;
+pub trait KernelInternalApi {
+    fn get_module_state(&mut self) -> &mut KernelModuleMixer;
     fn get_current_depth(&self) -> usize;
     fn get_current_actor(&self) -> ResolvedActor;
     fn read_bucket(&self, bucket_id: BucketId) -> Option<Resource>;
     fn read_proof(&self, proof_id: BucketId) -> Option<ProofSnapshot>;
-}
-
-pub trait KernelModuleState: ScryptoEncode + ScryptoDecode {
-    const ID: u8;
 }
 
 #[repr(u8)]
@@ -277,5 +274,10 @@ pub trait KernelInvokeApi<E>:
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
     KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
+{
+}
+
+pub trait KernelModuleApi<E>:
+    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelInternalApi
 {
 }

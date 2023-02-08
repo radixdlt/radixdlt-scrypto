@@ -628,7 +628,7 @@ impl TestRunner {
 
         let fee_reserve_config = FeeReserveConfig::default();
         let mut execution_config = ExecutionConfig::default();
-        execution_config.kernel_trace = self.trace;
+        execution_config.debug = self.trace;
 
         self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
     }
@@ -636,7 +636,7 @@ impl TestRunner {
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
         let mut execution_config = ExecutionConfig::default();
-        execution_config.kernel_trace = self.trace;
+        execution_config.debug = self.trace;
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
@@ -1111,13 +1111,7 @@ pub fn is_auth_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
-    matches!(
-        e,
-        RuntimeError::ModuleError(ModuleError::ExecutionCostingError(_))
-    ) || matches!(
-        e,
-        RuntimeError::ModuleError(ModuleError::RoyaltyCostingError(_))
-    )
+    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {

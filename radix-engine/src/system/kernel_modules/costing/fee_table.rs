@@ -17,7 +17,7 @@ pub enum CostingEntry {
     // TODO: more costing after API becomes stable.
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeTable {
     tx_base_fee: u32,
     tx_payload_cost_per_byte: u32,
