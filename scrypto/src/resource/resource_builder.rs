@@ -161,16 +161,19 @@ impl FungibleResourceBuilder {
     ///     .initial_supply(5);
     /// ```
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible_with_initial_supply",
+            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                 resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
                 initial_supply: amount.into(),
-            })
-            .unwrap();
-
+            }).unwrap()
+        ).unwrap();
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
@@ -194,16 +197,19 @@ impl FungibleResourceBuilder {
         amount: T,
         owner_badge: NonFungibleGlobalId,
     ) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible_with_initial_supply",
+            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                 resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                 initial_supply: amount.into(),
-            })
-            .unwrap();
-
+            }).unwrap()
+        ).unwrap();
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
@@ -299,16 +305,19 @@ impl FungibleResourceWithAuthBuilder {
     }
 
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible_with_initial_supply",
+            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                 resource_address: None,
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: self.authorization,
                 initial_supply: amount.into(),
-            })
-            .unwrap();
-
+            }).unwrap()
+        ).unwrap();
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 

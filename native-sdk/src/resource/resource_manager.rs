@@ -47,17 +47,22 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientNodeApi<E>
-            + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-            resource_address: None,
-            metadata,
-            access_rules,
-            divisibility,
-            initial_supply: amount,
-        })
-        .map(|(address, bucket)| (ResourceManager(address), bucket))
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            "create_fungible_with_initial_supply".to_string(),
+            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: None,
+                metadata,
+                access_rules,
+                divisibility,
+                initial_supply: amount,
+            }).unwrap()
+        ).unwrap();
+        let (resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(result.as_slice()).unwrap();
+        Ok((ResourceManager(resource_address), bucket))
     }
 
     pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(

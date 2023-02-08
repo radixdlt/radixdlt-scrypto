@@ -52,17 +52,18 @@ pub fn create_genesis(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateFungibleWithInitialSupply(
-                ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: Some(resource_address),
-                    divisibility: 18,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                },
-            ),
-        )));
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_fungible_with_initial_supply".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: Some(resource_address),
+                divisibility: 18,
+                metadata,
+                access_rules,
+                initial_supply,
+            }).unwrap(),
+        }));
     }
 
     // ECDSA

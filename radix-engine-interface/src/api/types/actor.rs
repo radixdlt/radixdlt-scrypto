@@ -528,7 +528,7 @@ pub enum ResourceManagerFn {
     //CreateNonFungibleWithInitialSupply,
     //CreateFungible,
     //CreateUuidNonFungibleWithInitialSupply,
-    CreateFungibleWithInitialSupply,
+    //CreateFungibleWithInitialSupply,
 
     MintNonFungible,
     MintUuidNonFungible,

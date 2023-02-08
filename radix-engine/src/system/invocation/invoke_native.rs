@@ -219,10 +219,6 @@ where
         },
         NativeInvocation::ResourceManager(resource_manager_invocation) => {
             match resource_manager_invocation {
-                ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 ResourceInvocation::BurnBucket(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))

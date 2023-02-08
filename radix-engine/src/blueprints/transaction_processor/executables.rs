@@ -11,6 +11,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
+use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
@@ -576,18 +577,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(amount) = initial_supply {
-                        let rtn =
-                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                        let rtn = api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            "create_fungible_with_initial_supply".to_string(),
+                            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                                 resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
                                 initial_supply: *amount,
-                            })?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
+                            }).unwrap()
+                        )?;
+                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                            &rtn, api,
+                        )?;
+                        InstructionOutput::Scrypto(rtn)
                     } else {
                         let rtn = api.call_function(
                             RESOURCE_MANAGER_PACKAGE,
@@ -609,18 +614,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(amount) = initial_supply {
-                        let rtn =
-                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                        let rtn = api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            "create_fungible_with_initial_supply".to_string(),
+                            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
                                 resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
                                 initial_supply: *amount,
-                            })?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
+                            }).unwrap()
+                        )?;
+                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                            &rtn, api,
+                        )?;
+                        InstructionOutput::Scrypto(rtn)
                     } else {
                         let rtn = api.call_function(
                             RESOURCE_MANAGER_PACKAGE,

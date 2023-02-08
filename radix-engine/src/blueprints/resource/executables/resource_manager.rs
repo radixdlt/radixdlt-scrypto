@@ -728,6 +728,7 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
     }
 }
 
+/*
 impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
@@ -742,6 +743,7 @@ impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvo
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);

@@ -180,6 +180,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     pub initial_supply: Decimal,
 }
 
+/*
 impl Invocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
@@ -204,6 +205,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithInitialSuppl
             .into()
     }
 }
+ */
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerBurnBucketInvocation {
