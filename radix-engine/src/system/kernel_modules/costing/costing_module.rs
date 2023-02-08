@@ -1,6 +1,7 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::{KernelModuleApi, LockFlags};
+use crate::kernel::{KernelModuleApi, LockFlags, ResolvedReceiver};
+use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeModuleInit;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
@@ -9,7 +10,10 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::types::{FnIdentifier, LockHandle, NodeModuleId, SubstateOffset};
+use radix_engine_interface::api::types::{
+    FnIdentifier, GlobalAddress, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset,
+    SubstateOffset, VaultOffset,
+};
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -118,6 +122,167 @@ impl KernelModule for CostingModule {
             ),
             _ => Ok(()),
         }
+    }
+
+    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _caller: &ResolvedActor,
+        _update: &CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        // Identify the function, and optional component address
+        let actor = api.get_current_actor();
+        let (scrypto_fn_identifier, optional_component_address) = match actor.identifier {
+            FnIdentifier::Scrypto(scrypto_fn_identifier) => {
+                let maybe_component = match &actor.receiver {
+                    Some(ResolvedReceiver {
+                        derefed_from:
+                            Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
+                        ..
+                    }) => Some(*component_address),
+                    _ => None,
+                };
+
+                (scrypto_fn_identifier, maybe_component)
+            }
+            _ => {
+                return Ok(());
+            }
+        };
+
+        //========================
+        // Apply package royalty
+        //========================
+
+        let package_id = {
+            let node_id = RENodeId::Global(GlobalAddress::Package(
+                scrypto_fn_identifier.package_address,
+            ));
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            let handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let substate = api.get_ref(handle)?;
+            let package_id = match substate.global_address() {
+                GlobalAddressSubstate::Package(id) => *id,
+                _ => panic!("Unexpected global address substate type"),
+            };
+            api.drop_lock(handle)?;
+
+            package_id
+        };
+
+        let node_id = RENodeId::Package(package_id);
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::PackageRoyalty,
+            offset,
+            LockFlags::read_only(),
+        )?;
+        let substate = api.get_ref(handle)?;
+        let royalty = substate
+            .package_royalty_config()
+            .royalty_config
+            .get(&scrypto_fn_identifier.blueprint_name)
+            .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
+            .unwrap_or(0);
+        api.drop_lock(handle)?;
+
+        apply_royalty_cost(
+            api,
+            RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
+            royalty,
+        )?;
+
+        // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+        // during track finalization.
+        // TODO: refactor to defer substate loading to finalization.
+        let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::PackageRoyalty,
+            offset,
+            LockFlags::MUTABLE,
+        )?;
+        let substate = api.get_ref(handle)?;
+        {
+            let royalty_vault = substate.package_royalty_accumulator().royalty.clone();
+            let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
+            let vault_handle = api.lock_substate(
+                vault_node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::MUTABLE,
+            )?;
+            api.drop_lock(vault_handle)?;
+        }
+        api.drop_lock(handle)?;
+
+        //========================
+        // Apply component royalty
+        //========================
+
+        if let Some(component_address) = optional_component_address {
+            let component_id = {
+                let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                let handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+                let substate = api.get_ref(handle)?;
+                let component_id = match substate.global_address() {
+                    GlobalAddressSubstate::Component(id) => *id,
+                    _ => panic!("Unexpected global address substate type"),
+                };
+                api.drop_lock(handle)?;
+                component_id
+            };
+
+            let node_id = RENodeId::Component(component_id);
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
+            let handle = api.lock_substate(
+                node_id,
+                NodeModuleId::ComponentRoyalty,
+                offset,
+                LockFlags::read_only(),
+            )?;
+            let substate = api.get_ref(handle)?;
+            let royalty = substate
+                .component_royalty_config()
+                .royalty_config
+                .get_rule(&scrypto_fn_identifier.ident)
+                .clone();
+            apply_royalty_cost(
+                api,
+                RoyaltyReceiver::Component(component_address, node_id),
+                royalty,
+            )?;
+            api.drop_lock(handle)?;
+
+            // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+            // during track finalization.
+            // TODO: refactor to defer substate loading to finalization.
+            let offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
+            let handle = api.lock_substate(
+                node_id,
+                NodeModuleId::ComponentRoyalty,
+                offset,
+                LockFlags::MUTABLE,
+            )?;
+            let substate = api.get_ref(handle)?;
+            {
+                let royalty_vault = substate.component_royalty_accumulator().royalty.clone();
+                let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
+                let vault_handle = api.lock_substate(
+                    vault_node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                    LockFlags::MUTABLE,
+                )?;
+                api.drop_lock(vault_handle)?;
+            }
+            api.drop_lock(handle)?;
+        }
+
+        Ok(())
     }
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
