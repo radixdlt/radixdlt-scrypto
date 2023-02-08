@@ -78,8 +78,8 @@ pub trait KernelInternalApi {
     fn get_module_state(&mut self) -> &mut KernelModuleMixer;
     fn get_current_depth(&self) -> usize;
     fn get_current_actor(&self) -> ResolvedActor;
-    fn read_bucket(&self, bucket_id: BucketId) -> Option<Resource>;
-    fn read_proof(&self, proof_id: BucketId) -> Option<ProofSnapshot>;
+    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
 #[repr(u8)]

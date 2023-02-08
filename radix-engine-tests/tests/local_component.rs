@@ -1,5 +1,5 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::costing::ExecutionCostingError;
+use radix_engine::system::kernel_modules::costing::CostingError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -195,8 +195,8 @@ fn recursion_bomb_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::ExecutionCostingError(
-                ExecutionCostingError::MaxCallDepthLimitReached
+            RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached
             ))
         )
     });
@@ -271,8 +271,8 @@ fn recursion_bomb_2_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::ExecutionCostingError(
-                ExecutionCostingError::MaxCallDepthLimitReached
+            RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached
             ))
         )
     });

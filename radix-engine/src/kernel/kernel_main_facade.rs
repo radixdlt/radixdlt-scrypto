@@ -5,12 +5,14 @@ use crate::kernel::kernel_api::{
 use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -180,26 +182,37 @@ where
     W: WasmEngine,
 {
     fn get_module_state(&mut self) -> &mut KernelModuleMixer {
-        todo!()
+        &mut self.module
     }
 
     fn get_current_depth(&self) -> usize {
-        todo!()
+        self.current_frame.depth
     }
 
     fn get_current_actor(&self) -> ResolvedActor {
-        todo!()
+        self.current_frame.actor.clone()
     }
 
-    fn read_bucket(&self, bucket_id: BucketId) -> Option<blueprints::resource::Resource> {
-        todo!()
+    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
+        self.heap
+            .get_substate(
+                RENodeId::Bucket(bucket_id),
+                NodeModuleId::SELF,
+                &SubstateOffset::Bucket(BucketOffset::Bucket),
+            )
+            .and_then(|substate| Ok(substate.bucket().peek_resource()))
+            .ok()
     }
 
-    fn read_proof(
-        &self,
-        proof_id: BucketId,
-    ) -> Option<crate::system::kernel_modules::execution_trace::ProofSnapshot> {
-        todo!()
+    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+        self.heap
+            .get_substate(
+                RENodeId::Proof(proof_id),
+                NodeModuleId::SELF,
+                &SubstateOffset::Proof(ProofOffset::Proof),
+            )
+            .and_then(|substate| Ok(substate.proof().snapshot()))
+            .ok()
     }
 }
 
