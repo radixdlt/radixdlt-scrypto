@@ -165,7 +165,7 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
@@ -184,7 +184,7 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible",
-                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
@@ -206,7 +206,7 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -225,7 +225,7 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible",
-                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -319,7 +319,7 @@ impl FungibleResourceWithAuthBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: self.authorization,
@@ -339,7 +339,7 @@ impl FungibleResourceWithAuthBuilder {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible",
-                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: self.authorization,

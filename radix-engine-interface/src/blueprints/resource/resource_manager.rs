@@ -59,14 +59,14 @@ pub enum ResourceMethodAuthKey {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateFungibleInvocation {
+pub struct ResourceManagerCreateFungibleInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,

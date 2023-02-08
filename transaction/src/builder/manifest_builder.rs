@@ -278,7 +278,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: "create_fungible_with_initial_supply".to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -291,7 +291,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: "create_fungible".to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                args: scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility,
                     metadata,
                     access_rules,

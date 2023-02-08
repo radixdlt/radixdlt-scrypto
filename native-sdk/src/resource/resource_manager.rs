@@ -29,7 +29,7 @@ impl ResourceManager {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 "create_fungible".to_string(),
-                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
                     metadata,
                     access_rules,
                     divisibility,
@@ -56,7 +56,7 @@ impl ResourceManager {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 "create_fungible_with_initial_supply".to_string(),
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     metadata,
                     access_rules,
                     divisibility,

@@ -18,9 +18,9 @@ use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
-    ResourceManagerCreateFungibleInvocation,
+    ResourceManagerCreateFungibleInput,
     ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInvocation,
+    ResourceManagerCreateFungibleWithInitialSupplyInput,
     ResourceManagerCreateNonFungibleInvocation,
     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
     ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
@@ -348,7 +348,7 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
                 "create_fungible" => {
-                    let invocation: ResourceManagerCreateFungibleInvocation =
+                    let invocation: ResourceManagerCreateFungibleInput =
                         scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((
@@ -357,7 +357,7 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
                 "create_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyInvocation =
+                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyInput =
                         scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((
