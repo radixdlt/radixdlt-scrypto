@@ -32,11 +32,11 @@ impl IdAllocator {
         }
     }
 
-    pub fn pre_kernel_execute(&mut self) {
+    pub fn push(&mut self) {
         self.frame_allocated_ids.push(BTreeSet::new());
     }
 
-    pub fn post_kernel_execute(&mut self) -> Result<(), RuntimeError> {
+    pub fn pop(&mut self) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.pop().expect("No frame found");
         if !ids.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::IdAllocationError(

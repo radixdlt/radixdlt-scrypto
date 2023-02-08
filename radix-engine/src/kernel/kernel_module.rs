@@ -14,23 +14,17 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &ResolvedActor,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
-        _api: &mut Y,
         _update: &mut CallFrameUpdate,
-        _actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         _api: &mut Y,
+        _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -47,22 +41,6 @@ pub trait KernelModule {
     fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _output_size: usize,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
-        _api: &mut Y,
-        _callee: &ResolvedActor,
-        _update: &CallFrameUpdate,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
-        _api: &mut Y,
-        _caller: &ResolvedActor,
-        _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

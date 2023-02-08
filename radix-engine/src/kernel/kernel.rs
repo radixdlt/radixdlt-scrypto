@@ -372,26 +372,17 @@ where
             None
         };
 
-        // Filter
-        self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-            M::on_before_frame_start(api, &actor)
-        })?;
-
         // New Call Frame pre-processing
         {
-            // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::on_call_frame_enter(api, &mut call_frame_update, &actor)
+                M::before_create_frame(api, &actor, &mut call_frame_update)
             })?;
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::pre_kernel_execute(api, &actor, &call_frame_update)
-            })?;
-
-            self.id_allocator.pre_kernel_execute();
         }
 
         // Call Frame Push
         {
+            self.id_allocator.push();
+
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
                 actor.clone(),
@@ -407,19 +398,13 @@ where
 
         // Call Frame post-processing
         {
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                M::after_actor_run(api, &self.prev_frame_stack.last().unwrap().actor, &update)
+            })?;
+
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
-
-            self.id_allocator.post_kernel_execute()?;
-
-            // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::post_kernel_execute(api, &self.prev_frame_stack.last().unwrap().actor, &update)
-            })?;
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::on_call_frame_exit(api, &update)
-            })?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -436,6 +421,8 @@ where
 
             // Restore previous frame
             self.current_frame = parent;
+
+            self.id_allocator.pop()?;
         }
 
         if let Some(derefed_lock) = derefed_lock {

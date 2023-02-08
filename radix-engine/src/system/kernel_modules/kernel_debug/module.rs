@@ -50,17 +50,17 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
-        nodes_and_refs: &CallFrameUpdate,
+        nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
         log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
         Ok(())
     }
 
-    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,

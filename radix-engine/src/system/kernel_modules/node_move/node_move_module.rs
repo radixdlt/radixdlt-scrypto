@@ -147,10 +147,10 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
-        call_frame_update: &mut CallFrameUpdate,
         actor: &ResolvedActor,
+        call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state::<NodeMoveModule>().is_none() {
             return Ok(());
@@ -163,8 +163,9 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
+        caller: &ResolvedActor,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state::<NodeMoveModule>().is_none() {

@@ -79,9 +79,10 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         actor: &ResolvedActor,
+        call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state::<AuthModule>().is_none() {
             return Ok(());
@@ -285,17 +286,7 @@ impl KernelModule for AuthModule {
 
         api.drop_lock(handle)?;
 
-        Ok(())
-    }
-
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        call_frame_update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
-    ) -> Result<(), RuntimeError> {
-        if api.get_module_state::<AuthModule>().is_none() {
-            return Ok(());
-        }
+        //  Additional ref copying
 
         call_frame_update
             .node_refs_to_copy
@@ -332,8 +323,9 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
+        _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state::<AuthModule>().is_none() {

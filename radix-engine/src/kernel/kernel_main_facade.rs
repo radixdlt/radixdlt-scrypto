@@ -180,7 +180,22 @@ where
         todo!()
     }
 
-    fn get_current_depth(&mut self) -> usize {
+    fn get_current_depth(&self) -> usize {
+        todo!()
+    }
+
+    fn get_current_actor(&self) -> ResolvedActor {
+        todo!()
+    }
+
+    fn read_bucket(&self, bucket_id: BucketId) -> Option<blueprints::resource::Resource> {
+        todo!()
+    }
+
+    fn read_proof(
+        &self,
+        proof_id: BucketId,
+    ) -> Option<crate::system::kernel_modules::execution_trace::ProofSnapshot> {
         todo!()
     }
 }

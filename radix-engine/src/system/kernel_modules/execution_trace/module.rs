@@ -201,16 +201,16 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
-        update: &CallFrameUpdate,
+        update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_call_frame_update(api, update);
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_pre_kernel_execute(
+            state.handle_before_create_frame(
                 current_actor,
                 current_depth,
                 callee,
@@ -220,7 +220,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
@@ -229,12 +229,7 @@ impl KernelModule for ExecutionTraceModule {
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_call_frame_update(api, update);
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_post_kernel_execute(
-                current_actor,
-                current_depth,
-                caller,
-                resource_movement,
-            );
+            state.handle_after_actor_run(current_actor, current_depth, caller, resource_movement);
         }
         Ok(())
     }
@@ -312,7 +307,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
-    fn handle_pre_kernel_execute(
+    fn handle_before_create_frame(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,
@@ -367,7 +362,7 @@ impl ExecutionTraceModule {
         Ok(())
     }
 
-    fn handle_post_kernel_execute(
+    fn handle_after_actor_run(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,

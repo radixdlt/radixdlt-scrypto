@@ -114,10 +114,10 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
-        _nodes_and_refs: &CallFrameUpdate,
+        _nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         match &callee.identifier {
             FnIdentifier::Native(native_fn) => apply_execution_cost(

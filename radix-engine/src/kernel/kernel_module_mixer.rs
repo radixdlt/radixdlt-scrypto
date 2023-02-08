@@ -63,46 +63,33 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn on_before_frame_start<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
-    ) -> Result<(), RuntimeError> {
-        KernelDebugModule::on_before_frame_start(api, actor)?;
-        CostingModule::on_before_frame_start(api, actor)?;
-        NodeMoveModule::on_before_frame_start(api, actor)?;
-        AuthModule::on_before_frame_start(api, actor)?;
-        LoggerModule::on_before_frame_start(api, actor)?;
-        TransactionRuntimeModule::on_before_frame_start(api, actor)?;
-        ExecutionTraceModule::on_before_frame_start(api, actor)?;
-        Ok(())
-    }
-
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
-        api: &mut Y,
         update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::on_call_frame_enter(api, update, actor)?;
-        CostingModule::on_call_frame_enter(api, update, actor)?;
-        NodeMoveModule::on_call_frame_enter(api, update, actor)?;
-        AuthModule::on_call_frame_enter(api, update, actor)?;
-        LoggerModule::on_call_frame_enter(api, update, actor)?;
-        TransactionRuntimeModule::on_call_frame_enter(api, update, actor)?;
-        ExecutionTraceModule::on_call_frame_enter(api, update, actor)?;
+        KernelDebugModule::before_create_frame(api, actor, update)?;
+        CostingModule::before_create_frame(api, actor, update)?;
+        NodeMoveModule::before_create_frame(api, actor, update)?;
+        AuthModule::before_create_frame(api, actor, update)?;
+        LoggerModule::before_create_frame(api, actor, update)?;
+        TransactionRuntimeModule::before_create_frame(api, actor, update)?;
+        ExecutionTraceModule::before_create_frame(api, actor, update)?;
         Ok(())
     }
 
-    fn on_call_frame_exit<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
+        caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::on_call_frame_exit(api, update)?;
-        CostingModule::on_call_frame_exit(api, update)?;
-        NodeMoveModule::on_call_frame_exit(api, update)?;
-        AuthModule::on_call_frame_exit(api, update)?;
-        LoggerModule::on_call_frame_exit(api, update)?;
-        TransactionRuntimeModule::on_call_frame_exit(api, update)?;
-        ExecutionTraceModule::on_call_frame_exit(api, update)?;
+        KernelDebugModule::after_actor_run(api, caller, update)?;
+        CostingModule::after_actor_run(api, caller, update)?;
+        NodeMoveModule::after_actor_run(api, caller, update)?;
+        AuthModule::after_actor_run(api, caller, update)?;
+        LoggerModule::after_actor_run(api, caller, update)?;
+        TransactionRuntimeModule::after_actor_run(api, caller, update)?;
+        ExecutionTraceModule::after_actor_run(api, caller, update)?;
         Ok(())
     }
 
@@ -132,36 +119,6 @@ impl KernelModule for KernelModuleMixer {
         LoggerModule::post_kernel_invoke(api, output_size)?;
         TransactionRuntimeModule::post_kernel_invoke(api, output_size)?;
         ExecutionTraceModule::post_kernel_invoke(api, output_size)?;
-        Ok(())
-    }
-
-    fn pre_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        callee: &ResolvedActor,
-        update: &CallFrameUpdate,
-    ) -> Result<(), RuntimeError> {
-        KernelDebugModule::pre_kernel_execute(api, callee, update)?;
-        CostingModule::pre_kernel_execute(api, callee, update)?;
-        NodeMoveModule::pre_kernel_execute(api, callee, update)?;
-        AuthModule::pre_kernel_execute(api, callee, update)?;
-        LoggerModule::pre_kernel_execute(api, callee, update)?;
-        TransactionRuntimeModule::pre_kernel_execute(api, callee, update)?;
-        ExecutionTraceModule::pre_kernel_execute(api, callee, update)?;
-        Ok(())
-    }
-
-    fn post_kernel_execute<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-        caller: &ResolvedActor,
-        update: &CallFrameUpdate,
-    ) -> Result<(), RuntimeError> {
-        KernelDebugModule::post_kernel_execute(api, caller, update)?;
-        CostingModule::post_kernel_execute(api, caller, update)?;
-        NodeMoveModule::post_kernel_execute(api, caller, update)?;
-        AuthModule::post_kernel_execute(api, caller, update)?;
-        LoggerModule::post_kernel_execute(api, caller, update)?;
-        TransactionRuntimeModule::post_kernel_execute(api, caller, update)?;
-        ExecutionTraceModule::post_kernel_execute(api, caller, update)?;
         Ok(())
     }
 

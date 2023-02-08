@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::costing::FinalizingFeeReserve;
+use crate::system::kernel_modules::costing::{CostingError, FinalizingFeeReserve};
 use crate::system::kernel_modules::costing::{
     CostingReason, FeeTable, PreExecutionFeeReserve, SystemLoanFeeReserve,
 };
@@ -209,7 +209,7 @@ where
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(err.error),
+                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
                         )),
                     }),
                 };
@@ -221,7 +221,6 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut kernel_module_mixer = KernelModuleMixer::new(execution_config);
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
@@ -230,7 +229,6 @@ where
                 &mut id_allocator,
                 &mut track,
                 self.scrypto_interpreter,
-                &mut kernel_module_mixer,
                 transaction.transaction_hash().clone(),
                 auth_zone_params.clone(),
                 fee_reserve,

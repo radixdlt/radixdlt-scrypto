@@ -36,10 +36,10 @@ impl KernelModule for LoggerModule {
         Ok(())
     }
 
-    fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
-        call_frame_update: &mut CallFrameUpdate,
         _actor: &ResolvedActor,
+        call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state::<LoggerModule>().is_none() {
             return Ok(());
