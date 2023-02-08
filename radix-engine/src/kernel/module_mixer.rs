@@ -610,4 +610,32 @@ impl KernelModule for KernelModuleMixer {
 
         Ok(fee)
     }
+
+    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        new_index: usize,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::on_update_instruction_index(api, new_index)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::on_update_instruction_index(api, new_index)?;
+        }
+        Ok(())
+    }
 }

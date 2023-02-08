@@ -424,8 +424,7 @@ where
     W: WasmEngine,
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_consume_cost_units(self, units)?;
-        Ok(())
+        KernelModuleMixer::on_consume_cost_units(self, units)
     }
     fn credit_cost_units(
         &mut self,
@@ -434,6 +433,10 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
         KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
+    }
+
+    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+        KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
 }
 

@@ -10,6 +10,32 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
+//===================================================================================
+// Note: execution trace should not produce an error or transactional side-effects!
+//===================================================================================
+
+#[derive(Debug, Clone)]
+pub struct ExecutionTraceModule {
+    /// Maximum depth up to which kernel calls are being traced.
+    max_kernel_call_depth_traced: usize,
+
+    current_transaction_index: usize,
+
+    /// Current kernel calls depth. Note that this doesn't necessarily correspond to the
+    /// call frame depth, as there can be nested kernel calls within a single call frame
+    /// (e.g. lock_substate call inside drop_node).
+    current_kernel_call_depth: usize,
+
+    /// A stack of traced kernel call inputs, their origin, and the instruction index.
+    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, KernelCallTraceOrigin, Option<u32>)>,
+
+    /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
+    kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
+
+    /// Vault operations: (Caller, Vault ID, operation)
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
@@ -29,26 +55,6 @@ pub enum VaultOp {
     Put(Decimal),    // TODO: add non-fungible support
     Take(Decimal),
     LockFee,
-}
-
-#[derive(Debug, Clone)]
-pub struct ExecutionTraceModule {
-    /// Maximum depth up to which kernel calls are being traced.
-    max_kernel_call_depth_traced: usize,
-
-    /// Current kernel calls depth. Note that this doesn't necessarily correspond to the
-    /// call frame depth, as there can be nested kernel calls within a single call frame
-    /// (e.g. lock_substate call inside drop_node).
-    current_kernel_call_depth: usize,
-
-    /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, KernelCallTraceOrigin, Option<u32>)>,
-
-    /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
-    kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
-
-    /// Vault operations: (Caller, Vault ID, operation)
-    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -85,10 +91,6 @@ pub enum KernelCallTraceOrigin {
     CreateNode,
     DropNode,
 }
-
-//===================================================================================
-// Note: execution trace should not produce error or any transactional side-effects!
-//===================================================================================
 
 impl ResourceMovement {
     pub fn new_empty() -> Self {
@@ -218,12 +220,23 @@ impl KernelModule for ExecutionTraceModule {
             .handle_after_actor_run(current_actor, current_depth, caller, resource_movement);
         Ok(())
     }
+
+    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        new_index: usize,
+    ) -> Result<(), RuntimeError> {
+        api.get_module_state()
+            .execution_trace
+            .current_transaction_index = new_index;
+        Ok(())
+    }
 }
 
 impl ExecutionTraceModule {
     pub fn new(max_kernel_call_depth_traced: usize) -> ExecutionTraceModule {
         Self {
             max_kernel_call_depth_traced,
+            current_transaction_index: 0,
             current_kernel_call_depth: 0,
             traced_kernel_call_inputs_stack: vec![],
             kernel_call_traces_stacks: HashMap::new(),

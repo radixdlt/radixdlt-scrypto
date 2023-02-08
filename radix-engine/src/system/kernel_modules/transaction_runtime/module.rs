@@ -24,7 +24,6 @@ impl KernelModule for TransactionRuntimeModule {
             RENodeInit::TransactionRuntime(TransactionRuntimeSubstate {
                 hash,
                 next_id: 0u32,
-                instruction_index: 0u32,
             }),
             BTreeMap::new(),
         )?;

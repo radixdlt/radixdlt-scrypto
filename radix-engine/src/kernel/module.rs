@@ -126,6 +126,13 @@ pub trait KernelModule {
         Ok(())
     }
 
+    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _new_index: usize,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _vault_id: VaultId,
