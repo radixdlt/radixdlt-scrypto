@@ -4,8 +4,8 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sha2 = { version = "0.10.2", default-features = false }
-sha3 = { version = "0.10.1", default-features = false }
+sha2 = { version = "0.10.6", default-features = false }
+sha3 = { version = "0.10.6", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-integer = { version = "0.1.45", default-features = false }
@@ -37,6 +37,7 @@ webb-pedersen-hash = { version = "0.1.0" }
 dusk-poseidon = { version = "0.28.1" }
 dusk-bls12_381 = { version = "0.11.2" }
 dusk-bytes = { version = "0.1.6" }
+k12 = { version = "0.2.1" }
 
 [[bench]]
 name = "math"

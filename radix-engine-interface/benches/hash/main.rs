@@ -1,5 +1,6 @@
 use ::sha2::Sha512_256;
-use blake2::{digest::consts::U32, Blake2b, Digest};
+use sha2::digest::Digest;
+use blake2::{digest::consts::U32, Blake2b};
 use blake3;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use radix_engine_interface::crypto::{sha256, sha256_twice, sha3};
@@ -34,6 +35,18 @@ fn poseidon_hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
     sponge::hash(&vec_scalar).to_bytes()
 }
 
+mod k12 {
+    use k12::digest::{Update, ExtendableOutput};
+    use k12::KangarooTwelve;
+
+    pub fn k12_hash(data:  &[u8]) -> [u8; 32] {
+        let mut hasher = KangarooTwelve::new();
+        let mut out: [u8; 32] = [0; 32];
+        hasher.update(data);
+        hasher.finalize_xof_into(&mut out);
+        out
+    }
+}
 fn bench_hash(c: &mut Criterion) {
     let sizes = [(512, "512B"), (MB, "1MB")];
     let mut group = c.benchmark_group("hash");
@@ -77,13 +90,18 @@ fn bench_hash(c: &mut Criterion) {
         });
 
         // Pedersen Hash
-        group.bench_with_input(BenchmarkId::new("Pedersen", size.1), &data[..], |b, d| {
-            b.iter(|| webb_pedersen_hash::hash(d))
-        });
+//        group.bench_with_input(BenchmarkId::new("Pedersen", size.1), &data[..], |b, d| {
+//            b.iter(|| webb_pedersen_hash::hash(d))
+//        });
 
         // Poseidon Hash
         group.bench_with_input(BenchmarkId::new("Poseidon", size.1), &data[..], |b, d| {
             b.iter(|| poseidon_hash(d))
+        });
+
+        // KangarooTwelve hash
+        group.bench_with_input(BenchmarkId::new("k12", size.1), &data[..], |b, d| {
+            b.iter(|| k12::k12_hash(d))
         });
     }
 }
