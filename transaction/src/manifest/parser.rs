@@ -221,8 +221,15 @@ impl Parser {
                 divisibility: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
+            TokenKind::CreateFungibleResourceWithInitialSupply => {
+                Instruction::CreateFungibleResourceWithInitialSupply {
+                    divisibility: self.parse_value()?,
+                    metadata: self.parse_value()?,
+                    access_rules: self.parse_value()?,
+                    initial_supply: self.parse_value()?,
+                }
+            }
             TokenKind::CreateFungibleResourceWithOwner => {
                 Instruction::CreateFungibleResourceWithOwner {
                     divisibility: self.parse_value()?,

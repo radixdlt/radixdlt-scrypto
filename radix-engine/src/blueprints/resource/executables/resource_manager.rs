@@ -671,12 +671,77 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
-        let global_node_id = if let Some(address) = self.resource_address {
-            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(address)))
-        } else {
-            api.allocate_node_id(RENodeType::GlobalResourceManager)?
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let (resource_manager_substate, bucket) =
+            build_fungible_resource_manager_substate_with_initial_supply(
+                resource_address,
+                self.divisibility,
+                self.initial_supply,
+                api,
+            )?;
+        let (access_rules_substate, vault_substate) = build_substates(self.access_rules);
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
         };
 
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules1,
+            RENodeModuleInit::AccessRulesChain(vault_substate),
+        );
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
+        )?;
+
+        api.create_node(
+            global_node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            BTreeMap::new(),
+        )?;
+
+        let mut nodes_to_move = vec![];
+        nodes_to_move.push(RENodeId::Bucket(bucket.0));
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((
+            (resource_address, bucket),
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
+    }
+}
+
+impl Executor for ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+    type Output = (ResourceAddress, Bucket);
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+            self.resource_address,
+        )));
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =

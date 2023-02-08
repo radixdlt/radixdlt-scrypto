@@ -4,10 +4,13 @@ use radix_engine_interface::args;
 use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::account::AccountCreateInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, ResourceManagerCreateFungibleInvocation,
+    ResourceManagerCreateFungibleWithInitialSupplyInvocation,
+};
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -485,17 +488,6 @@ pub fn generate_instruction(
             )?,
         },
 
-        ast::Instruction::CreateFungibleResource {
-            divisibility,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => BasicInstruction::CreateFungibleResource {
-            divisibility: generate_u8(divisibility)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
-        },
         ast::Instruction::CreateFungibleResourceWithOwner {
             divisibility,
             metadata,
@@ -553,6 +545,38 @@ pub fn generate_instruction(
                 bech32_decoder,
                 blobs,
             )?,
+        },
+        ast::Instruction::CreateFungibleResource {
+            divisibility,
+            metadata,
+            access_rules,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_fungible".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                divisibility: generate_u8(divisibility)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            })
+            .unwrap(),
+        },
+        ast::Instruction::CreateFungibleResourceWithInitialSupply {
+            divisibility,
+            metadata,
+            access_rules,
+            initial_supply,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_fungible_with_initial_supply".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                divisibility: generate_u8(divisibility)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+                initial_supply: generate_decimal(initial_supply)?,
+            })
+            .unwrap(),
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
@@ -1723,42 +1747,6 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Decimal("500"));"#,
-            BasicInstruction::CreateFungibleResource {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: Some("500".parse().unwrap())
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
-            BasicInstruction::CreateFungibleResource {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: None
-            },
-        );
-        generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Decimal("500"));"#,
             BasicInstruction::CreateFungibleResourceWithOwner {
                 divisibility: 18,
@@ -1863,6 +1851,61 @@ mod tests {
                         args!(12u8, 19u128)
                     )
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_fungible".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    divisibility: 18,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                })
+                .unwrap(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_with_initial_supply_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_fungible_with_initial_supply".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    divisibility: 18,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                    initial_supply: "500".parse().unwrap()
+                })
+                .unwrap()
             },
         );
     }

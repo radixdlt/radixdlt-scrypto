@@ -57,7 +57,6 @@ impl ResourceManager {
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 "create_fungible_with_initial_supply".to_string(),
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: None,
                     metadata,
                     access_rules,
                     divisibility,

@@ -169,6 +169,12 @@ pub enum Instruction {
         divisibility: Value,
         metadata: Value,
         access_rules: Value,
+    },
+
+    CreateFungibleResourceWithInitialSupply {
+        divisibility: Value,
+        metadata: Value,
+        access_rules: Value,
         initial_supply: Value,
     },
 

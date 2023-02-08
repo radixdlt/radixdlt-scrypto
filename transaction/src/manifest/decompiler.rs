@@ -2,7 +2,7 @@ use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
@@ -350,6 +350,20 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f.write_str("CREATE_ACCESS_CONTROLLER")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
+            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
+                && function_name.eq("create_fungible")
+            {
+                f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
+            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
+                && function_name.eq("create_fungible_with_initial_supply")
+            {
+                f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
             } else {
                 write!(
                     f,
@@ -499,19 +513,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
             format_typed_value(f, context, &entries)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateFungibleResource {
-            divisibility,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => {
-            f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, divisibility)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
         }
         BasicInstruction::CreateFungibleResourceWithOwner {

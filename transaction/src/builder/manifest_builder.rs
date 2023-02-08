@@ -1,15 +1,13 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::blueprints::access_controller::{
-    AccessControllerCreateGlobalInvocation, RuleSet,
-};
+use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -271,15 +269,36 @@ impl ManifestBuilder {
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateFungibleResource {
-            divisibility,
-            metadata,
-            access_rules: access_rules
-                .into_iter()
-                .map(|(k, v)| (k, (v.0, v.1.into())))
-                .collect(),
-            initial_supply: initial_supply,
-        });
+        let access_rules = access_rules
+            .into_iter()
+            .map(|(k, v)| (k, (v.0, v.1.into())))
+            .collect();
+        if let Some(initial_supply) = initial_supply {
+            self.add_instruction(BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_fungible_with_initial_supply".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    divisibility,
+                    metadata,
+                    access_rules,
+                    initial_supply,
+                })
+                .unwrap(),
+            });
+        } else {
+            self.add_instruction(BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_fungible".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    divisibility,
+                    metadata,
+                    access_rules,
+                })
+                .unwrap(),
+            });
+        }
 
         self
     }

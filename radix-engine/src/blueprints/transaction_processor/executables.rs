@@ -19,7 +19,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
-use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -136,8 +135,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             BasicInstruction::CreateValidator { .. } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
             }
-            BasicInstruction::CreateNonFungibleResource { access_rules, .. }
-            | BasicInstruction::CreateFungibleResource { access_rules, .. } => {
+            BasicInstruction::CreateNonFungibleResource { access_rules, .. } => {
                 let args = args!(access_rules.clone());
                 for node_id in slice_to_global_references(&args) {
                     update.add_ref(node_id);
@@ -552,48 +550,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-
-                Instruction::Basic(BasicInstruction::CreateFungibleResource {
-                    divisibility,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                }) => {
-                    if let Some(amount) = initial_supply {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(
-                                &ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                    resource_address: None,
-                                    divisibility: *divisibility,
-                                    metadata: metadata.clone(),
-                                    access_rules: access_rules.clone(),
-                                    initial_supply: *amount,
-                                },
-                            )
-                            .unwrap(),
-                        )?;
-                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                            &rtn, api,
-                        )?;
-                        InstructionOutput::Scrypto(rtn)
-                    } else {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_fungible".to_string(),
-                            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
-                                divisibility: *divisibility,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                            })
-                            .unwrap(),
-                        )?;
-                        InstructionOutput::Scrypto(rtn)
-                    }
-                }
                 Instruction::Basic(BasicInstruction::CreateFungibleResourceWithOwner {
                     divisibility,
                     metadata,
@@ -607,7 +563,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             "create_fungible_with_initial_supply".to_string(),
                             scrypto_encode(
                                 &ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                    resource_address: None,
                                     divisibility: *divisibility,
                                     metadata: metadata.clone(),
                                     access_rules: resource_access_rules_from_owner_badge(

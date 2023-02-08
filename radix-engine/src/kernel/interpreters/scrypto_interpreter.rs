@@ -19,6 +19,7 @@ use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocat
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleInvocation,
+    ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput,
     ResourceManagerCreateFungibleWithInitialSupplyInvocation,
     ResourceManagerCreateNonFungibleInvocation,
     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
@@ -357,6 +358,15 @@ impl Executor for ScryptoExecutor {
                 }
                 "create_fungible_with_initial_supply" => {
                     let invocation: ResourceManagerCreateFungibleWithInitialSupplyInvocation =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                "create_fungible_with_initial_supply_and_address" => {
+                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
                         scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((

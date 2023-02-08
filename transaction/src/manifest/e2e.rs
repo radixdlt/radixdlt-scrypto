@@ -297,11 +297,11 @@ CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "lock_fee"
     Decimal("10");
-CREATE_FUNGIBLE_RESOURCE
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(1u8, Decimal("12"));
+    Decimal("12");
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -356,8 +356,7 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(0u8);
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
         );
     }

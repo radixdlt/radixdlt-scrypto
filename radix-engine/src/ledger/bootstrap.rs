@@ -55,14 +55,16 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_fungible_with_initial_supply".to_string(),
-            args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: Some(resource_address),
-                divisibility: 18,
-                metadata,
-                access_rules,
-                initial_supply,
-            })
+            function_name: "create_fungible_with_initial_supply_and_address".to_string(),
+            args: scrypto_encode(
+                &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+                    divisibility: 18,
+                    metadata,
+                    access_rules,
+                    initial_supply,
+                    resource_address,
+                },
+            )
             .unwrap(),
         }));
     }

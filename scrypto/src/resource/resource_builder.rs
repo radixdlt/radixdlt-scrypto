@@ -166,7 +166,6 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: None,
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
@@ -208,7 +207,6 @@ impl FungibleResourceBuilder {
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: None,
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -322,7 +320,6 @@ impl FungibleResourceWithAuthBuilder {
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_fungible_with_initial_supply",
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: None,
                     divisibility: self.divisibility,
                     metadata: self.metadata,
                     access_rules: self.authorization,
