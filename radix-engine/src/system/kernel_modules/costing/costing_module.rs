@@ -114,26 +114,21 @@ impl KernelModule for CostingModule {
         _nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         match &callee.identifier {
-            FnIdentifier::Native(native_fn) => apply_execution_cost(
-                api,
-                CostingReason::RunNative,
-                |fee_table| fee_table.run_native_fn_cost(&native_fn),
-                1,
-            ),
-            _ => Ok(()),
+            FnIdentifier::Native(native_fn) => {
+                apply_execution_cost(
+                    api,
+                    CostingReason::RunNative,
+                    |fee_table| fee_table.run_native_fn_cost(&native_fn),
+                    1,
+                )?;
+            }
+            _ => {}
         }
-    }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        _caller: &ResolvedActor,
-        _update: &CallFrameUpdate,
-    ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let actor = api.get_current_actor();
-        let (scrypto_fn_identifier, optional_component) = match actor.identifier {
+        let (scrypto_fn_identifier, optional_component) = match &callee.identifier {
             FnIdentifier::Scrypto(scrypto_fn_identifier) => {
-                let maybe_component = match &actor.receiver {
+                let maybe_component = match &callee.receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
                             Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
@@ -149,8 +144,9 @@ impl KernelModule for CostingModule {
             }
         };
 
-        /*  Apply package royalty */
-
+        /*
+         * Apply package royalty
+         */
         let package_node_id = RENodeId::Global(GlobalAddress::Package(
             scrypto_fn_identifier.package_address,
         ));
@@ -196,8 +192,9 @@ impl KernelModule for CostingModule {
             royalty_amount,
         )?;
 
-        /* Apply component royalty  */
-
+        /*
+         * Apply component royalty
+         */
         if let Some((component_address, component_id)) = optional_component {
             let component_node_id = RENodeId::Component(component_id);
             let handle = api.lock_substate(

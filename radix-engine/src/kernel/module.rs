@@ -6,11 +6,29 @@ use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
+    //======================
+    // Kernel module events
+    //======================
+
     fn on_init<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    //======================
+    // Invocation events:
+    //
+    //  BeforeInvoke -> BeforeNewFrame -> AfterActorRun -> AfterInvoke
+    //======================
+
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _fn_identifier: &FnIdentifier,
+        _input_size: usize,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -22,18 +40,10 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _fn_identifier: &FnIdentifier,
-        _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -51,6 +61,10 @@ pub trait KernelModule {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    //======================
+    // RENode events
+    //======================
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
@@ -78,6 +92,10 @@ pub trait KernelModule {
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    //======================
+    // Substate events
+    //======================
 
     fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
@@ -112,12 +130,20 @@ pub trait KernelModule {
         Ok(())
     }
 
+    //======================
+    // WASM interpreter events
+    //======================
+
     fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _code: &[u8],
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    //======================
+    // Other events
+    //======================
 
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,

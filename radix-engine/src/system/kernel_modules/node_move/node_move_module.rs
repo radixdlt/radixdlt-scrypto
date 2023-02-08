@@ -153,7 +153,7 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _caller: &ResolvedActor,
         call_frame_update: &CallFrameUpdate,

@@ -35,14 +35,6 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        output_size: usize,
-    ) -> Result<(), RuntimeError> {
-        log!(api, "Exiting: output size = {}", output_size);
-        Ok(())
-    }
-
     fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
@@ -53,7 +45,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
@@ -64,6 +56,14 @@ impl KernelModule for KernelDebugModule {
             "Returning refs: {:?}",
             nodes_and_refs.node_refs_to_copy
         );
+        Ok(())
+    }
+
+    fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        output_size: usize,
+    ) -> Result<(), RuntimeError> {
+        log!(api, "Exiting: output size = {}", output_size);
         Ok(())
     }
 

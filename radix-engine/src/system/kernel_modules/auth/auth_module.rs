@@ -308,7 +308,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _caller: &ResolvedActor,
         _update: &CallFrameUpdate,

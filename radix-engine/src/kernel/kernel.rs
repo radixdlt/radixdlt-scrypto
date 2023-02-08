@@ -391,7 +391,7 @@ where
 
         let caller = self.prev_frame_stack.last().unwrap().actor.clone();
         self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-            KernelModuleMixer::after_actor_run(api, &caller, &update)
+            KernelModuleMixer::after_execute(api, &caller, &update)
         })?;
 
         // Call Frame post-processing

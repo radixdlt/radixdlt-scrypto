@@ -207,7 +207,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
@@ -215,9 +215,12 @@ impl KernelModule for ExecutionTraceModule {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.get_module_state()
-            .execution_trace
-            .handle_after_actor_run(current_actor, current_depth, caller, resource_summary);
+        api.get_module_state().execution_trace.handle_after_execute(
+            current_actor,
+            current_depth,
+            caller,
+            resource_summary,
+        );
         Ok(())
     }
 
@@ -351,7 +354,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_after_actor_run(
+    fn handle_after_execute(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,

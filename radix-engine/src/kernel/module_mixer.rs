@@ -148,6 +148,35 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        fn_identifier: &FnIdentifier,
+        input_size: usize,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::before_invoke(api, fn_identifier, input_size)?;
+        }
+        Ok(())
+    }
+
     fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
@@ -177,60 +206,31 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn after_actor_run<Y: KernelModuleApi<RuntimeError>>(
+    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::after_actor_run(api, caller, update)?;
+            KernelDebugModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().costing_enabled {
-            CostingModule::after_actor_run(api, caller, update)?;
+            CostingModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().node_move_enabled {
-            NodeMoveModule::after_actor_run(api, caller, update)?;
+            NodeMoveModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().auth_enabled {
-            AuthModule::after_actor_run(api, caller, update)?;
+            AuthModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().logger_enabled {
-            LoggerModule::after_actor_run(api, caller, update)?;
+            LoggerModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::after_actor_run(api, caller, update)?;
+            TransactionRuntimeModule::after_execute(api, caller, update)?;
         }
         if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::after_actor_run(api, caller, update)?;
-        }
-        Ok(())
-    }
-
-    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        fn_identifier: &FnIdentifier,
-        input_size: usize,
-    ) -> Result<(), RuntimeError> {
-        if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().costing_enabled {
-            CostingModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().node_move_enabled {
-            NodeMoveModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().auth_enabled {
-            AuthModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().logger_enabled {
-            LoggerModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::before_invoke(api, fn_identifier, input_size)?;
-        }
-        if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::before_invoke(api, fn_identifier, input_size)?;
+            ExecutionTraceModule::after_execute(api, caller, update)?;
         }
         Ok(())
     }
