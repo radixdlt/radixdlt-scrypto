@@ -1,8 +1,8 @@
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
-    ComponentInvocation, EpochManagerInvocation, LoggerInvocation,
-    MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
+    ComponentInvocation, EpochManagerInvocation, LoggerInvocation, MetadataInvocation,
+    NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
 use radix_engine_interface::api::ClientStaticInvokeApi;
@@ -279,12 +279,6 @@ where
         }
         NativeInvocation::EpochManager(epoch_manager_invocation) => {
             match epoch_manager_invocation {
-                /*
-                EpochManagerInvocation::Create(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                 */
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
@@ -338,12 +332,6 @@ where
             }
         },
         NativeInvocation::Clock(clock_invocation) => match clock_invocation {
-            /*
-            ClockInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-             */
             ClockInvocation::SetCurrentTime(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -408,16 +396,6 @@ where
             }
         },
         NativeInvocation::Account(account_method) => match account_method {
-            /*
-            AccountInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccountInvocation::New(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-             */
             AccountInvocation::LockFee(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

@@ -420,14 +420,6 @@ where
             }
         },
         NativeFn::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
-            /*
-            EpochManagerFn::Create => {
-                let invocation = scrypto_decode::<EpochManagerCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-             */
             EpochManagerFn::GetCurrentEpoch => {
                 let invocation =
                     scrypto_decode::<EpochManagerGetCurrentEpochInvocation>(&invocation)
@@ -508,14 +500,6 @@ where
             }
         },
         NativeFn::Clock(clock_fn) => match clock_fn {
-            /*
-            ClockFn::Create => {
-                let invocation = scrypto_decode::<ClockCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-             */
             ClockFn::SetCurrentTime => {
                 let invocation = scrypto_decode::<ClockSetCurrentTimeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -535,16 +519,6 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        /*
-        NativeFn::Identity(identity_fn) => match identity_fn {
-            IdentityFn::Create => {
-                let invocation = scrypto_decode::<IdentityCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-         */
         NativeFn::Logger(logger_fn) => match logger_fn {
             LoggerFn::Log => {
                 let invocation = scrypto_decode::<LoggerLogInvocation>(&invocation)
@@ -706,20 +680,6 @@ where
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
-            /*
-            AccountFn::Create => {
-                let invocation = scrypto_decode::<AccountCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccountFn::New => {
-                let invocation = scrypto_decode::<AccountNewInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-             */
             AccountFn::Balance => {
                 let invocation = scrypto_decode::<AccountBalanceInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

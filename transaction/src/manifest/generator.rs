@@ -579,7 +579,13 @@ pub fn generate_instruction(
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: "create".to_string(),
-            args: scrypto_encode(&generate_typed_value::<AccessRule>(access_rule, resolver, bech32_decoder, blobs)?).unwrap(),
+            args: scrypto_encode(&generate_typed_value::<AccessRule>(
+                access_rule,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?)
+            .unwrap(),
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,

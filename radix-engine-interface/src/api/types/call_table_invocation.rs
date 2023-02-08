@@ -12,11 +12,9 @@ use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_hash::TransactionRuntimeGenerateUuidInvocation;
 use crate::blueprints::transaction_hash::*;
-use crate::data::types::{ManifestBucket, ManifestProof};
 use crate::data::ScryptoValue;
 use crate::*;
-use radix_engine_interface::data::ReplaceManifestValuesError;
-use sbor::rust::collections::{HashMap, HashSet};
+use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -76,31 +74,6 @@ pub enum NativeInvocation {
     AccessController(AccessControllerInvocation),
 }
 
-impl NativeInvocation {
-    pub fn replace_ids(
-        &mut self,
-        _proof_replacements: &mut HashMap<ManifestProof, ProofId>,
-        bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
-    ) -> Result<(), ReplaceManifestValuesError> {
-        match self {
-            /*
-            NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, validator_init) in &mut invocation.validator_set {
-                    let next_id = bucket_replacements
-                        .remove(&ManifestBucket(validator_init.initial_stake.0))
-                        .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
-                            validator_init.initial_stake.0,
-                        )))?;
-                    validator_init.initial_stake.0 = next_id;
-                }
-            }
-             */
-            _ => {} // TODO: Expand this
-        }
-        Ok(())
-    }
-}
-
 impl Into<CallTableInvocation> for NativeInvocation {
     fn into(self) -> CallTableInvocation {
         CallTableInvocation::Native(self)
@@ -131,7 +104,6 @@ pub enum MetadataInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ClockInvocation {
-    //Create(ClockCreateInvocation),
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
@@ -159,7 +131,6 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum EpochManagerInvocation {
-    //Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
@@ -257,11 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountInvocation {
-    /*
-    Create(AccountCreateInvocation),
-    New(AccountNewInvocation),
-     */
-
     Balance(AccountBalanceInvocation),
 
     LockFee(AccountLockFeeInvocation),
@@ -473,18 +439,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                /*
-                EpochManagerInvocation::Create(invocation) => {
-                    for (_key, validator_init) in &invocation.validator_set {
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(
-                            validator_init.stake_account_address,
-                        )));
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(
-                            validator_init.validator_account_address,
-                        )));
-                    }
-                }
-                 */
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -549,7 +503,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
-                //ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -586,7 +539,6 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {
-                //AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
                 AccountInvocation::Balance(AccountBalanceInvocation { receiver, .. })
                 | AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
                 | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {

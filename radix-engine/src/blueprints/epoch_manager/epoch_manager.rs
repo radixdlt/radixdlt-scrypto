@@ -52,49 +52,6 @@ pub enum EpochManagerError {
 
 pub struct EpochManager;
 
-/*
-impl ExecutableInvocation for EpochManagerCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::EpochManager(EpochManagerFn::Create));
-
-        let mut call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-
-        // TODO: Clean this up, this is currently required in order to be able to call the scrypto account component
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-
-        for (_key, validator_init) in &self.validator_set {
-            call_frame_update
-                .nodes_to_move
-                .push(RENodeId::Bucket(validator_init.initial_stake.0));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                validator_init.stake_account_address,
-            )));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                validator_init.validator_account_address,
-            )));
-        }
-
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for EpochManagerCreateInvocation {
     type Output = ComponentAddress;
 
@@ -128,12 +85,7 @@ impl Executor for EpochManagerCreateInvocation {
             // TODO: remove mint and premint all tokens
             {
                 let non_fungible_local_id = NonFungibleLocalId::Bytes(
-                    scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE))
-                        .unwrap(),
-                    /*
-                    scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
-                        .unwrap(),
-                     */
+                    scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
                 );
                 let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
@@ -150,7 +102,7 @@ impl Executor for EpochManagerCreateInvocation {
                     NonFungibleIdType::Bytes,
                     metadata,
                     access_rules
-                )
+                ),
             )?;
             let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)

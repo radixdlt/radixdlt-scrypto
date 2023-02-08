@@ -17,7 +17,6 @@ pub trait Invokable<I: Invocation, E> {
 
 pub trait ClientStaticInvokeApi<E>:
     Invokable<ScryptoInvocation, E>
-    //+ Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
@@ -30,7 +29,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<ValidatorUpdateKeyInvocation, E>
     + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
-    //+ Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
     + Invokable<ClockGetCurrentTimeInvocation, E>
     + Invokable<ClockCompareCurrentTimeInvocation, E>
@@ -71,11 +69,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBurnBucketInvocation, E>
-    //+ Invokable<ResourceManagerCreateNonFungibleInvocation, E>
-    //+ Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
-    //+ Invokable<ResourceManagerCreateFungibleInvocation, E>
-    //+ Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
-    //+ Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
@@ -112,7 +105,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
-    //+ Invokable<AccessControllerCreateGlobalInvocation, E>
     + Invokable<AccessControllerCreateProofInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
@@ -124,8 +116,6 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    //+ Invokable<AccountCreateInvocation, E>
-    //+ Invokable<AccountNewInvocation, E>
     + Invokable<AccountBalanceInvocation, E>
     + Invokable<AccountLockFeeInvocation, E>
     + Invokable<AccountLockContingentFeeInvocation, E>

@@ -331,11 +331,6 @@ impl EpochManagerPackage {
                     EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match epoch_manager_fn {
-                    /*
-                    EpochManagerFn::Create => {
-                        return Err(ResolveError::NotAMethod);
-                    }
-                     */
                     EpochManagerFn::GetCurrentEpoch => {
                         let _args: EpochManagerGetCurrentEpochMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
@@ -524,12 +519,6 @@ pub enum AuthZoneStackFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
-    // CreateNonFungible,
-    //CreateNonFungibleWithInitialSupply,
-    //CreateFungible,
-    //CreateUuidNonFungibleWithInitialSupply,
-    //CreateFungibleWithInitialSupply,
-
     MintNonFungible,
     MintUuidNonFungible,
     MintFungible,
@@ -705,11 +694,6 @@ impl ClockPackage {
     ) -> Result<ClockInvocation, ResolveError> {
         let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match clock_fn {
-            /*
-            ClockFn::Create => {
-                return Err(ResolveError::NotAMethod);
-            }
-             */
             ClockFn::CompareCurrentTime => {
                 let args: ClockCompareCurrentTimeMethodArgs =
                     scrypto_decode(args).map_err(ResolveError::DecodeError)?;

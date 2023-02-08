@@ -1,3 +1,4 @@
+use crate::blueprints::identity::IdentityCreateExecutable;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
@@ -7,16 +8,24 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
-use radix_engine_interface::api::{ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi,
+    ClientStaticInvokeApi, ClientSubstateApi,
+};
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInvocation;
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
-use radix_engine_interface::blueprints::resource::{ResourceManagerCreateFungibleInvocation, ResourceManagerCreateFungibleWithInitialSupplyInvocation, ResourceManagerCreateNonFungibleInvocation, ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation};
+use radix_engine_interface::blueprints::resource::{
+    ResourceManagerCreateFungibleInvocation,
+    ResourceManagerCreateFungibleWithInitialSupplyInvocation,
+    ResourceManagerCreateNonFungibleInvocation,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
+    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
+};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
-use crate::blueprints::identity::IdentityCreateExecutable;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -134,7 +143,12 @@ impl ExecutableInvocation for ScryptoInvocation {
         }
 
         match self.package_address {
-            IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE | RESOURCE_MANAGER_PACKAGE => {
+            IDENTITY_PACKAGE
+            | EPOCH_MANAGER_PACKAGE
+            | CLOCK_PACKAGE
+            | ACCOUNT_PACKAGE
+            | ACCESS_CONTROLLER_PACKAGE
+            | RESOURCE_MANAGER_PACKAGE => {
                 let executor = ScryptoExecutor {
                     package_address: self.package_address,
                     export_name: self.fn_name.to_string(),
@@ -149,12 +163,10 @@ impl ExecutableInvocation for ScryptoInvocation {
                         node_refs_to_copy,
                     },
                     executor,
-                ))
+                ));
             }
-            _ => {
-            }
+            _ => {}
         }
-
 
         // Signature check + retrieve export_name
         let export_name = {
@@ -270,65 +282,101 @@ impl Executor for ScryptoExecutor {
     {
         match self.package_address {
             IDENTITY_PACKAGE => {
-                let invocation: IdentityCreateExecutable = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let invocation: IdentityCreateExecutable =
+                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                return Ok((
+                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                    rtn.1,
+                ));
             }
             EPOCH_MANAGER_PACKAGE => {
-                let invocation: EpochManagerCreateInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let invocation: EpochManagerCreateInvocation =
+                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                return Ok((
+                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                    rtn.1,
+                ));
             }
             CLOCK_PACKAGE => {
-                let invocation: ClockCreateInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let invocation: ClockCreateInvocation =
+                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                return Ok((
+                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                    rtn.1,
+                ));
             }
             ACCOUNT_PACKAGE => {
                 // TODO: Add Account Create
-                let invocation: AccountNewInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let invocation: AccountNewInvocation =
+                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                return Ok((
+                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                    rtn.1,
+                ));
             }
             ACCESS_CONTROLLER_PACKAGE => {
-                let invocation: AccessControllerCreateGlobalInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                let invocation: AccessControllerCreateGlobalInvocation =
+                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
-                return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                return Ok((
+                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                    rtn.1,
+                ));
             }
-            RESOURCE_MANAGER_PACKAGE => {
-                match self.export_name.as_str() {
-                    "create_non_fungible" => {
-                        let invocation: ResourceManagerCreateNonFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                        let rtn = invocation.execute(api)?;
-                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
-                    }
-                    "create_non_fungible_with_initial_supply" => {
-                        let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                        let rtn = invocation.execute(api)?;
-                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
-                    }
-                    "create_fungible" => {
-                        let invocation: ResourceManagerCreateFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                        let rtn = invocation.execute(api)?;
-                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
-                    }
-                    "create_fungible_with_initial_supply" => {
-                        let invocation: ResourceManagerCreateFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                        let rtn = invocation.execute(api)?;
-                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
-                    }
-                    "create_uuid_non_fungible_with_initial_supply" => {
-                        let invocation: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                        let rtn = invocation.execute(api)?;
-                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
-                    }
-                    _ => {
-                        panic!("Does not exist.");
-                    }
+            RESOURCE_MANAGER_PACKAGE => match self.export_name.as_str() {
+                "create_non_fungible" => {
+                    let invocation: ResourceManagerCreateNonFungibleInvocation =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
                 }
-            }
-            _ => {
-            }
+                "create_non_fungible_with_initial_supply" => {
+                    let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInvocation =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                "create_fungible" => {
+                    let invocation: ResourceManagerCreateFungibleInvocation =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                "create_fungible_with_initial_supply" => {
+                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyInvocation =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                "create_uuid_non_fungible_with_initial_supply" => {
+                    let invocation: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                _ => {
+                    panic!("Does not exist.");
+                }
+            },
+            _ => {}
         }
 
         let package = {

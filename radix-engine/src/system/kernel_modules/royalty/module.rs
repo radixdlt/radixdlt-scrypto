@@ -9,8 +9,8 @@ use radix_engine_interface::api::types::{
     FnIdentifier, GlobalAddress, GlobalOffset, NodeModuleId, RENodeId, RoyaltyOffset, SubstateId,
     SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::*;
 use radix_engine_interface::constants::*;
+use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RoyaltyError {
@@ -91,11 +91,15 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
 
         let package_id = {
             match scrypto_fn_identifier.package_address {
-                IDENTITY_PACKAGE | EPOCH_MANAGER_PACKAGE | CLOCK_PACKAGE | ACCOUNT_PACKAGE | ACCESS_CONTROLLER_PACKAGE | RESOURCE_MANAGER_PACKAGE => {
+                IDENTITY_PACKAGE
+                | EPOCH_MANAGER_PACKAGE
+                | CLOCK_PACKAGE
+                | ACCOUNT_PACKAGE
+                | ACCESS_CONTROLLER_PACKAGE
+                | RESOURCE_MANAGER_PACKAGE => {
                     return Ok(());
                 }
-                _ => {
-                }
+                _ => {}
             }
 
             let node_id = RENodeId::Global(GlobalAddress::Package(

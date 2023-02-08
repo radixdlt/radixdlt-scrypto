@@ -11,15 +11,14 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::resource::*;
@@ -138,22 +137,28 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
             }
             BasicInstruction::CreateNonFungibleResource { access_rules, .. }
-            | BasicInstruction::CreateFungibleResource { access_rules, .. }=> {
+            | BasicInstruction::CreateFungibleResource { access_rules, .. } => {
                 let args = args!(access_rules.clone());
                 for node_id in slice_to_global_references(&args) {
                     update.add_ref(node_id);
                 }
             }
-            BasicInstruction::CreateAccessController { controlled_asset, primary_role, recovery_role, confirmation_role, timed_recovery_delay_in_minutes } => {
+            BasicInstruction::CreateAccessController {
+                controlled_asset,
+                primary_role,
+                recovery_role,
+                confirmation_role,
+                timed_recovery_delay_in_minutes,
+            } => {
                 let args = args!(
-                            controlled_asset,
-                            RuleSet {
-                                primary_role: primary_role.clone(),
-                                recovery_role: recovery_role.clone(),
-                                confirmation_role: confirmation_role.clone(),
-                            },
-                            *timed_recovery_delay_in_minutes
-                        );
+                    controlled_asset,
+                    RuleSet {
+                        primary_role: primary_role.clone(),
+                        recovery_role: recovery_role.clone(),
+                        confirmation_role: confirmation_role.clone(),
+                    },
+                    *timed_recovery_delay_in_minutes
+                );
                 for node_id in slice_to_global_references(&args) {
                     update.add_ref(node_id);
                 }
@@ -581,13 +586,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                resource_address: None,
-                                divisibility: *divisibility,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                                initial_supply: *amount,
-                            }).unwrap()
+                            scrypto_encode(
+                                &ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                    resource_address: None,
+                                    divisibility: *divisibility,
+                                    metadata: metadata.clone(),
+                                    access_rules: access_rules.clone(),
+                                    initial_supply: *amount,
+                                },
+                            )
+                            .unwrap(),
                         )?;
                         TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                             &rtn, api,
@@ -602,7 +610,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
-                            }).unwrap()
+                            })
+                            .unwrap(),
                         )?;
                         InstructionOutput::Scrypto(rtn)
                     }
@@ -618,13 +627,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                resource_address: None,
-                                divisibility: *divisibility,
-                                metadata: metadata.clone(),
-                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                                initial_supply: *amount,
-                            }).unwrap()
+                            scrypto_encode(
+                                &ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                    resource_address: None,
+                                    divisibility: *divisibility,
+                                    metadata: metadata.clone(),
+                                    access_rules: resource_access_rules_from_owner_badge(
+                                        owner_badge,
+                                    ),
+                                    initial_supply: *amount,
+                                },
+                            )
+                            .unwrap(),
                         )?;
                         TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                             &rtn, api,
@@ -639,7 +653,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            }).unwrap()
+                            })
+                            .unwrap(),
                         )?;
                         InstructionOutput::Scrypto(rtn)
                     }
@@ -655,12 +670,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_non_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                                entries: ids.clone(),
-                            }).unwrap()
+                            scrypto_encode(
+                                &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                    id_type: *id_type,
+                                    metadata: metadata.clone(),
+                                    access_rules: access_rules.clone(),
+                                    entries: ids.clone(),
+                                },
+                            )
+                            .unwrap(),
                         )?;
 
                         TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -669,7 +687,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                         InstructionOutput::Scrypto(rtn)
                     } else {
-
                         let rtn = api.call_function(
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -679,7 +696,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
-                            }).unwrap()
+                            })
+                            .unwrap(),
                         )?;
 
                         InstructionOutput::Scrypto(rtn)
@@ -696,12 +714,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_non_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                                entries: ids.clone(),
-                            }).unwrap()
+                            scrypto_encode(
+                                &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                    id_type: *id_type,
+                                    metadata: metadata.clone(),
+                                    access_rules: resource_access_rules_from_owner_badge(
+                                        owner_badge,
+                                    ),
+                                    entries: ids.clone(),
+                                },
+                            )
+                            .unwrap(),
                         )?;
 
                         TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -719,7 +742,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            }).unwrap()
+                            })
+                            .unwrap(),
                         )?;
 
                         InstructionOutput::Scrypto(rtn)
@@ -869,7 +893,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     confirmation_role,
                     timed_recovery_delay_in_minutes,
                 }) => {
-
                     let args = processor.replace_manifest_values(
                         IndexedScryptoValue::from_slice(&args!(
                             controlled_asset,
@@ -880,10 +903,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             },
                             *timed_recovery_delay_in_minutes
                         ))
-                            .expect("Invalid CALL_FUNCTION arguments"),
+                        .expect("Invalid CALL_FUNCTION arguments"),
                         api,
                     )?;
-
 
                     let invocation = ScryptoInvocation {
                         package_address: ACCESS_CONTROLLER_PACKAGE,
@@ -912,8 +934,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::Scrypto(result)
                 }
                 Instruction::System(invocation) => {
-                    let mut invocation = invocation.clone();
-                    processor.replace_ids_native(&mut invocation)?;
+                    let invocation = invocation.clone();
                     let rtn = invoke_native_fn(invocation, api)?;
 
                     // TODO: Move buckets/proofs to worktop/authzone without serialization
@@ -1059,19 +1080,6 @@ impl TransactionProcessor {
         }
 
         Ok(())
-    }
-
-    fn replace_ids_native(
-        &mut self,
-        invocation: &mut NativeInvocation,
-    ) -> Result<(), RuntimeError> {
-        invocation
-            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ReplaceManifestValuesError(e),
-                ))
-            })
     }
 
     fn replace_manifest_values<'a, Y>(

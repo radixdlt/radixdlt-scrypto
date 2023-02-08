@@ -33,25 +33,6 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
-/*
-impl ExecutableInvocation for ClockCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Clock(ClockFn::Create));
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for ClockCreateInvocation {
     type Output = ComponentAddress;
 

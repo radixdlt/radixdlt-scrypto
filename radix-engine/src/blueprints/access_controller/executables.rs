@@ -59,26 +59,6 @@ impl From<AccessControllerError> for RuntimeError {
 // Access Controller Create Global
 //=================================
 
-/*
-impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor =
-            ResolvedActor::function(NativeFn::AccessController(AccessControllerFn::CreateGlobal));
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.controlled_asset));
-
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for AccessControllerCreateGlobalInvocation {
     type Output = ComponentAddress;
 
@@ -95,7 +75,8 @@ impl Executor for AccessControllerCreateGlobalInvocation {
     {
         // Creating a new vault and putting in it the controlled asset
         let vault = {
-            let mut vault = self.controlled_asset
+            let mut vault = self
+                .controlled_asset
                 .sys_resource_address(api)
                 .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
             vault.sys_put(self.controlled_asset, api)?;

@@ -1,6 +1,5 @@
-use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::api::Invokable;
-use radix_engine_interface::args;
+use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
@@ -25,16 +24,19 @@ impl ResourceManager {
     where
         Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        let result = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            "create_fungible".to_string(),
-            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
-                metadata,
-                access_rules,
-                divisibility,
-            }).unwrap()
-        ).unwrap();
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                "create_fungible".to_string(),
+                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    metadata,
+                    access_rules,
+                    divisibility,
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
@@ -49,19 +51,23 @@ impl ResourceManager {
     where
         Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        let result = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            "create_fungible_with_initial_supply".to_string(),
-            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                metadata,
-                access_rules,
-                divisibility,
-                initial_supply: amount,
-            }).unwrap()
-        ).unwrap();
-        let (resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(result.as_slice()).unwrap();
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                "create_fungible_with_initial_supply".to_string(),
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    resource_address: None,
+                    metadata,
+                    access_rules,
+                    divisibility,
+                    initial_supply: amount,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let (resource_address, bucket): (ResourceAddress, Bucket) =
+            scrypto_decode(result.as_slice()).unwrap();
         Ok((ResourceManager(resource_address), bucket))
     }
 
@@ -74,7 +80,6 @@ impl ResourceManager {
     where
         Y: ClientNodeApi<E> + ClientApi<E>,
     {
-
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -84,7 +89,8 @@ impl ResourceManager {
                 id_type,
                 metadata,
                 access_rules,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))

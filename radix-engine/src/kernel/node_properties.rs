@@ -10,7 +10,11 @@ use radix_engine_interface::api::types::{
     ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
-use radix_engine_interface::constants::{ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
+use radix_engine_interface::constants::{
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
+    CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
+};
 
 use super::LockFlags;
 
@@ -82,27 +86,38 @@ impl VisibilityProperties {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENodeInit::ResourceManager(..) | RENodeInit::Bucket(..)
-                | RENodeInit::Global(GlobalAddressSubstate::Resource(..)) | RENodeInit::NonFungibleStore(..) => {
-                    package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
+                RENodeInit::ResourceManager(..)
+                | RENodeInit::Bucket(..)
+                | RENodeInit::Global(GlobalAddressSubstate::Resource(..))
+                | RENodeInit::NonFungibleStore(..) => {
+                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
                 }
-                RENodeInit::Identity() | RENodeInit::Global(GlobalAddressSubstate::Identity(..)) => {
+                RENodeInit::Identity()
+                | RENodeInit::Global(GlobalAddressSubstate::Identity(..)) => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }
-                RENodeInit::EpochManager(..) | RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE) && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
+                RENodeInit::EpochManager(..)
+                | RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)) => {
+                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
                 }
-                RENodeInit::Validator(..) | RENodeInit::Global(GlobalAddressSubstate::Validator(..)) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE) && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
+                RENodeInit::Validator(..)
+                | RENodeInit::Global(GlobalAddressSubstate::Validator(..)) => {
+                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
                 }
                 RENodeInit::Clock(..) | RENodeInit::Global(GlobalAddressSubstate::Clock(..)) => {
                     package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
                 }
-                RENodeInit::Account(..) | RENodeInit::Global(GlobalAddressSubstate::Account(..)) => {
+                RENodeInit::Account(..)
+                | RENodeInit::Global(GlobalAddressSubstate::Account(..)) => {
                     package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
                 }
-                RENodeInit::AccessController(..) | RENodeInit::Global(GlobalAddressSubstate::AccessController(..)) => {
-                    package_address.eq(&ACCESS_CONTROLLER_PACKAGE) && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
+                RENodeInit::AccessController(..)
+                | RENodeInit::Global(GlobalAddressSubstate::AccessController(..)) => {
+                    package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                        && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore(..) => true,
                 RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
@@ -180,8 +195,8 @@ impl VisibilityProperties {
                         // Native
                         FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                                                  package_address, ..
-                                              }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
+                            package_address, ..
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
@@ -230,7 +245,7 @@ impl VisibilityProperties {
                         FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
-                                              }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
 
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {

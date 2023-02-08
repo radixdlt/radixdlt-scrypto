@@ -338,32 +338,6 @@ pub fn export_abi_by_component(
 pub fn export_account_abi() -> abi::BlueprintAbi {
     let fns = {
         let mut fns = Vec::new();
-        /*
-        {
-            let fn_ident = AccountFn::Create;
-
-            let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
-                mutability: None,
-                input: AccountCreateInvocation::describe(),
-                output: <AccountCreateInvocation as Invocation>::Output::describe(),
-            };
-            fns.push(fn_def);
-        }
-        {
-            let fn_ident = AccountFn::New;
-
-            let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
-                mutability: None,
-                input: AccountNewInvocation::describe(),
-                output: <AccountNewInvocation as Invocation>::Output::describe(),
-            };
-            fns.push(fn_def);
-        }
-         */
         {
             let fn_ident = AccountFn::LockFee;
 

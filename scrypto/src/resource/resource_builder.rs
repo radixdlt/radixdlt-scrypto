@@ -1,5 +1,4 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::radix_engine_interface::api::Invokable;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -161,33 +160,39 @@ impl FungibleResourceBuilder {
     ///     .initial_supply(5);
     /// ```
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-                initial_supply: amount.into(),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible_with_initial_supply",
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    resource_address: None,
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     pub fn no_initial_supply(self) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible",
-            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible",
+                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -197,33 +202,39 @@ impl FungibleResourceBuilder {
         amount: T,
         owner_badge: NonFungibleGlobalId,
     ) -> Bucket {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                initial_supply: amount.into(),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible_with_initial_supply",
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    resource_address: None,
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible",
-            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible",
+                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                })
+                .unwrap(),
+            )
+            .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -305,34 +316,40 @@ impl FungibleResourceWithAuthBuilder {
     }
 
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: self.authorization,
-                initial_supply: amount.into(),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible_with_initial_supply",
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    resource_address: None,
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_fungible",
-            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: self.authorization,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_fungible",
+                scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                })
+                .unwrap(),
+            )
+            .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -468,32 +485,38 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible",
-            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible",
+                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
+                    resource_address: None,
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible",
-            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible",
+                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
+                    resource_address: None,
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 }
@@ -523,17 +546,22 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
             );
         }
 
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-                entries: encoded,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible_with_initial_supply",
+                scrypto_encode(
+                    &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                        id_type: Y::id_type(),
+                        metadata: self.metadata,
+                        access_rules: BTreeMap::new(),
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
@@ -555,17 +583,22 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
             );
         }
 
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                entries: encoded,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible_with_initial_supply",
+                scrypto_encode(
+                    &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                        id_type: Y::id_type(),
+                        metadata: self.metadata,
+                        access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
@@ -582,16 +615,21 @@ impl NonFungibleResourceBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_uuid_non_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-                entries: encoded,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_uuid_non_fungible_with_initial_supply",
+                scrypto_encode(
+                    &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+                        metadata: self.metadata,
+                        access_rules: BTreeMap::new(),
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
+            )
+            .unwrap();
 
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
@@ -685,17 +723,20 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible",
-            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: self.authorization,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible",
+                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
+                    resource_address: None,
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                })
+                .unwrap(),
+            )
+            .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -715,17 +756,22 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceWithAuthBuilder
             );
         }
 
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_non_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: self.authorization,
-                entries: encoded,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_non_fungible_with_initial_supply",
+                scrypto_encode(
+                    &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                        id_type: Y::id_type(),
+                        metadata: self.metadata,
+                        access_rules: self.authorization,
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
+            )
+            .unwrap();
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
@@ -742,16 +788,21 @@ impl NonFungibleResourceWithAuthBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        let rtn = ScryptoEnv.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            "create_uuid_non_fungible_with_initial_supply",
-            scrypto_encode(&ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                metadata: self.metadata,
-                access_rules: self.authorization,
-                entries: encoded,
-            }).unwrap()
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                "create_uuid_non_fungible_with_initial_supply",
+                scrypto_encode(
+                    &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+                        metadata: self.metadata,
+                        access_rules: self.authorization,
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
+            )
+            .unwrap();
 
         let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket

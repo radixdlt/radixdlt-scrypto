@@ -62,7 +62,8 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 

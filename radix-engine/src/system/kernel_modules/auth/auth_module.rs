@@ -45,27 +45,27 @@ impl AuthModule {
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(fn_identifier),
                 receiver: None,
-            } => {
-                match fn_identifier.package_address {
-                    EPOCH_MANAGER_PACKAGE => {
-                        if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
-                            && fn_identifier.ident.eq("create") {
-                            EpochManager::create_auth()
-                        } else {
-                            vec![]
-                        }
+            } => match fn_identifier.package_address {
+                EPOCH_MANAGER_PACKAGE => {
+                    if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
+                        && fn_identifier.ident.eq("create")
+                    {
+                        EpochManager::create_auth()
+                    } else {
+                        vec![]
                     }
-                    CLOCK_PACKAGE => {
-                        if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
-                            && fn_identifier.ident.eq("create") {
-                            Clock::create_auth()
-                        } else {
-                            vec![]
-                        }
-                    }
-                    _ => vec![]
                 }
-            }
+                CLOCK_PACKAGE => {
+                    if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
+                        && fn_identifier.ident.eq("create")
+                    {
+                        Clock::create_auth()
+                    } else {
+                        vec![]
+                    }
+                }
+                _ => vec![],
+            },
             ResolvedActor {
                 identifier: FnIdentifier::Native(native_fn),
                 receiver: Some(resolved_receiver),

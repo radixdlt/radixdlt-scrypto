@@ -634,10 +634,7 @@ where
                                 continue;
                             }
 
-                            if matches!(
-                                global_address,
-                                GlobalAddress::Package(IDENTITY_PACKAGE)
-                            ) {
+                            if matches!(global_address, GlobalAddress::Package(IDENTITY_PACKAGE)) {
                                 self.current_frame
                                     .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                 continue;
@@ -652,19 +649,13 @@ where
                                 continue;
                             }
 
-                            if matches!(
-                                global_address,
-                                GlobalAddress::Package(CLOCK_PACKAGE)
-                            ) {
+                            if matches!(global_address, GlobalAddress::Package(CLOCK_PACKAGE)) {
                                 self.current_frame
                                     .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                 continue;
                             }
 
-                            if matches!(
-                                global_address,
-                                GlobalAddress::Package(ACCOUNT_PACKAGE)
-                            ) {
+                            if matches!(global_address, GlobalAddress::Package(ACCOUNT_PACKAGE)) {
                                 self.current_frame
                                     .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                 continue;

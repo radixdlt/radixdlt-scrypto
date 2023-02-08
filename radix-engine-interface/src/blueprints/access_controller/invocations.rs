@@ -25,30 +25,6 @@ impl Clone for AccessControllerCreateGlobalInvocation {
     }
 }
 
-/*
-impl Invocation for AccessControllerCreateGlobalInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateGlobal))
-    }
-}
-
-impl SerializableInvocation for AccessControllerCreateGlobalInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::CreateGlobal)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::CreateGlobal(self)).into()
-    }
-}
- */
-
 //================================
 // Access Controller Create Proof
 //================================

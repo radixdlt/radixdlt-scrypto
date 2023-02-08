@@ -377,23 +377,6 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-/*
-impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateNonFungible,
-        ));
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;
 
@@ -465,22 +448,6 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
     }
 }
 
-/*
-impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor =
-            ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible));
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;
 
@@ -538,23 +505,6 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
         Ok((resource_address, update))
     }
 }
-
-/*
-impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateNonFungibleWithInitialSupply,
-        ));
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
 
 impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
@@ -633,23 +583,6 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     }
 }
 
-/*
-impl ExecutableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply,
-        ));
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
@@ -727,23 +660,6 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         ))
     }
 }
-
-/*
-impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateFungibleWithInitialSupply,
-        ));
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
 
 impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);

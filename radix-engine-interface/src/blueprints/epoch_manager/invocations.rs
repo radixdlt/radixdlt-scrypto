@@ -57,30 +57,6 @@ impl Clone for EpochManagerCreateInvocation {
     }
 }
 
-/*
-impl Invocation for EpochManagerCreateInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::Create))
-    }
-}
-
-impl SerializableInvocation for EpochManagerCreateInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::Create)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
-    }
-}
- */
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerGetCurrentEpochMethodArgs {}
 

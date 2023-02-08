@@ -42,24 +42,6 @@ impl From<AccountError> for RuntimeError {
 // Account Create
 //================
 
-/*
-impl ExecutableInvocation for AccountCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Account(AccountFn::Create));
-        let call_frame_update = CallFrameUpdate::empty();
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
-
 impl Executor for AccountCreateInvocation {
     type Output = ComponentId;
 
@@ -119,24 +101,6 @@ impl Executor for AccountCreateInvocation {
 //=============
 // Account New
 //=============
-
-/*
-impl ExecutableInvocation for AccountNewInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Account(AccountFn::New));
-        let call_frame_update = CallFrameUpdate::empty();
-        Ok((actor, call_frame_update, self))
-    }
-}
- */
 
 impl Executor for AccountNewInvocation {
     type Output = ComponentAddress;
