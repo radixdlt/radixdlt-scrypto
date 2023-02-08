@@ -4,7 +4,7 @@ use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
+use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
@@ -732,9 +732,14 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AccessRule) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateAccount {
-            withdraw_rule: withdraw_auth.clone(),
+    pub fn new_account(&mut self, withdraw_auth: AccessRule) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: scrypto_encode(&AccountCreateInvocation {
+                withdraw_rule: withdraw_auth,
+            }).unwrap(),
         })
         .0
     }

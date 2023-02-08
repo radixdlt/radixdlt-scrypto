@@ -1,7 +1,8 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::account::AccountCreateInvocation;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::constants::{IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
+use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -590,8 +591,18 @@ pub fn generate_instruction(
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CreateAccount {
-            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
+        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: "create".to_string(),
+            args: scrypto_encode(&AccountCreateInvocation {
+                withdraw_rule: generate_typed_value(
+                    withdraw_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?
+            }).unwrap(),
         },
     })
 }

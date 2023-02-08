@@ -214,10 +214,6 @@ pub enum BasicInstruction {
         access_rule: AccessRule,
     },
 
-    CreateAccount {
-        withdraw_rule: AccessRule,
-    },
-
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

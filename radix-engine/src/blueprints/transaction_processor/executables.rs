@@ -245,7 +245,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
             | BasicInstruction::AssertAccessRule { .. }
-            | BasicInstruction::CreateAccount { .. } => {}
+            => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -921,17 +921,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
-                    let invocation = ScryptoInvocation {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        fn_name: "new".to_string(),
-                        receiver: None,
-                        args: args!(withdraw_rule),
-                    };
-                    let result = invoke_scrypto_fn(invocation, api)?;
-                    InstructionOutput::Scrypto(result)
                 }
                 Instruction::System(invocation) => {
                     let invocation = invocation.clone();

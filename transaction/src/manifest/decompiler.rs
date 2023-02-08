@@ -1,5 +1,6 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE};
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
@@ -325,15 +326,21 @@ pub fn decompile_instruction<F: fmt::Write>(
             function_name,
             args,
         } => {
-            write!(
-                f,
-                "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
-                package_address.display(context.bech32_encoder),
-                blueprint_name,
-                function_name,
-            )?;
-            format_args(f, context, args)?;
-            f.write_str(";")?;
+            if package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT) && function_name.eq("create") {
+                write!(f, "CREATE_ACCOUNT")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
+            } else {
+                write!(
+                    f,
+                    "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
+                    package_address.display(context.bech32_encoder),
+                    blueprint_name,
+                    function_name,
+                )?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
+            }
         }
         BasicInstruction::CallMethod {
             component_address,
@@ -570,11 +577,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;
             format_typed_value(f, context, access_rule)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateAccount { withdraw_rule } => {
-            f.write_str("CREATE_ACCOUNT")?;
-            format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
     }

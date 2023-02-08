@@ -33,7 +33,7 @@ fn bench_transfer(c: &mut Criterion) {
         .map(|_| {
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
-                .new_account(&rule!(require(NonFungibleGlobalId::from_public_key(
+                .new_account(rule!(require(NonFungibleGlobalId::from_public_key(
                     &public_key
                 ))))
                 .build();
