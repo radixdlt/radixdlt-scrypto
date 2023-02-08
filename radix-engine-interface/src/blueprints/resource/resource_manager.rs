@@ -73,6 +73,7 @@ pub struct ResourceManagerCreateFungibleInvocation {
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
+/*
 impl Invocation for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;
 
@@ -94,6 +95,7 @@ impl Into<CallTableInvocation> for ResourceManagerCreateFungibleInvocation {
         NativeInvocation::ResourceManager(ResourceInvocation::CreateFungible(self)).into()
     }
 }
+ */
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {

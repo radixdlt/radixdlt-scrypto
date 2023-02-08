@@ -465,6 +465,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
     }
 }
 
+/*
 impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
     type Exec = Self;
 
@@ -478,6 +479,7 @@ impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
         Ok((actor, call_frame_update, self))
     }
 }
+ */
 
 impl Executor for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;

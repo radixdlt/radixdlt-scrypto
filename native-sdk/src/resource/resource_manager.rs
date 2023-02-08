@@ -23,14 +23,20 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateFungibleInvocation {
-            metadata,
-            access_rules,
-            divisibility,
-        })
-        .map(|address| ResourceManager(address))
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            "create_fungible".to_string(),
+            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
+                metadata,
+                access_rules,
+                divisibility,
+            }).unwrap()
+        ).unwrap();
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(

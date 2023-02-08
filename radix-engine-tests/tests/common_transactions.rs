@@ -361,8 +361,10 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
     };
-    let mintable_resource_address = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![])
+    let result = test_runner
+        .execute_manifest_ignoring_fee(manifest, vec![]);
+    result.expect_commit_success();
+    let mintable_resource_address = result
         .new_resource_addresses()[0]
         .clone();
 

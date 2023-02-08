@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::access_controller::AccessControllerCreat
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
-use radix_engine_interface::blueprints::resource::{ResourceManagerCreateNonFungibleInvocation, ResourceManagerCreateNonFungibleWithInitialSupplyInvocation};
+use radix_engine_interface::blueprints::resource::{ResourceManagerCreateFungibleInvocation, ResourceManagerCreateNonFungibleInvocation, ResourceManagerCreateNonFungibleWithInitialSupplyInvocation};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 use crate::blueprints::identity::IdentityCreateExecutable;
@@ -304,6 +304,11 @@ impl Executor for ScryptoExecutor {
                     }
                     "create_non_fungible_with_initial_supply" => {
                         let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                        let rtn = invocation.execute(api)?;
+                        return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
+                    }
+                    "create_fungible" => {
+                        let invocation: ResourceManagerCreateFungibleInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                         let rtn = invocation.execute(api)?;
                         return Ok((scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(), rtn.1));
                     }

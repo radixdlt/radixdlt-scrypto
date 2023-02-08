@@ -526,7 +526,7 @@ pub enum AuthZoneStackFn {
 pub enum ResourceManagerFn {
     // CreateNonFungible,
     //CreateNonFungibleWithInitialSupply,
-    CreateFungible,
+    //CreateFungible,
     CreateUuidNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
 

@@ -219,10 +219,6 @@ where
         },
         NativeInvocation::ResourceManager(resource_manager_invocation) => {
             match resource_manager_invocation {
-                ResourceInvocation::CreateFungible(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))

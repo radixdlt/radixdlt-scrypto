@@ -175,13 +175,18 @@ impl FungibleResourceBuilder {
     }
 
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible",
+            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn initial_supply_with_owner<T: Into<Decimal>>(
@@ -203,13 +208,18 @@ impl FungibleResourceBuilder {
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible",
+            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -304,13 +314,18 @@ impl FungibleResourceWithAuthBuilder {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .invoke(ResourceManagerCreateFungibleInvocation {
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_fungible",
+            scrypto_encode(&ResourceManagerCreateFungibleInvocation {
                 divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: self.authorization,
-            })
-            .unwrap()
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 

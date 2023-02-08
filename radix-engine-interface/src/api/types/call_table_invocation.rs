@@ -192,7 +192,6 @@ pub enum AuthZoneStackInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceInvocation {
-    CreateFungible(ResourceManagerCreateFungibleInvocation),
     CreateUuidNonFungibleWithInitialSupply(
         ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
     ),
@@ -410,7 +409,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::CreateFungible(..) => {}
                 ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}

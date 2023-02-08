@@ -151,7 +151,6 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
