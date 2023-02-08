@@ -4,7 +4,9 @@ use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE};
+use radix_engine_interface::constants::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+};
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
@@ -739,7 +741,8 @@ impl ManifestBuilder {
             function_name: "create".to_string(),
             args: scrypto_encode(&AccountCreateInvocation {
                 withdraw_rule: withdraw_auth,
-            }).unwrap(),
+            })
+            .unwrap(),
         })
         .0
     }

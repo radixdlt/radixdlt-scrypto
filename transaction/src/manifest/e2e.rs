@@ -585,6 +585,21 @@ CREATE_ACCOUNT
         );
     }
 
+    #[test]
+    fn test_create_identity() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/identity/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_IDENTITY
+    Enum(0u8);
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,

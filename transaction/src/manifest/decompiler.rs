@@ -1,6 +1,8 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::constants::{ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE};
+use radix_engine_interface::constants::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+};
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
@@ -326,8 +328,18 @@ pub fn decompile_instruction<F: fmt::Write>(
             function_name,
             args,
         } => {
-            if package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT) && function_name.eq("create") {
+            if package_address.eq(&ACCOUNT_PACKAGE)
+                && blueprint_name.eq(ACCOUNT_BLUEPRINT)
+                && function_name.eq("create")
+            {
                 write!(f, "CREATE_ACCOUNT")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
+            } else if package_address.eq(&IDENTITY_PACKAGE)
+                && blueprint_name.eq(IDENTITY_BLUEPRINT)
+                && function_name.eq("create")
+            {
+                write!(f, "CREATE_IDENTITY")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else {

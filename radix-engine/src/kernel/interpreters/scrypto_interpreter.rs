@@ -1,4 +1,3 @@
-use crate::blueprints::identity::IdentityCreateExecutable;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
@@ -17,6 +16,7 @@ use radix_engine_interface::blueprints::access_controller::AccessControllerCreat
 use radix_engine_interface::blueprints::account::AccountNewInvocation;
 use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
+use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleInvocation,
     ResourceManagerCreateFungibleWithInitialSupplyInvocation,
@@ -282,7 +282,7 @@ impl Executor for ScryptoExecutor {
     {
         match self.package_address {
             IDENTITY_PACKAGE => {
-                let invocation: IdentityCreateExecutable =
+                let invocation: IdentityCreateInput =
                     scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((

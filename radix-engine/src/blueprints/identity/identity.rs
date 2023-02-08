@@ -8,14 +8,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct IdentityCreateExecutable {
-    pub access_rule: AccessRule,
-}
-
-impl Executor for IdentityCreateExecutable {
+impl Executor for IdentityCreateInput {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

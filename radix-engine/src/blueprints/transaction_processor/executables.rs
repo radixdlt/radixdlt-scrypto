@@ -244,8 +244,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::BurnResource { .. }
             | BasicInstruction::CreateFungibleResourceWithOwner { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
-            | BasicInstruction::AssertAccessRule { .. }
-            => {}
+            | BasicInstruction::AssertAccessRule { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
