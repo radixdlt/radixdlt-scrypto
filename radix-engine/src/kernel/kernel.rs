@@ -163,11 +163,6 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Balance)),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_access_rule_and_mutability(
                     AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,

@@ -820,21 +820,19 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    Balance,
-
     LockFee,
     LockContingentFee,
 
     Deposit,
     DepositBatch,
 
+    WithdrawAll,
     Withdraw,
-    WithdrawByAmount,
-    WithdrawByIds,
+    WithdrawNonFungibles,
 
+    LockFeeAndWithdrawAll,
     LockFeeAndWithdraw,
-    LockFeeAndWithdrawByAmount,
-    LockFeeAndWithdrawByIds,
+    LockFeeAndWithdrawNonFungibles,
 
     CreateProof,
     CreateProofByAmount,
@@ -851,14 +849,6 @@ impl AccountPackage {
     ) -> Result<AccountInvocation, ResolveError> {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
-            AccountFn::Balance => {
-                let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::Balance(AccountBalanceInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                })
-            }
             AccountFn::LockFee => {
                 let args = scrypto_decode::<AccountLockFeeMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
@@ -891,30 +881,39 @@ impl AccountPackage {
                     buckets: args.buckets.into_iter().map(|x| x.0).collect(),
                 })
             }
+            AccountFn::WithdrawAll => {
+                let args = scrypto_decode::<AccountWithdrawAllMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawAll(AccountWithdrawAllInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
             AccountFn::Withdraw => {
                 let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccountInvocation::Withdraw(AccountWithdrawInvocation {
                     receiver,
                     resource_address: args.resource_address,
-                })
-            }
-            AccountFn::WithdrawByAmount => {
-                let args = scrypto_decode::<AccountWithdrawByAmountMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
                     amount: args.amount,
                 })
             }
-            AccountFn::WithdrawByIds => {
-                let args = scrypto_decode::<AccountWithdrawByIdsMethodArgs>(args)
+            AccountFn::WithdrawNonFungibles => {
+                let args = scrypto_decode::<AccountWithdrawNonFungiblesMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                AccountInvocation::WithdrawNonFungibles(AccountWithdrawNonFungiblesInvocation {
                     receiver,
                     resource_address: args.resource_address,
                     ids: args.ids,
+                })
+            }
+            AccountFn::LockFeeAndWithdrawAll => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawAllMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawAll(AccountLockFeeAndWithdrawAllInvocation {
+                    receiver,
+                    amount_to_lock: args.amount_to_lock,
+                    resource_address: args.resource_address,
                 })
             }
             AccountFn::LockFeeAndWithdraw => {
@@ -924,25 +923,14 @@ impl AccountPackage {
                     receiver,
                     amount_to_lock: args.amount_to_lock,
                     resource_address: args.resource_address,
+                    amount: args.amount,
                 })
             }
-            AccountFn::LockFeeAndWithdrawByAmount => {
-                let args = scrypto_decode::<AccountLockFeeAndWithdrawByAmountMethodArgs>(args)
+            AccountFn::LockFeeAndWithdrawNonFungibles => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawNonFungiblesMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::LockFeeAndWithdrawByAmount(
-                    AccountLockFeeAndWithdrawByAmountInvocation {
-                        receiver,
-                        amount_to_lock: args.amount_to_lock,
-                        resource_address: args.resource_address,
-                        amount: args.amount,
-                    },
-                )
-            }
-            AccountFn::LockFeeAndWithdrawByIds => {
-                let args = scrypto_decode::<AccountLockFeeAndWithdrawByIdsMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::LockFeeAndWithdrawByIds(
-                    AccountLockFeeAndWithdrawByIdsInvocation {
+                AccountInvocation::LockFeeAndWithdrawNonFungibles(
+                    AccountLockFeeAndWithdrawNonFungiblesInvocation {
                         receiver,
                         amount_to_lock: args.amount_to_lock,
                         resource_address: args.resource_address,

@@ -22,8 +22,8 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("${account_component_address}")
     "create_proof_by_amount"
-    Decimal("1")
-    ResourceAddress("${minter_badge_resource_address}");
+    ResourceAddress("${minter_badge_resource_address}")
+    Decimal("1");
 
 # Minting a single non-fungible token from the resource. This non-fungible token has no data (this
 # is what the 5c2100 bit means, it's the SBOR representation of an empty struct) and has an id that

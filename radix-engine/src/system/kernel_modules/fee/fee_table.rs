@@ -224,21 +224,19 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::Balance => self.fixed_low,
-
                 AccountFn::LockFee => self.fixed_low,
                 AccountFn::LockContingentFee => self.fixed_low,
 
                 AccountFn::Deposit => self.fixed_low,
                 AccountFn::DepositBatch => self.fixed_low,
 
+                AccountFn::WithdrawAll => self.fixed_low,
                 AccountFn::Withdraw => self.fixed_low,
-                AccountFn::WithdrawByAmount => self.fixed_low,
-                AccountFn::WithdrawByIds => self.fixed_low,
+                AccountFn::WithdrawNonFungibles => self.fixed_low,
 
+                AccountFn::LockFeeAndWithdrawAll => self.fixed_low,
                 AccountFn::LockFeeAndWithdraw => self.fixed_low,
-                AccountFn::LockFeeAndWithdrawByAmount => self.fixed_low,
-                AccountFn::LockFeeAndWithdrawByIds => self.fixed_low,
+                AccountFn::LockFeeAndWithdrawNonFungibles => self.fixed_low,
 
                 AccountFn::CreateProof => self.fixed_low,
                 AccountFn::CreateProofByAmount => self.fixed_low,

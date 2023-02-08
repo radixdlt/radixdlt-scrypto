@@ -1,5 +1,5 @@
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::*;
 
 use crate::utils::*;
@@ -17,161 +17,154 @@ pub fn handle_encode(
 ) -> Result<TokenStream> {
     trace!("handle_encode() starts");
 
+    let parsed: DeriveInput = parse2(input)?;
+    let is_transparent = is_transparent(&parsed.attrs);
+
+    let output = if is_transparent {
+        handle_transparent_encode(parsed, context_custom_value_kind)?
+    } else {
+        handle_normal_encode(parsed, context_custom_value_kind)?
+    };
+
+    #[cfg(feature = "trace")]
+    crate::utils::print_generated_code("Encode", &output);
+
+    trace!("handle_encode() finishes");
+    Ok(output)
+}
+
+pub fn handle_transparent_encode(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     let DeriveInput {
         attrs,
         ident,
         data,
         generics,
         ..
-    } = parse2(input)?;
+    } = parsed;
     let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, encoder_generic) =
         build_encode_generics(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
-        Data::Struct(s) => match s.fields {
-            syn::Fields::Named(FieldsNamed { named, .. }) => {
-                // ns: not skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                let ns_ids = ns.iter().map(|f| &f.ident);
-                let ns_len = Index::from(ns_ids.len());
-                quote! {
-                    impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_value_kind(::sbor::ValueKind::Tuple)
-                        }
+        Data::Struct(s) => {
+            let FieldsData {
+                unskipped_self_field_names,
+                ..
+            } = process_fields_for_encode(&s.fields);
+            if unskipped_self_field_names.len() != 1 {
+                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+            }
+            let field_name = &unskipped_self_field_names[0];
+            quote! {
+                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        self.#field_name.encode_value_kind(encoder)
+                    }
 
-                        #[inline]
-                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            use ::sbor::{self, Encode};
-                            encoder.write_size(#ns_len)?;
-                            #(encoder.encode(&self.#ns_ids)?;)*
-                            Ok(())
-                        }
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        self.#field_name.encode_body(encoder)
                     }
                 }
             }
-            syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let mut ns_indices = Vec::new();
-                for (i, f) in unnamed.iter().enumerate() {
-                    if !is_encoding_skipped(f) {
-                        ns_indices.push(Index::from(i));
-                    }
-                }
-                let ns_len = Index::from(ns_indices.len());
-                quote! {
-                    impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_value_kind(::sbor::ValueKind::Tuple)
-                        }
+        }
+        Data::Enum(_) => {
+            return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+        }
+        Data::Union(_) => {
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+        }
+    };
 
-                        #[inline]
-                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            use ::sbor::{self, Encode};
-                            encoder.write_size(#ns_len)?;
-                            #(encoder.encode(&self.#ns_indices)?;)*
-                            Ok(())
-                        }
+    Ok(output)
+}
+
+pub fn handle_normal_encode(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        data,
+        generics,
+        ..
+    } = parsed;
+    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, encoder_generic) =
+        build_encode_generics(&generics, &attrs, context_custom_value_kind)?;
+
+    let output = match data {
+        Data::Struct(s) => {
+            let FieldsData {
+                unskipped_self_field_names,
+                unskipped_field_count,
+                ..
+            } = process_fields_for_encode(&s.fields);
+            quote! {
+                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    }
+
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(#unskipped_field_count)?;
+                        #(encoder.encode(&self.#unskipped_self_field_names)?;)*
+                        Ok(())
                     }
                 }
             }
-            syn::Fields::Unit => {
-                quote! {
-                    impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_value_kind(::sbor::ValueKind::Tuple)
-                        }
-
-                        #[inline]
-                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_size(0)
-                        }
-                    }
-                }
-            }
-        },
+        }
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().enumerate().map(|(i, v)| {
                 let v_id = &v.ident;
                 let i: u8 = i.try_into().expect("Too many variants found in enum");
                 let discriminator: Expr = parse_quote! { #i };
 
-                match &v.fields {
-                    syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> =
-                            named.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                        let ns_ids = ns.iter().map(|f| &f.ident);
-                        let ns_ids2 = ns.iter().map(|f| &f.ident);
-                        let ns_len = Index::from(ns.len());
-                        quote! {
-                            Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_discriminator(#discriminator)?;
-                                encoder.write_size(#ns_len)?;
-                                #(encoder.encode(#ns_ids2)?;)*
-                            }
-                        }
-                    }
-                    syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
-                        let mut ns_args = Vec::<Ident>::new();
-                        for (i, f) in unnamed.iter().enumerate() {
-                            if !is_encoding_skipped(f) {
-                                ns_args.push(format_ident!("a{}", i));
-                            }
-                        }
-                        let ns_len = Index::from(ns_args.len());
-                        quote! {
-                            Self::#v_id (#(#args),*) => {
-                                encoder.write_discriminator(#discriminator)?;
-                                encoder.write_size(#ns_len)?;
-                                #(encoder.encode(#ns_args)?;)*
-                            }
-                        }
-                    }
-                    syn::Fields::Unit => {
-                        quote! {
-                            Self::#v_id => {
-                                encoder.write_discriminator(#discriminator)?;
-                                encoder.write_size(0)?;
-                            }
-                        }
+                let FieldsData {
+                    unskipped_field_count,
+                    fields_unpacking,
+                    unskipped_unpacked_field_names,
+                    ..
+                } = process_fields_for_encode(&v.fields);
+                quote! {
+                    Self::#v_id #fields_unpacking => {
+                        encoder.write_discriminator(#discriminator)?;
+                        encoder.write_size(#unskipped_field_count)?;
+                        #(encoder.encode(#unskipped_unpacked_field_names)?;)*
                     }
                 }
             });
 
-            if match_arms.len() == 0 {
-                quote! {
-                    impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_value_kind(::sbor::ValueKind::Enum)
-                        }
-
-                        #[inline]
-                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            Ok(())
-                        }
-                    }
-                }
+            let encode_content = if match_arms.len() == 0 {
+                quote! {}
             } else {
                 quote! {
-                    impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_value_kind(::sbor::ValueKind::Enum)
-                        }
+                    use ::sbor::{self, Encode};
 
-                        #[inline]
-                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            use ::sbor::{self, Encode};
+                    match self {
+                        #(#match_arms)*
+                    }
+                }
+            };
+            quote! {
+                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_value_kind(::sbor::ValueKind::Enum)
+                    }
 
-                            match self {
-                                #(#match_arms)*
-                            }
-                            Ok(())
-                        }
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                        #encode_content
+                        Ok(())
                     }
                 }
             }

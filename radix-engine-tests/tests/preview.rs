@@ -72,7 +72,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Check method authorization (withdrawal) without a proof in the auth zone
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .withdraw_from_account(account, RADIX_TOKEN)
+        .withdraw_all_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
