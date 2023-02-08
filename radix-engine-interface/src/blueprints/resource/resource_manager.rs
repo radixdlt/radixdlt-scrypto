@@ -141,6 +141,7 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
 }
 
+/*
 impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
@@ -167,6 +168,8 @@ impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithIniti
         .into()
     }
 }
+
+ */
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {

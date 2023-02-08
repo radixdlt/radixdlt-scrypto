@@ -74,7 +74,7 @@ pub trait ClientStaticInvokeApi<E>:
     //+ Invokable<ResourceManagerCreateNonFungibleInvocation, E>
     //+ Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
     //+ Invokable<ResourceManagerCreateFungibleInvocation, E>
-    + Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
+    //+ Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>

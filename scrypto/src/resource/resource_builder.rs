@@ -573,16 +573,19 @@ impl NonFungibleResourceBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        ScryptoEnv
-            .invoke(
-                ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                    metadata: self.metadata,
-                    access_rules: BTreeMap::new(),
-                    entries: encoded,
-                },
-            )
-            .unwrap()
-            .1
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_uuid_non_fungible_with_initial_supply",
+            scrypto_encode(&ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+                metadata: self.metadata,
+                access_rules: BTreeMap::new(),
+                entries: encoded,
+            }).unwrap()
+        ).unwrap();
+
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 }
 
@@ -730,15 +733,18 @@ impl NonFungibleResourceWithAuthBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        ScryptoEnv
-            .invoke(
-                ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                    metadata: self.metadata,
-                    access_rules: self.authorization,
-                    entries: encoded,
-                },
-            )
-            .unwrap()
-            .1
+        let rtn = ScryptoEnv.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            "create_uuid_non_fungible_with_initial_supply",
+            scrypto_encode(&ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+                metadata: self.metadata,
+                access_rules: self.authorization,
+                entries: encoded,
+            }).unwrap()
+        ).unwrap();
+
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 }

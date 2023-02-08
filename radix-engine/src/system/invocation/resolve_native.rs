@@ -322,14 +322,6 @@ where
             }
         },
         NativeFn::ResourceManager(resource_manager_fn) => match resource_manager_fn {
-            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => {
-                let invocation = scrypto_decode::<
-                    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
-                >(&invocation)
-                .map_err(|_| InterpreterError::InvalidInvocation)?;
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ResourceManagerFn::CreateFungibleWithInitialSupply => {
                 let invocation = scrypto_decode::<
                     ResourceManagerCreateFungibleWithInitialSupplyInvocation,
