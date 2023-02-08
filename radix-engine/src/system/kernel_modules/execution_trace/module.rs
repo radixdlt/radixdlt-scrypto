@@ -27,7 +27,7 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, KernelCallTraceOrigin, Option<u32>)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, Origin, Option<u32>)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
@@ -73,7 +73,7 @@ pub struct ResourceMovement {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KernelCallTrace {
-    pub origin: KernelCallTraceOrigin,
+    pub origin: Origin,
     pub kernel_call_depth: usize,
     pub current_frame_actor: ResolvedActor,
     pub current_frame_depth: usize,
@@ -84,7 +84,7 @@ pub struct KernelCallTrace {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum KernelCallTraceOrigin {
+pub enum Origin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),
     NativeFn(NativeFn),
@@ -250,7 +250,7 @@ impl ExecutionTraceModule {
 
             let traced_input = (
                 ResourceMovement::new_empty(),
-                KernelCallTraceOrigin::CreateNode,
+                Origin::CreateNode,
                 instruction_index,
             );
             self.traced_kernel_call_inputs_stack.push(traced_input);
@@ -280,11 +280,7 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
-            let traced_input = (
-                resource_movement,
-                KernelCallTraceOrigin::DropNode,
-                instruction_index,
-            );
+            let traced_input = (resource_movement, Origin::DropNode, instruction_index);
             self.traced_kernel_call_inputs_stack.push(traced_input);
         }
 
@@ -315,14 +311,12 @@ impl ExecutionTraceModule {
             let origin = match &callee.identifier {
                 FnIdentifier::Scrypto(scrypto_fn) => {
                     if callee.receiver.is_some() {
-                        KernelCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
+                        Origin::ScryptoMethod(scrypto_fn.clone())
                     } else {
-                        KernelCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
+                        Origin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::Native(native_fn) => {
-                    KernelCallTraceOrigin::NativeFn(native_fn.clone())
-                }
+                FnIdentifier::Native(native_fn) => Origin::NativeFn(native_fn.clone()),
             };
 
             let instruction_index = self.instruction_index();
