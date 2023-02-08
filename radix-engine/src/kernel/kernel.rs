@@ -395,13 +395,12 @@ where
         // Execute
         let (output, update) =
             self.execute_in_mode(ExecutionMode::Application, |api| executor.execute(api))?;
+        self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+            M::after_actor_run(api, &self.prev_frame_stack.last().unwrap().actor, &update)
+        })?;
 
         // Call Frame post-processing
         {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::after_actor_run(api, &self.prev_frame_stack.last().unwrap().actor, &update)
-            })?;
-
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;

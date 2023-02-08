@@ -23,7 +23,7 @@ pub struct ExecutionTraceReceipt {
     pub resource_changes: Vec<ResourceChange>,
 }
 
-#[derive(Debug)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultOp {
     Create(Decimal), // TODO: add trace of vault creation
     Put(Decimal),    // TODO: add non-fungible support
@@ -248,7 +248,7 @@ impl ExecutionTraceModule {
 
     fn handle_pre_create_node(&mut self) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::read_instruction_index(current_frame, heap);
+            let instruction_index = self.instruction_index();
 
             let traced_input = (
                 ResourceMovement::new_empty(),
@@ -280,7 +280,7 @@ impl ExecutionTraceModule {
 
     fn handle_pre_drop_node(&mut self, resource_movement: ResourceMovement) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = Self::read_instruction_index(current_frame, heap);
+            let instruction_index = self.instruction_index();
 
             let traced_input = (
                 resource_movement,
@@ -328,7 +328,7 @@ impl ExecutionTraceModule {
                 }
             };
 
-            let instruction_index = Self::get_instruction_index(current_frame, heap);
+            let instruction_index = self.instruction_index();
 
             self.traced_kernel_call_inputs_stack.push((
                 resource_movement,
@@ -445,24 +445,9 @@ impl ExecutionTraceModule {
         (self.vault_ops, events)
     }
 
-    fn read_instruction_index(current_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        if current_frame
-            .get_node_visibility(RENodeId::TransactionRuntime)
-            .is_ok()
-        {
-            let substate_ref = heap
-                .get_substate(
-                    RENodeId::TransactionRuntime,
-                    NodeModuleId::SELF,
-                    &SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                )
-                .unwrap();
-            Some(substate_ref.transaction_runtime().instruction_index)
-        } else {
-            None
-        }
+    fn instruction_index(&self) -> Option<u32> {
+        // FIXME: restore transaction index
+        None
     }
 
     fn handle_vault_put_input<'s>(
