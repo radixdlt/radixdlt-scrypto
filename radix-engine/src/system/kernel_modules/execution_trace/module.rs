@@ -27,7 +27,7 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceMovement, Origin, Option<u32>)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, Origin, usize)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
@@ -66,7 +66,7 @@ pub struct ProofSnapshot {
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceMovement {
+pub struct ResourceSummary {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
@@ -77,9 +77,9 @@ pub struct KernelCallTrace {
     pub kernel_call_depth: usize,
     pub current_frame_actor: ResolvedActor,
     pub current_frame_depth: usize,
-    pub instruction_index: Option<u32>,
-    pub input: ResourceMovement,
-    pub output: ResourceMovement,
+    pub instruction_index: usize,
+    pub input: ResourceSummary,
+    pub output: ResourceSummary,
     pub children: Vec<KernelCallTrace>,
 }
 
@@ -92,7 +92,7 @@ pub enum Origin {
     DropNode,
 }
 
-impl ResourceMovement {
+impl ResourceSummary {
     pub fn new_empty() -> Self {
         Self {
             buckets: HashMap::new(),
@@ -167,10 +167,10 @@ impl KernelModule for ExecutionTraceModule {
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
-        let resource_movement = ResourceMovement::from_node_id(api, node_id);
+        let resource_summary = ResourceSummary::from_node_id(api, node_id);
         api.get_module_state()
             .execution_trace
-            .handle_after_create_node(current_actor, current_depth, resource_movement);
+            .handle_after_create_node(current_actor, current_depth, resource_summary);
         Ok(())
     }
 
@@ -178,10 +178,10 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        let resource_movement = ResourceMovement::from_node_id(api, node_id);
+        let resource_summary = ResourceSummary::from_node_id(api, node_id);
         api.get_module_state()
             .execution_trace
-            .handle_before_drop_node(resource_movement);
+            .handle_before_drop_node(resource_summary);
         Ok(())
     }
 
@@ -200,10 +200,10 @@ impl KernelModule for ExecutionTraceModule {
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
-        let resource_movement = ResourceMovement::from_call_frame_update(api, update);
+        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
         api.get_module_state()
             .execution_trace
-            .handle_before_new_frame(current_actor, callee, resource_movement);
+            .handle_before_new_frame(current_actor, callee, resource_summary);
         Ok(())
     }
 
@@ -214,10 +214,10 @@ impl KernelModule for ExecutionTraceModule {
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
-        let resource_movement = ResourceMovement::from_call_frame_update(api, update);
+        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
         api.get_module_state()
             .execution_trace
-            .handle_after_actor_run(current_actor, current_depth, caller, resource_movement);
+            .handle_after_actor_run(current_actor, current_depth, caller, resource_summary);
         Ok(())
     }
 
@@ -249,7 +249,7 @@ impl ExecutionTraceModule {
             let instruction_index = self.instruction_index();
 
             let traced_input = (
-                ResourceMovement::new_empty(),
+                ResourceSummary::new_empty(),
                 Origin::CreateNode,
                 instruction_index,
             );
@@ -263,7 +263,7 @@ impl ExecutionTraceModule {
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,
-        resource_movement: ResourceMovement,
+        resource_summary: ResourceSummary,
     ) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
@@ -273,14 +273,14 @@ impl ExecutionTraceModule {
             return;
         }
 
-        self.finalize_kernel_call_trace(resource_movement, current_actor, current_depth)
+        self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
-    fn handle_before_drop_node(&mut self, resource_movement: ResourceMovement) {
+    fn handle_before_drop_node(&mut self, resource_summary: ResourceSummary) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
-            let traced_input = (resource_movement, Origin::DropNode, instruction_index);
+            let traced_input = (resource_summary, Origin::DropNode, instruction_index);
             self.traced_kernel_call_inputs_stack.push(traced_input);
         }
 
@@ -296,7 +296,7 @@ impl ExecutionTraceModule {
             return;
         }
 
-        let traced_output = ResourceMovement::new_empty();
+        let traced_output = ResourceSummary::new_empty();
 
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
@@ -305,7 +305,7 @@ impl ExecutionTraceModule {
         &mut self,
         current_actor: ResolvedActor,
         callee: &ResolvedActor,
-        resource_movement: ResourceMovement,
+        resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee.identifier {
@@ -322,7 +322,7 @@ impl ExecutionTraceModule {
             let instruction_index = self.instruction_index();
 
             self.traced_kernel_call_inputs_stack.push((
-                resource_movement.clone(),
+                resource_summary.clone(),
                 origin,
                 instruction_index,
             ));
@@ -338,7 +338,7 @@ impl ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_put_input(&resource_movement, &current_actor, vault_id),
+            } => self.handle_vault_put_input(&resource_summary, &current_actor, vault_id),
             ResolvedActor {
                 identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
                 receiver:
@@ -356,7 +356,7 @@ impl ExecutionTraceModule {
         current_actor: ResolvedActor,
         current_depth: usize,
         return_to: &ResolvedActor,
-        resource_movement: ResourceMovement,
+        resource_summary: ResourceSummary,
     ) {
         match &current_actor {
             ResolvedActor {
@@ -366,7 +366,7 @@ impl ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_take_output(&resource_movement, return_to, vault_id),
+            } => self.handle_vault_take_output(&resource_summary, return_to, vault_id),
             _ => {}
         }
 
@@ -378,12 +378,12 @@ impl ExecutionTraceModule {
             return;
         }
 
-        self.finalize_kernel_call_trace(resource_movement, current_actor, current_depth)
+        self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
     fn finalize_kernel_call_trace(
         &mut self,
-        traced_output: ResourceMovement,
+        traced_output: ResourceSummary,
         current_actor: ResolvedActor,
         current_depth: usize,
     ) {
@@ -434,18 +434,17 @@ impl ExecutionTraceModule {
         (self.vault_ops, events)
     }
 
-    fn instruction_index(&self) -> Option<u32> {
-        // FIXME: restore transaction index
-        None
+    fn instruction_index(&self) -> usize {
+        self.current_transaction_index
     }
 
     fn handle_vault_put_input<'s>(
         &mut self,
-        resource_movement: &ResourceMovement,
+        resource_summary: &ResourceSummary,
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for (_, resource) in &resource_movement.buckets {
+        for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 caller.clone(),
                 vault_id.clone(),
@@ -461,11 +460,11 @@ impl ExecutionTraceModule {
 
     fn handle_vault_take_output<'s>(
         &mut self,
-        resource_movement: &ResourceMovement,
+        resource_summary: &ResourceSummary,
         caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for (_, resource) in &resource_movement.buckets {
+        for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 caller.clone(),
                 vault_id.clone(),

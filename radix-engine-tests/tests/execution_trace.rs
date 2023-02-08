@@ -346,10 +346,10 @@ fn test_instruction_traces() {
 
 fn traces_for_instruction(
     traces: &Vec<KernelCallTrace>,
-    instruction_index: u32,
+    instruction_index: usize,
 ) -> Vec<&KernelCallTrace> {
     traces
         .iter()
-        .filter(|t| t.instruction_index == Some(instruction_index))
+        .filter(|t| t.instruction_index == instruction_index)
         .collect()
 }

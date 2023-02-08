@@ -80,7 +80,7 @@ impl KernelModuleMixer {
 }
 
 //====================================================================
-// NOTE: Modules are applied in the opposite initialization order!
+// NOTE: Modules are applied in the reverse order of initialization!
 //====================================================================
 
 impl KernelModule for KernelModuleMixer {

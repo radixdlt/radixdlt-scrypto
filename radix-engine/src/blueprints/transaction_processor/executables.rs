@@ -300,6 +300,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
         for (index, inst) in self.instructions.into_iter().enumerate() {
+            api.update_instruction_index(index)?;
+
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
                     let bucket = Worktop::sys_take_all(*resource_address, api)?;
@@ -840,8 +842,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
             };
             outputs.push(result);
-
-            api.update_instruction_index(index)?;
         }
 
         api.drop_node(worktop_node_id)?;
