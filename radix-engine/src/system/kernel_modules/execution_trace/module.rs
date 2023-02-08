@@ -154,19 +154,19 @@ impl ResourceMovement {
 }
 
 impl KernelModule for ExecutionTraceModule {
-    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_pre_create_node();
+            state.handle_before_create_node();
         }
         Ok(())
     }
 
-    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
@@ -174,34 +174,34 @@ impl KernelModule for ExecutionTraceModule {
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_node_id(api, node_id);
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_post_create_node(current_actor, current_depth, resource_movement);
+            state.handle_after_create_node(current_actor, current_depth, resource_movement);
         }
         Ok(())
     }
 
-    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         let resource_movement = ResourceMovement::from_node_id(api, node_id);
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_pre_drop_node(resource_movement);
+            state.handle_before_drop_node(resource_movement);
         }
         Ok(())
     }
 
-    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_post_drop_node(current_actor, current_depth);
+            state.handle_after_drop_node(current_actor, current_depth);
         }
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
         update: &mut CallFrameUpdate,
@@ -210,12 +210,7 @@ impl KernelModule for ExecutionTraceModule {
         let current_depth = api.get_current_depth();
         let resource_movement = ResourceMovement::from_call_frame_update(api, update);
         if let Some(state) = api.get_module_state::<ExecutionTraceModule>() {
-            state.handle_before_create_frame(
-                current_actor,
-                current_depth,
-                callee,
-                resource_movement,
-            );
+            state.handle_before_new_frame(current_actor, current_depth, callee, resource_movement);
         }
         Ok(())
     }
@@ -246,7 +241,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_pre_create_node(&mut self) {
+    fn handle_before_create_node(&mut self) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
@@ -261,7 +256,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_post_create_node(
+    fn handle_after_create_node(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,
@@ -278,7 +273,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(resource_movement, current_actor, current_depth)
     }
 
-    fn handle_pre_drop_node(&mut self, resource_movement: ResourceMovement) {
+    fn handle_before_drop_node(&mut self, resource_movement: ResourceMovement) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
@@ -293,7 +288,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_post_drop_node(&mut self, current_actor: ResolvedActor, current_depth: usize) {
+    fn handle_after_drop_node(&mut self, current_actor: ResolvedActor, current_depth: usize) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -307,7 +302,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
-    fn handle_before_create_frame(
+    fn handle_before_new_frame(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,

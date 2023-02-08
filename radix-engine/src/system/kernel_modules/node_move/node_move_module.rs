@@ -147,7 +147,7 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,

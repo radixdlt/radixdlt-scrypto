@@ -14,7 +14,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &ResolvedActor,
         _update: &mut CallFrameUpdate,
@@ -30,7 +30,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _fn_identifier: &FnIdentifier,
         _input_size: usize,
@@ -38,7 +38,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -52,7 +52,7 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
@@ -61,21 +61,21 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
         _node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         Ok(())

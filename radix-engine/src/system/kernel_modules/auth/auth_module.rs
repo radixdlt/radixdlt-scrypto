@@ -79,7 +79,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,

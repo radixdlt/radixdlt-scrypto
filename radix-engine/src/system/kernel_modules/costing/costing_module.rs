@@ -83,7 +83,7 @@ fn apply_royalty_cost<Y: KernelNodeApi + KernelSubstateApi>(
 }
 
 impl KernelModule for CostingModule {
-    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         _fn_identifier: &FnIdentifier,
         input_size: usize,
@@ -114,7 +114,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -130,7 +130,7 @@ impl KernelModule for CostingModule {
         }
     }
 
-    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
@@ -146,7 +146,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size

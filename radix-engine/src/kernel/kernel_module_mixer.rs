@@ -20,7 +20,15 @@ use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
 
-pub struct KernelModuleMixer;
+pub struct KernelModuleMixer {
+    kernel_debug: KernelDebugModule,
+    costing: CostingModule,
+    node_move: NodeMoveModule,
+    auth: AuthModule,
+    logger: LoggerModule,
+    transaction_runtime: TransactionRuntimeModule,
+    execution_trace: ExecutionTraceModule,
+}
 
 //====================================================================
 // NOTE: Modules are applied in the opposite order of initialization!
@@ -63,24 +71,20 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::before_create_frame(api, actor, update)?;
-        CostingModule::before_create_frame(api, actor, update)?;
-        NodeMoveModule::before_create_frame(api, actor, update)?;
-        AuthModule::before_create_frame(api, actor, update)?;
-        LoggerModule::before_create_frame(api, actor, update)?;
-        TransactionRuntimeModule::before_create_frame(api, actor, update)?;
-        ExecutionTraceModule::before_create_frame(api, actor, update)?;
+        KernelDebugModule::before_new_frame(api, actor, update)?;
+        CostingModule::before_new_frame(api, actor, update)?;
+        NodeMoveModule::before_new_frame(api, actor, update)?;
+        AuthModule::before_new_frame(api, actor, update)?;
+        LoggerModule::before_new_frame(api, actor, update)?;
+        TransactionRuntimeModule::before_new_frame(api, actor, update)?;
+        ExecutionTraceModule::before_new_frame(api, actor, update)?;
         Ok(())
     }
-
-
-
-
 
     fn after_actor_run<Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>>(
         api: &mut Y,
@@ -97,32 +101,32 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        CostingModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        NodeMoveModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        AuthModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        LoggerModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        TransactionRuntimeModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
-        ExecutionTraceModule::pre_kernel_invoke(api, fn_identifier, input_size)?;
+        KernelDebugModule::before_invoke(api, fn_identifier, input_size)?;
+        CostingModule::before_invoke(api, fn_identifier, input_size)?;
+        NodeMoveModule::before_invoke(api, fn_identifier, input_size)?;
+        AuthModule::before_invoke(api, fn_identifier, input_size)?;
+        LoggerModule::before_invoke(api, fn_identifier, input_size)?;
+        TransactionRuntimeModule::before_invoke(api, fn_identifier, input_size)?;
+        ExecutionTraceModule::before_invoke(api, fn_identifier, input_size)?;
         Ok(())
     }
 
-    fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::post_kernel_invoke(api, output_size)?;
-        CostingModule::post_kernel_invoke(api, output_size)?;
-        NodeMoveModule::post_kernel_invoke(api, output_size)?;
-        AuthModule::post_kernel_invoke(api, output_size)?;
-        LoggerModule::post_kernel_invoke(api, output_size)?;
-        TransactionRuntimeModule::post_kernel_invoke(api, output_size)?;
-        ExecutionTraceModule::post_kernel_invoke(api, output_size)?;
+        KernelDebugModule::after_invoke(api, output_size)?;
+        CostingModule::after_invoke(api, output_size)?;
+        NodeMoveModule::after_invoke(api, output_size)?;
+        AuthModule::after_invoke(api, output_size)?;
+        LoggerModule::after_invoke(api, output_size)?;
+        TransactionRuntimeModule::after_invoke(api, output_size)?;
+        ExecutionTraceModule::after_invoke(api, output_size)?;
         Ok(())
     }
 
@@ -140,60 +144,60 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        CostingModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        NodeMoveModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        AuthModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        LoggerModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        TransactionRuntimeModule::pre_create_node(api, node_id, node_init, node_module_init)?;
-        ExecutionTraceModule::pre_create_node(api, node_id, node_init, node_module_init)?;
+        KernelDebugModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        CostingModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        NodeMoveModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        AuthModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        LoggerModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        TransactionRuntimeModule::before_create_node(api, node_id, node_init, node_module_init)?;
+        ExecutionTraceModule::before_create_node(api, node_id, node_init, node_module_init)?;
         Ok(())
     }
 
-    fn post_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::post_create_node(api, node_id)?;
-        CostingModule::post_create_node(api, node_id)?;
-        NodeMoveModule::post_create_node(api, node_id)?;
-        AuthModule::post_create_node(api, node_id)?;
-        LoggerModule::post_create_node(api, node_id)?;
-        TransactionRuntimeModule::post_create_node(api, node_id)?;
-        ExecutionTraceModule::post_create_node(api, node_id)?;
+        KernelDebugModule::after_create_node(api, node_id)?;
+        CostingModule::after_create_node(api, node_id)?;
+        NodeMoveModule::after_create_node(api, node_id)?;
+        AuthModule::after_create_node(api, node_id)?;
+        LoggerModule::after_create_node(api, node_id)?;
+        TransactionRuntimeModule::after_create_node(api, node_id)?;
+        ExecutionTraceModule::after_create_node(api, node_id)?;
         Ok(())
     }
 
-    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::pre_drop_node(api, node_id)?;
-        CostingModule::pre_drop_node(api, node_id)?;
-        NodeMoveModule::pre_drop_node(api, node_id)?;
-        AuthModule::pre_drop_node(api, node_id)?;
-        LoggerModule::pre_drop_node(api, node_id)?;
-        TransactionRuntimeModule::pre_drop_node(api, node_id)?;
-        ExecutionTraceModule::pre_drop_node(api, node_id)?;
+        KernelDebugModule::before_drop_node(api, node_id)?;
+        CostingModule::before_drop_node(api, node_id)?;
+        NodeMoveModule::before_drop_node(api, node_id)?;
+        AuthModule::before_drop_node(api, node_id)?;
+        LoggerModule::before_drop_node(api, node_id)?;
+        TransactionRuntimeModule::before_drop_node(api, node_id)?;
+        ExecutionTraceModule::before_drop_node(api, node_id)?;
         Ok(())
     }
 
-    fn post_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        KernelDebugModule::post_drop_node(api)?;
-        CostingModule::post_drop_node(api)?;
-        NodeMoveModule::post_drop_node(api)?;
-        AuthModule::post_drop_node(api)?;
-        LoggerModule::post_drop_node(api)?;
-        TransactionRuntimeModule::post_drop_node(api)?;
-        ExecutionTraceModule::post_drop_node(api)?;
+        KernelDebugModule::after_drop_node(api)?;
+        CostingModule::after_drop_node(api)?;
+        NodeMoveModule::after_drop_node(api)?;
+        AuthModule::after_drop_node(api)?;
+        LoggerModule::after_drop_node(api)?;
+        TransactionRuntimeModule::after_drop_node(api)?;
+        ExecutionTraceModule::after_drop_node(api)?;
         Ok(())
     }
 

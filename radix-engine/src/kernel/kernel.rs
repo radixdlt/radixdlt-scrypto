@@ -375,7 +375,7 @@ where
         // New Call Frame pre-processing
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::before_create_frame(api, &actor, &mut call_frame_update)
+                M::before_new_frame(api, &actor, &mut call_frame_update)
             })?;
         }
 

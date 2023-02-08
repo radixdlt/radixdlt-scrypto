@@ -28,7 +28,7 @@ macro_rules! log {
 
 #[allow(unused_variables)] // for no_std
 impl KernelModule for KernelDebugModule {
-    fn pre_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         fn_identifier: &FnIdentifier,
         input_size: usize,
@@ -42,7 +42,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn post_kernel_invoke<Y: KernelNodeApi + KernelSubstateApi>(
+    fn after_invoke<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -50,7 +50,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn before_create_frame<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_new_frame<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         callee: &ResolvedActor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -65,8 +65,12 @@ impl KernelModule for KernelDebugModule {
         caller: &ResolvedActor,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Received nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(api, "Received refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
+        log!(
+            api,
+            "Returning refs: {:?}",
+            nodes_and_refs.node_refs_to_copy
+        );
         Ok(())
     }
 
@@ -78,7 +82,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn pre_create_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_create_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
         node_init: &RENodeInit,
@@ -94,7 +98,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    fn pre_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
+    fn before_drop_node<Y: KernelNodeApi + KernelSubstateApi>(
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {

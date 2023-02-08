@@ -36,7 +36,7 @@ where
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        M::pre_drop_node(self, &node_id)?;
+        M::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -61,7 +61,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        M::post_drop_node(self)?;
+        M::after_drop_node(self)?;
 
         Ok(node)
     }
@@ -79,7 +79,7 @@ where
         re_node: RENodeInit,
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        M::pre_create_node(self, &node_id, &re_node, &module_init)?;
+        M::before_create_node(self, &node_id, &re_node, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -171,7 +171,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        M::post_create_node(self, &node_id)?;
+        M::after_create_node(self, &node_id)?;
 
         Ok(())
     }
@@ -400,7 +400,7 @@ where
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        M::pre_kernel_invoke(
+        M::before_invoke(
             self,
             &invocation.fn_identifier(),
             0, // TODO: Pass the right size
@@ -418,7 +418,7 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        M::post_kernel_invoke(
+        M::after_invoke(
             self, 0, // TODO: Pass the right size
         )?;
 
