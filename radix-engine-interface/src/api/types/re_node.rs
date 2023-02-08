@@ -309,11 +309,6 @@ pub enum ValidatorOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum FeeReserveOffset {
-    FeeReserve,
-}
-
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
@@ -369,7 +364,6 @@ pub enum AccessControllerOffset {
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
-    FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),

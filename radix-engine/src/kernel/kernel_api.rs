@@ -277,7 +277,4 @@ pub trait KernelApi<W: WasmEngine, E>:
 {
 }
 
-pub trait KernelModuleApi<E>:
-    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelInternalApi
-{
-}
+pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}

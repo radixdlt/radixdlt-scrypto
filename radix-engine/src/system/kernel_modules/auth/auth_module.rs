@@ -314,7 +314,7 @@ impl KernelModule for AuthModule {
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if matches!(
-            api.fn_identifier()?,
+            api.get_current_actor().identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
                 | FnIdentifier::Native(NativeFn::AccessRulesChain(..)),
         ) {

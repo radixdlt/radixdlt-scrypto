@@ -123,27 +123,20 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::KernelModule, offset) => match offset {
-                // TODO: refine based on actor
-
-                /* Auth */
+                // TODO: refine based on specific module
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
-                // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Vault(VaultOffset::Vault) => read_only,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::Vault(VaultOffset::Vault) => true,
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
-                    read_only
-                }
-                /* Node move */
-                //SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                /* Costing */
-                SubstateOffset::FeeReserve(_) => true,
+                SubstateOffset::ComponentTypeInfo(_) => read_only,
+                SubstateOffset::AccessRulesChain(_) => read_only,
+                SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
             (ExecutionMode::Application, offset) => {
@@ -253,7 +246,6 @@ impl SubstateProperties {
         match offset {
             SubstateOffset::Global(..) => true,
             SubstateOffset::AuthZoneStack(..) => false,
-            SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,

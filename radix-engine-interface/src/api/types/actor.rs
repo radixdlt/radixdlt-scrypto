@@ -32,7 +32,6 @@ pub enum NativePackage {
     TransactionProcessor,
     Account,
     AccessController,
-    FeeReserve,
     Root,
 }
 

@@ -1,9 +1,7 @@
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelModule;
-use crate::kernel::{
-    CallFrameUpdate, KernelActorApi, KernelModuleApi, KernelNodeApi, ResolvedActor,
-};
+use crate::kernel::{CallFrameUpdate, KernelModuleApi, ResolvedActor};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::*;
@@ -18,9 +16,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<
-        Y: KernelNodeApi + KernelSubstateApi + KernelActorApi<RuntimeError>,
-    >(
+    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
         to: &FnIdentifier,
         api: &mut Y,
@@ -46,7 +42,7 @@ impl NodeMoveModule {
                 }
             }
             RENodeId::Proof(..) => {
-                let from = api.fn_identifier()?;
+                let from = api.get_current_actor().identifier;
 
                 if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
                     let handle = api.lock_substate(
