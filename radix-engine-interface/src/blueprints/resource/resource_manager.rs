@@ -91,11 +91,18 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
+pub struct ResourceManagerCreateNonFungibleInput {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateNonFungibleWithAddressInput {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

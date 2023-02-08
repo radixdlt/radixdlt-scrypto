@@ -81,13 +81,14 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible".to_string(),
-            args: args!(
-                Some(resource_address),
-                NonFungibleIdType::Bytes,
+            function_name: "create_non_fungible_with_address".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
-                access_rules
-            ),
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
         }));
     }
 
@@ -104,13 +105,14 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible".to_string(),
-            args: args!(
-                Some(resource_address),
-                NonFungibleIdType::Bytes,
+            function_name: "create_non_fungible_with_address".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
-                access_rules
-            ),
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
         }));
     }
 
@@ -125,13 +127,14 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible".to_string(),
-            args: args!(
-                Some(resource_address),
-                NonFungibleIdType::Bytes,
+            function_name: "create_non_fungible_with_address".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
-                access_rules
-            ),
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
         }));
     }
 
@@ -145,13 +148,14 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible".to_string(),
-            args: args!(
-                Some(resource_address),
-                NonFungibleIdType::Bytes,
+            function_name: "create_non_fungible_with_address".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
                 metadata,
-                access_rules
-            ),
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
         }));
     }
 

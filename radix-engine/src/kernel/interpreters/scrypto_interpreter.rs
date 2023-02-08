@@ -20,8 +20,8 @@ use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleInput,
     ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInput,
-    ResourceManagerCreateNonFungibleInvocation,
+    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
+    ResourceManagerCreateNonFungibleWithAddressInput,
     ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
     ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
 };
@@ -330,7 +330,16 @@ impl Executor for ScryptoExecutor {
             }
             RESOURCE_MANAGER_PACKAGE => match self.export_name.as_str() {
                 "create_non_fungible" => {
-                    let invocation: ResourceManagerCreateNonFungibleInvocation =
+                    let invocation: ResourceManagerCreateNonFungibleInput =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let rtn = invocation.execute(api)?;
+                    return Ok((
+                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
+                        rtn.1,
+                    ));
+                }
+                "create_non_fungible_with_address" => {
+                    let invocation: ResourceManagerCreateNonFungibleWithAddressInput =
                         scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((

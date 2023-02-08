@@ -487,8 +487,7 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_non_fungible",
-                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                    resource_address: None,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
@@ -505,8 +504,7 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_non_fungible",
-                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                    resource_address: None,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
@@ -725,8 +723,7 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
                 "create_non_fungible",
-                scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                    resource_address: None,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: self.authorization,

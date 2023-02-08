@@ -83,8 +83,7 @@ impl ResourceManager {
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT.to_string(),
             "create_non_fungible".to_string(),
-            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
+            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type,
                 metadata,
                 access_rules,

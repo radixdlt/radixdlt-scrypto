@@ -96,13 +96,14 @@ impl Executor for EpochManagerCreateInvocation {
             let result = api.call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                "create_non_fungible".to_string(),
-                args!(
-                    Some(self.olympia_validator_token_address),
-                    NonFungibleIdType::Bytes,
+                "create_non_fungible_with_address".to_string(),
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                    id_type: NonFungibleIdType::Bytes,
                     metadata,
-                    access_rules
-                ),
+                    access_rules,
+                    resource_address: self.olympia_validator_token_address,
+                })
+                .unwrap(),
             )?;
             let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)

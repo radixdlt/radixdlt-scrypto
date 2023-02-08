@@ -581,8 +581,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_non_fungible".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                                resource_address: None,
+                            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
@@ -627,8 +626,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_PACKAGE,
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_non_fungible".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleInvocation {
-                                resource_address: None,
+                            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                                 id_type: *id_type,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),
