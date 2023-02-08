@@ -2,7 +2,7 @@ use crate::api::types::*;
 use crate::blueprints::resource::Resource;
 
 // TODO: more thinking on whether should be part of the ClientApi.
-pub trait ClientMeteringApi<E> {
+pub trait ClientEventApi<E> {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), E>;
 
     fn credit_cost_units(
@@ -13,6 +13,4 @@ pub trait ClientMeteringApi<E> {
     ) -> Result<Resource, E>;
 
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
-
-    // TODO: rename this trait to `ClientEventApi`?
 }

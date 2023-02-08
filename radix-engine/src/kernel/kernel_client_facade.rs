@@ -27,7 +27,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientMeteringApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientEventApi,
     ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -419,7 +419,7 @@ where
     }
 }
 
-impl<'g, 's, W> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {

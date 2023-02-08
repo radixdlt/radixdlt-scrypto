@@ -2,7 +2,7 @@ pub mod actor_api;
 pub mod component;
 pub mod component_api;
 pub mod deref_api;
-pub mod metering_api;
+pub mod event_api;
 pub mod native_invoke_api;
 pub mod node_api;
 pub mod node_modules;
@@ -15,7 +15,7 @@ pub mod types;
 pub use actor_api::ClientActorApi;
 pub use component_api::ClientComponentApi;
 pub use deref_api::ClientDerefApi;
-pub use metering_api::ClientMeteringApi;
+pub use event_api::ClientEventApi;
 pub use native_invoke_api::ClientNativeInvokeApi;
 pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
@@ -32,6 +32,6 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
     + ClientDerefApi<E>  // TODO: remove
-    + ClientMeteringApi<E>
+    + ClientEventApi<E>
 {
 }

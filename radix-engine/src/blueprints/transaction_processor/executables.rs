@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientMeteringApi;
+use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
@@ -278,7 +278,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientMeteringApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;

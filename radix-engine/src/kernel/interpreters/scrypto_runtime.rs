@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNativeInvokeApi, ClientNodeApi,
+    ClientActorApi, ClientComponentApi, ClientEventApi, ClientNativeInvokeApi, ClientNodeApi,
     ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -14,7 +14,7 @@ use sbor::rust::vec::Vec;
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<RuntimeError>
+    Y: ClientEventApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
@@ -29,7 +29,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<RuntimeError>
+    Y: ClientEventApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
@@ -48,7 +48,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientMeteringApi<RuntimeError>
+    Y: ClientEventApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
