@@ -1,11 +1,15 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
+use radix_engine_interface::blueprints::access_controller::{
+    AccessControllerCreateGlobalInvocation, RuleSet,
+};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -969,14 +973,21 @@ impl ManifestBuilder {
         confirmation_role: AccessRule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateAccessController {
-            controlled_asset,
-            primary_role,
-            recovery_role,
-            confirmation_role,
-            timed_recovery_delay_in_minutes,
-        })
-        .0
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address: ACCESS_CONTROLLER_PACKAGE,
+            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+            function_name: "create_global".to_string(),
+            args: args!(
+                controlled_asset,
+                RuleSet {
+                    primary_role,
+                    recovery_role,
+                    confirmation_role,
+                },
+                timed_recovery_delay_in_minutes
+            ),
+        });
+        self
     }
 
     pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {

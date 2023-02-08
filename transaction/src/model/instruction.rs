@@ -202,14 +202,6 @@ pub enum BasicInstruction {
         owner_access_rule: AccessRule,
     },
 
-    CreateAccessController {
-        controlled_asset: ManifestBucket,
-        primary_role: AccessRule,
-        recovery_role: AccessRule,
-        confirmation_role: AccessRule,
-        timed_recovery_delay_in_minutes: Option<u32>,
-    },
-
     AssertAccessRule {
         access_rule: AccessRule,
     },

@@ -1,10 +1,13 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::args;
+use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::account::AccountCreateInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::constants::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -553,31 +556,27 @@ pub fn generate_instruction(
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
-            primary_role,
-            recovery_role,
-            confirmation_role,
+            rule_set,
             timed_recovery_delay_in_minutes,
-        } => BasicInstruction::CreateAccessController {
-            controlled_asset: generate_typed_value(
-                controlled_asset,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-            primary_role: generate_typed_value(primary_role, resolver, bech32_decoder, blobs)?,
-            recovery_role: generate_typed_value(recovery_role, resolver, bech32_decoder, blobs)?,
-            confirmation_role: generate_typed_value(
-                confirmation_role,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-            timed_recovery_delay_in_minutes: generate_typed_value(
-                timed_recovery_delay_in_minutes,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+        } => BasicInstruction::CallFunction {
+            package_address: ACCESS_CONTROLLER_PACKAGE,
+            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+            function_name: "create_global".to_string(),
+            args: args!(
+                generate_typed_value::<ManifestBucket>(
+                    controlled_asset,
+                    resolver,
+                    bech32_decoder,
+                    blobs
+                )?,
+                generate_typed_value::<RuleSet>(rule_set, resolver, bech32_decoder, blobs)?,
+                generate_typed_value::<Option<u32>>(
+                    timed_recovery_delay_in_minutes,
+                    resolver,
+                    bech32_decoder,
+                    blobs
+                )?
+            ),
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,

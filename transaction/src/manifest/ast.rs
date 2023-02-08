@@ -199,9 +199,7 @@ pub enum Instruction {
     },
     CreateAccessController {
         controlled_asset: Value,
-        primary_role: Value,
-        recovery_role: Value,
-        confirmation_role: Value,
+        rule_set: Value,
         timed_recovery_delay_in_minutes: Value,
     },
     CreateIdentity {

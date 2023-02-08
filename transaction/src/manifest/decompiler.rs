@@ -1,7 +1,8 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::constants::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE,
 };
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
@@ -342,6 +343,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                 write!(f, "CREATE_IDENTITY")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
+            } else if package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                && blueprint_name.eq(&ACCESS_CONTROLLER_BLUEPRINT)
+                && function_name.eq("create_global")
+            {
+                f.write_str("CREATE_ACCESS_CONTROLLER")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
             } else {
                 write!(
                     f,
@@ -571,20 +579,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, owner_access_rule)?;
             f.write_str(";")?;
-        }
-        BasicInstruction::CreateAccessController {
-            controlled_asset,
-            primary_role,
-            recovery_role,
-            confirmation_role,
-            timed_recovery_delay_in_minutes,
-        } => {
-            f.write_str("CREATE_ACCESS_CONTROLLER")?;
-            format_typed_value(f, context, controlled_asset)?;
-            format_typed_value(f, context, primary_role)?;
-            format_typed_value(f, context, recovery_role)?;
-            format_typed_value(f, context, confirmation_role)?;
-            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
         }
         BasicInstruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;

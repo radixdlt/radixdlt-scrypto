@@ -600,6 +600,26 @@ CREATE_IDENTITY
         );
     }
 
+    #[test]
+    fn test_create_access_controller() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/access_controller/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+TAKE_FROM_WORKTOP
+    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket1");
+CREATE_ACCESS_CONTROLLER
+    Bucket("bucket1")
+    Tuple(Enum(0u8), Enum(0u8), Enum(0u8))
+    Enum(0u8);
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,

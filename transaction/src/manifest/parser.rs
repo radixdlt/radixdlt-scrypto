@@ -251,9 +251,7 @@ impl Parser {
             },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
-                primary_role: self.parse_value()?,
-                recovery_role: self.parse_value()?,
-                confirmation_role: self.parse_value()?,
+                rule_set: self.parse_value()?,
                 timed_recovery_delay_in_minutes: self.parse_value()?,
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {

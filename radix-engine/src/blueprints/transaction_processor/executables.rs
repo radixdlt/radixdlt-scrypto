@@ -143,27 +143,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
-            BasicInstruction::CreateAccessController {
-                controlled_asset,
-                primary_role,
-                recovery_role,
-                confirmation_role,
-                timed_recovery_delay_in_minutes,
-            } => {
-                let args = args!(
-                    controlled_asset,
-                    RuleSet {
-                        primary_role: primary_role.clone(),
-                        recovery_role: recovery_role.clone(),
-                        confirmation_role: confirmation_role.clone(),
-                    },
-                    *timed_recovery_delay_in_minutes
-                );
-                for node_id in slice_to_global_references(&args) {
-                    update.add_ref(node_id);
-                }
-            }
-
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
                 update.add_ref(RENodeId::Global(*entity_address));
@@ -884,38 +863,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateAccessController {
-                    controlled_asset,
-                    primary_role,
-                    recovery_role,
-                    confirmation_role,
-                    timed_recovery_delay_in_minutes,
-                }) => {
-                    let args = processor.replace_manifest_values(
-                        IndexedScryptoValue::from_slice(&args!(
-                            controlled_asset,
-                            RuleSet {
-                                primary_role: primary_role.clone(),
-                                recovery_role: recovery_role.clone(),
-                                confirmation_role: confirmation_role.clone(),
-                            },
-                            *timed_recovery_delay_in_minutes
-                        ))
-                        .expect("Invalid CALL_FUNCTION arguments"),
-                        api,
-                    )?;
-
-                    let invocation = ScryptoInvocation {
-                        package_address: ACCESS_CONTROLLER_PACKAGE,
-                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-                        fn_name: "create_global".to_string(),
-                        receiver: None,
-                        args: args.into_vec(),
-                    };
-
-                    let result = invoke_scrypto_fn(invocation, api)?;
-                    InstructionOutput::Scrypto(result)
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
