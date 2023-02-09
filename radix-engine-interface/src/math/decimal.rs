@@ -285,15 +285,20 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-impl From<&str> for Decimal {
-    fn from(val: &str) -> Self {
-        Self::from_str(&val).unwrap()
+// from_str() should be enough, but we want to have try_from() to simplify dec! macro
+impl TryFrom<&str> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(val: &str) -> Result<Self, Self::Error> {
+        Self::from_str(val)
     }
 }
 
-impl From<String> for Decimal {
-    fn from(val: String) -> Self {
-        Self::from_str(&val).unwrap()
+impl TryFrom<String> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(val: String) -> Result<Self, Self::Error> {
+        Self::from_str(&val)
     }
 }
 
@@ -1102,7 +1107,7 @@ mod tests {
             $(
                 #[test]
                 fn [<test_from_into_precise_decimal_decimal_ $suffix>]() {
-                    let pdec = PreciseDecimal::from($from);
+                    let pdec = PreciseDecimal::try_from($from).unwrap();
                     let dec = Decimal::try_from(pdec).unwrap();
                     assert_eq!(dec.to_string(), $expected);
 

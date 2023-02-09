@@ -297,15 +297,20 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-impl From<&str> for PreciseDecimal {
-    fn from(val: &str) -> Self {
-        Self::from_str(&val).unwrap()
+// from_str() should be enough, but we want to have try_from() to simplify pdec! macro
+impl TryFrom<&str> for PreciseDecimal {
+    type Error = ParsePreciseDecimalError;
+
+    fn try_from(val: &str) -> Result<Self, Self::Error> {
+        Self::from_str(val)
     }
 }
 
-impl From<String> for PreciseDecimal {
-    fn from(val: String) -> Self {
-        Self::from_str(&val).unwrap()
+impl TryFrom<String> for PreciseDecimal {
+    type Error = ParsePreciseDecimalError;
+
+    fn try_from(val: String) -> Result<Self, Self::Error> {
+        Self::from_str(&val)
     }
 }
 
