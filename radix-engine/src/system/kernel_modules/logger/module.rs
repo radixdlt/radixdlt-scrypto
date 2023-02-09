@@ -1,6 +1,8 @@
-use crate::{
-    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::*, system::node::RENodeInit,
-};
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::module::KernelModule;
+use crate::{blueprints::logger::LoggerSubstate, errors::RuntimeError, system::node::RENodeInit};
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;

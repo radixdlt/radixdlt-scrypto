@@ -1,7 +1,12 @@
 use crate::errors::RuntimeError;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::ExecutableInvocation;
+use crate::kernel::kernel_api::Executor;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;

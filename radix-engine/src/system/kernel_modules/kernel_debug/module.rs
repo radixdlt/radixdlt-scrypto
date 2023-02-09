@@ -1,6 +1,9 @@
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::LockFlags;
 use crate::{
     errors::RuntimeError,
-    kernel::*,
+    kernel::{kernel_api::KernelModuleApi, module::KernelModule},
     system::node::{RENodeInit, RENodeModuleInit},
 };
 use radix_engine_interface::api::types::{

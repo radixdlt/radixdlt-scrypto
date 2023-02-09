@@ -1,5 +1,9 @@
 use crate::errors::*;
-use crate::kernel::*;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::event::TrackedEvent;
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::PersistedSubstate;

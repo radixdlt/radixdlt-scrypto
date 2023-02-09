@@ -1,9 +1,14 @@
 use super::ValidatorCreator;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::interpreters::deref_and_update;
+use crate::kernel::kernel_api::ExecutableInvocation;
+use crate::kernel::kernel_api::Executor;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::*;
 use crate::system::node::RENodeInit;

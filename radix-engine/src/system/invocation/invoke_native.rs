@@ -1,4 +1,4 @@
-use crate::kernel::KernelInvokeApi;
+use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,

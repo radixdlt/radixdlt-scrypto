@@ -2,7 +2,6 @@ use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
-use crate::kernel::Track;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
@@ -12,6 +11,8 @@ use radix_engine_interface::api::types::{
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use sbor::rust::collections::BTreeMap;
+
+use super::track::Track;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

@@ -1,7 +1,11 @@
 use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
 use crate::errors::*;
-use crate::kernel::Track;
-use crate::kernel::*;
+use crate::kernel::id_allocator::IdAllocator;
+use crate::kernel::interpreters::ScryptoInterpreter;
+use crate::kernel::kernel::Kernel;
+use crate::kernel::kernel_api::Invokable;
+use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;

@@ -1,8 +1,11 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
-use crate::kernel::*;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
+};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
@@ -14,6 +17,8 @@ use radix_engine_interface::api::{
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+
+use super::ScryptoRuntime;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -345,7 +350,9 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<crate::kernel::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>>();
+            assert_sync::<
+                crate::kernel::interpreters::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>,
+            >();
         }
     };
 }

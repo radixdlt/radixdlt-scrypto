@@ -1,7 +1,8 @@
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelModule;
-use crate::kernel::{CallFrameUpdate, KernelModuleApi, ResolvedActor};
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::*;

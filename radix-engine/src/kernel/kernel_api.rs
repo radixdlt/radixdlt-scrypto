@@ -1,5 +1,4 @@
 use crate::errors::*;
-use crate::kernel::*;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -22,6 +21,13 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
+
+use super::actor::ResolvedActor;
+use super::call_frame::CallFrameUpdate;
+use super::call_frame::RENodeVisibilityOrigin;
+use super::heap::HeapRENode;
+use super::interpreters::ScryptoInterpreter;
+use super::module_mixer::KernelModuleMixer;
 
 bitflags! {
     #[derive(Encode, Decode, Categorize)]

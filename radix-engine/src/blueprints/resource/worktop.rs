@@ -1,10 +1,10 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;

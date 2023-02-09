@@ -1,6 +1,6 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{LockFlags, LockInfo};
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::kernel_api::LockFlags;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -8,6 +8,10 @@ use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
+
+use super::heap::{Heap, HeapRENode};
+use super::kernel_api::LockInfo;
+use super::track::{Track, TrackError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {

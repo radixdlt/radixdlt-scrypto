@@ -1,8 +1,9 @@
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::module::KernelModule;
 use crate::{
-    blueprints::transaction_runtime::TransactionRuntimeSubstate,
-    errors::RuntimeError,
-    kernel::{CallFrameUpdate, ResolvedActor},
-    kernel::{KernelModule, KernelModuleApi},
+    blueprints::transaction_runtime::TransactionRuntimeSubstate, errors::RuntimeError,
     system::node::RENodeInit,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};

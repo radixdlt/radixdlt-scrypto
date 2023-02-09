@@ -2,11 +2,11 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor,
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::interpreters::deref_and_update;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;

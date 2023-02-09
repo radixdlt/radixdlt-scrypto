@@ -1,6 +1,7 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use crate::kernel::kernel_api::LockFlags;
 use crate::system::global::GlobalAddressSubstate;
 use radix_engine_interface::api::types::*;
 use sbor::rust::collections::BTreeMap;

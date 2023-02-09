@@ -1,9 +1,12 @@
 use crate::errors::RuntimeError;
-use crate::kernel::*;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
+
+use super::actor::ResolvedActor;
+use super::call_frame::CallFrameUpdate;
+use super::kernel_api::{KernelModuleApi, LockFlags};
 
 pub trait KernelModule {
     //======================

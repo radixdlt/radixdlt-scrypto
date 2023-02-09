@@ -1,11 +1,12 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::{KernelModuleApi, LockFlags, ResolvedReceiver};
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeModuleInit;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    kernel::KernelModule,
-    kernel::{CallFrameUpdate, ResolvedActor},
     system::node::RENodeInit,
     transaction::AbortReason,
 };

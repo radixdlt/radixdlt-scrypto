@@ -1,6 +1,7 @@
-use super::KernelModule;
 use crate::errors::*;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::LockFlags;
 use crate::system::kernel_modules::auth::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
 use crate::system::kernel_modules::costing::FeeTable;
@@ -23,6 +24,9 @@ use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
+
+use super::kernel_api::KernelModuleApi;
+use super::module::KernelModule;
 
 pub struct KernelModuleMixer {
     /* flags */
