@@ -2,7 +2,7 @@ use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::args;
 use radix_engine_interface::blueprints::access_controller::RuleSet;
-use radix_engine_interface::blueprints::account::AccountCreateInvocation;
+use radix_engine_interface::blueprints::account::AccountCreateInput;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, ResourceManagerCreateFungibleInput,
@@ -615,7 +615,7 @@ pub fn generate_instruction(
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: "create".to_string(),
-            args: scrypto_encode(&AccountCreateInvocation {
+            args: scrypto_encode(&AccountCreateInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,

@@ -12,10 +12,10 @@ use radix_engine_interface::api::{
     ClientStaticInvokeApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
-use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInvocation;
-use radix_engine_interface::blueprints::account::AccountNewInvocation;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInvocation;
+use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInput;
+use radix_engine_interface::blueprints::account::AccountNewInput;
+use radix_engine_interface::blueprints::clock::ClockCreateInput;
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInput;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleInput,
@@ -292,7 +292,7 @@ impl Executor for ScryptoExecutor {
                 ));
             }
             EPOCH_MANAGER_PACKAGE => {
-                let invocation: EpochManagerCreateInvocation =
+                let invocation: EpochManagerCreateInput =
                     scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((
@@ -301,7 +301,7 @@ impl Executor for ScryptoExecutor {
                 ));
             }
             CLOCK_PACKAGE => {
-                let invocation: ClockCreateInvocation =
+                let invocation: ClockCreateInput =
                     scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((
@@ -311,7 +311,7 @@ impl Executor for ScryptoExecutor {
             }
             ACCOUNT_PACKAGE => {
                 // TODO: Add Account Create
-                let invocation: AccountNewInvocation =
+                let invocation: AccountNewInput =
                     scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((
@@ -320,7 +320,7 @@ impl Executor for ScryptoExecutor {
                 ));
             }
             ACCESS_CONTROLLER_PACKAGE => {
-                let invocation: AccessControllerCreateGlobalInvocation =
+                let invocation: AccessControllerCreateGlobalInput =
                     scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                 let rtn = invocation.execute(api)?;
                 return Ok((

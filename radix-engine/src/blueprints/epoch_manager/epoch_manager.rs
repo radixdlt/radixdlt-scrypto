@@ -52,7 +52,7 @@ pub enum EpochManagerError {
 
 pub struct EpochManager;
 
-impl Executor for EpochManagerCreateInvocation {
+impl Executor for EpochManagerCreateInput {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

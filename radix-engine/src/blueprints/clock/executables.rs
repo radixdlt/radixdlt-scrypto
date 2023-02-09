@@ -14,7 +14,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::ClockGetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::ClockSetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -33,7 +33,7 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
-impl Executor for ClockCreateInvocation {
+impl Executor for ClockCreateInput {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

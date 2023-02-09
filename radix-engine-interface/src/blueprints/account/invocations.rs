@@ -13,7 +13,7 @@ use sbor::rust::fmt::Debug;
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountCreateInvocation {
+pub struct AccountCreateInput {
     pub withdraw_rule: AccessRule,
 }
 
@@ -24,7 +24,7 @@ pub struct AccountCreateInvocation {
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountNewInvocation {
+pub struct AccountNewInput {
     pub withdraw_rule: AccessRule,
 }
 

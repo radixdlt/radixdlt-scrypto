@@ -59,7 +59,7 @@ impl From<AccessControllerError> for RuntimeError {
 // Access Controller Create Global
 //=================================
 
-impl Executor for AccessControllerCreateGlobalInvocation {
+impl Executor for AccessControllerCreateGlobalInput {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

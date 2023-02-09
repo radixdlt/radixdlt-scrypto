@@ -8,6 +8,8 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 
+// TODO: Remove this and replace with a macro/function making it easy
+// TODO: to use manifest buckets for any input struct
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ManifestValidatorInit {
     pub validator_account_address: ComponentAddress,
@@ -23,7 +25,7 @@ pub struct ValidatorInit {
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateInvocation {
+pub struct EpochManagerCreateInput {
     pub olympia_validator_token_address: [u8; 26], // TODO: Clean this up
     pub component_address: [u8; 26],               // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
@@ -32,7 +34,7 @@ pub struct EpochManagerCreateInvocation {
     pub num_unstake_epochs: u64,
 }
 
-impl Clone for EpochManagerCreateInvocation {
+impl Clone for EpochManagerCreateInput {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
         for (key, validator_init) in &self.validator_set {

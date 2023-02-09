@@ -739,7 +739,7 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: "create".to_string(),
-            args: scrypto_encode(&AccountCreateInvocation {
+            args: scrypto_encode(&AccountCreateInput {
                 withdraw_rule: withdraw_auth,
             })
             .unwrap(),

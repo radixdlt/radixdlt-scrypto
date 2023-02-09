@@ -42,7 +42,7 @@ impl From<AccountError> for RuntimeError {
 // Account Create
 //================
 
-impl Executor for AccountCreateInvocation {
+impl Executor for AccountCreateInput {
     type Output = ComponentId;
 
     fn execute<Y, W: WasmEngine>(
@@ -102,7 +102,7 @@ impl Executor for AccountCreateInvocation {
 // Account New
 //=============
 
-impl Executor for AccountNewInvocation {
+impl Executor for AccountNewInput {
     type Output = ComponentAddress;
 
     fn execute<Y, W: WasmEngine>(

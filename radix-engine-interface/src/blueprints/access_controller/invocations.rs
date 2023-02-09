@@ -9,13 +9,13 @@ use sbor::rust::fmt::Debug;
 //=================================
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateGlobalInvocation {
+pub struct AccessControllerCreateGlobalInput {
     pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-impl Clone for AccessControllerCreateGlobalInvocation {
+impl Clone for AccessControllerCreateGlobalInput {
     fn clone(&self) -> Self {
         Self {
             controlled_asset: Bucket(self.controlled_asset.0),

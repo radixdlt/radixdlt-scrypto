@@ -6,7 +6,7 @@ use crate::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ClockCreateInvocation {
+pub struct ClockCreateInput {
     pub component_address: [u8; 26], // TODO: Clean this up
 }
 
