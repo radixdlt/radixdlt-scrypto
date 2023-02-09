@@ -1,5 +1,5 @@
-use crate::blueprints::clock::Clock;
-use crate::blueprints::epoch_manager::EpochManager;
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -55,7 +55,7 @@ impl AuthModule {
                     if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
                         && fn_identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
                     {
-                        EpochManager::create_auth()
+                        EpochManagerNativePackage::create_auth()
                     } else {
                         vec![]
                     }
@@ -64,7 +64,7 @@ impl AuthModule {
                     if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
                         && fn_identifier.ident.eq(CLOCK_CREATE_IDENT)
                     {
-                        Clock::create_auth()
+                        ClockNativePackage::create_auth()
                     } else {
                         vec![]
                     }

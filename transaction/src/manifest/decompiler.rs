@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT};
 use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
 use radix_engine_interface::blueprints::resource::{
     RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
@@ -341,7 +341,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             if package_address.eq(&ACCOUNT_PACKAGE)
                 && blueprint_name.eq(ACCOUNT_BLUEPRINT)
-                && function_name.eq(ACCOUNT_CREATE_IDENT)
+                && function_name.eq(ACCOUNT_CREATE_LOCAL_IDENT)
             {
                 write!(f, "CREATE_ACCOUNT")?;
                 format_args(f, context, args)?;

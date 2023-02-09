@@ -12,12 +12,12 @@ pub const ACCOUNT_BLUEPRINT: &str = "Account";
 // Account Create
 //================
 
-pub const ACCOUNT_CREATE_IDENT: &str = "create";
+pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountCreateInput {
+pub struct AccountCreateLocalInput {
     pub withdraw_rule: AccessRule,
 }
 
@@ -25,12 +25,12 @@ pub struct AccountCreateInput {
 // Account New
 //=============
 
-pub const ACCOUNT_NEW_IDENT: &str = "new";
+pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountNewInput {
+pub struct AccountCreateGlobalInput {
     pub withdraw_rule: AccessRule,
 }
 

@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -31,19 +32,24 @@ const SECONDS_TO_MS_FACTOR: i64 = 1000;
 const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
 const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
 
-pub struct Clock;
+pub struct ClockNativePackage;
+impl ClockNativePackage {
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
+    }
 
-impl Executor for ClockCreateInput {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    pub fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
+        // TODO: Remove decode/encode mess
+        let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -67,7 +73,7 @@ impl Executor for ClockCreateInput {
             }),
         );
 
-        system_api.create_node(
+        api.create_node(
             underlying_node_id,
             RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
@@ -76,24 +82,17 @@ impl Executor for ClockCreateInput {
         )?;
 
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
-            self.component_address,
+            input.component_address,
         )));
-        system_api.create_node(
+        api.create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
-        let system_address: ComponentAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
+        let address: ComponentAddress = global_node_id.into();
 
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((system_address, update))
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
 
@@ -275,15 +274,5 @@ impl Executor for ClockCompareCurrentTimeExecutable {
                 Ok((result, CallFrameUpdate::empty()))
             }
         }
-    }
-}
-
-impl Clock {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
     }
 }

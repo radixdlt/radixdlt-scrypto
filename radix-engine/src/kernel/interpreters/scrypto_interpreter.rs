@@ -1,3 +1,9 @@
+use crate::blueprints::access_controller::AccessControllerNativePackage;
+use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
+use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
@@ -12,19 +18,8 @@ use radix_engine_interface::api::{
     ClientStaticInvokeApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
-use radix_engine_interface::blueprints::access_controller::AccessControllerCreateGlobalInput;
-use radix_engine_interface::blueprints::account::AccountNewInput;
-use radix_engine_interface::blueprints::clock::ClockCreateInput;
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateInput;
-use radix_engine_interface::blueprints::identity::IdentityCreateInput;
-use radix_engine_interface::blueprints::resource::{
-    ResourceManagerCreateFungibleInput,
-    ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
-    ResourceManagerCreateNonFungibleWithAddressInput,
-    ResourceManagerCreateNonFungibleWithInitialSupplyInput,
-    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput,
-};
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -283,119 +278,144 @@ impl Executor for ScryptoExecutor {
     {
         match self.package_address {
             IDENTITY_PACKAGE => {
-                let invocation: IdentityCreateInput =
-                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((
-                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                    rtn.1,
-                ));
+                let output = IdentityNativePackage::create(self.args, api)?;
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
             }
             EPOCH_MANAGER_PACKAGE => {
-                let invocation: EpochManagerCreateInput =
-                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((
-                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                    rtn.1,
-                ));
+                let output = EpochManagerNativePackage::create(self.args, api)?;
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
             }
             CLOCK_PACKAGE => {
-                let invocation: ClockCreateInput =
-                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((
-                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                    rtn.1,
-                ));
+                let output = ClockNativePackage::create(self.args, api)?;
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
             }
             ACCOUNT_PACKAGE => {
-                // TODO: Add Account Create
-                let invocation: AccountNewInput =
-                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((
-                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                    rtn.1,
-                ));
+                let output = match self.export_name.as_str() {
+                    ACCOUNT_CREATE_GLOBAL_IDENT => {
+                        AccountNativePackage::create_global(self.args, api)?
+                    }
+                    ACCOUNT_CREATE_LOCAL_IDENT => {
+                        AccountNativePackage::create_local(self.args, api)?
+                    }
+                    _ => panic!("native code not found."),
+                };
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
             }
             ACCESS_CONTROLLER_PACKAGE => {
-                let invocation: AccessControllerCreateGlobalInput =
-                    scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                let rtn = invocation.execute(api)?;
-                return Ok((
-                    scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                    rtn.1,
-                ));
+                let output = AccessControllerNativePackage::create_global(self.args, api)?;
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
             }
-            RESOURCE_MANAGER_PACKAGE => match self.export_name.as_str() {
-                "create_non_fungible" => {
-                    let invocation: ResourceManagerCreateNonFungibleInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_non_fungible_with_address" => {
-                    let invocation: ResourceManagerCreateNonFungibleWithAddressInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_non_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_fungible" => {
-                    let invocation: ResourceManagerCreateFungibleInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_fungible_with_initial_supply_and_address" => {
-                    let invocation: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                "create_uuid_non_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
-                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
-                    let rtn = invocation.execute(api)?;
-                    return Ok((
-                        scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),
-                        rtn.1,
-                    ));
-                }
-                _ => {
-                    panic!("Does not exist: {:?}", self.export_name);
-                }
-            },
+            RESOURCE_MANAGER_PACKAGE => {
+                let output = match self.export_name.as_str() {
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {
+                        ResourceManagerNativePackage::create_non_fungible(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
+                        ResourceManagerNativePackage::create_non_fungible_with_address(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                        ResourceManagerNativePackage::create_non_fungible_with_initial_supply(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
+                        ResourceManagerNativePackage::create_uuid_non_fungible_with_initial_supply(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
+                        ResourceManagerNativePackage::create_fungible(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                        ResourceManagerNativePackage::create_fungible_with_initial_supply(self.args, api)?
+                    }
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+                        ResourceManagerNativePackage::create_fungible_with_initial_supply_and_address(self.args, api)?
+                    }
+                    _ => panic!("native code not found."),
+                };
+                let update = CallFrameUpdate {
+                    node_refs_to_copy: output
+                        .global_references()
+                        .into_iter()
+                        .map(|a| RENodeId::Global(a))
+                        .collect(),
+                    nodes_to_move: output
+                        .owned_node_ids()
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
+                        })?
+                        .into_iter()
+                        .collect(),
+                };
+                return Ok((output.into(), update));
+            }
             _ => {}
         }
 

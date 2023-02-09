@@ -14,7 +14,9 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
+};
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::collections::BTreeMap;
@@ -55,31 +57,35 @@ impl From<AccessControllerError> for RuntimeError {
     }
 }
 
+pub struct AccessControllerNativePackage;
+
 //=================================
 // Access Controller Create Global
 //=================================
 
-impl Executor for AccessControllerCreateGlobalInput {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+impl AccessControllerNativePackage {
+    pub fn create_global<Y>(
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientStaticInvokeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let input: AccessControllerCreateGlobalInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+
         // Creating a new vault and putting in it the controlled asset
         let vault = {
-            let mut vault = self
+            let mut vault = input
                 .controlled_asset
                 .sys_resource_address(api)
                 .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
-            vault.sys_put(self.controlled_asset, api)?;
+            vault.sys_put(input.controlled_asset, api)?;
 
             vault
         };
@@ -88,14 +94,14 @@ impl Executor for AccessControllerCreateGlobalInput {
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
-                access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
+                access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
             }),
         );
 
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
             vault.0,
-            self.timed_recovery_delay_in_minutes,
+            input.timed_recovery_delay_in_minutes,
         ));
 
         // Allocating an RENodeId and creating the access controller RENode
@@ -110,7 +116,8 @@ impl Executor for AccessControllerCreateGlobalInput {
             BTreeMap::new(),
         )?;
 
-        Ok((global_node_id.into(), CallFrameUpdate::empty()))
+        let address: ComponentAddress = global_node_id.into();
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
 

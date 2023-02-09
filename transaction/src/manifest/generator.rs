@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT,
+    AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
@@ -624,8 +624,8 @@ pub fn generate_instruction(
         ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&AccountCreateInput {
+            function_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            args: scrypto_encode(&AccountCreateLocalInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,

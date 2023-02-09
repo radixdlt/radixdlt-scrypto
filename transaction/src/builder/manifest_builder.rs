@@ -743,8 +743,8 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&AccountCreateInput {
+            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            args: scrypto_encode(&AccountCreateGlobalInput {
                 withdraw_rule: withdraw_auth,
             })
             .unwrap(),

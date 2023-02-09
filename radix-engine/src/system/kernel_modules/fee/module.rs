@@ -192,13 +192,8 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         let cost_units = match &actor.identifier {
-            FnIdentifier::Native(native_fn) => {
-                track.fee_table.run_native_fn_cost(&native_fn)
-
-            }
-            FnIdentifier::Scrypto(identifier) => {
-                track.fee_table.run_cost(&identifier)
-            }
+            FnIdentifier::Native(native_fn) => track.fee_table.run_native_fn_cost(&native_fn),
+            FnIdentifier::Scrypto(identifier) => track.fee_table.run_cost(&identifier),
         };
 
         track

@@ -12,12 +12,13 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -50,32 +51,40 @@ pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
 
-pub struct EpochManager;
+pub struct EpochManagerNativePackage;
 
-impl Executor for EpochManagerCreateInput {
-    type Output = ComponentAddress;
+impl EpochManagerNativePackage {
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
+    }
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    pub fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientStaticInvokeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let input: EpochManagerCreateInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(
-            ComponentAddress::EpochManager(self.component_address),
+            ComponentAddress::EpochManager(input.component_address),
         ));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
-            epoch: self.initial_epoch,
+            epoch: input.initial_epoch,
             round: 0,
-            rounds_per_epoch: self.rounds_per_epoch,
-            num_unstake_epochs: self.num_unstake_epochs,
+            rounds_per_epoch: input.rounds_per_epoch,
+            num_unstake_epochs: input.num_unstake_epochs,
         };
 
         let mut olympia_validator_token_resman: ResourceManager = {
@@ -101,7 +110,7 @@ impl Executor for EpochManagerCreateInput {
                     id_type: NonFungibleIdType::Bytes,
                     metadata,
                     access_rules,
-                    resource_address: self.olympia_validator_token_address,
+                    resource_address: input.olympia_validator_token_address,
                 })
                 .unwrap(),
             )?;
@@ -111,7 +120,7 @@ impl Executor for EpochManagerCreateInput {
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, validator_init) in self.validator_set {
+        for (key, validator_init) in input.validator_set {
             let local_id = NonFungibleLocalId::Bytes(key.to_vec());
             let global_id =
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
@@ -140,12 +149,12 @@ impl Executor for EpochManagerCreateInput {
         }
 
         let current_validator_set = ValidatorSetSubstate {
-            epoch: self.initial_epoch,
+            epoch: input.initial_epoch,
             validator_set: validator_set.clone(),
         };
 
         let preparing_validator_set = ValidatorSetSubstate {
-            epoch: self.initial_epoch + 1,
+            epoch: input.initial_epoch + 1,
             validator_set,
         };
 
@@ -202,15 +211,7 @@ impl Executor for EpochManagerCreateInput {
         )?;
 
         let component_address: ComponentAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((component_address, update))
+        Ok(IndexedScryptoValue::from_typed(&component_address))
     }
 }
 
@@ -520,15 +521,5 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
         }
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl EpochManager {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
     }
 }
