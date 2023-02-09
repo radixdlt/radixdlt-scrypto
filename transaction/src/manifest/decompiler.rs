@@ -364,6 +364,20 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
+            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
+                && function_name.eq("create_non_fungible")
+            {
+                f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
+            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
+                && function_name.eq("create_non_fungible_with_initial_supply")
+            {
+                f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                format_args(f, context, args)?;
+                f.write_str(";")?;
             } else {
                 write!(
                     f,
@@ -513,28 +527,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
             format_typed_value(f, context, &entries)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateNonFungibleResource {
-            id_type,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => {
-            let initial_supply = {
-                match initial_supply {
-                    Some(initial_supply) => {
-                        transform_non_fungible_mint_params(initial_supply).map(Some)?
-                    }
-                    None => None,
-                }
-            };
-
-            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, id_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
         BasicInstruction::CreateNonFungibleResourceWithOwner {

@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput,
     ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
     ResourceManagerCreateNonFungibleWithAddressInput,
-    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInput,
     ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
 };
 use radix_engine_interface::data::*;
@@ -348,7 +348,7 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
                 "create_non_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInvocation =
+                    let invocation: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
                         scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((
@@ -392,7 +392,7 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
                 _ => {
-                    panic!("Does not exist.");
+                    panic!("Does not exist: {:?}", self.export_name);
                 }
             },
             _ => {}

@@ -135,12 +135,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             BasicInstruction::CreateValidator { .. } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
             }
-            BasicInstruction::CreateNonFungibleResource { access_rules, .. } => {
-                let args = args!(access_rules.clone());
-                for node_id in slice_to_global_references(&args) {
-                    update.add_ref(node_id);
-                }
-            }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
                 update.add_ref(RENodeId::Global(*entity_address));
@@ -549,49 +543,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
-                    id_type,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                }) => {
-                    if let Some(ids) = initial_supply {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_non_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(
-                                &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                    id_type: *id_type,
-                                    metadata: metadata.clone(),
-                                    access_rules: access_rules.clone(),
-                                    entries: ids.clone(),
-                                },
-                            )
-                            .unwrap(),
-                        )?;
-
-                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                            &rtn, api,
-                        )?;
-
-                        InstructionOutput::Scrypto(rtn)
-                    } else {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_non_fungible".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                            })
-                            .unwrap(),
-                        )?;
-
-                        InstructionOutput::Scrypto(rtn)
-                    }
-                }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
                     id_type,
                     metadata,
@@ -604,7 +555,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             RESOURCE_MANAGER_BLUEPRINT.to_string(),
                             "create_non_fungible_with_initial_supply".to_string(),
                             scrypto_encode(
-                                &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                &ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                                     id_type: *id_type,
                                     metadata: metadata.clone(),
                                     access_rules: resource_access_rules_from_owner_badge(

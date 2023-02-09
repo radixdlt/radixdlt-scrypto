@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
@@ -167,13 +167,6 @@ pub enum BasicInstruction {
     MintUuidNonFungible {
         resource_address: ResourceAddress,
         entries: Vec<(Vec<u8>, Vec<u8>)>,
-    },
-
-    CreateNonFungibleResource {
-        id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {

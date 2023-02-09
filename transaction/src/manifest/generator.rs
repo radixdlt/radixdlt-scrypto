@@ -6,7 +6,8 @@ use radix_engine_interface::blueprints::account::AccountCreateInvocation;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, ResourceManagerCreateFungibleInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInput,
+    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInput,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
@@ -487,23 +488,7 @@ pub fn generate_instruction(
                 blobs,
             )?,
         },
-        ast::Instruction::CreateNonFungibleResource {
-            id_type,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => BasicInstruction::CreateNonFungibleResource {
-            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            initial_supply: generate_from_enum_if_some(
-                initial_supply,
-                resolver,
-                bech32_decoder,
-                blobs,
-                generate_non_fungible_mint_params,
-            )?,
-        },
+
         ast::Instruction::CreateNonFungibleResourceWithOwner {
             id_type,
             metadata,
@@ -562,6 +547,43 @@ pub fn generate_instruction(
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
                 initial_supply: generate_decimal(initial_supply)?,
+            })
+            .unwrap(),
+        },
+        ast::Instruction::CreateNonFungibleResource {
+            id_type,
+            metadata,
+            access_rules,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            })
+            .unwrap(),
+        },
+        ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
+            id_type,
+            metadata,
+            access_rules,
+            initial_supply,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: "create_non_fungible_with_initial_supply".to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+                entries: generate_non_fungible_mint_params(
+                    initial_supply,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
             })
             .unwrap(),
         },
@@ -1734,49 +1756,6 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"##,
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
-                    (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
-                    )
-                )]))
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: None
-            },
-        );
-
-        generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"##,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
                 id_type: NonFungibleIdType::Integer,
@@ -1819,6 +1798,67 @@ mod tests {
                         args!(12u8, 19u128)
                     )
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_non_fungible".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type: NonFungibleIdType::Integer,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                })
+                .unwrap(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_with_initial_supply_instruction() {
+        generate_instruction_ok!(
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_non_fungible_with_initial_supply".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    id_type: NonFungibleIdType::Integer,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                    entries: BTreeMap::from([(
+                        NonFungibleLocalId::Integer(1),
+                        (
+                            args!(String::from("Hello World"), Decimal::from("12")),
+                            args!(12u8, 19u128)
+                        )
+                    )]),
+                })
+                .unwrap(),
             },
         );
     }

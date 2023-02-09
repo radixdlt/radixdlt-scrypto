@@ -234,8 +234,15 @@ impl Parser {
                 id_type: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
+            TokenKind::CreateNonFungibleResourceWithInitialSupply => {
+                Instruction::CreateNonFungibleResourceWithInitialSupply {
+                    id_type: self.parse_value()?,
+                    metadata: self.parse_value()?,
+                    access_rules: self.parse_value()?,
+                    initial_supply: self.parse_value()?,
+                }
+            }
             TokenKind::CreateNonFungibleResourceWithOwner => {
                 Instruction::CreateNonFungibleResourceWithOwner {
                     id_type: self.parse_value()?,

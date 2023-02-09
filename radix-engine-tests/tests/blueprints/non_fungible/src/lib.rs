@@ -307,14 +307,12 @@ mod non_fungible_test {
                     RESOURCE_MANAGER_PACKAGE,
                     RESOURCE_MANAGER_BLUEPRINT,
                     "create_non_fungible_with_initial_supply",
-                    scrypto_encode(
-                        &ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                            id_type: NonFungibleIdType::UUID,
-                            metadata: BTreeMap::new(),
-                            access_rules: BTreeMap::new(),
-                            entries: encoded,
-                        },
-                    )
+                    scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                        id_type: NonFungibleIdType::UUID,
+                        metadata: BTreeMap::new(),
+                        access_rules: BTreeMap::new(),
+                        entries: encoded,
+                    })
                     .unwrap(),
                 )
                 .unwrap();

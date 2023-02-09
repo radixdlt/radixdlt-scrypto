@@ -316,22 +316,43 @@ impl ManifestBuilder {
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: NonFungibleData,
     {
-        let initial_supply = initial_supply.map(|entries| {
-            entries
-                .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
-                .collect()
-        });
         let access_rules = access_rules
             .into_iter()
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
-        self.add_instruction(BasicInstruction::CreateNonFungibleResource {
-            id_type,
-            metadata,
-            access_rules,
-            initial_supply,
-        });
+
+        if let Some(initial_supply) = initial_supply {
+            let entries = initial_supply
+                .into_iter()
+                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .collect();
+
+            self.add_instruction(BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_non_fungible_with_initial_supply".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    id_type,
+                    metadata,
+                    access_rules,
+                    entries,
+                })
+                .unwrap(),
+            });
+        } else {
+            self.add_instruction(BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: "create_non_fungible".to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type,
+                    metadata,
+                    access_rules,
+                })
+                .unwrap(),
+            });
+        }
+
         self
     }
 

@@ -348,11 +348,11 @@ CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "lock_fee"
     Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Bytes("5c21020c0b48656c6c6f20576f726c64b50000b0d86b9088a6000000000000000000000000000000000000000000000000"), Bytes("5c2102070c0b13000000000000000000000000000000")));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -408,8 +408,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(0u8);
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
         );
     }

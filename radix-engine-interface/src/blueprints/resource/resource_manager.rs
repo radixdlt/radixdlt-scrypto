@@ -83,7 +83,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
