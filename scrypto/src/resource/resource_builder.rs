@@ -7,6 +7,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
