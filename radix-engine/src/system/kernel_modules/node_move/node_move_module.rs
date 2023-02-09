@@ -141,7 +141,7 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,
@@ -153,7 +153,7 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _caller: &ResolvedActor,
         call_frame_update: &CallFrameUpdate,

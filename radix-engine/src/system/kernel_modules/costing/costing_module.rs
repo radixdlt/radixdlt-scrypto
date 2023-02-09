@@ -108,7 +108,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -283,7 +283,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &RENodeId,
         _module_id: &NodeModuleId,

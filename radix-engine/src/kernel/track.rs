@@ -456,12 +456,12 @@ impl<'s> Track<'s> {
         vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
-        // We occasionally get `SuccessButFeeLoanNotRepaid` error despite enough fee has been locked, if the transaction
-        // finishes before SYSTEM_LOAN_AMOUNT is reached.
+        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
+        // and despite enough fee has been locked.
         //
-        // This is caused by cost unit limit check failure within the `repay_all` method.
+        // This is because the cost unit limit check fails the system loan repayment.
         //
-        // Here, we purposely overwrite the error code for better user experience.
+        // Thus, we propagate the real error to receipt.
         if let Err(err) = fee_reserve.repay_all() {
             if invoke_result.is_ok() {
                 invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(

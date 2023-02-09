@@ -22,7 +22,7 @@ impl KernelModule for LoggerModule {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,

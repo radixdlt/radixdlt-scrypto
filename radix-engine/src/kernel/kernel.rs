@@ -88,7 +88,7 @@ where
             }
         }
 
-        // Teardown all kernel modules
+        // Tear down kernel modules
         let result = self
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::on_teardown(api)
@@ -364,15 +364,16 @@ where
         } else {
             None
         };
+        let caller = self.current_frame.actor.clone();
 
-        // New Call Frame pre-processing
+        // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_new_frame(api, &actor, &mut call_frame_update)
+                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update)
             })?;
         }
 
-        // Call Frame Push
+        // Push call frame
         {
             self.id_allocator.push();
 
@@ -386,16 +387,21 @@ where
         }
 
         // Execute
-        let (output, update) =
-            self.execute_in_mode(ExecutionMode::Application, |api| executor.execute(api))?;
+        let (output, update) = {
+            // Handle execution start
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::on_execution_start(api, &caller)
+            })?;
 
-        let caller = self.prev_frame_stack.last().unwrap().actor.clone();
-        self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-            KernelModuleMixer::after_execute(api, &caller, &update)
-        })?;
+            // Run
+            let (output, mut update) =
+                self.execute_in_mode(ExecutionMode::Application, |api| executor.execute(api))?;
 
-        // Call Frame post-processing
-        {
+            // Handle execution finish
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
+            })?;
+
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
@@ -403,11 +409,15 @@ where
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
-        }
 
-        // Call Frame Pop
+            (output, update)
+        };
+
+        // Pop call frame
         {
             let mut parent = self.prev_frame_stack.pop().unwrap();
+
+            // Move resource
             CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
             // drop proofs and check resource leak
@@ -417,6 +427,13 @@ where
             self.current_frame = parent;
 
             self.id_allocator.pop()?;
+        }
+
+        // After pop call frame
+        {
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::after_pop_frame(api)
+            })?;
         }
 
         if let Some(derefed_lock) = derefed_lock {

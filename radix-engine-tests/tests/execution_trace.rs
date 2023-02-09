@@ -1,5 +1,5 @@
 use radix_engine::kernel::TrackedEvent;
-use radix_engine::system::kernel_modules::execution_trace::{KernelCallTrace, Origin};
+use radix_engine::system::kernel_modules::execution_trace::{KernelCallOrigin, KernelCallTrace};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -198,7 +198,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let Origin::ScryptoMethod(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -218,7 +218,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            Origin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -241,7 +241,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
             trace.origin
         );
 
@@ -260,7 +260,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
+            KernelCallOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
             trace.origin
         );
 
@@ -281,7 +281,7 @@ fn test_instruction_traces() {
         let traces = traces_for_instruction(&child_traces, 4);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
-        assert_eq!(Origin::DropNode, trace.origin);
+        assert_eq!(KernelCallOrigin::DropNode, trace.origin);
 
         assert!(trace.output.is_empty());
         assert!(trace.input.buckets.is_empty());
@@ -301,7 +301,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -321,12 +321,12 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
             take_trace.origin
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let Origin::ScryptoFunction(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoFunction(ScryptoFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin

@@ -227,7 +227,7 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        KernelModuleMixer::on_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
+        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -332,6 +332,9 @@ where
 
         // Restore current mode
         self.execution_mode = current_mode;
+
+        // TODO: pass the right size
+        KernelModuleMixer::after_lock_substate(self, lock_handle, 0)?;
 
         Ok(lock_handle)
     }

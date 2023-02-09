@@ -7,7 +7,7 @@ use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
     //======================
-    // Kernel module events
+    // Kernel module setup
     //======================
 
     fn on_init<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
@@ -19,9 +19,14 @@ pub trait KernelModule {
     }
 
     //======================
-    // Invocation events:
+    // Invocation events
     //
-    //  BeforeInvoke -> BeforeNewFrame -> AfterActorRun -> AfterInvoke
+    // -> BeforeInvoke
+    // -> BeforePushFrame
+    //        -> ExecutionStart
+    //        -> ExecutionFinish
+    // -> AfterPopFrame
+    // -> AfterInvoke
     //======================
 
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
@@ -32,19 +37,30 @@ pub trait KernelModule {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &ResolvedActor,
-        _update: &mut CallFrameUpdate,
+        _down_movement: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &ResolvedActor,
-        _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _caller: &ResolvedActor,
+        _up_movement: &CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -55,16 +71,16 @@ pub trait KernelModule {
         Ok(())
     }
 
+    //======================
+    // RENode events
+    //======================
+
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
-
-    //======================
-    // RENode events
-    //======================
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
@@ -97,12 +113,20 @@ pub trait KernelModule {
     // Substate events
     //======================
 
-    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
         _module_id: &NodeModuleId,
         _offset: &SubstateOffset,
         _flags: &LockFlags,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _lock_handle: LockHandle,
+        _size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

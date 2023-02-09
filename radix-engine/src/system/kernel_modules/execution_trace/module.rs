@@ -27,7 +27,7 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, Origin, usize)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, KernelCallOrigin, usize)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
@@ -73,7 +73,7 @@ pub struct ResourceSummary {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct KernelCallTrace {
-    pub origin: Origin,
+    pub origin: KernelCallOrigin,
     pub kernel_call_depth: usize,
     pub current_frame_actor: ResolvedActor,
     pub current_frame_depth: usize,
@@ -84,7 +84,7 @@ pub struct KernelCallTrace {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum Origin {
+pub enum KernelCallOrigin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),
     NativeFn(NativeFn),
@@ -194,7 +194,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &ResolvedActor,
         update: &mut CallFrameUpdate,
@@ -203,11 +203,11 @@ impl KernelModule for ExecutionTraceModule {
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
         api.get_module_state()
             .execution_trace
-            .handle_before_new_frame(current_actor, callee, resource_summary);
+            .handle_before_push_frame(current_actor, callee, resource_summary);
         Ok(())
     }
 
-    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
@@ -215,12 +215,9 @@ impl KernelModule for ExecutionTraceModule {
         let current_actor = api.get_current_actor();
         let current_depth = api.get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.get_module_state().execution_trace.handle_after_execute(
-            current_actor,
-            current_depth,
-            caller,
-            resource_summary,
-        );
+        api.get_module_state()
+            .execution_trace
+            .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())
     }
 
@@ -253,7 +250,7 @@ impl ExecutionTraceModule {
 
             let traced_input = (
                 ResourceSummary::new_empty(),
-                Origin::CreateNode,
+                KernelCallOrigin::CreateNode,
                 instruction_index,
             );
             self.traced_kernel_call_inputs_stack.push(traced_input);
@@ -283,7 +280,11 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
-            let traced_input = (resource_summary, Origin::DropNode, instruction_index);
+            let traced_input = (
+                resource_summary,
+                KernelCallOrigin::DropNode,
+                instruction_index,
+            );
             self.traced_kernel_call_inputs_stack.push(traced_input);
         }
 
@@ -304,7 +305,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
-    fn handle_before_new_frame(
+    fn handle_before_push_frame(
         &mut self,
         current_actor: ResolvedActor,
         callee: &ResolvedActor,
@@ -314,12 +315,12 @@ impl ExecutionTraceModule {
             let origin = match &callee.identifier {
                 FnIdentifier::Scrypto(scrypto_fn) => {
                     if callee.receiver.is_some() {
-                        Origin::ScryptoMethod(scrypto_fn.clone())
+                        KernelCallOrigin::ScryptoMethod(scrypto_fn.clone())
                     } else {
-                        Origin::ScryptoFunction(scrypto_fn.clone())
+                        KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::Native(native_fn) => Origin::NativeFn(native_fn.clone()),
+                FnIdentifier::Native(native_fn) => KernelCallOrigin::NativeFn(native_fn.clone()),
             };
 
             let instruction_index = self.instruction_index();
@@ -354,11 +355,11 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_after_execute(
+    fn handle_on_execution_finish(
         &mut self,
         current_actor: ResolvedActor,
         current_depth: usize,
-        return_to: &ResolvedActor,
+        caller: &ResolvedActor,
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
@@ -369,7 +370,7 @@ impl ExecutionTraceModule {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_take_output(&resource_summary, return_to, vault_id),
+            } => self.handle_vault_take_output(&resource_summary, caller, vault_id),
             _ => {}
         }
 

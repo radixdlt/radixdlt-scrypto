@@ -177,60 +177,113 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn before_new_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         actor: &ResolvedActor,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::before_new_frame(api, actor, update)?;
+            KernelDebugModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().costing_enabled {
-            CostingModule::before_new_frame(api, actor, update)?;
+            CostingModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().node_move_enabled {
-            NodeMoveModule::before_new_frame(api, actor, update)?;
+            NodeMoveModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().auth_enabled {
-            AuthModule::before_new_frame(api, actor, update)?;
+            AuthModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().logger_enabled {
-            LoggerModule::before_new_frame(api, actor, update)?;
+            LoggerModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::before_new_frame(api, actor, update)?;
+            TransactionRuntimeModule::before_push_frame(api, actor, update)?;
         }
         if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::before_new_frame(api, actor, update)?;
+            ExecutionTraceModule::before_push_frame(api, actor, update)?;
         }
         Ok(())
     }
 
-    fn after_execute<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        caller: &ResolvedActor,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::on_execution_start(api, caller)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::on_execution_start(api, caller)?;
+        }
+        Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::after_execute(api, caller, update)?;
+            KernelDebugModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().costing_enabled {
-            CostingModule::after_execute(api, caller, update)?;
+            CostingModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().node_move_enabled {
-            NodeMoveModule::after_execute(api, caller, update)?;
+            NodeMoveModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().auth_enabled {
-            AuthModule::after_execute(api, caller, update)?;
+            AuthModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().logger_enabled {
-            LoggerModule::after_execute(api, caller, update)?;
+            LoggerModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::after_execute(api, caller, update)?;
+            TransactionRuntimeModule::on_execution_finish(api, caller, update)?;
         }
         if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::after_execute(api, caller, update)?;
+            ExecutionTraceModule::on_execution_finish(api, caller, update)?;
+        }
+        Ok(())
+    }
+
+    fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::after_pop_frame(api)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::after_pop_frame(api)?;
         }
         Ok(())
     }
@@ -407,7 +460,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn on_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
         module_id: &NodeModuleId,
@@ -415,25 +468,54 @@ impl KernelModule for KernelModuleMixer {
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            KernelDebugModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().costing_enabled {
-            CostingModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            CostingModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().node_move_enabled {
-            NodeMoveModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            NodeMoveModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().auth_enabled {
-            AuthModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            AuthModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().logger_enabled {
-            LoggerModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            LoggerModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            TransactionRuntimeModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::on_lock_substate(api, node_id, module_id, offset, flags)?;
+            ExecutionTraceModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+        }
+        Ok(())
+    }
+
+    fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        handle: LockHandle,
+        size: usize,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::after_lock_substate(api, handle, size)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::after_lock_substate(api, handle, size)?;
         }
         Ok(())
     }

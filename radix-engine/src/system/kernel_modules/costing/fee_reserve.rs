@@ -550,10 +550,7 @@ mod tests {
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve
-            .consume_royalty(
-                RoyaltyReceiver::Package(FAUCET_PACKAGE, RENodeId::Package([0u8; 36])),
-                2,
-            )
+            .consume_royalty(RoyaltyReceiver::Package(FAUCET_PACKAGE, [0u8; 36]), 2)
             .unwrap();
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
