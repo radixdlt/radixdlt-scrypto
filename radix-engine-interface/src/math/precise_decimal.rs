@@ -602,12 +602,17 @@ macro_rules! try_from_integer {
     ($($t:ident),*) => {
         $(
             impl TryFrom<$t> for PreciseDecimal {
-                type Error = ParseDecimalError;
+                type Error = ParsePreciseDecimalError;
 
                 fn try_from(val: $t) -> Result<Self, Self::Error> {
                     match BnumI512::try_from(val) {
-                        Ok(val) => Ok(Self(val * Self::ONE.0)),
-                        Err(_) => Err(ParseDecimalError::Overflow),
+                        Ok(val) => {
+                            match val.checked_mul(Self::ONE.0) {
+                                Some(mul) => Ok(Self(mul)),
+                                None => Err(ParsePreciseDecimalError::Overflow),
+                            }
+                        },
+                        Err(_) => Err(ParsePreciseDecimalError::Overflow),
                     }
                 }
             }
@@ -615,8 +620,8 @@ macro_rules! try_from_integer {
     };
 }
 
-from_integer!(BnumI256, BnumI512, BnumU256);
-try_from_integer!(BnumU512);
+from_integer!(BnumI256, BnumU256);
+try_from_integer!(BnumI512, BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -1199,6 +1204,76 @@ mod tests {
         ("-0.000000000000000001", "-0.000000000000000001", 3),
         ("5", "5", 4),
         ("12345678.1", "12345678.1", 5)
+    }
+
+    macro_rules! test_try_from_integer_overflow {
+        ($(($from:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_overflow_ $suffix>]() {
+                    let err = PreciseDecimal::try_from($from).unwrap_err();
+                    assert_eq!(err, ParsePreciseDecimalError::Overflow)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer_overflow! {
+        (BnumI512::MAX, 1),
+        (BnumI512::MIN, 2),
+        // maximal PreciseDecimal integer part + 1
+        (BnumI512::MAX/(BnumI512::from(10).pow(PreciseDecimal::SCALE)) + BnumI512::ONE, 3),
+        // minimal PreciseDecimal integer part - 1
+        (BnumI512::MIN/(BnumI512::from(10).pow(PreciseDecimal::SCALE)) - BnumI512::ONE, 4),
+        (BnumI512::MIN, 5),
+        (BnumU512::MAX, 6)
+    }
+
+    macro_rules! test_try_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_ $suffix>]() {
+                    let dec = PreciseDecimal::try_from($from).unwrap();
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer! {
+        (BnumI512::ONE, "1", 1),
+        (-BnumI512::ONE, "-1", 2),
+        // maximal PreciseDecimal integer part
+        (BnumI512::MAX/(BnumI512::from(10).pow(PreciseDecimal::SCALE)), "670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714" , 3),
+        // minimal PreciseDecimal integer part
+        (BnumI512::MIN/(BnumI512::from(10).pow(PreciseDecimal::SCALE)), "-670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714" , 4),
+        (BnumU512::MIN, "0", 5)
+    }
+
+    macro_rules! test_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_integer_ $suffix>]() {
+                    let dec = PreciseDecimal::from($from);
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_integer! {
+        (BnumI256::MAX, "57896044618658097711785492504343953926634992332820282019728792003956564819967", 1),
+        (BnumI256::MIN, "-57896044618658097711785492504343953926634992332820282019728792003956564819968", 2),
+        (BnumU256::MIN, "0", 3),
+        (BnumU256::MAX, "115792089237316195423570985008687907853269984665640564039457584007913129639935", 4)
     }
 
     #[test]

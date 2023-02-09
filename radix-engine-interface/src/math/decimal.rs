@@ -561,20 +561,28 @@ impl TryFrom<PreciseDecimal> for Decimal {
     }
 }
 
-macro_rules! from_integer {
+macro_rules! try_from_integer {
     ($($t:ident),*) => {
         $(
-            impl From<$t> for Decimal {
-                fn from(val: $t) -> Self {
-                    Self(BnumI256::try_from(val).unwrap() * Self::ONE.0)
+            impl TryFrom<$t> for Decimal {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: $t) -> Result<Self, Self::Error> {
+                    match BnumI256::try_from(val) {
+                        Ok(val) => {
+                            match val.checked_mul(Self::ONE.0) {
+                                Some(mul) => Ok(Self(mul)),
+                                None => Err(ParseDecimalError::Overflow),
+                            }
+                        },
+                        Err(_) => Err(ParseDecimalError::Overflow),
+                    }
                 }
             }
         )*
     };
 }
-
-from_integer!(BnumI256, BnumI512);
-from_integer!(BnumU256, BnumU512);
+try_from_integer!(BnumI256, BnumI512, BnumU256, BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -1146,6 +1154,60 @@ mod tests {
         (PreciseDecimal::MIN, 2),
         (PreciseDecimal::from(Decimal::MAX) + 1, 3),
         (PreciseDecimal::from(Decimal::MIN) - 1, 4)
+    }
+
+    macro_rules! test_try_from_integer_overflow {
+        ($(($from:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_overflow_ $suffix>]() {
+                    let err = Decimal::try_from($from).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer_overflow! {
+        (BnumI256::MAX, 1),
+        (BnumI256::MIN, 2),
+        // maximal Decimal integer part + 1
+        (BnumI256::MAX/(BnumI256::from(10).pow(Decimal::SCALE)) + BnumI256::ONE, 3),
+        // minimal Decimal integer part - 1
+        (BnumI256::MIN/(BnumI256::from(10).pow(Decimal::SCALE)) - BnumI256::ONE, 4),
+        (BnumU256::MAX, 5),
+        (BnumI512::MAX, 6),
+        (BnumI512::MIN, 7),
+        (BnumU512::MAX, 8)
+    }
+
+    macro_rules! test_try_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_ $suffix>]() {
+                    let dec = Decimal::try_from($from).unwrap();
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer! {
+        (BnumI256::ONE, "1", 1),
+        (-BnumI256::ONE, "-1", 2),
+        // maximal Decimal integer part
+        (BnumI256::MAX/(BnumI256::from(10_u64.pow(Decimal::SCALE))), "57896044618658097711785492504343953926634992332820282019728" , 3),
+        // minimal Decimal integer part
+        (BnumI256::MIN/(BnumI256::from(10_u64.pow(Decimal::SCALE))), "-57896044618658097711785492504343953926634992332820282019728" , 4),
+        (BnumU256::MIN, "0", 5),
+        (BnumU512::MIN, "0", 6),
+        (BnumI512::ONE, "1", 7),
+        (-BnumI512::ONE, "-1", 8)
     }
 
     #[test]
