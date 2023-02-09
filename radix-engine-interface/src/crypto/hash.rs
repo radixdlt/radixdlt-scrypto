@@ -10,6 +10,7 @@ use utils::copy_u8_array;
 use crate::abi::*;
 use crate::data::*;
 use crate::scrypto_type;
+use blake2::{digest::consts::U32, Blake2b, Digest};
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -39,12 +40,18 @@ impl AsRef<[u8]> for Hash {
     }
 }
 
+fn blake2b_hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
+    let mut hasher = Blake2b::<U32>::new();
+    hasher.update(data.as_ref());
+    hasher.finalize().into()
+}
+
 /// Computes the hash digest of a message.
 pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
     // TODO: replace with whatever hash algorithm we eventually agrees on
     // The point here is to have a single "main" hashing function in the code base
 
-    Hash(blake3::hash(data.as_ref()).as_bytes().clone())
+    Hash(blake2b_hash(data))
 }
 
 //========
