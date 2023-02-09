@@ -48,7 +48,7 @@ mod k12 {
     }
 }
 fn bench_hash(c: &mut Criterion) {
-    let sizes = [(512, "512B"), (MB, "1MB")];
+    let sizes = [(64, "64B"), (512, "512B"), (MB, "1MB")];
     let mut group = c.benchmark_group("hash");
     for size in sizes {
         let data = vec![0_u8; size.0 as usize];
