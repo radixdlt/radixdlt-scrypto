@@ -11,7 +11,7 @@ use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
 //===================================================================================
-// Note: execution trace should not produce an error or transactional side-effects!
+// Note: ExecutionTrace must not produce any error or transactional side effect!
 //===================================================================================
 
 #[derive(Debug, Clone)]
@@ -19,6 +19,7 @@ pub struct ExecutionTraceModule {
     /// Maximum depth up to which kernel calls are being traced.
     max_kernel_call_depth_traced: usize,
 
+    /// Current transaction index
     current_transaction_index: usize,
 
     /// Current kernel calls depth. Note that this doesn't necessarily correspond to the

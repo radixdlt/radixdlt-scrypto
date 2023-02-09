@@ -340,6 +340,10 @@ where
                         println!("None");
                     }
                 }
+                TransactionResult::Reject(e) => {
+                    println!("{:-^80}", "Transaction Rejected");
+                    println!("{:?}", e.error);
+                }
                 _ => {}
             }
         }

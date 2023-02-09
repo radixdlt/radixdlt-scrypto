@@ -75,7 +75,7 @@ pub trait KernelNodeApi {
 }
 
 /// Internal API for kernel modules.
-/// No kernel state changes are expected as of a result of invoking such APIs, but updating returned references.
+/// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi {
     fn get_module_state(&mut self) -> &mut KernelModuleMixer;
     fn get_current_depth(&self) -> usize;
