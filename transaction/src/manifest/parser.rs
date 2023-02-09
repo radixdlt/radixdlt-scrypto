@@ -243,14 +243,6 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
-            TokenKind::CreateNonFungibleResourceWithOwner => {
-                Instruction::CreateNonFungibleResourceWithOwner {
-                    id_type: self.parse_value()?,
-                    metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
-                    initial_supply: self.parse_value()?,
-                }
-            }
             TokenKind::CreateValidator => Instruction::CreateValidator {
                 key: self.parse_value()?,
                 owner_access_rule: self.parse_value()?,

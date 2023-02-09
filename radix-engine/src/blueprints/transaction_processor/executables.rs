@@ -213,7 +213,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::PublishPackage { .. }
             | BasicInstruction::PublishPackageWithOwner { .. }
             | BasicInstruction::BurnResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
             | BasicInstruction::AssertAccessRule { .. } => {}
         },
         Instruction::System(invocation) => {
@@ -542,51 +541,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
-                    id_type,
-                    metadata,
-                    owner_badge,
-                    initial_supply,
-                }) => {
-                    if let Some(ids) = initial_supply {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_non_fungible_with_initial_supply".to_string(),
-                            scrypto_encode(
-                                &ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-                                    id_type: *id_type,
-                                    metadata: metadata.clone(),
-                                    access_rules: resource_access_rules_from_owner_badge(
-                                        owner_badge,
-                                    ),
-                                    entries: ids.clone(),
-                                },
-                            )
-                            .unwrap(),
-                        )?;
-
-                        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                            &rtn, api,
-                        )?;
-
-                        InstructionOutput::Scrypto(rtn)
-                    } else {
-                        let rtn = api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            "create_non_fungible".to_string(),
-                            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            })
-                            .unwrap(),
-                        )?;
-
-                        InstructionOutput::Scrypto(rtn)
-                    }
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;

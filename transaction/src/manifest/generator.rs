@@ -489,23 +489,6 @@ pub fn generate_instruction(
             )?,
         },
 
-        ast::Instruction::CreateNonFungibleResourceWithOwner {
-            id_type,
-            metadata,
-            owner_badge,
-            initial_supply,
-        } => BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-            initial_supply: generate_from_enum_if_some(
-                initial_supply,
-                resolver,
-                bech32_decoder,
-                blobs,
-                generate_non_fungible_mint_params,
-            )?,
-        },
         ast::Instruction::CreateValidator {
             key,
             owner_access_rule,
@@ -1063,41 +1046,6 @@ fn generate_args_from_tuple(
         ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
         v => invalid_type!(v, ast::Type::Tuple),
     }
-}
-
-fn generate_from_enum_if_some<F, T>(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-    generator: F,
-) -> Result<Option<T>, GeneratorError>
-where
-    F: Fn(
-        &ast::Value,
-        &mut NameResolver,
-        &Bech32Decoder,
-        &BTreeMap<Hash, Vec<u8>>,
-    ) -> Result<T, GeneratorError>,
-{
-    let value = match value {
-        ast::Value::None => {
-            return Ok(None);
-        }
-        ast::Value::Enum(variant, fields)
-            if *variant == OPTION_VARIANT_NONE && fields.len() == 0 =>
-        {
-            return Ok(None);
-        }
-        ast::Value::Some(value) => &**value,
-        ast::Value::Enum(variant, fields)
-            if *variant == OPTION_VARIANT_SOME && fields.len() == 1 =>
-        {
-            &fields[0]
-        }
-        v => invalid_type!(v, ast::Type::Enum)?,
-    };
-    Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
 }
 
 /// This function generates the mint parameters of a non fungible resource from an array which has
@@ -1753,31 +1701,6 @@ mod tests {
             },
             "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
-        );
-
-        generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"##,
-            BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
-                    (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
-                    )
-                )]))
-            },
-        );
-        generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") None;"##,
-            BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: None
-            },
         );
 
         generate_instruction_ok!(

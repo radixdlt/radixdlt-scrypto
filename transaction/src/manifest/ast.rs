@@ -191,13 +191,6 @@ pub enum Instruction {
         initial_supply: Value,
     },
 
-    CreateNonFungibleResourceWithOwner {
-        id_type: Value,
-        metadata: Value,
-        owner_badge: Value,
-        initial_supply: Value,
-    },
-
     CreateValidator {
         key: Value,
         owner_access_rule: Value,

@@ -529,28 +529,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type,
-            metadata,
-            owner_badge,
-            initial_supply,
-        } => {
-            let initial_supply = {
-                match initial_supply {
-                    Some(initial_supply) => {
-                        transform_non_fungible_mint_params(initial_supply).map(Some)?
-                    }
-                    None => None,
-                }
-            };
-
-            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER")?;
-            format_typed_value(f, context, id_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
-            format_typed_value(f, context, &initial_supply)?;
-            f.write_str(";")?;
-        }
         BasicInstruction::CreateValidator {
             key,
             owner_access_rule,

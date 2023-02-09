@@ -131,37 +131,6 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     });
 }
 
-/// An example manifest for creating a new non-fungible resource with no supply with owner
-#[test]
-fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!(
-                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
-            ),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
-        );
-        (manifest, Vec::new())
-    });
-}
-
-/// An example manifest for creating a new non-fungible resource with an initial supply with owner
-#[test]
-fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#",
-            non_fungible_local_id = "#1#"
-        );
-        (manifest, Vec::new())
-    });
-}
-
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_succeeds() {

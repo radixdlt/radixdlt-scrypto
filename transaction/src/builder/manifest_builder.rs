@@ -356,33 +356,6 @@ impl ManifestBuilder {
         self
     }
 
-    /// Creates a new non-fungible resource with an owner badge
-    pub fn create_non_fungible_resource_with_owner<T, V>(
-        &mut self,
-        id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleGlobalId,
-        initial_supply: Option<T>,
-    ) -> &mut Self
-    where
-        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
-    {
-        let initial_supply = initial_supply.map(|entries| {
-            entries
-                .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
-                .collect()
-        });
-        self.add_instruction(BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type,
-            metadata,
-            owner_badge,
-            initial_supply,
-        });
-        self
-    }
-
     pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address: IDENTITY_PACKAGE,

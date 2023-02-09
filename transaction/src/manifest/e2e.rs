@@ -362,34 +362,6 @@ CALL_METHOD
     }
 
     #[test]
-    fn test_create_non_fungible_resource_with_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-             vec![], r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum(1u8)
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "deposit_batch"
-    Expression("ENTIRE_WORKTOP");
-"##,
-        );
-    }
-
-    #[test]
     fn test_create_non_fungible_resource_with_no_initial_supply() {
         compile_and_decompile_with_inversion_test(
             &apply_replacements_to_manifest(
@@ -409,30 +381,6 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
-"##,
-        );
-    }
-
-    #[test]
-    fn test_create_non_fungible_resource_with_no_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-             vec![], r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum(1u8)
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(0u8);
 "##,
         );
     }

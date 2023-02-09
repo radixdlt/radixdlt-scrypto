@@ -129,7 +129,6 @@ pub enum TokenKind {
     CreateFungibleResourceWithInitialSupply,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithInitialSupply,
-    CreateNonFungibleResourceWithOwner,
     CreateValidator,
     CreateAccessController,
     CreateIdentity,
@@ -477,9 +476,6 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
-            }
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
