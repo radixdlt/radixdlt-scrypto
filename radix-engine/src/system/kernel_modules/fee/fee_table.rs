@@ -1,4 +1,10 @@
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
+use crate::types::*;
 
 pub enum CostingEntry {
     /*
@@ -93,6 +99,51 @@ impl FeeTable {
 
     pub fn wasm_instantiation_per_byte(&self) -> u32 {
         self.wasm_instantiation_per_byte
+    }
+
+
+    pub fn run_cost(&self, identifier: &ScryptoFnIdentifier) -> u32 {
+        match (identifier.package_address, identifier.blueprint_name.as_str()) {
+            (RESOURCE_MANAGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => self.fixed_high,
+                    _ => self.fixed_low,
+                }
+            }
+            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    IDENTITY_CREATE_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
+            (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    EPOCH_MANAGER_CREATE_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
+            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    ACCOUNT_CREATE_IDENT => self.fixed_low,
+                    ACCOUNT_NEW_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
+
+            _ => 0u32,
+        }
     }
 
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
