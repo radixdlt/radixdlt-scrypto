@@ -100,7 +100,7 @@ mod bucket_test {
         }
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
-            let resource_address = ResourceBuilder::new_non_fungible::<u128>().no_initial_supply();
+            let resource_address = ResourceBuilder::new_non_fungible_uuid_id().no_initial_supply();
             Bucket::new(resource_address)
         }
     }

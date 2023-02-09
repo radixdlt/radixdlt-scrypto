@@ -13,7 +13,7 @@ mod resource_test {
 
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible::<u128>()
+            let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible_uuid_id()
                 .metadata("name", "Super Admin Badge")
                 .mintable(rule!(allow_all), rule!(allow_all))
                 .no_initial_supply();
@@ -104,7 +104,7 @@ mod resource_test {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_non_fungible::<u64>().initial_supply(vec![(
+            let badge = ResourceBuilder::new_non_fungible_integer_id().initial_supply(vec![(
                 0u64,
                 Sandwich {
                     name: "name".to_string(),
