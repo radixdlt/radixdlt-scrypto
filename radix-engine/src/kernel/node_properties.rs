@@ -10,10 +10,11 @@ use radix_engine_interface::api::types::{
     ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
+use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
     CLOCK_BLUEPRINT, CLOCK_PACKAGE, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 
 use super::LockFlags;

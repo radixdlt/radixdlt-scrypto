@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
     ResourceManagerCreateNonFungibleWithAddressInput,
     ResourceManagerCreateNonFungibleWithInitialSupplyInput,
-    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
+    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
@@ -384,7 +384,8 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
                 "create_uuid_non_fungible_with_initial_supply" => {
-                    let invocation: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation = scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
+                    let invocation: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
+                        scrypto_decode(&scrypto_encode(&self.args).unwrap()).unwrap();
                     let rtn = invocation.execute(api)?;
                     return Ok((
                         scrypto_decode(&scrypto_encode(&rtn.0).unwrap()).unwrap(),

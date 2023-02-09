@@ -96,7 +96,7 @@ impl Executor for EpochManagerCreateInput {
             let result = api.call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                "create_non_fungible_with_address".to_string(),
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
                     metadata,

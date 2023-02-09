@@ -1,8 +1,9 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;

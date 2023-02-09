@@ -14,6 +14,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::*;
 
+pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
+
 #[derive(
     Debug,
     Clone,
@@ -58,12 +60,17 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT: &str = "create_fungible";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
+
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+    "create_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
@@ -72,6 +79,9 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }
+
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
+    "create_fungible_with_initial_supply_and_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
@@ -82,6 +92,18 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
     pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungible";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateNonFungibleInput {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+}
+
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+    "create_non_fungible_with_initial_supply";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
@@ -90,12 +112,8 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateNonFungibleInput {
-    pub id_type: NonFungibleIdType,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-}
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
+    "create_non_fungible_with_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithAddressInput {
@@ -105,8 +123,11 @@ pub struct ResourceManagerCreateNonFungibleWithAddressInput {
     pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
+pub const RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY: &str =
+    "create_uuid_non_fungible_with_initial_supply";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,

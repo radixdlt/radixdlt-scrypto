@@ -1,7 +1,7 @@
 use radix_engine_interface::api::Invokable;
 use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE};
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
@@ -28,7 +28,7 @@ impl ResourceManager {
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                "create_fungible".to_string(),
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
                 scrypto_encode(&ResourceManagerCreateFungibleInput {
                     metadata,
                     access_rules,
@@ -55,7 +55,7 @@ impl ResourceManager {
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                "create_fungible_with_initial_supply".to_string(),
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     metadata,
                     access_rules,
@@ -82,7 +82,7 @@ impl ResourceManager {
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            "create_non_fungible".to_string(),
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
             scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type,
                 metadata,

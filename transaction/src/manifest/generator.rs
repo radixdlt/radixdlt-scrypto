@@ -4,14 +4,10 @@ use radix_engine_interface::args;
 use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::account::AccountCreateInput;
 use radix_engine_interface::blueprints::identity::IdentityCreateInput;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, ResourceManagerCreateFungibleInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
-    ResourceManagerCreateNonFungibleWithInitialSupplyInput,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, ResourceManagerCreateFungibleInput, ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput, ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT, RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_BLUEPRINT};
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -508,7 +504,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_fungible".to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
             args: scrypto_encode(&ResourceManagerCreateFungibleInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -524,7 +520,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_fungible_with_initial_supply".to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
             args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -540,7 +536,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible".to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
             args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -556,7 +552,8 @@ pub fn generate_instruction(
         } => BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create_non_fungible_with_initial_supply".to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                .to_string(),
             args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -1732,7 +1729,7 @@ mod tests {
             BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_non_fungible".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
                 args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1759,7 +1756,8 @@ mod tests {
             BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_non_fungible_with_initial_supply".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1793,7 +1791,7 @@ mod tests {
             BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_fungible".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
                 args: scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1820,7 +1818,8 @@ mod tests {
             BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_fungible_with_initial_supply".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),

@@ -1,9 +1,11 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleIdType, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
+};
+use radix_engine_interface::blueprints::resource::{
+    ResourceMethodAuthKey, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
@@ -91,7 +93,8 @@ impl NewSimpleBadge {
             .add_instruction(BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_non_fungible_with_initial_supply".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata,

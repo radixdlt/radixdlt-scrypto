@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, 
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_PACKAGE,
+    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -290,7 +290,7 @@ impl ManifestBuilder {
             self.add_instruction(BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_fungible".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
                 args: scrypto_encode(&ResourceManagerCreateFungibleInput {
                     divisibility,
                     metadata,
@@ -330,7 +330,8 @@ impl ManifestBuilder {
             self.add_instruction(BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_non_fungible_with_initial_supply".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type,
                     metadata,
@@ -343,7 +344,7 @@ impl ManifestBuilder {
             self.add_instruction(BasicInstruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_non_fungible".to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
                 args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type,
                     metadata,

@@ -632,7 +632,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     }
 }
 
-impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     type Output = (ResourceAddress, Bucket);
 
     fn execute<Y, W: WasmEngine>(
