@@ -35,6 +35,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 use super::kernel_api::Invokable;
+use super::kernel_api::KernelActorApi;
 use super::kernel_api::KernelNodeApi;
 use super::kernel_api::KernelSubstateApi;
 use super::module::KernelModule;
@@ -125,7 +126,7 @@ where
     W: WasmEngine,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.current_frame.actor.identifier.clone())
+        self.actor().map(|a| a.identifier)
     }
 }
 
@@ -339,7 +340,7 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = match self.current_frame.actor.identifier.clone() {
+        let package_address = match self.actor().map(|a| a.identifier)? {
             FnIdentifier::Scrypto(s) => s.package_address,
             FnIdentifier::Native(_) => todo!(),
         };

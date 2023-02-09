@@ -1,4 +1,4 @@
-use radix_engine::kernel::TrackedEvent;
+use radix_engine::kernel::event::TrackedEvent;
 use radix_engine::system::kernel_modules::execution_trace::{KernelCallOrigin, KernelCallTrace};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;

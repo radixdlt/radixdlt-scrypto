@@ -104,16 +104,15 @@ impl VisibilityProperties {
 
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
-            (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Kernel, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
+                _ => false, // Protect ourselves!
+            },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Deref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {

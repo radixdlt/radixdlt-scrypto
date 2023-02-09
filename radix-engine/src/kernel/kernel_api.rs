@@ -55,7 +55,7 @@ pub struct LockInfo {
 }
 
 pub trait KernelActorApi<E> {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+    fn actor(&mut self) -> Result<ResolvedActor, E>;
 }
 
 pub trait KernelNodeApi {

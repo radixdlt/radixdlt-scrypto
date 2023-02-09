@@ -194,7 +194,8 @@ where
 
         // Start resources usage measurement
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker = ResourcesTracker::start_measurement();
+        let mut resources_tracker =
+            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Apply pre execution costing
         let pre_execution_result =

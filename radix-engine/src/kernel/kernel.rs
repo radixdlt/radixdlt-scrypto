@@ -460,7 +460,6 @@ where
     ) -> Result<(), RuntimeError> {
         match (cur, next) {
             (ExecutionMode::Kernel, ..) => Ok(()),
-            (ExecutionMode::Resolver, ExecutionMode::Deref) => Ok(()),
             _ => Err(RuntimeError::KernelError(
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
@@ -582,8 +581,8 @@ impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.current_frame.actor.identifier.clone())
+    fn actor(&mut self) -> Result<ResolvedActor, RuntimeError> {
+        Ok(self.current_frame.actor.clone())
     }
 }
 

@@ -1,6 +1,6 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
-    use radix_engine::kernel::ScryptoInterpreter;
+    use radix_engine::kernel::interpreters::ScryptoInterpreter;
     use radix_engine::ledger::*;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
