@@ -4,8 +4,8 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sha2 = { version = "0.10.6", default-features = false }
-sha3 = { version = "0.10.6", default-features = false }
+sha2 = { version = "0.10.6", default-features = false, features = ["asm"] }
+sha3 = { git = "https://github.com/RustCrypto/hashes", rev = "1f727ce37ff40fa0cce84eb8543a45bdd3ca4a4e", default-features = false, features = ["asm"] }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-integer = { version = "0.1.45", default-features = false }
