@@ -162,16 +162,6 @@ macro_rules! impl_from_string {
                         }
                     }
                 }
-                impl From<&str> for $t {
-                    fn from(val: &str) -> Self {
-                        Self::from_str(&val).unwrap()
-                    }
-                }
-                impl From<String> for $t {
-                    fn from(val: String) -> Self {
-                        Self::from_str(&val).unwrap()
-                    }
-                }
             }
         )*
     };

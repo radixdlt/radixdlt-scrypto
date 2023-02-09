@@ -472,7 +472,7 @@ impl FromStr for PreciseDecimal {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tens = BnumI512::from(10);
-        let v: Vec<&str> = s.split(".").collect();
+        let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match BnumI512::from_str(v[0]) {
             Ok(val) => val,
@@ -484,12 +484,17 @@ impl FromStr for PreciseDecimal {
         if v.len() == 2 {
             let scale: u32 = Self::SCALE - (v[1].len() as u32);
 
+            let frac = match BnumI512::from_str(v[1]) {
+                Ok(val) => val,
+                Err(_) => return Err(ParsePreciseDecimalError::InvalidDigit),
+            };
+
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if int.is_negative() || v[0].starts_with('-') {
-                int -= BnumI512::from(v[1]) * tens.pow(scale);
+                int -= frac * tens.pow(scale);
             } else {
-                int += BnumI512::from(v[1]) * tens.pow(scale);
+                int += frac * tens.pow(scale);
             }
         }
         Ok(Self(int))
@@ -633,9 +638,12 @@ mod tests {
             "123"
         );
         assert_eq!(
-            PreciseDecimal(BnumI512::from(
-                "1234567890000000000000000000000000000000000000000000000000000000000000000"
-            ))
+            PreciseDecimal(
+                BnumI512::from_str(
+                    "1234567890000000000000000000000000000000000000000000000000000000000000000"
+                )
+                .unwrap()
+            )
             .to_string(),
             "123456789"
         );

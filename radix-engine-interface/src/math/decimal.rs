@@ -460,7 +460,7 @@ impl FromStr for Decimal {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tens = BnumI256::from(10);
-        let v: Vec<&str> = s.split(".").collect();
+        let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match BnumI256::from_str(v[0]) {
             Ok(val) => val,
@@ -472,12 +472,16 @@ impl FromStr for Decimal {
         if v.len() == 2 {
             let scale: u32 = Self::SCALE - (v[1].len() as u32);
 
+            let frac = match BnumI256::from_str(v[1]) {
+                Ok(val) => val,
+                Err(_) => return Err(ParseDecimalError::InvalidDigit),
+            };
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if int.is_negative() || v[0].starts_with('-') {
-                int -= BnumI256::from(v[1]) * tens.pow(scale);
+                int -= frac * tens.pow(scale);
             } else {
-                int += BnumI256::from(v[1]) * tens.pow(scale);
+                int += frac * tens.pow(scale);
             }
         }
         Ok(Self(int))

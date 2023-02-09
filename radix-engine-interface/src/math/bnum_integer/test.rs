@@ -77,8 +77,8 @@ macro_rules! test_bnums {
                     assert_eq!((<$t>::ONE + <$t>::ONE).to_string(), "2");
                     assert_eq!(<$t>::from(17) + <$t>::from(31), <$t>::from(48));
                     let mut bnum = <$t>::ONE;
-                    bnum += <$t>::from("101");
-                    assert_eq!(bnum, <$t>::from("102"));
+                    bnum += <$t>::from_str("101").unwrap();
+                    assert_eq!(bnum, <$t>::from_str("102").unwrap());
 
                     if <$t>::MIN < <$t>::ZERO {
                         let mut bnum = <$t>::MAX;
@@ -96,8 +96,8 @@ macro_rules! test_bnums {
                     if <$t>::MIN < <$t>::ZERO {
                         assert_eq!(<$t>::from(17) - <$t>::from(31), <$t>::from(-14));
                         let mut bnum = <$t>::from(101);
-                        bnum -= <$t>::from("102");
-                        assert_eq!(bnum, <$t>::from("-1"));
+                        bnum -= <$t>::from_str("102").unwrap();
+                        assert_eq!(bnum, <$t>::from_str("-1").unwrap());
                     }
 
                     let mut bnum = <$t>::MAX;
@@ -123,12 +123,12 @@ macro_rules! test_bnums {
                 fn [< test_ $t:lower _mul >]() {
                     assert_eq!(<$t>::from(4) * <$t>::from(5), <$t>::from(20));
                     let mut bnum = <$t>::from(12387);
-                    bnum *= <$t>::from("1203203031");
+                    bnum *= <$t>::from_str("1203203031").unwrap();
                     assert_eq!(bnum, <$t>::from(14904075944997_i128));
 
                     if <$t>::MIN < <$t>::ZERO {
                         let mut bnum = <$t>::from(12387);
-                        bnum *= <$t>::from("-1203203031");
+                        bnum *= <$t>::from_str("-1203203031").unwrap();
                         assert_eq!(bnum, <$t>::from(-14904075944997_i128));
                     }
                 }
@@ -147,11 +147,11 @@ macro_rules! test_bnums {
 
                     assert_eq!(
                         <$t>::from(153).pow(20),
-                        <$t>::from("49411565790213547262766437937260727785410401")
+                        <$t>::from_str("49411565790213547262766437937260727785410401").unwrap()
                     );
                     assert_eq!(
                         <$t>::from(153).pow(30),
-                        <$t>::from("347330502405572936124071262363392351825462559418275421545603605649")
+                        <$t>::from_str("347330502405572936124071262363392351825462559418275421545603605649").unwrap()
                     );
                 }
 
@@ -180,8 +180,8 @@ macro_rules! test_bnums {
                     assert_eq!(<$t>::from(27).nth_root(3), <$t>::from(3));
                     assert_eq!(<$t>::from(14966675814359580587845230627_i128).nth_root(13), <$t>::from(147));
                     assert_eq!(
-                        <$t>::from("290437112829027226192310037731274304321654649956335616").nth_root(17),
-                        <$t>::from("1396")
+                        <$t>::from_str("290437112829027226192310037731274304321654649956335616").unwrap().nth_root(17),
+                        <$t>::from_str("1396").unwrap()
                     );
 
                     if <$t>::MIN < <$t>::ZERO {
@@ -194,7 +194,7 @@ macro_rules! test_bnums {
                 fn [< test_ $t:lower _to_string >]() {
                     assert_eq!(<$t>::ONE.to_string(), "1");
                     assert_eq!(<$t>::ZERO.to_string(), "0");
-                    assert_eq!(<$t>::from("0"), <$t>::ZERO);
+                    assert_eq!(<$t>::from_str("0").unwrap(), <$t>::ZERO);
 
                     if <$t>::MIN < <$t>::ZERO {
                         assert_eq!(<$t>::from(-1).to_string(), "-1");
@@ -228,7 +228,7 @@ macro_rules! test_bnums {
                     if <$t>::MIN < <$t>::ZERO {
                         let _u: u128 = <$t>::from(-21).into();
                     } else {
-                        let _u: u128 = <$t>::from("290437112829027226192310037731274304321654649956335616").into();
+                        let _u: u128 = <$t>::from_str("290437112829027226192310037731274304321654649956335616").unwrap().into();
                     }
                 }
                 #[test]
@@ -274,9 +274,10 @@ test_bnums_signed! { BnumI256, BnumI384, BnumI512, BnumI768 }
 fn test_string_to_bnum_panic_2() {
     assert_eq!(
         BnumI256::MAX,
-        BnumI256::from(
+        BnumI256::from_str(
             "578960446186580977117854925043439539266349923328202820197287920039565648199670"
         )
+        .unwrap()
     );
 }
 
@@ -348,13 +349,13 @@ fn test_bnum_to_bnum_errors() {
 
     // I256::MAX + 1
     let i256_str = BnumI256::MAX.to_string();
-    let i512 = BnumI512::from(i256_str) + BnumI512::ONE;
+    let i512 = BnumI512::from_str(&i256_str).unwrap() + BnumI512::ONE;
     let err = BnumI256::try_from(i512).unwrap_err();
     assert_eq!(err, ParseBnumI256Error::Overflow);
 
     // I256::MIN - 1
     let i256_str = BnumI256::MIN.to_string();
-    let i512 = BnumI512::from(i256_str) - BnumI512::ONE;
+    let i512 = BnumI512::from_str(&i256_str).unwrap() - BnumI512::ONE;
     let err = BnumI256::try_from(i512).unwrap_err();
     assert_eq!(err, ParseBnumI256Error::Overflow);
 
@@ -363,7 +364,7 @@ fn test_bnum_to_bnum_errors() {
     assert_eq!(err, ParseBnumI256Error::Overflow);
 
     let i512_str = BnumI512::MAX.to_string();
-    let u512 = BnumU512::from(i512_str) + BnumU512::ONE;
+    let u512 = BnumU512::from_str(&i512_str).unwrap() + BnumU512::ONE;
     let err = BnumU256::try_from(u512).unwrap_err();
     assert_eq!(err, ParseBnumU256Error::Overflow);
 
