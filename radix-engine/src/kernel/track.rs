@@ -689,9 +689,9 @@ impl<'s> FinalizingTrack<'s> {
 
         for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
             match receiver {
-                RoyaltyReceiver::Package(_, node_id) => {
+                RoyaltyReceiver::Package(_, package_id) => {
                     let substate_id = SubstateId(
-                        node_id.clone(),
+                        RENodeId::Package(*package_id),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
@@ -718,9 +718,9 @@ impl<'s> FinalizingTrack<'s> {
                         )
                         .unwrap();
                 }
-                RoyaltyReceiver::Component(_, node_id) => {
+                RoyaltyReceiver::Component(_, component_id) => {
                     let substate_id = SubstateId(
-                        node_id.clone(),
+                        RENodeId::Component(*component_id),
                         NodeModuleId::ComponentRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

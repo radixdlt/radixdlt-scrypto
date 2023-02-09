@@ -10,8 +10,8 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    FnIdentifier, GlobalAddress, LockHandle, NodeModuleId, RoyaltyOffset, SubstateOffset, VaultId,
-    VaultOffset,
+    FnIdentifier, GlobalAddress, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset,
+    SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::{api::types::RENodeId, *};
@@ -147,9 +147,21 @@ impl KernelModule for CostingModule {
         /*
          * Apply package royalty
          */
-        let package_node_id = RENodeId::Global(GlobalAddress::Package(
+        let package_global_node_id = RENodeId::Global(GlobalAddress::Package(
             scrypto_fn_identifier.package_address,
         ));
+        let (package_id, package_lock) = {
+            let handle = api.lock_substate(
+                package_global_node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Global(GlobalOffset::Global),
+                LockFlags::read_only(),
+            )?;
+            let substate = api.get_ref(handle)?;
+            let package_id = substate.global_address().node_deref().into();
+            (package_id, handle)
+        };
+        let package_node_id = RENodeId::Package(package_id);
         let handle = api.lock_substate(
             package_node_id,
             NodeModuleId::PackageRoyalty,
@@ -188,9 +200,10 @@ impl KernelModule for CostingModule {
 
         apply_royalty_cost(
             api,
-            RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, package_node_id),
+            RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, package_id),
             royalty_amount,
         )?;
+        api.drop_lock(package_lock)?;
 
         /*
          * Apply component royalty
@@ -234,7 +247,7 @@ impl KernelModule for CostingModule {
 
             apply_royalty_cost(
                 api,
-                RoyaltyReceiver::Component(component_address, component_node_id),
+                RoyaltyReceiver::Component(component_address, component_id),
                 royalty_amount,
             )?;
         }
