@@ -29,7 +29,7 @@ impl VisibilityProperties {
                 },
                 _ => false,
             },
-            ExecutionMode::Application => match node_id {
+            ExecutionMode::Client => match node_id {
                 RENodeId::Worktop => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::TransactionProcessor(
                         TransactionProcessorFn::Run,
@@ -67,7 +67,7 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
             (
-                ExecutionMode::Application,
+                ExecutionMode::Client,
                 FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address,
                     blueprint_name,
@@ -139,7 +139,7 @@ impl VisibilityProperties {
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
-            (ExecutionMode::Application, offset) => {
+            (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     match &actor.identifier {
                         // Native

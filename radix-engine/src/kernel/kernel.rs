@@ -331,7 +331,7 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
 
         // Need to go through api so that visibility issues can be caught
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Application, |api| {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
@@ -395,7 +395,7 @@ where
 
             // Run
             let (output, mut update) =
-                self.execute_in_mode(ExecutionMode::Application, |api| executor.execute(api))?;
+                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
 
             // Handle execution finish
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {

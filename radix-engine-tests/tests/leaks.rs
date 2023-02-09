@@ -23,7 +23,7 @@ fn dangling_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
-                mode: ExecutionMode::Application,
+                mode: ExecutionMode::Client,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     receiver: None,
@@ -52,7 +52,7 @@ fn dangling_bucket_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
-                mode: ExecutionMode::Application,
+                mode: ExecutionMode::Client,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     receiver: None,
@@ -81,7 +81,7 @@ fn dangling_vault_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
-                mode: ExecutionMode::Application,
+                mode: ExecutionMode::Client,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     receiver: None,
@@ -132,7 +132,7 @@ fn dangling_kv_store_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
-                mode: ExecutionMode::Application,
+                mode: ExecutionMode::Client,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     receiver: None,
@@ -166,7 +166,7 @@ fn dangling_bucket_with_proof_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
-                mode: ExecutionMode::Application,
+                mode: ExecutionMode::Client,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     receiver: None,

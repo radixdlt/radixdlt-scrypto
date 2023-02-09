@@ -1099,30 +1099,6 @@ pub enum AccessControllerFn {
     StopTimedRecovery,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum FeeReserveFn {
-    LockFee,
-}
-
 pub struct AccessControllerPackage;
 
 impl AccessControllerPackage {

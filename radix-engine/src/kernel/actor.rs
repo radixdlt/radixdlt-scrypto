@@ -59,5 +59,5 @@ pub enum ExecutionMode {
     KernelModule,
 
     /* Clients, e.g. blueprints and node modules */
-    Application,
+    Client,
 }
