@@ -8,6 +8,8 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+
 // TODO: Remove this and replace with a macro/function making it easy
 // TODO: to use manifest buckets for any input struct
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -23,6 +25,8 @@ pub struct ValidatorInit {
     pub initial_stake: Bucket,
     pub stake_account_address: ComponentAddress,
 }
+
+pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInput {

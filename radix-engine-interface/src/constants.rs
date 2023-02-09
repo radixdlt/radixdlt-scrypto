@@ -22,22 +22,11 @@ pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resour
 
 /// The address of the faucet package.
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
-
 pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
-pub const IDENTITY_BLUEPRINT: &str = "Identity";
-
 pub const EPOCH_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
-pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
-
 pub const CLOCK_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
-pub const CLOCK_BLUEPRINT: &str = "Clock";
-
 pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
-pub const ACCOUNT_BLUEPRINT: &str = "Account";
-
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = address!(EntityType::Package, 5);
-pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
-
 pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 6);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 

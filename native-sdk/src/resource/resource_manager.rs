@@ -82,7 +82,7 @@ impl ResourceManager {
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
             scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type,
                 metadata,

@@ -4,9 +4,13 @@ use crate::blueprints::resource::*;
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
+
 //=================================
 // Access Controller Create Global
 //=================================
+
+pub const ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT: &str = "create_global";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCreateGlobalInput {

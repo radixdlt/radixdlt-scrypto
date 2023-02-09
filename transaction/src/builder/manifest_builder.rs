@@ -1,13 +1,17 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::blueprints::access_controller::RuleSet;
+use radix_engine_interface::blueprints::access_controller::{
+    RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+};
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::identity::{
+    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -361,8 +365,8 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
-            args: args!(access_rule),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
+            args: scrypto_encode(&IdentityCreateInput { access_rule }).unwrap(),
         });
         self
     }
@@ -739,7 +743,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
             args: scrypto_encode(&AccountCreateInput {
                 withdraw_rule: withdraw_auth,
             })
@@ -973,7 +977,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-            function_name: "create_global".to_string(),
+            function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             args: args!(
                 controlled_asset,
                 RuleSet {

@@ -5,6 +5,10 @@ use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+pub const CLOCK_BLUEPRINT: &str = "Clock";
+
+pub const CLOCK_CREATE_IDENT: &str = "Create";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCreateInput {
     pub component_address: [u8; 26], // TODO: Clean this up

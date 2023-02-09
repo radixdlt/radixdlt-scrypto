@@ -8,7 +8,12 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::PackagePublishInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::epoch_manager::ManifestValidatorInit;
+use radix_engine_interface::blueprints::clock::{
+    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -183,8 +188,8 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
-            args: args!(component_address),
+            function_name: CLOCK_CREATE_IDENT.to_string(),
+            args: scrypto_encode(&ClockCreateInput { component_address }).unwrap(),
         }));
     }
 
@@ -219,7 +224,7 @@ pub fn create_genesis(
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
             args: args!(
                 olympia_validator_token_address,
                 component_address,

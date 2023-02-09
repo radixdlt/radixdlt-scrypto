@@ -836,7 +836,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: "create".to_string(),
+        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: args!(
             OLYMPIA_VALIDATOR_TOKEN.raw(),
             EPOCH_MANAGER.raw(),

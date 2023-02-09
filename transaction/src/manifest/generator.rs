@@ -1,13 +1,26 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::args;
-use radix_engine_interface::blueprints::access_controller::RuleSet;
-use radix_engine_interface::blueprints::account::AccountCreateInput;
-use radix_engine_interface::blueprints::identity::IdentityCreateInput;
-use radix_engine_interface::blueprints::resource::{AccessRule, ResourceManagerCreateFungibleInput, ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput, ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT, RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_BLUEPRINT};
+use radix_engine_interface::blueprints::access_controller::{
+    RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+};
+use radix_engine_interface::blueprints::account::{
+    AccountCreateInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::identity::{
+    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, ResourceManagerCreateFungibleInput,
+    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_BLUEPRINT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -574,7 +587,7 @@ pub fn generate_instruction(
         } => BasicInstruction::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-            function_name: "create_global".to_string(),
+            function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             args: args!(
                 generate_typed_value::<ManifestBucket>(
                     controlled_asset,
@@ -597,7 +610,7 @@ pub fn generate_instruction(
         ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: scrypto_encode(&IdentityCreateInput {
                 access_rule: generate_typed_value::<AccessRule>(
                     access_rule,
@@ -611,7 +624,7 @@ pub fn generate_instruction(
         ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: "create".to_string(),
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
             args: scrypto_encode(&AccountCreateInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,

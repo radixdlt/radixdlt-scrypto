@@ -6,9 +6,13 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
+
 //================
 // Account Create
 //================
+
+pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
@@ -20,6 +24,8 @@ pub struct AccountCreateInput {
 //=============
 // Account New
 //=============
+
+pub const ACCOUNT_NEW_IDENT: &str = "new";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,

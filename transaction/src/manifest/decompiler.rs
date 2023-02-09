@@ -1,9 +1,18 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
+use radix_engine_interface::blueprints::access_controller::{
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT};
+use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
+use radix_engine_interface::blueprints::resource::{
+    RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_PACKAGE,
-    IDENTITY_BLUEPRINT, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
@@ -332,49 +341,49 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             if package_address.eq(&ACCOUNT_PACKAGE)
                 && blueprint_name.eq(ACCOUNT_BLUEPRINT)
-                && function_name.eq("create")
+                && function_name.eq(ACCOUNT_CREATE_IDENT)
             {
                 write!(f, "CREATE_ACCOUNT")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&IDENTITY_PACKAGE)
                 && blueprint_name.eq(IDENTITY_BLUEPRINT)
-                && function_name.eq("create")
+                && function_name.eq(IDENTITY_CREATE_IDENT)
             {
                 write!(f, "CREATE_IDENTITY")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                 && blueprint_name.eq(&ACCESS_CONTROLLER_BLUEPRINT)
-                && function_name.eq("create_global")
+                && function_name.eq(ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT)
             {
                 f.write_str("CREATE_ACCESS_CONTROLLER")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq("create_fungible")
+                && function_name.eq(RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT)
             {
                 f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq("create_fungible_with_initial_supply")
+                && function_name.eq(RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT)
             {
                 f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq("create_non_fungible")
+                && function_name.eq(RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT)
             {
                 f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
                 format_args(f, context, args)?;
                 f.write_str(";")?;
             } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq("create_non_fungible_with_initial_supply")
+                && function_name.eq(RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT)
             {
                 f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 format_args(f, context, args)?;

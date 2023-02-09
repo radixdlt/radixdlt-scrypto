@@ -9,6 +9,10 @@ use radix_engine_interface::api::types::{
     VaultOffset,
 };
 use radix_engine_interface::api::ClientActorApi;
+use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+};
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -48,7 +52,7 @@ impl AuthModule {
             } => match fn_identifier.package_address {
                 EPOCH_MANAGER_PACKAGE => {
                     if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
-                        && fn_identifier.ident.eq("create")
+                        && fn_identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
                     {
                         EpochManager::create_auth()
                     } else {
@@ -57,7 +61,7 @@ impl AuthModule {
                 }
                 CLOCK_PACKAGE => {
                     if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
-                        && fn_identifier.ident.eq("create")
+                        && fn_identifier.ident.eq(CLOCK_CREATE_IDENT)
                     {
                         Clock::create_auth()
                     } else {
