@@ -454,54 +454,6 @@ where
         Ok(output)
     }
 
-    pub fn node_method_deref(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        if let RENodeId::Global(..) = node_id {
-            let derefed =
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |api| {
-                    let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle =
-                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
-                    let substate_ref = api.get_ref(handle)?;
-                    Ok((substate_ref.global_address().node_deref(), handle))
-                })?;
-
-            Ok(Some(derefed))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn node_offset_deref(
-        &mut self,
-        node_id: RENodeId,
-        offset: &SubstateOffset,
-    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        if let RENodeId::Global(..) = node_id {
-            if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let derefed =
-                    self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |api| {
-                        let handle = api.lock_substate(
-                            node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Global(GlobalOffset::Global),
-                            LockFlags::empty(),
-                        )?;
-                        let substate_ref = api.get_ref(handle)?;
-                        Ok((substate_ref.global_address().node_deref(), handle))
-                    })?;
-
-                Ok(Some(derefed))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
     fn verify_valid_mode_transition(
         cur: &ExecutionMode,
         next: &ExecutionMode,
@@ -846,12 +798,21 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        let (node_id, derefed_lock) =
-            if let Some((node_id, derefed_lock)) = self.node_offset_deref(node_id, &offset)? {
-                (node_id, Some(derefed_lock))
-            } else {
-                (node_id, None)
-            };
+        let (node_id, derefed_lock) = match node_id {
+            RENodeId::Global(..)
+                if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
+            {
+                let handle = self.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                    LockFlags::empty(),
+                )?;
+                let substate_ref = self.get_ref(handle)?;
+                (substate_ref.global_address().node_deref(), Some(handle))
+            }
+            _ => (node_id, None),
+        };
 
         // TODO: Check if valid offset for node_id
 

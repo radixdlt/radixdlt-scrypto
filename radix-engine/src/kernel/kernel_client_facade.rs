@@ -108,7 +108,15 @@ where
     W: WasmEngine,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        self.node_method_deref(node_id)
+        if let RENodeId::Global(..) = node_id {
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            let handle =
+                self.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
+            let substate_ref = self.get_ref(handle)?;
+            Ok(Some((substate_ref.global_address().node_deref(), handle)))
+        } else {
+            Ok(None)
+        }
     }
 }
 
