@@ -1,6 +1,6 @@
 use super::state_machine::*;
 use super::*;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
     KernelSubstateApi, LockFlags, RENodeInit, RENodeModuleInit, ResolvedActor,
@@ -64,7 +64,22 @@ pub struct AccessControllerNativePackage;
 //=================================
 
 impl AccessControllerNativePackage {
-    pub fn create_global<Y>(
+
+    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+        }
+    }
+
+    fn create_global<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

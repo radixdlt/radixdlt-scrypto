@@ -1,5 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::errors::ApplicationError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -437,7 +437,41 @@ where
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
-    pub fn create_non_fungible<Y>(
+    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {
+                Self::create_non_fungible(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
+                Self::create_non_fungible_with_address(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                Self::create_non_fungible_with_initial_supply(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
+                Self::create_uuid_non_fungible_with_initial_supply(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
+                Self::create_fungible(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                Self::create_fungible_with_initial_supply(input, api)
+            }
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+                Self::create_fungible_with_initial_supply_and_address(input, api)
+            }
+            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+        }
+    }
+
+    fn create_non_fungible<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -463,7 +497,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    pub fn create_non_fungible_with_address<Y>(
+    fn create_non_fungible_with_address<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -494,7 +528,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    pub fn create_non_fungible_with_initial_supply<Y>(
+    fn create_non_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -563,7 +597,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    pub fn create_uuid_non_fungible_with_initial_supply<Y>(
+    fn create_uuid_non_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -629,7 +663,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    pub fn create_fungible<Y>(
+    fn create_fungible<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -655,7 +689,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    pub fn create_fungible_with_initial_supply<Y>(
+    fn create_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -676,7 +710,7 @@ impl ResourceManagerNativePackage {
         let (resource_manager_substate, bucket) =
             build_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                nput.divisibility,
+                input.divisibility,
                 input.initial_supply,
                 api,
             )?;
@@ -715,7 +749,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    pub fn create_fungible_with_initial_supply_and_address<Y>(
+    fn create_fungible_with_initial_supply_and_address<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

@@ -1,4 +1,4 @@
-use crate::errors::RuntimeError;
+use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -6,14 +6,28 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::identity::IdentityCreateInput;
+use radix_engine_interface::api::{ClientApi, ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
 pub struct IdentityNativePackage;
 impl IdentityNativePackage {
-    pub fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            IDENTITY_CREATE_IDENT => Self::create(input, api),
+            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+        }
+    }
+
+    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {

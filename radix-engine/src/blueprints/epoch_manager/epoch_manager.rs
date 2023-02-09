@@ -1,5 +1,5 @@
 use super::ValidatorCreator;
-use crate::errors::ApplicationError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
@@ -62,7 +62,21 @@ impl EpochManagerNativePackage {
         ))]
     }
 
-    pub fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            EPOCH_MANAGER_CREATE_IDENT => Self::create(input, api),
+            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+        }
+    }
+
+    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi

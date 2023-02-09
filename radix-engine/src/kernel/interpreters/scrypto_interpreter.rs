@@ -18,8 +18,6 @@ use radix_engine_interface::api::{
     ClientStaticInvokeApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -278,7 +276,7 @@ impl Executor for ScryptoExecutor {
     {
         match self.package_address {
             IDENTITY_PACKAGE => {
-                let output = IdentityNativePackage::create(self.args, api)?;
+                let output = IdentityNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()
@@ -296,7 +294,7 @@ impl Executor for ScryptoExecutor {
                 return Ok((output.into(), update));
             }
             EPOCH_MANAGER_PACKAGE => {
-                let output = EpochManagerNativePackage::create(self.args, api)?;
+                let output = EpochManagerNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()
@@ -314,7 +312,7 @@ impl Executor for ScryptoExecutor {
                 return Ok((output.into(), update));
             }
             CLOCK_PACKAGE => {
-                let output = ClockNativePackage::create(self.args, api)?;
+                let output = ClockNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()
@@ -332,15 +330,7 @@ impl Executor for ScryptoExecutor {
                 return Ok((output.into(), update));
             }
             ACCOUNT_PACKAGE => {
-                let output = match self.export_name.as_str() {
-                    ACCOUNT_CREATE_GLOBAL_IDENT => {
-                        AccountNativePackage::create_global(self.args, api)?
-                    }
-                    ACCOUNT_CREATE_LOCAL_IDENT => {
-                        AccountNativePackage::create_local(self.args, api)?
-                    }
-                    _ => panic!("native code not found."),
-                };
+                let output = AccountNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()
@@ -358,7 +348,7 @@ impl Executor for ScryptoExecutor {
                 return Ok((output.into(), update));
             }
             ACCESS_CONTROLLER_PACKAGE => {
-                let output = AccessControllerNativePackage::create_global(self.args, api)?;
+                let output = AccessControllerNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()
@@ -376,30 +366,7 @@ impl Executor for ScryptoExecutor {
                 return Ok((output.into(), update));
             }
             RESOURCE_MANAGER_PACKAGE => {
-                let output = match self.export_name.as_str() {
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {
-                        ResourceManagerNativePackage::create_non_fungible(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
-                        ResourceManagerNativePackage::create_non_fungible_with_address(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
-                        ResourceManagerNativePackage::create_non_fungible_with_initial_supply(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
-                        ResourceManagerNativePackage::create_uuid_non_fungible_with_initial_supply(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
-                        ResourceManagerNativePackage::create_fungible(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
-                        ResourceManagerNativePackage::create_fungible_with_initial_supply(self.args, api)?
-                    }
-                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
-                        ResourceManagerNativePackage::create_fungible_with_initial_supply_and_address(self.args, api)?
-                    }
-                    _ => panic!("native code not found."),
-                };
+                let output = ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?;
                 let update = CallFrameUpdate {
                     node_refs_to_copy: output
                         .global_references()

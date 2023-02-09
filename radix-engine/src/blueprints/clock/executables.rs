@@ -1,4 +1,4 @@
-use crate::errors::RuntimeError;
+use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -12,7 +12,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientStaticInvokeApi};
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::ClockGetCurrentTimeInvocation;
@@ -42,7 +42,21 @@ impl ClockNativePackage {
         ))]
     }
 
-    pub fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            CLOCK_CREATE_IDENT => Self::create(input, api),
+            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+        }
+    }
+
+    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
