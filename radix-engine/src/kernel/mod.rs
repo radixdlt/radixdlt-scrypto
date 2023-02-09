@@ -6,7 +6,6 @@ pub mod id_allocator;
 pub mod interpreters;
 pub mod kernel;
 pub mod kernel_api;
-pub mod kernel_client_facade;
 pub mod module;
 pub mod module_mixer;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]

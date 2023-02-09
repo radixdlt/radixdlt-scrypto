@@ -34,12 +34,12 @@ use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::kernel_api::Invokable;
-use super::kernel_api::KernelActorApi;
-use super::kernel_api::KernelNodeApi;
-use super::kernel_api::KernelSubstateApi;
-use super::module::KernelModule;
-use super::module_mixer::KernelModuleMixer;
+use crate::kernel::kernel_api::Invokable;
+use crate::kernel::kernel_api::KernelActorApi;
+use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::module::KernelModule;
+use crate::kernel::module_mixer::KernelModuleMixer;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
