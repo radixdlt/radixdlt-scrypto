@@ -1,7 +1,6 @@
 use crate::{
     errors::{KernelError, RuntimeError},
     kernel::{ExecutionMode, RENodeInit, ResolvedActor, ResolvedReceiver},
-    system::global::GlobalAddressSubstate,
 };
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
@@ -93,39 +92,33 @@ impl VisibilityProperties {
                 }
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Bucket(..)
-                | RENodeInit::Global(GlobalAddressSubstate::Resource(..))
                 | RENodeInit::NonFungibleStore(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                         && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
                 }
-                RENodeInit::Identity()
-                | RENodeInit::Global(GlobalAddressSubstate::Identity(..)) => {
+                RENodeInit::Identity() => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }
-                RENodeInit::EpochManager(..)
-                | RENodeInit::Global(GlobalAddressSubstate::EpochManager(..)) => {
+                RENodeInit::EpochManager(..) => {
                     package_address.eq(&EPOCH_MANAGER_PACKAGE)
                         && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
                 }
-                RENodeInit::Validator(..)
-                | RENodeInit::Global(GlobalAddressSubstate::Validator(..)) => {
+                RENodeInit::Validator(..) => {
                     package_address.eq(&EPOCH_MANAGER_PACKAGE)
                         && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
                 }
-                RENodeInit::Clock(..) | RENodeInit::Global(GlobalAddressSubstate::Clock(..)) => {
+                RENodeInit::Clock(..) => {
                     package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
                 }
-                RENodeInit::Account(..)
-                | RENodeInit::Global(GlobalAddressSubstate::Account(..)) => {
+                RENodeInit::Account(..) => {
                     package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
                 }
-                RENodeInit::AccessController(..)
-                | RENodeInit::Global(GlobalAddressSubstate::AccessController(..)) => {
+                RENodeInit::AccessController(..) => {
                     package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                         && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore(..) => true,
-                RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
+                RENodeInit::Global(..) => true,
                 _ => false,
             },
             _ => true,

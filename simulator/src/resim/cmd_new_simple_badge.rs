@@ -3,6 +3,7 @@ use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleIdType, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
+    RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::{
     ResourceMethodAuthKey, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
