@@ -8,6 +8,7 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket; // TODO: clean this up!
@@ -679,7 +680,7 @@ where
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
-        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        mut module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
 
@@ -740,8 +741,18 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {}
-            (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {}
+            (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
+                module_init.insert(
+                    NodeModuleId::PackageTypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
+                );
+            }
+            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+                module_init.insert(
+                    NodeModuleId::PackageTypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
+                );
+            }
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
