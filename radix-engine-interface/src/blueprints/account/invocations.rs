@@ -6,70 +6,32 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
+
 //================
 // Account Create
 //================
 
+pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
+
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountCreateInvocation {
+pub struct AccountCreateLocalInput {
     pub withdraw_rule: AccessRule,
-}
-
-impl Invocation for AccountCreateInvocation {
-    type Output = ComponentId;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Create))
-    }
-}
-
-impl SerializableInvocation for AccountCreateInvocation {
-    type ScryptoOutput = ComponentId;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Create)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Create(self)).into()
-    }
 }
 
 //=============
 // Account New
 //=============
 
+pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
+
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountNewInvocation {
+pub struct AccountCreateGlobalInput {
     pub withdraw_rule: AccessRule,
-}
-
-impl Invocation for AccountNewInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::New))
-    }
-}
-
-impl SerializableInvocation for AccountNewInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::New)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountNewInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::New(self)).into()
-    }
 }
 
 //==================

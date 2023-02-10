@@ -1,4 +1,10 @@
+use crate::types::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::resource::*;
 
 pub enum CostingEntry {
     /*
@@ -95,6 +101,53 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
+    pub fn run_cost(&self, identifier: &ScryptoFnIdentifier) -> u32 {
+        match (
+            identifier.package_address,
+            identifier.blueprint_name.as_str(),
+        ) {
+            (RESOURCE_MANAGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+                        self.fixed_high
+                    }
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                        self.fixed_high
+                    }
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => self.fixed_high,
+                    RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
+                        self.fixed_high
+                    }
+                    _ => self.fixed_low,
+                }
+            }
+            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
+                IDENTITY_CREATE_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => match identifier.ident.as_str() {
+                EPOCH_MANAGER_CREATE_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => match identifier.ident.as_str() {
+                ACCOUNT_CREATE_LOCAL_IDENT => self.fixed_low,
+                ACCOUNT_CREATE_GLOBAL_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+
+            _ => 0u32,
+        }
+    }
+
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::AuthZoneStack(auth_zone_ident) => {
@@ -110,7 +163,6 @@ impl FeeTable {
                 }
             }
             NativeFn::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerFn::Create => self.fixed_low,
                 EpochManagerFn::GetCurrentEpoch => self.fixed_low,
                 EpochManagerFn::NextRound => self.fixed_low,
                 EpochManagerFn::SetEpoch => self.fixed_low,
@@ -127,13 +179,9 @@ impl FeeTable {
                 ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
-                ClockFn::Create => self.fixed_low,
                 ClockFn::SetCurrentTime => self.fixed_low,
                 ClockFn::GetCurrentTime => self.fixed_high,
                 ClockFn::CompareCurrentTime => self.fixed_high,
-            },
-            NativeFn::Identity(identity_fn) => match identity_fn {
-                IdentityFn::Create => self.fixed_low,
             },
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,
@@ -151,11 +199,6 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
-                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
-                ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
-                ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
-                ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::SetVaultAuthMutability => self.fixed_medium,
@@ -204,6 +247,7 @@ impl FeeTable {
             },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
+                PackageFn::PublishNative => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },
@@ -234,10 +278,6 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::Create => self.fixed_low,
-
-                AccountFn::New => self.fixed_low,
-
                 AccountFn::LockFee => self.fixed_low,
                 AccountFn::LockContingentFee => self.fixed_low,
 
@@ -257,8 +297,6 @@ impl FeeTable {
                 AccountFn::CreateProofByIds => self.fixed_low,
             },
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::CreateGlobal => self.fixed_low,
-
                 AccessControllerFn::CreateProof => self.fixed_low,
 
                 AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,

@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
@@ -832,16 +832,20 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
         OLYMPIA_VALIDATOR_TOKEN,
     )));
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
-            component_address: EPOCH_MANAGER.raw(),
-            validator_set: BTreeMap::new(),
-            initial_epoch: 1u64,
-            rounds_per_epoch: 1u64,
-            num_unstake_epochs: 1u64,
-        }),
-    ))];
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: EPOCH_MANAGER_PACKAGE,
+        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+        args: args!(
+            OLYMPIA_VALIDATOR_TOKEN.raw(),
+            EPOCH_MANAGER.raw(),
+            validator_set,
+            1u64,
+            1u64,
+            1u64
+        ),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -870,16 +874,21 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
         OLYMPIA_VALIDATOR_TOKEN,
     )));
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
-            component_address: EPOCH_MANAGER.raw(),
-            validator_set: BTreeMap::new(),
-            initial_epoch: 1u64,
-            rounds_per_epoch: 1u64,
-            num_unstake_epochs: 1u64,
-        }),
-    ))];
+
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: EPOCH_MANAGER_PACKAGE,
+        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+        function_name: "create".to_string(),
+        args: args!(
+            OLYMPIA_VALIDATOR_TOKEN.raw(),
+            EPOCH_MANAGER.raw(),
+            validator_set,
+            1u64,
+            1u64,
+            1u64
+        ),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

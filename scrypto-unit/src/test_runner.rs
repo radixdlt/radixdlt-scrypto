@@ -406,9 +406,11 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
         let account_component = receipt
             .expect_commit()
             .entity_changes
@@ -520,7 +522,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_with_auth_rule(&withdraw_auth);
+        let account = self.new_account_with_auth_rule(withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
 

@@ -10,6 +10,7 @@ use crate::system::node_modules::auth::*;
 use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -21,6 +22,7 @@ use radix_engine_interface::api::types::{
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
+    TypeInfo(TypeInfoSubstate),
     Metadata(MetadataSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
     ComponentTypeInfo(ComponentInfoSubstate),
@@ -38,6 +40,9 @@ impl RENodeModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
+            RENodeModuleInit::TypeInfo(type_info) => {
+                substates.insert(SubstateOffset::PackageTypeInfo, type_info.into());
+            }
             RENodeModuleInit::Metadata(metadata) => {
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -96,6 +101,7 @@ pub enum RENodeInit {
     Identity(),
     Component(ComponentStateSubstate),
     Package(PackageInfoSubstate),
+    NativePackage(NativePackageInfoSubstate),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
@@ -162,6 +168,12 @@ impl RENodeInit {
                 );
             }
             RENodeInit::Package(package_info) => {
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::Info),
+                    package_info.into(),
+                );
+            }
+            RENodeInit::NativePackage(package_info) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),

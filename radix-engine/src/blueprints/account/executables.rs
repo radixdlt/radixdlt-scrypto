@@ -1,5 +1,5 @@
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -12,10 +12,10 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
@@ -26,6 +26,7 @@ use radix_engine_interface::blueprints::resource::Proof;
 use super::AccountSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::Vault;
+use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountError {
@@ -42,29 +43,34 @@ impl From<AccountError> for RuntimeError {
 // Account Create
 //================
 
-impl ExecutableInvocation for AccountCreateInvocation {
-    type Exec = Self;
+pub struct AccountNativePackage;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Account(AccountFn::Create));
-        let call_frame_update = CallFrameUpdate::empty();
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountCreateInvocation {
-    type Output = ComponentId;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+impl AccountNativePackage {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            ACCOUNT_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            ACCOUNT_CREATE_LOCAL_IDENT => Self::create_local(input, api),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
+    }
+
+    fn create_global<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -72,6 +78,10 @@ impl Executor for AccountCreateInvocation {
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
@@ -82,83 +92,7 @@ impl Executor for AccountCreateInvocation {
         };
 
         // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(self.withdraw_rule);
-
-        // Creating the Account substates and RENode
-        let node_id = {
-            let mut node_modules = BTreeMap::new();
-            node_modules.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                }),
-            );
-            let access_rules_substate = AccessRulesChainSubstate {
-                access_rules_chain: [access_rules].into(),
-            };
-            node_modules.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::AccessRulesChain(access_rules_substate),
-            );
-            let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
-            };
-
-            let node_id = api.allocate_node_id(RENodeType::Account)?;
-            let node = RENodeInit::Account(account_substate);
-            api.create_node(node_id, node, node_modules)?;
-            node_id
-        };
-
-        Ok((node_id.into(), CallFrameUpdate::move_node(node_id)))
-    }
-}
-
-//=============
-// Account New
-//=============
-
-impl ExecutableInvocation for AccountNewInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Account(AccountFn::New));
-        let call_frame_update = CallFrameUpdate::empty();
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountNewInvocation {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
-    {
-        // Creating the key-value-store where the vaults will be held. This is a KVStore of
-        // [`ResourceAddress`] and [`Own`]ed vaults.
-        let kv_store_id = {
-            let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore;
-            api.create_node(node_id, node, BTreeMap::new())?;
-            node_id
-        };
-
-        // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(self.withdraw_rule);
+        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
 
         // Creating the Account substates and RENode
         let node_id = {
@@ -195,7 +129,66 @@ impl Executor for AccountNewInvocation {
             node_id
         };
 
-        Ok((global_node_id.into(), CallFrameUpdate::empty()))
+        let address: ComponentAddress = global_node_id.into();
+        Ok(IndexedScryptoValue::from_typed(&address))
+    }
+
+    fn create_local<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // Creating the key-value-store where the vaults will be held. This is a KVStore of
+        // [`ResourceAddress`] and [`Own`]ed vaults.
+        let kv_store_id = {
+            let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
+            let node = RENodeInit::KeyValueStore;
+            api.create_node(node_id, node, BTreeMap::new())?;
+            node_id
+        };
+
+        // Creating [`AccessRules`] from the passed withdraw access rule.
+        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
+
+        // Creating the Account substates and RENode
+        let node_id = {
+            let mut node_modules = BTreeMap::new();
+            node_modules.insert(
+                NodeModuleId::Metadata,
+                RENodeModuleInit::Metadata(MetadataSubstate {
+                    metadata: BTreeMap::new(),
+                }),
+            );
+            let access_rules_substate = AccessRulesChainSubstate {
+                access_rules_chain: [access_rules].into(),
+            };
+            node_modules.insert(
+                NodeModuleId::AccessRules,
+                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            );
+            let account_substate = AccountSubstate {
+                vaults: Own::KeyValueStore(kv_store_id.into()),
+            };
+
+            let node_id = api.allocate_node_id(RENodeType::Account)?;
+            let node = RENodeInit::Account(account_substate);
+            api.create_node(node_id, node, node_modules)?;
+            node_id
+        };
+
+        // TODO: Verify this is correct
+        let component_id: AccountId = node_id.into();
+        Ok(IndexedScryptoValue::from_typed(&Own::Account(component_id)))
     }
 }
 

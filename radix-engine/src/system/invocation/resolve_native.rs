@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
-    clock::*, epoch_manager::*, identity::*, logger::*, resource::*, transaction_runtime::*,
+    clock::*, epoch_manager::*, logger::*, resource::*, transaction_runtime::*,
 };
 
 pub fn resolve_native(
@@ -41,6 +41,11 @@ pub fn resolve_native(
         NativeFn::Package(package_fn) => match package_fn {
             PackageFn::Publish => {
                 let invocation = scrypto_decode::<PackagePublishInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                Ok(invocation.into())
+            }
+            PackageFn::PublishNative => {
+                let invocation = scrypto_decode::<PackagePublishNativeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
@@ -271,39 +276,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::ResourceManager(resource_manager_fn) => match resource_manager_fn {
-            ResourceManagerFn::CreateNonFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerCreateNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerCreateFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateNonFungibleWithInitialSupply => {
-                let invocation = scrypto_decode::<
-                    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation,
-                >(&invocation)
-                .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => {
-                let invocation = scrypto_decode::<
-                    ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
-                >(&invocation)
-                .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateFungibleWithInitialSupply => {
-                let invocation = scrypto_decode::<
-                    ResourceManagerCreateFungibleWithInitialSupplyInvocation,
-                >(&invocation)
-                .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ResourceManagerFn::BurnBucket => {
                 let invocation = scrypto_decode::<ResourceManagerBurnBucketInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -388,11 +360,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
-            EpochManagerFn::Create => {
-                let invocation = scrypto_decode::<EpochManagerCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             EpochManagerFn::GetCurrentEpoch => {
                 let invocation =
                     scrypto_decode::<EpochManagerGetCurrentEpochInvocation>(&invocation)
@@ -461,11 +428,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Clock(clock_fn) => match clock_fn {
-            ClockFn::Create => {
-                let invocation = scrypto_decode::<ClockCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ClockFn::SetCurrentTime => {
                 let invocation = scrypto_decode::<ClockSetCurrentTimeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -478,13 +440,6 @@ pub fn resolve_native(
             }
             ClockFn::CompareCurrentTime => {
                 let invocation = scrypto_decode::<ClockCompareCurrentTimeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Identity(identity_fn) => match identity_fn {
-            IdentityFn::Create => {
-                let invocation = scrypto_decode::<IdentityCreateInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
@@ -554,12 +509,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AccessController(ac_fn) => match ac_fn {
-            AccessControllerFn::CreateGlobal => {
-                let invocation =
-                    scrypto_decode::<AccessControllerCreateGlobalInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccessControllerFn::CreateProof => {
                 let invocation =
                     scrypto_decode::<AccessControllerCreateProofInvocation>(&invocation)
@@ -634,16 +583,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
-            AccountFn::Create => {
-                let invocation = scrypto_decode::<AccountCreateInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AccountFn::New => {
-                let invocation = scrypto_decode::<AccountNewInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::LockFee => {
                 let invocation = scrypto_decode::<AccountLockFeeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
