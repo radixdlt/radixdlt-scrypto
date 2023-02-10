@@ -207,28 +207,28 @@ where
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.into()).unwrap(),
+                            NonFungibleLocalId::bytes(address).unwrap(),
                         );
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.into()).unwrap(),
+                            NonFungibleLocalId::bytes(address).unwrap(),
                         );
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.into()).unwrap(),
+                            NonFungibleLocalId::bytes(address).unwrap(),
                         );
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.into()).unwrap(),
+                            NonFungibleLocalId::bytes(address).unwrap(),
                         );
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }

@@ -149,7 +149,7 @@ impl Executor for EpochManagerCreateInvocation {
         let mut validator_set = BTreeMap::new();
 
         for (key, validator_init) in self.validator_set {
-            let local_id = NonFungibleLocalId::bytes(key.to_vec()).unwrap();
+            let local_id = NonFungibleLocalId::bytes(key).unwrap();
             let global_id =
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =

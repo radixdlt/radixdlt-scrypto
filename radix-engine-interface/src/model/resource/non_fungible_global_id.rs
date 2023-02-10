@@ -132,13 +132,11 @@ impl FromPublicKey for NonFungibleGlobalId {
         match public_key {
             PublicKey::EcdsaSecp256k1(public_key) => NonFungibleGlobalId::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes().into())
-                    .unwrap(),
+                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes()).unwrap(),
             ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleGlobalId::new(
                 EDDSA_ED25519_TOKEN,
-                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes().into())
-                    .unwrap(),
+                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes()).unwrap(),
             ),
         }
     }
