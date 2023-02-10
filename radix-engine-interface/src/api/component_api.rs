@@ -4,6 +4,10 @@ use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 
 pub trait ClientComponentApi<E> {
+    // For the time being, this is to replace ClientDerefApi, by not  changing all other methods here
+    // to accept both ComponentId and ComponentAddress.
+    // On the long run, will update all methods to accept `handle: u32`, so this method will not be needed then.
+
     fn lookup_global_component(
         &mut self,
         component_address: ComponentAddress,
