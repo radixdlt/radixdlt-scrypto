@@ -5,7 +5,6 @@ use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
-use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
@@ -85,7 +84,6 @@ fn test_basic_transfer() {
 
 #[test]
 fn test_radiswap() {
-    // Arrange
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -109,10 +107,6 @@ fn test_radiswap() {
         ),
         btreemap!(),
         package_access_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
-    );
-    println!(
-        "Radiswap package address: {}",
-        package_address.display(&Bech32Encoder::for_simulator())
     );
 
     // Instantiate radiswap
@@ -154,10 +148,6 @@ fn test_radiswap() {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .output::<(ComponentAddress, Own)>(5);
-    println!(
-        "Radiswap component address: {}",
-        component_address.display(&Bech32Encoder::for_simulator())
-    );
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
@@ -176,7 +166,6 @@ fn test_radiswap() {
         )
         .expect_commit_success();
     assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
-    println!("Transferred {} BTC to account3", btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
@@ -204,9 +193,7 @@ fn test_radiswap() {
             - (btc_init_amount * eth_init_amount)
                 / (btc_init_amount + (btc_to_swap - btc_to_swap * fee_amount))
     );
-    println!("Swapped {} BTC into {} ETH", btc_to_swap, eth_received);
 
-    // Assert
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
