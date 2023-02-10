@@ -214,7 +214,7 @@ fn test_instruction_traces() {
         assert_eq!(1, free_trace.output.buckets.len());
         let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_resource.resource_address());
-        assert_eq!(dec!("1000"), output_resource.amount());
+        assert_eq!(dec!("10000"), output_resource.amount());
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
@@ -226,7 +226,7 @@ fn test_instruction_traces() {
         assert_eq!(1, worktop_put_trace.input.buckets.len());
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
 
         // We're tracking up to depth "1" (default), so no more child traces
         assert!(free_trace.children.is_empty());
@@ -251,7 +251,7 @@ fn test_instruction_traces() {
 
         let output_resource = trace.output.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_resource.resource_address());
-        assert_eq!(dec!("1000"), output_resource.amount());
+        assert_eq!(dec!("10000"), output_resource.amount());
     }
 
     {
@@ -271,7 +271,7 @@ fn test_instruction_traces() {
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_proof.resource_address);
         assert_eq!(
-            LockedAmountOrIds::Amount(dec!("1000")),
+            LockedAmountOrIds::Amount(dec!("10000")),
             output_proof.total_locked
         );
     }
@@ -290,7 +290,7 @@ fn test_instruction_traces() {
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_proof.resource_address);
         assert_eq!(
-            LockedAmountOrIds::Amount(dec!("1000")),
+            LockedAmountOrIds::Amount(dec!("10000")),
             input_proof.total_locked
         );
     }
@@ -310,7 +310,7 @@ fn test_instruction_traces() {
 
         let input_resource = trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
     }
 
     {
@@ -340,7 +340,7 @@ fn test_instruction_traces() {
         assert_eq!(1, call_trace.input.buckets.len());
         let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
     }
 }
 
