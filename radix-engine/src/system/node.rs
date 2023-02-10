@@ -2,23 +2,22 @@ use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::kv_store::KeyValueStore;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
-use crate::system::component::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use crate::system::package::*;
-use crate::system::substates::*;
+use crate::system::node_substates::*;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
+use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
-    KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
-    SubstateOffset, VaultOffset, WorktopOffset,
+    NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
+    VaultOffset, WorktopOffset,
 };
 
 #[derive(Debug)]
@@ -90,7 +89,7 @@ pub enum RENodeInit {
     FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Worktop(WorktopSubstate),
-    KeyValueStore(KeyValueStore),
+    KeyValueStore,
     NonFungibleStore(NonFungibleStore),
     Identity(),
     Component(ComponentInfoSubstate, ComponentStateSubstate),
@@ -141,14 +140,7 @@ impl RENodeInit {
             RENodeInit::Vault(vault) => {
                 substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
             }
-            RENodeInit::KeyValueStore(store) => {
-                for (k, v) in store.loaded_entries {
-                    substates.insert(
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
-                        v.into(),
-                    );
-                }
-            }
+            RENodeInit::KeyValueStore => {}
             RENodeInit::Identity() => {}
             RENodeInit::Component(info, state) => {
                 substates.insert(

@@ -1,4 +1,6 @@
-use crate::types::*;
+use crate::api::types::*;
+use crate::data::types::Own;
+use radix_engine_derive::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct ComponentStateSubstate {

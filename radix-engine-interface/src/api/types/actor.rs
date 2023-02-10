@@ -24,6 +24,7 @@ pub enum NativePackage {
     Metadata,
     EpochManager,
     Resource,
+    KeyValueStore,
     Clock,
     Logger,
     TransactionRuntime,
@@ -534,6 +535,31 @@ pub enum ResourceManagerFn {
     CreateBucket,
     CreateVault,
     BurnBucket,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum KeyValueStoreFn {
+    Create,
+    Insert,
 }
 
 #[derive(

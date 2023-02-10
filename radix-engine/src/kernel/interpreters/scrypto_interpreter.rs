@@ -9,15 +9,15 @@ use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
 use crate::kernel::*;
-use crate::system::package::*;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi,
-    ClientStaticInvokeApi, ClientSubstateApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNativeInvokeApi,
+    ClientNodeApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
@@ -271,7 +271,7 @@ impl Executor for ScryptoExecutor {
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
             + ClientMeteringApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
         let handle = api.lock_substate(
@@ -398,7 +398,7 @@ impl NativeVm {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match native_package_code_id {
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {

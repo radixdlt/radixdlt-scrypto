@@ -16,7 +16,7 @@ mod data_access {
                     false,
                 )
                 .unwrap();
-            ScryptoEnv.sys_read(lock_handle).unwrap();
+            ScryptoEnv.sys_read_substate(lock_handle).unwrap();
         }
 
         pub fn create_component_and_write_state() {
@@ -29,7 +29,7 @@ mod data_access {
                 )
                 .unwrap();
             ScryptoEnv
-                .sys_write(lock_handle, scrypto_encode(&()).unwrap())
+                .sys_write_substate(lock_handle, scrypto_encode(&()).unwrap())
                 .unwrap();
         }
 
@@ -42,7 +42,7 @@ mod data_access {
                     false,
                 )
                 .unwrap();
-            ScryptoEnv.sys_read(lock_handle).unwrap();
+            ScryptoEnv.sys_read_substate(lock_handle).unwrap();
         }
 
         pub fn create_component_and_write_info() -> () {
@@ -55,7 +55,7 @@ mod data_access {
                 )
                 .unwrap();
             ScryptoEnv
-                .sys_write(lock_handle, scrypto_encode(&()).unwrap())
+                .sys_write_substate(lock_handle, scrypto_encode(&()).unwrap())
                 .unwrap();
         }
     }

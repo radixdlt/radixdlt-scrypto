@@ -1,15 +1,12 @@
 use crate::kernel::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::package::{
-    ACCESS_CONTROLLER_PACKAGE_CODE_ID, ACCOUNT_PACKAGE_CODE_ID, CLOCK_PACKAGE_CODE_ID,
-    EPOCH_MANAGER_PACKAGE_CODE_ID, IDENTITY_PACKAGE_CODE_ID, RESOURCE_MANAGER_PACKAGE_CODE_ID,
-};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackagePublishInvocation, PackagePublishNativeInvocation,
 };

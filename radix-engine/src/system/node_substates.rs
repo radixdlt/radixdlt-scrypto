@@ -1,22 +1,14 @@
-use super::component::ComponentInfoSubstate;
-use super::component::ComponentRoyaltyAccumulatorSubstate;
-use super::component::ComponentRoyaltyConfigSubstate;
-use super::component::ComponentStateSubstate;
 use super::global::GlobalAddressSubstate;
 use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
 use super::node_modules::fee::FeeReserveSubstate;
 use super::node_modules::metadata::MetadataSubstate;
-use super::package::PackageInfoSubstate;
-use super::package::PackageRoyaltyAccumulatorSubstate;
-use super::package::PackageRoyaltyConfigSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
@@ -27,9 +19,10 @@ use crate::blueprints::resource::VaultSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
-use crate::system::package::NativePackageInfoSubstate;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
+use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
@@ -1058,6 +1051,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        match self {
+            SubstateRef::KeyValueStoreEntry(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         match self {
             SubstateRef::ResourceManager(value) => *value,
@@ -1118,13 +1118,6 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::CurrentTimeRoundedToMinutes(substate) => *substate,
             _ => panic!("Not a current time rounded to minutes substate ref"),
-        }
-    }
-
-    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
-        match self {
-            SubstateRef::KeyValueStoreEntry(value) => *value,
-            _ => panic!("Not a key value store entry"),
         }
     }
 
@@ -1248,20 +1241,7 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (
-                        scrypto_value.global_references(),
-                        scrypto_value
-                            .owned_node_ids()
-                            .expect("No duplicates expected"),
-                    )
-                } else {
-                    (HashSet::new(), HashSet::new())
-                }
+                (substate.global_references(), substate.owned_node_ids())
             }
             SubstateRef::NonFungible(substate) => {
                 let maybe_scrypto_value = substate

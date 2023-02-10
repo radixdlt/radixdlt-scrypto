@@ -1,20 +1,19 @@
-use super::module::KernelApiCallOutput;
-use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{
-    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+    Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use crate::kernel::module::BaseModule;
+use crate::kernel::module::KernelApiCallOutput;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_properties::VisibilityProperties;
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::types::{
-    GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
-};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
@@ -187,7 +186,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
                 );
             }
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
@@ -493,7 +492,61 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+    N: ExecutableInvocation,
+{
+    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        self.module
+            .pre_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                KernelApiCallInput::Invoke {
+                    fn_identifier: invocation.fn_identifier(),
+                    input_size: 0, // TODO: Fix this
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+
+        self.execution_mode = ExecutionMode::Resolver;
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+
+        self.execution_mode = ExecutionMode::Kernel;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        self.module
+            .post_kernel_api_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                KernelApiCallOutput::Invoke { rtn: &rtn },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+
+        Ok(rtn)
+    }
+}
+
+impl<'g, 's, W, R, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+}
+
+impl<'g, 's, W, R, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,

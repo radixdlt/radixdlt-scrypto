@@ -4,6 +4,8 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -12,8 +14,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientStaticInvokeApi};
+use radix_engine_interface::api::{ClientApi, ClientDerefApi};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::ClockGetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::ClockSetCurrentTimeInvocation;
@@ -52,7 +54,7 @@ impl ClockNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
             CLOCK_CREATE_IDENT => Self::create(input, api),

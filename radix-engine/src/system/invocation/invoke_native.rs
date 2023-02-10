@@ -1,3 +1,4 @@
+use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
@@ -5,16 +6,15 @@ use radix_engine_interface::api::types::{
     NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
-use radix_engine_interface::api::ClientStaticInvokeApi;
 
 pub fn invoke_native_fn<Y, E>(
-    native_invocation: NativeInvocation,
+    invocation: NativeInvocation,
     api: &mut Y,
 ) -> Result<Box<dyn NativeOutput>, E>
 where
-    Y: ClientStaticInvokeApi<E>,
+    Y: KernelInvokeApi<E>,
 {
-    match native_invocation {
+    match invocation {
         NativeInvocation::Component(component_invocation) => match component_invocation {
             ComponentInvocation::Globalize(invocation) => {
                 let rtn = api.invoke(invocation)?;

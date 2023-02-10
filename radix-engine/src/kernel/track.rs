@@ -1,4 +1,3 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
@@ -12,13 +11,16 @@ use crate::system::kernel_modules::fee::FeeTable;
 use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
 use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
-use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{
+    PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
+};
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
@@ -368,7 +370,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 
@@ -437,7 +439,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 

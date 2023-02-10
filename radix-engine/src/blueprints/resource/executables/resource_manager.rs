@@ -4,11 +4,13 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor,
 };
-use crate::kernel::{KernelNodeApi, RENodeModuleInit};
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
@@ -21,9 +23,9 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi};
-use radix_engine_interface::api::{ClientStaticInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -65,7 +67,7 @@ impl Executor for ResourceManagerBurnBucketInvocation {
 
     fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
@@ -447,7 +449,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => Self::create_non_fungible(input, api),
@@ -482,7 +484,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleInput =
@@ -509,7 +511,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithAddressInput =
@@ -541,7 +543,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
@@ -611,7 +613,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
@@ -678,7 +680,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleInput =
@@ -704,8 +706,7 @@ impl ResourceManagerNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
@@ -766,7 +767,7 @@ impl ResourceManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
@@ -1000,7 +1001,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -1024,7 +1025,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
             }
             .clone();
 
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
+            api.call_native(AuthZoneAssertAccessRuleInvocation {
                 receiver: RENodeId::AuthZoneStack.into(),
                 access_rule,
             })?;
@@ -1088,7 +1089,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
         api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -1112,7 +1113,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
             }
             .clone();
 
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
+            api.call_native(AuthZoneAssertAccessRuleInvocation {
                 receiver: RENodeId::AuthZoneStack.into(),
                 access_rule,
             })?;
@@ -1441,7 +1442,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle =

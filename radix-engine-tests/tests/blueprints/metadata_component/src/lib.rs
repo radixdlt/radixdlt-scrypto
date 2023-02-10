@@ -6,8 +6,8 @@ mod metadata_component {
 
     impl MetadataComponent {
         pub fn new() -> ComponentAddress {
-            let mut component = MetadataComponent {}.instantiate();
-            component.metadata("key", "value");
+            let component = MetadataComponent {}.instantiate();
+            component.set_metadata("key", "value");
             component.globalize()
         }
     }

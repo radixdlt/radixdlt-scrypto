@@ -1,18 +1,18 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
-use crate::blueprints::kv_store::KeyValueStore;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
 use crate::kernel::module::BaseModule;
 use crate::kernel::*;
-use crate::system::global::GlobalAddressSubstate; // TODO: possible clean-up
+use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::auth_module::AuthModule;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
-use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate}; // TODO: possible clean-up
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate};
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -155,7 +155,7 @@ where
         let component_id = {
             let kv_store_id = {
                 let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
-                let node = RENodeInit::KeyValueStore(KeyValueStore::new());
+                let node = RENodeInit::KeyValueStore;
                 self.create_node(node_id, node, BTreeMap::new())?;
                 node_id
             };

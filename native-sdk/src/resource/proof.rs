@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use sbor::rust::fmt::Debug;
@@ -10,7 +10,7 @@ pub trait SysProof {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<ProofCloneInvocation, E>;
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>;
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
@@ -25,9 +25,9 @@ impl SysProof for Proof {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<ProofCloneInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(ProofCloneInvocation { receiver: self.0 })
+        sys_calls.call_native(ProofCloneInvocation { receiver: self.0 })
     }
 
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

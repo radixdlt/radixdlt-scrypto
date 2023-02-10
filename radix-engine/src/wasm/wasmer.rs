@@ -236,17 +236,81 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn create_node(
+        pub fn new_package(
             env: &WasmerInstanceEnv,
-            node_ptr: u32,
-            node_len: u32,
+            code_ptr: u32,
+            code_len: u32,
+            abi_ptr: u32,
+            abi_len: u32,
+            access_rules_ptr: u32,
+            access_rules_len: u32,
+            royalty_config_ptr: u32,
+            royalty_config_len: u32,
+            metadata_ptr: u32,
+            metadata_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let node = read_memory(&instance, node_ptr, node_len)?;
+            let buffer = runtime
+                .new_package(
+                    read_memory(&instance, code_ptr, code_len)?,
+                    read_memory(&instance, abi_ptr, abi_len)?,
+                    read_memory(&instance, access_rules_ptr, access_rules_len)?,
+                    read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
+                    read_memory(&instance, metadata_ptr, metadata_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn new_component(
+            env: &WasmerInstanceEnv,
+            blueprint_ident_ptr: u32,
+            blueprint_ident_len: u32,
+            app_states_ptr: u32,
+            app_states_len: u32,
+            access_rules_ptr: u32,
+            access_rules_len: u32,
+            royalty_config_ptr: u32,
+            royalty_config_len: u32,
+            metadata_ptr: u32,
+            metadata_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .create_node(node)
+                .new_component(
+                    read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
+                    read_memory(&instance, app_states_ptr, app_states_len)?,
+                    read_memory(&instance, access_rules_ptr, access_rules_len)?,
+                    read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
+                    read_memory(&instance, metadata_ptr, metadata_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn globalize_component(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .globalize_component(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn new_key_value_store(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .new_key_value_store()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -315,11 +379,11 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn drop_lock(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .unlock_substate(handle)
+                .drop_lock(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -356,12 +420,15 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_native),
-                CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
+                NEW_PACKAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_package),
+                NEW_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_component),
+                GLOBALIZE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_component),
+                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                UNLOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), unlock_substate),
+                DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }

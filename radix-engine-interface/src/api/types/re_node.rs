@@ -5,13 +5,6 @@ use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
-// TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ScryptoRENode {
-    Component(PackageAddress, String, Vec<u8>),
-    KeyValueStore,
-}
-
 // TODO: Remove when better type system implemented
 #[derive(
     Debug,
@@ -263,7 +256,18 @@ pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
@@ -380,7 +384,6 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
-
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),

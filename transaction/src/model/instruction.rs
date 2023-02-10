@@ -206,9 +206,3 @@ impl From<BasicInstruction> for Instruction {
         Instruction::Basic(i)
     }
 }
-
-impl From<NativeInvocation> for Instruction {
-    fn from(i: NativeInvocation) -> Self {
-        Instruction::System(i)
-    }
-}

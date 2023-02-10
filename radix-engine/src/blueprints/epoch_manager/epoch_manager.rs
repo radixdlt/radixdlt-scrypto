@@ -6,15 +6,16 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
+use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -72,7 +73,7 @@ impl EpochManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => Self::create(input, api),
@@ -88,7 +89,7 @@ impl EpochManagerNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -124,8 +125,8 @@ impl EpochManagerNativePackage {
 
             let result = api.call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
                     metadata,
@@ -146,7 +147,7 @@ impl EpochManagerNativePackage {
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.validator_account_address,
                 bucket: owner_token_bucket.0,
             })?;
@@ -162,7 +163,7 @@ impl EpochManagerNativePackage {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.stake_account_address,
                 bucket: lp_bucket.0,
             })?;
@@ -467,7 +468,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -523,7 +524,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;

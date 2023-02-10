@@ -1,6 +1,6 @@
 use crate::{
     errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, RENodeInit, ResolvedActor, ResolvedReceiver},
+    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
 };
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
@@ -15,12 +15,9 @@ use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
-use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CLOCK_PACKAGE, EPOCH_MANAGER_PACKAGE,
-    IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
-};
+use radix_engine_interface::constants::*;
 
-use super::LockFlags;
+use super::node::RENodeInit;
 
 pub struct VisibilityProperties;
 
@@ -117,7 +114,7 @@ impl VisibilityProperties {
                     package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                         && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
-                RENodeInit::KeyValueStore(..) => true,
+                RENodeInit::KeyValueStore => true,
                 RENodeInit::Global(..) => true,
                 _ => false,
             },

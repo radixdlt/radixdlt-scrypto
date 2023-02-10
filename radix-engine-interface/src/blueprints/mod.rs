@@ -5,4 +5,4 @@ pub mod epoch_manager;
 pub mod identity;
 pub mod logger;
 pub mod resource;
-pub mod transaction_hash;
+pub mod transaction_runtime;

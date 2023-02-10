@@ -51,7 +51,7 @@ fn can_create_clone_and_drop_vault_proof() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -86,7 +86,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -120,7 +120,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -199,7 +199,7 @@ fn can_use_vault_for_authorization() {
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -346,7 +346,7 @@ fn can_compose_bucket_and_vault_proof() {
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -386,7 +386,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -425,7 +425,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -484,7 +484,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.instantiate_component(
+    let component_address = test_runner.new_component(
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
