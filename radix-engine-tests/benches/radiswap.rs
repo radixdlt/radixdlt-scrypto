@@ -7,7 +7,7 @@ use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
     model::{NotarizedTransaction, TransactionHeader},
     validation::{
-        HashStatus, NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
+        NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
         ValidationConfig,
     },
 };
@@ -109,54 +109,48 @@ fn bench_radiswap(c: &mut Criterion) {
         )
         .build();
 
-    let mut intent_hash_mgr = TestIntentHashManager::new();
-    let mut transactions: Vec<Vec<u8>> = (1_000..20_000)
-        .map(|i| {
-            TransactionBuilder::new()
-                .header(TransactionHeader {
-                    version: 1,
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive: 0,
-                    end_epoch_exclusive: 100,
-                    nonce: i,
-                    notary_public_key: pk3.clone().into(),
-                    notary_as_signatory: true,
-                    cost_unit_limit: 100_000_000,
-                    tip_percentage: 5,
-                })
-                .manifest(manifest.clone())
-                .notarize(&sk3)
-                .build()
-                .to_bytes()
-                .unwrap()
+    let transaction_payload = TransactionBuilder::new()
+        .header(TransactionHeader {
+            version: 1,
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 100,
+            nonce: 0,
+            notary_public_key: pk3.clone().into(),
+            notary_as_signatory: true,
+            cost_unit_limit: 100_000_000,
+            tip_percentage: 5,
         })
-        .collect();
+        .manifest(manifest.clone())
+        .notarize(&sk3)
+        .build()
+        .to_bytes()
+        .unwrap();
 
     // Loop
+    let mut nonce = 100u32;
     c.bench_function("Radiswap", |b| {
         b.iter(|| {
-            let payload = transactions.pop().unwrap();
-
             // Decode payload
-            let transaction: NotarizedTransaction = scrypto_decode(&payload).unwrap();
+            let transaction: NotarizedTransaction = scrypto_decode(&transaction_payload).unwrap();
 
             // Validate
-            let executable = NotarizedTransactionValidator::new(ValidationConfig::default(
+            let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(
                 NetworkDefinition::simulator().id,
             ))
-            .validate(&transaction, payload.len(), &intent_hash_mgr)
+            .validate(
+                &transaction,
+                transaction_payload.len(),
+                &TestIntentHashManager::new(),
+            )
             .unwrap();
 
             // Execute & commit
+            executable.context.transaction_hash = hash(nonce.to_le_bytes());
             test_runner
                 .execute_transaction(executable)
                 .expect_commit_success();
-
-            // Update intent hash manager
-            intent_hash_mgr.insert(
-                transaction.signed_intent.intent.hash().unwrap(),
-                HashStatus::Committed,
-            );
+            nonce += 1;
         })
     });
 }
