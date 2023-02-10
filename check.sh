@@ -23,7 +23,7 @@ for package in $packages; do
 done
 
 packages="
-    assets/blueprints/account \
+    assets/blueprints/radiswap \
     assets/blueprints/faucet \
     "
 packages+=$(find examples -maxdepth 1 -type d \( ! -name . \))

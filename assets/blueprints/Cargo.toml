@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "faucet",
+    "radiswap"
 ]
 
 [profile.release]

@@ -153,6 +153,9 @@ jobs:
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet
+    - name: Build radiswap
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/blueprints/radiswap
     - name: Build no-std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std
