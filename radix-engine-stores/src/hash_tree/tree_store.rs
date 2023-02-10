@@ -142,10 +142,10 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
 /// Encodes the given node key in a format friendly to Level-like databases (i.e. strictly ordered
 /// by numeric version).
 pub fn encode_key(key: &NodeKey) -> Vec<u8> {
-    let m = &key.version().to_be_bytes();
-    let x = &[(key.nibble_path().num_nibbles() % 2) as u8; 1];
-    let k = key.nibble_path().bytes();
-    [m, k, x].concat()
+    let version_bytes = &key.version().to_be_bytes();
+    let nibble_path_bytes = key.nibble_path().bytes();
+    let parity_byte = &[(key.nibble_path().num_nibbles() % 2) as u8; 1];
+    [version_bytes, nibble_path_bytes, parity_byte].concat()
 }
 
 // Note: We need completely custom serialization scheme only for the node keys. The remaining
