@@ -284,6 +284,7 @@ impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
             SubstateOffset::Global(..) => true,
+            SubstateOffset::TypeInfo => true,
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,

@@ -33,10 +33,12 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
+use crate::system::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
+    TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
@@ -122,6 +124,7 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
+            PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
@@ -166,6 +169,7 @@ pub enum PersistError {
 #[derive(Debug)]
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
+    TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
@@ -198,6 +202,7 @@ impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
@@ -257,6 +262,7 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
@@ -338,6 +344,7 @@ impl RuntimeSubstate {
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
@@ -380,6 +387,7 @@ impl RuntimeSubstate {
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
@@ -571,6 +579,12 @@ impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
 impl Into<RuntimeSubstate> for PackageInfoSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageInfo(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for TypeInfoSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::TypeInfo(self)
     }
 }
 
@@ -883,6 +897,7 @@ pub enum SubstateRef<'a> {
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
+    TypeInfo(&'a TypeInfoSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
@@ -892,6 +907,7 @@ impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
             SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::TypeInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1258,6 +1274,7 @@ pub enum SubstateRefMut<'a> {
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalAddressSubstate),
+    TypeInfo(&'a mut TypeInfoSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),

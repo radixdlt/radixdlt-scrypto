@@ -19,9 +19,11 @@ use radix_engine_interface::api::types::{
     KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
     SubstateOffset, VaultOffset, WorktopOffset,
 };
+use crate::system::type_info::TypeInfoSubstate;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
+    TypeInfo(TypeInfoSubstate),
     Metadata(MetadataSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
     ComponentRoyalty(
@@ -38,6 +40,12 @@ impl RENodeModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
+            RENodeModuleInit::TypeInfo(type_info) => {
+                substates.insert(
+                    SubstateOffset::TypeInfo,
+                    type_info.into(),
+                );
+            }
             RENodeModuleInit::Metadata(metadata) => {
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),

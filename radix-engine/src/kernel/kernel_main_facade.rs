@@ -15,6 +15,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
 use radix_engine_interface::blueprints::resource::Resource;
+use crate::system::type_info::TypeInfoSubstate;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
@@ -107,7 +108,7 @@ where
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
-        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        mut module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         self.module
             .pre_kernel_api_call(
@@ -174,7 +175,9 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {}
+            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+                module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage));
+            }
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore(..)) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
