@@ -276,82 +276,36 @@ impl Executor for ScryptoExecutor {
             + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = match self.package_address {
-            IDENTITY_PACKAGE
-            | EPOCH_MANAGER_PACKAGE
-            | RESOURCE_MANAGER_PACKAGE
-            | CLOCK_PACKAGE
-            | ACCOUNT_PACKAGE
-            | ACCESS_CONTROLLER_PACKAGE => {
+        let handle = api.lock_substate(
+            RENodeId::Global(GlobalAddress::Package(self.package_address)),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo,
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(handle)?;
+        let type_info = substate_ref.type_info().clone();
+        api.drop_lock(handle)?;
+
+        let output = match type_info {
+            TypeInfoSubstate::NativePackage => {
                 let handle = api.lock_substate(
                     RENodeId::Global(GlobalAddress::Package(self.package_address)),
-                    NodeModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
-                let type_info = substate_ref.type_info().clone();
+                let native_package_code_id =
+                    substate_ref.native_package_info().native_package_code_id;
                 api.drop_lock(handle)?;
-                match type_info {
-                    TypeInfoSubstate::NativePackage => {
-                        let handle = api.lock_substate(
-                            RENodeId::Global(GlobalAddress::Package(self.package_address)),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.get_ref(handle)?;
-                        let native_package_code_id =
-                            substate_ref.native_package_info().native_package_code_id;
-                        api.drop_lock(handle)?;
-                        match native_package_code_id {
-                            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
-                                ResourceManagerNativePackage::invoke_export(
-                                    &self.export_name,
-                                    self.args,
-                                    api,
-                                )?
-                            }
-                            IDENTITY_PACKAGE_CODE_ID => IdentityNativePackage::invoke_export(
-                                &self.export_name,
-                                self.args,
-                                api,
-                            )?,
-                            EPOCH_MANAGER_PACKAGE_CODE_ID => {
-                                EpochManagerNativePackage::invoke_export(
-                                    &self.export_name,
-                                    self.args,
-                                    api,
-                                )?
-                            }
-                            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(
-                                &self.export_name,
-                                self.args,
-                                api,
-                            )?,
-                            ACCOUNT_PACKAGE_CODE_ID => AccountNativePackage::invoke_export(
-                                &self.export_name,
-                                self.args,
-                                api,
-                            )?,
-                            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
-                                AccessControllerNativePackage::invoke_export(
-                                    &self.export_name,
-                                    self.args,
-                                    api,
-                                )?
-                            }
-                            _ => {
-                                return Err(RuntimeError::InterpreterError(
-                                    InterpreterError::InvalidInvocation,
-                                ))
-                            }
-                        }
-                    }
-                    _ => panic!(),
-                }
+                NativeVm::invoke_native_package(
+                    native_package_code_id,
+                    &self.export_name,
+                    self.args,
+                    api,
+                )?
             }
-            _ => {
+            TypeInfoSubstate::WasmPackage => {
                 let package = {
                     let handle = api.lock_substate(
                         RENodeId::Global(GlobalAddress::Package(self.package_address)),
@@ -427,7 +381,48 @@ impl Executor for ScryptoExecutor {
                 .into_iter()
                 .collect(),
         };
+
         Ok((output.into(), update))
+    }
+}
+
+struct NativeVm;
+
+impl NativeVm {
+    pub fn invoke_native_package<Y>(
+        native_package_code_id: u8,
+        export_name: &str,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientStaticInvokeApi<RuntimeError>,
+    {
+        match native_package_code_id {
+            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
+                ResourceManagerNativePackage::invoke_export(&export_name, input, api)
+            }
+            IDENTITY_PACKAGE_CODE_ID => {
+                IdentityNativePackage::invoke_export(&export_name, input, api)
+            }
+            EPOCH_MANAGER_PACKAGE_CODE_ID => {
+                EpochManagerNativePackage::invoke_export(&export_name, input, api)
+            }
+            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(&export_name, input, api),
+            ACCOUNT_PACKAGE_CODE_ID => {
+                AccountNativePackage::invoke_export(&export_name, input, api)
+            }
+            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
+                AccessControllerNativePackage::invoke_export(&export_name, input, api)
+            }
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
     }
 }
 

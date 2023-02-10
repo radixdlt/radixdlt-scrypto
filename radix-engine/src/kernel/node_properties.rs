@@ -189,6 +189,10 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Application, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
+                    if matches!(offset, SubstateOffset::TypeInfo) {
+                        return true;
+                    }
+
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
