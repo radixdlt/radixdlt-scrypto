@@ -238,17 +238,16 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
     + Invokable<AccountCreateInvocation, E>
     + Invokable<AccountNewInvocation, E>
-    + Invokable<AccountBalanceInvocation, E>
     + Invokable<AccountLockFeeInvocation, E>
     + Invokable<AccountLockContingentFeeInvocation, E>
     + Invokable<AccountDepositInvocation, E>
     + Invokable<AccountDepositBatchInvocation, E>
     + Invokable<AccountWithdrawInvocation, E>
-    + Invokable<AccountWithdrawByAmountInvocation, E>
-    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountWithdrawAllInvocation, E>
+    + Invokable<AccountWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountLockFeeAndWithdrawInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawAllInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountCreateProofInvocation, E>
     + Invokable<AccountCreateProofByAmountInvocation, E>
     + Invokable<AccountCreateProofByIdsInvocation, E>

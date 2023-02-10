@@ -14,7 +14,7 @@ TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceAddress("${resource}") Bucket
 RETURN_TO_WORKTOP Bucket("bucket2");
 
 # Test - auth zone
-CALL_METHOD ComponentAddress("${account}") "create_proof_by_amount" Decimal("5.0") ResourceAddress("${xrd}");
+CALL_METHOD ComponentAddress("${account}") "create_proof_by_amount" ResourceAddress("${xrd}") Decimal("5.0");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("${xrd}") Proof("proof1");
 CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("2.0") ResourceAddress("${xrd}") Proof("proof2");
 CLONE_PROOF Proof("proof2") Proof("proof3");
@@ -23,7 +23,7 @@ DROP_PROOF Proof("proof2");
 DROP_PROOF Proof("proof3");
 
 # Test - bucket proof
-CALL_METHOD ComponentAddress("${account}") "withdraw_by_amount" Decimal("5.0") ResourceAddress("${xrd}");
+CALL_METHOD ComponentAddress("${account}") "withdraw" ResourceAddress("${xrd}") Decimal("5.0");
 CLEAR_AUTH_ZONE;
 TAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("xrd");
 CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
