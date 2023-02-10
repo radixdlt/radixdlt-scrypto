@@ -64,10 +64,13 @@ pub struct AccessControllerNativePackage;
 //=================================
 
 impl AccessControllerNativePackage {
-
-    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -75,7 +78,9 @@ impl AccessControllerNativePackage {
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
-            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
         }
     }
 

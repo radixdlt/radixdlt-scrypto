@@ -1,12 +1,18 @@
 use crate::kernel::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::system::package::{
+    ACCESS_CONTROLLER_PACKAGE_CODE_ID, ACCOUNT_PACKAGE_CODE_ID, CLOCK_PACKAGE_CODE_ID,
+    EPOCH_MANAGER_PACKAGE_CODE_ID, IDENTITY_PACKAGE_CODE_ID, RESOURCE_MANAGER_PACKAGE_CODE_ID,
+};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::api::package::{PackagePublishInvocation, PackagePublishNativeInvocation};
+use radix_engine_interface::api::package::{
+    PackagePublishInvocation, PackagePublishNativeInvocation,
+};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
@@ -19,7 +25,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
-use crate::system::package::RESOURCE_MANAGER_PACKAGE_CODE_ID;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -45,21 +50,95 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-
     // Resource Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(RESOURCE_MANAGER_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            RESOURCE_MANAGER_PACKAGE,
+        )));
         let package_address = RESOURCE_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(PackageInvocation::PublishNative(
-            PackagePublishNativeInvocation {
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-            }
-        ))));
+            }),
+        )));
     }
 
+    // Identity Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
+        let package_address = IDENTITY_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
+            }),
+        )));
+    }
+
+    // EpochManager Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            EPOCH_MANAGER_PACKAGE,
+        )));
+        let package_address = EPOCH_MANAGER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
+            }),
+        )));
+    }
+
+    // Clock Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
+        let package_address = CLOCK_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
+            }),
+        )));
+    }
+
+    // Account Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        let package_address = ACCOUNT_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
+            }),
+        )));
+    }
+
+    // AccessRules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            ACCESS_CONTROLLER_PACKAGE,
+        )));
+        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
+            }),
+        )));
+    }
 
     // XRD
     {

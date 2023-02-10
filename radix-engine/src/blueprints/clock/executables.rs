@@ -12,8 +12,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientStaticInvokeApi};
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientStaticInvokeApi};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::ClockGetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::ClockSetCurrentTimeInvocation;
@@ -42,9 +42,13 @@ impl ClockNativePackage {
         ))]
     }
 
-    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -52,7 +56,9 @@ impl ClockNativePackage {
     {
         match export_name {
             CLOCK_CREATE_IDENT => Self::create(input, api),
-            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
         }
     }
 

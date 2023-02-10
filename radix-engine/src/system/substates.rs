@@ -27,14 +27,14 @@ use crate::blueprints::resource::VaultSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
+use crate::system::package::NativePackageInfoSubstate;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
-use crate::system::package::NativePackageInfoSubstate;
-use crate::system::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
@@ -145,7 +145,9 @@ impl PersistedSubstate {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
-            PersistedSubstate::NativePackageInfo(value) => RuntimeSubstate::NativePackageInfo(value),
+            PersistedSubstate::NativePackageInfo(value) => {
+                RuntimeSubstate::NativePackageInfo(value)
+            }
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -233,7 +235,9 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
-            RuntimeSubstate::NativePackageInfo(value) => PersistedSubstate::NativePackageInfo(value.clone()),
+            RuntimeSubstate::NativePackageInfo(value) => {
+                PersistedSubstate::NativePackageInfo(value.clone())
+            }
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value.clone())
             }
@@ -286,7 +290,9 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
-            RuntimeSubstate::NativePackageInfo(value) => PersistedSubstate::NativePackageInfo(value),
+            RuntimeSubstate::NativePackageInfo(value) => {
+                PersistedSubstate::NativePackageInfo(value)
+            }
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }

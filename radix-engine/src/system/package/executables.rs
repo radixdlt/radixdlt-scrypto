@@ -7,6 +7,7 @@ use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::package::NativePackageInfoSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
@@ -17,7 +18,6 @@ use radix_engine_interface::api::{package::*, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };
-use crate::system::package::NativePackageInfoSubstate;
 
 pub struct Package;
 
@@ -64,8 +64,8 @@ impl Executor for PackagePublishNativeInvocation {
         self,
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
     {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,

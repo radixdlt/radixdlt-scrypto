@@ -13,9 +13,13 @@ use radix_engine_interface::data::ScryptoValue;
 
 pub struct IdentityNativePackage;
 impl IdentityNativePackage {
-    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -23,7 +27,9 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_IDENT => Self::create(input, api),
-            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
         }
     }
 

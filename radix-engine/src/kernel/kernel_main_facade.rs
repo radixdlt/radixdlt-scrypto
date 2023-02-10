@@ -9,13 +9,13 @@ use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
 use radix_engine_interface::blueprints::resource::Resource;
-use crate::system::type_info::TypeInfoSubstate;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
@@ -176,10 +176,16 @@ where
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
-                module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage));
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
+                );
             }
             (RENodeId::Package(..), RENodeInit::Package(..)) => {
-                module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage));
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
+                );
             }
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore(..)) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}

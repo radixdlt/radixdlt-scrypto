@@ -1,7 +1,7 @@
 use crate::blueprints::kv_store::KeyValueStore;
 use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
-use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -46,22 +46,24 @@ impl From<AccountError> for RuntimeError {
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
-    pub fn invoke_export<Y>(export_name: &str, input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientStaticInvokeApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_GLOBAL_IDENT => {
-                Self::create_global(input, api)
-            }
-            ACCOUNT_CREATE_LOCAL_IDENT => {
-                Self::create_local(input, api)
-            }
-            _ => Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+            ACCOUNT_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            ACCOUNT_CREATE_LOCAL_IDENT => Self::create_local(input, api),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
         }
     }
 

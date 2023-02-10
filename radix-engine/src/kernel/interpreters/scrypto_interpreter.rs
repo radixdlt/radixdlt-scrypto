@@ -5,11 +5,12 @@ use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::system::package::*;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
 use crate::kernel::*;
+use crate::system::package::*;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::types::RENodeId;
@@ -21,7 +22,6 @@ use radix_engine_interface::api::{
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
-use crate::system::type_info::TypeInfoSubstate;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -277,22 +277,12 @@ impl Executor for ScryptoExecutor {
         W: WasmEngine,
     {
         let output = match self.package_address {
-            IDENTITY_PACKAGE => {
-                IdentityNativePackage::invoke_export(&self.export_name, self.args, api)?
-            }
-            EPOCH_MANAGER_PACKAGE => {
-                EpochManagerNativePackage::invoke_export(&self.export_name, self.args, api)?
-            }
-            CLOCK_PACKAGE => {
-                ClockNativePackage::invoke_export(&self.export_name, self.args, api)?
-            }
-            ACCOUNT_PACKAGE => {
-                AccountNativePackage::invoke_export(&self.export_name, self.args, api)?
-            }
-            ACCESS_CONTROLLER_PACKAGE => {
-                AccessControllerNativePackage::invoke_export(&self.export_name, self.args, api)?
-            }
-            RESOURCE_MANAGER_PACKAGE => {
+            IDENTITY_PACKAGE
+            | EPOCH_MANAGER_PACKAGE
+            | RESOURCE_MANAGER_PACKAGE
+            | CLOCK_PACKAGE
+            | ACCOUNT_PACKAGE
+            | ACCESS_CONTROLLER_PACKAGE => {
                 let handle = api.lock_substate(
                     RENodeId::Global(GlobalAddress::Package(self.package_address)),
                     NodeModuleId::TypeInfo,
@@ -311,13 +301,53 @@ impl Executor for ScryptoExecutor {
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = api.get_ref(handle)?;
-                        let native_package_code_id = substate_ref.native_package_info().native_package_code_id;
+                        let native_package_code_id =
+                            substate_ref.native_package_info().native_package_code_id;
                         api.drop_lock(handle)?;
                         match native_package_code_id {
-                            RESOURCE_MANAGER_PACKAGE_CODE_ID => ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?,
-                            _ => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+                            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
+                                ResourceManagerNativePackage::invoke_export(
+                                    &self.export_name,
+                                    self.args,
+                                    api,
+                                )?
+                            }
+                            IDENTITY_PACKAGE_CODE_ID => IdentityNativePackage::invoke_export(
+                                &self.export_name,
+                                self.args,
+                                api,
+                            )?,
+                            EPOCH_MANAGER_PACKAGE_CODE_ID => {
+                                EpochManagerNativePackage::invoke_export(
+                                    &self.export_name,
+                                    self.args,
+                                    api,
+                                )?
+                            }
+                            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(
+                                &self.export_name,
+                                self.args,
+                                api,
+                            )?,
+                            ACCOUNT_PACKAGE_CODE_ID => AccountNativePackage::invoke_export(
+                                &self.export_name,
+                                self.args,
+                                api,
+                            )?,
+                            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
+                                AccessControllerNativePackage::invoke_export(
+                                    &self.export_name,
+                                    self.args,
+                                    api,
+                                )?
+                            }
+                            _ => {
+                                return Err(RuntimeError::InterpreterError(
+                                    InterpreterError::InvalidInvocation,
+                                ))
+                            }
                         }
-                    },
+                    }
                     _ => panic!(),
                 }
             }
@@ -355,14 +385,17 @@ impl Executor for ScryptoExecutor {
                         input.push(
                             runtime
                                 .allocate_buffer(
-                                    scrypto_encode(&component_id).expect("Failed to encode component id"),
+                                    scrypto_encode(&component_id)
+                                        .expect("Failed to encode component id"),
                                 )
                                 .expect("Failed to allocate buffer"),
                         );
                     }
                     input.push(
                         runtime
-                            .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
+                            .allocate_buffer(
+                                scrypto_encode(&self.args).expect("Failed to encode args"),
+                            )
                             .expect("Failed to allocate buffer"),
                     );
 

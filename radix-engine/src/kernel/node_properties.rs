@@ -194,7 +194,15 @@ impl VisibilityProperties {
                         FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
-                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            || package_address.eq(&IDENTITY_PACKAGE)
+                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                            || package_address.eq(&CLOCK_PACKAGE)
+                            || package_address.eq(&ACCOUNT_PACKAGE)
+                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE) =>
+                        {
+                            true
+                        }
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
@@ -243,7 +251,11 @@ impl VisibilityProperties {
                         FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
-                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            || package_address.eq(&IDENTITY_PACKAGE) =>
+                        {
+                            true
+                        }
 
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {

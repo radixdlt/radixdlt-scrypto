@@ -13,13 +13,13 @@ use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::package::*;
 use crate::system::substates::*;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
     KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
     SubstateOffset, VaultOffset, WorktopOffset,
 };
-use crate::system::type_info::TypeInfoSubstate;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -41,10 +41,7 @@ impl RENodeModuleInit {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
             RENodeModuleInit::TypeInfo(type_info) => {
-                substates.insert(
-                    SubstateOffset::TypeInfo,
-                    type_info.into(),
-                );
+                substates.insert(SubstateOffset::TypeInfo, type_info.into());
             }
             RENodeModuleInit::Metadata(metadata) => {
                 substates.insert(
