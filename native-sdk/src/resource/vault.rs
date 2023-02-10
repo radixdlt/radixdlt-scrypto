@@ -78,23 +78,23 @@ impl Vault {
         })
     }
 
-    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultGetAmountInvocation { receiver: self.0 })
+        api.call_native(VaultGetAmountInvocation { receiver: self.0 })
     }
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        let amount = self.sys_amount(sys_calls)?;
-        sys_calls.call_native(VaultCreateProofByAmountInvocation {
+        let amount = self.sys_amount(api)?;
+        api.call_native(VaultCreateProofByAmountInvocation {
             receiver: self.0,
             amount,
         })
@@ -102,13 +102,13 @@ impl Vault {
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
         amount: Decimal,
     ) -> Result<Proof, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultCreateProofByAmountInvocation {
+        api.call_native(VaultCreateProofByAmountInvocation {
             receiver: self.0,
             amount,
         })
@@ -116,13 +116,13 @@ impl Vault {
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> Result<Proof, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultCreateProofByIdsInvocation {
+        api.call_native(VaultCreateProofByIdsInvocation {
             receiver: self.0,
             ids,
         })
@@ -130,13 +130,13 @@ impl Vault {
 
     pub fn sys_lock_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        sys_calls: &mut Y,
+        api: &mut Y,
         amount: Decimal,
     ) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultLockFeeInvocation {
+        api.call_native(VaultLockFeeInvocation {
             receiver: self.0,
             amount,
             contingent: false,
@@ -145,13 +145,13 @@ impl Vault {
 
     pub fn sys_lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        sys_calls: &mut Y,
+        api: &mut Y,
         amount: Decimal,
     ) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultLockFeeInvocation {
+        api.call_native(VaultLockFeeInvocation {
             receiver: self.0,
             amount,
             contingent: true,
@@ -160,11 +160,11 @@ impl Vault {
 
     pub fn sys_resource_address<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(VaultGetResourceAddressInvocation { receiver: self.0 })
+        api.call_native(VaultGetResourceAddressInvocation { receiver: self.0 })
     }
 }
