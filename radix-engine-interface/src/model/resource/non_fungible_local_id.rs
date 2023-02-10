@@ -486,8 +486,7 @@ mod tests {
     #[test]
     fn test_non_fungible_length_validation() {
         // Bytes length
-        let validation_result =
-            NonFungibleLocalId::bytes([0; NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]);
+        let validation_result = NonFungibleLocalId::bytes([0; NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]);
         assert!(matches!(validation_result, Ok(_)));
         let validation_result =
             NonFungibleLocalId::bytes([0; 1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]);
