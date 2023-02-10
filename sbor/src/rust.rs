@@ -2,18 +2,18 @@ pub mod prelude {
     // See eg https://doc.rust-lang.org/std/prelude/index.html
 
     // std::prelude::v1
-    pub use super::marker::{Copy, Send, Sized, Sync, Unpin};
-    pub use super::ops::{Drop, Fn, FnMut, FnOnce};
-    pub use super::mem::drop;
-    pub use super::boxed::Box;
     pub use super::borrow::ToOwned;
+    pub use super::boxed::Box;
     pub use super::clone::Clone;
-    pub use super::cmp::{PartialEq, PartialOrd, Eq, Ord};
-    pub use super::convert::{AsRef, AsMut, Into, From};
+    pub use super::cmp::{Eq, Ord, PartialEq, PartialOrd};
+    pub use super::convert::{AsMut, AsRef, From, Into};
     pub use super::default::Default;
-    pub use super::iter::{Iterator, Extend, IntoIterator, DoubleEndedIterator, ExactSizeIterator};
-    pub use super::option::Option::{self, Some, None};
-    pub use super::result::Result::{self, Ok, Err};
+    pub use super::iter::{DoubleEndedIterator, ExactSizeIterator, Extend, IntoIterator, Iterator};
+    pub use super::marker::{Copy, Send, Sized, Sync, Unpin};
+    pub use super::mem::drop;
+    pub use super::ops::{Drop, Fn, FnMut, FnOnce};
+    pub use super::option::Option::{self, None, Some};
+    pub use super::result::Result::{self, Err, Ok};
     pub use super::string::{String, ToString};
     pub use super::vec::Vec;
 
@@ -24,10 +24,10 @@ pub mod prelude {
     // And some extra useful additions we use a lot:
     pub use super::collections::*;
     pub use super::fmt::{Debug, Display};
-    pub use super::str::FromStr;
     pub use super::format;
-    pub use super::vec;
     pub use super::marker::PhantomData;
+    pub use super::str::FromStr;
+    pub use super::vec;
 }
 
 #[cfg(feature = "alloc")]
@@ -53,9 +53,13 @@ pub use alloc::vec;
 #[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
+pub use core::clone;
+#[cfg(feature = "alloc")]
 pub use core::cmp;
 #[cfg(feature = "alloc")]
 pub use core::convert;
+#[cfg(feature = "alloc")]
+pub use core::default;
 #[cfg(feature = "alloc")]
 pub use core::hash;
 #[cfg(feature = "alloc")]
@@ -69,17 +73,13 @@ pub use core::num;
 #[cfg(feature = "alloc")]
 pub use core::ops;
 #[cfg(feature = "alloc")]
-pub use core::ptr;
-#[cfg(feature = "alloc")]
-pub use core::slice;
-#[cfg(feature = "alloc")]
-pub use core::clone;
-#[cfg(feature = "alloc")]
-pub use core::default;
-#[cfg(feature = "alloc")]
 pub use core::option;
 #[cfg(feature = "alloc")]
+pub use core::ptr;
+#[cfg(feature = "alloc")]
 pub use core::result;
+#[cfg(feature = "alloc")]
+pub use core::slice;
 
 #[cfg(not(feature = "alloc"))]
 pub use std::alloc;
@@ -90,9 +90,13 @@ pub use std::boxed;
 #[cfg(not(feature = "alloc"))]
 pub use std::cell;
 #[cfg(not(feature = "alloc"))]
+pub use std::clone;
+#[cfg(not(feature = "alloc"))]
 pub use std::cmp;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
+#[cfg(not(feature = "alloc"))]
+pub use std::default;
 #[cfg(not(feature = "alloc"))]
 pub use std::fmt;
 #[cfg(not(feature = "alloc"))]
@@ -110,9 +114,13 @@ pub use std::num;
 #[cfg(not(feature = "alloc"))]
 pub use std::ops;
 #[cfg(not(feature = "alloc"))]
+pub use std::option;
+#[cfg(not(feature = "alloc"))]
 pub use std::ptr;
 #[cfg(not(feature = "alloc"))]
 pub use std::rc;
+#[cfg(not(feature = "alloc"))]
+pub use std::result;
 #[cfg(not(feature = "alloc"))]
 pub use std::slice;
 #[cfg(not(feature = "alloc"))]
@@ -123,14 +131,6 @@ pub use std::string;
 pub use std::sync;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
-#[cfg(not(feature = "alloc"))]
-pub use std::clone;
-#[cfg(not(feature = "alloc"))]
-pub use std::default;
-#[cfg(not(feature = "alloc"))]
-pub use std::option;
-#[cfg(not(feature = "alloc"))]
-pub use std::result;
 
 /// Collection types.
 pub mod collections {
