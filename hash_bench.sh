@@ -2,6 +2,7 @@
 
 set -x
 set -e
+set -o pipefail
 
 tstamp=`date -u  +%Y%m%d%H%M%S`
 mkdir -p results
