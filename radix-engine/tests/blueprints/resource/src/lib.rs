@@ -105,7 +105,7 @@ mod resource_test {
 
         pub fn update_resource_metadata() -> Bucket {
             let badge = ResourceBuilder::new_integer_non_fungible().initial_supply(vec![(
-                0u64,
+                0u64.into(),
                 Sandwich {
                     name: "name".to_string(),
                     available: false,

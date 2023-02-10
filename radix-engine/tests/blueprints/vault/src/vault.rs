@@ -125,7 +125,7 @@ mod vault_test {
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "TestToken")
-                .initial_supply([(1u64, Data {})]);
+                .initial_supply([(1u64.into(), Data {})]);
             Vault::with_bucket(bucket)
         }
 

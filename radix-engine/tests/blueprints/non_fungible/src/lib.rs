@@ -86,21 +86,21 @@ mod non_fungible_test {
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
                     (
-                        1u64,
+                        1u64.into(),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        2u64,
+                        2u64.into(),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        3u64,
+                        3u64.into(),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
@@ -319,14 +319,14 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_string_non_fungible().initial_supply([
                 (
-                    "1".to_string(),
+                    "1".try_into().unwrap(),
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
                     },
                 ),
                 (
-                    "2".to_string(),
+                    "2".try_into().unwrap(),
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
@@ -336,17 +336,16 @@ mod non_fungible_test {
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
-            // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_bytes_non_fungible().initial_supply([
                 (
-                    1u32.to_le_bytes().to_vec(),
+                    1u32.to_le_bytes().to_vec().try_into().unwrap(),
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
                     },
                 ),
                 (
-                    2u32.to_le_bytes().to_vec(),
+                    2u32.to_le_bytes().to_vec().try_into().unwrap(),
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
@@ -356,7 +355,6 @@ mod non_fungible_test {
         }
 
         pub fn create_uuid_non_fungible() -> Bucket {
-            // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_uuid_non_fungible().initial_supply_uuid([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
