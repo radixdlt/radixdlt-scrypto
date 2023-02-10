@@ -821,12 +821,11 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let method_ident = AccountFn::LockFee;
-        let args = scrypto_encode(&AccountLockFeeMethodArgs { amount }).unwrap();
+        let args = scrypto_encode(&AccountLockFeeInput { amount }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
         })
         .0

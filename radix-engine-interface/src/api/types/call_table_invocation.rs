@@ -230,7 +230,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountInvocation {
-    LockFee(AccountLockFeeInvocation),
     LockContingentFee(AccountLockContingentFeeInvocation),
 
     Deposit(AccountDepositInvocation),
@@ -540,8 +539,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {
-                AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
-                | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
+                AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
                     receiver,
                     ..
                 })
@@ -817,7 +815,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Account(i) => match i {
-                AccountInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::LockContingentFee(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::Deposit(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::DepositBatch(i) => (get_native_fn(i), scrypto_encode(i)),

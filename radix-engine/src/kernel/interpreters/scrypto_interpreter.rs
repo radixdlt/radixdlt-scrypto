@@ -298,6 +298,7 @@ impl Executor for ScryptoExecutor {
                 api.drop_lock(handle)?;
                 NativeVm::invoke_native_package(
                     native_package_code_id,
+                    self.component_id,
                     &self.export_name,
                     self.args,
                     api,
@@ -389,6 +390,7 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
+        receiver: Option<ComponentId>,
         export_name: &str,
         input: ScryptoValue,
         api: &mut Y,
@@ -412,7 +414,7 @@ impl NativeVm {
             }
             CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(&export_name, input, api),
             ACCOUNT_PACKAGE_CODE_ID => {
-                AccountNativePackage::invoke_export(&export_name, input, api)
+                AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, input, api)

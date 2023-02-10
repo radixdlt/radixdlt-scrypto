@@ -338,6 +338,7 @@ pub fn export_abi_by_component(
 pub fn export_account_abi() -> abi::BlueprintAbi {
     let fns = {
         let mut fns = Vec::new();
+        /*
         {
             let fn_ident = AccountFn::LockFee;
 
@@ -350,6 +351,7 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             };
             fns.push(fn_def);
         }
+         */
         {
             let fn_ident = AccountFn::LockContingentFee;
 

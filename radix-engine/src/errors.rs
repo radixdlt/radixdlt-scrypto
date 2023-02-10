@@ -197,6 +197,10 @@ pub enum ScryptoFnResolvingError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
+    NativeUnexpectedReceiver(String),
+    NativeExpectedReceiver(String),
+    NativeExportDoesNotExist(String),
+
     InvalidInvocation,
     DisallowedInvocation(NativeFn),
 

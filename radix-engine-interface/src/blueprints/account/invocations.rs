@@ -38,39 +38,11 @@ pub struct AccountCreateGlobalInput {
 // Account Lock Fee
 //==================
 
+pub const ACCOUNT_LOCK_FEE_IDENT: &str = "lock_fee";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeMethodArgs {
+pub struct AccountLockFeeInput {
     pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeInvocation {
-    pub receiver: ComponentAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountLockFeeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFee))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFee)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFee(self)).into()
-    }
 }
 
 //=============================

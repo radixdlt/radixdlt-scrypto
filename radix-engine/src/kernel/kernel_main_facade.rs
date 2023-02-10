@@ -1,3 +1,4 @@
+use radix_engine_interface::api::component::ComponentInfoSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
@@ -14,6 +15,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
@@ -195,7 +197,15 @@ where
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
-            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
