@@ -2,7 +2,13 @@ use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel::Kernel;
+use crate::kernel::kernel_api::Invokable;
+use crate::kernel::kernel_api::KernelActorApi;
+use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::module::KernelModule;
+use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::resolve_function::resolve_function;
@@ -33,13 +39,6 @@ use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-use crate::kernel::kernel_api::Invokable;
-use crate::kernel::kernel_api::KernelActorApi;
-use crate::kernel::kernel_api::KernelNodeApi;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::module::KernelModule;
-use crate::kernel::module_mixer::KernelModuleMixer;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
