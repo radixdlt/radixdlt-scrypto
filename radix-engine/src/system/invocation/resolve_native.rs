@@ -644,11 +644,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            AccountFn::Balance => {
-                let invocation = scrypto_decode::<AccountBalanceInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::LockFee => {
                 let invocation = scrypto_decode::<AccountLockFeeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -669,19 +664,26 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
+            AccountFn::WithdrawAll => {
+                let invocation = scrypto_decode::<AccountWithdrawAllInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                Ok(invocation.into())
+            }
             AccountFn::Withdraw => {
                 let invocation = scrypto_decode::<AccountWithdrawInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            AccountFn::WithdrawByAmount => {
-                let invocation = scrypto_decode::<AccountWithdrawByAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+            AccountFn::WithdrawNonFungibles => {
+                let invocation =
+                    scrypto_decode::<AccountWithdrawNonFungiblesInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            AccountFn::WithdrawByIds => {
-                let invocation = scrypto_decode::<AccountWithdrawByIdsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+            AccountFn::LockFeeAndWithdrawAll => {
+                let invocation =
+                    scrypto_decode::<AccountLockFeeAndWithdrawAllInvocation>(&invocation)
+                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
             AccountFn::LockFeeAndWithdraw => {
@@ -689,15 +691,9 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            AccountFn::LockFeeAndWithdrawByAmount => {
+            AccountFn::LockFeeAndWithdrawNonFungibles => {
                 let invocation =
-                    scrypto_decode::<AccountLockFeeAndWithdrawByAmountInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AccountFn::LockFeeAndWithdrawByIds => {
-                let invocation =
-                    scrypto_decode::<AccountLockFeeAndWithdrawByIdsInvocation>(&invocation)
+                    scrypto_decode::<AccountLockFeeAndWithdrawNonFungiblesInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

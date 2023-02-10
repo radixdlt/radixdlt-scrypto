@@ -15,9 +15,9 @@ CALL_METHOD
 # Withdrawing 100 XRD from the account component
 CALL_METHOD 
     ComponentAddress("${this_account_component_address}") 
-    "withdraw_by_amount"
-    Decimal("100")
-    ResourceAddress("${xrd_resource_address}");
+    "withdraw"
+    ResourceAddress("${xrd_resource_address}")
+    Decimal("100");
 
 # Depositing all of the XRD withdrawn from the account into the other account
 CALL_METHOD

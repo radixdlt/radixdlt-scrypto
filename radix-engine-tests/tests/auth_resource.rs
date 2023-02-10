@@ -64,7 +64,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(FAUCET_COMPONENT, 10u32.into());
-    builder.create_proof_from_account_by_amount(account, Decimal::one(), auth_to_use);
+    builder.create_proof_from_account_by_amount(account, auth_to_use, Decimal::one());
 
     match action {
         Action::Mint => builder
@@ -76,7 +76,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             ),
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
-            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
+            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
             .burn(Decimal::from("1.0"), token_address)
             .call_method(
                 account,
@@ -84,7 +84,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 args!(ManifestExpression::EntireWorktop),
             ),
         Action::Withdraw => builder
-            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
+            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
@@ -92,7 +92,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             ),
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
-            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
+            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
             .take_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(account, "deposit", args!(bucket_id))
             })

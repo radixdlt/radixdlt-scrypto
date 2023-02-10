@@ -211,7 +211,7 @@ fn transfer_test(c: &mut Criterion) {
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .withdraw_from_account_by_amount(account1, dec!("0.000001"), RADIX_TOKEN)
+        .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,
             "deposit_batch",

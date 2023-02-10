@@ -34,7 +34,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::put_at_next_version;
-use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
+use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -327,6 +327,26 @@ impl TestRunner {
         }
     }
 
+    pub fn account_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Option<Decimal> {
+        if !matches!(
+            account_address,
+            ComponentAddress::Account(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..)
+        ) {
+            panic!("Method only works for accounts!")
+        }
+
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        vaults
+            .get(0)
+            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
+    }
+
     pub fn get_component_vaults(
         &mut self,
         component_address: ComponentAddress,
@@ -341,6 +361,16 @@ impl TestRunner {
             .traverse_all_descendents(None, node_id)
             .unwrap();
         vault_finder.to_vaults()
+    }
+
+    pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.amount())
     }
 
     pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
@@ -1074,7 +1104,7 @@ impl TestRunner {
 }
 
 pub struct StateHashSupport {
-    tree_store: MemoryTreeStore,
+    tree_store: TypedInMemoryTreeStore,
     current_version: Version,
     current_hash: Hash,
 }
@@ -1082,7 +1112,7 @@ pub struct StateHashSupport {
 impl StateHashSupport {
     fn new() -> Self {
         StateHashSupport {
-            tree_store: MemoryTreeStore::new(),
+            tree_store: TypedInMemoryTreeStore::new(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
         }
