@@ -274,189 +274,99 @@ impl Executor for ScryptoExecutor {
             + ClientStaticInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
-        match self.package_address {
+        let output = match self.package_address {
             IDENTITY_PACKAGE => {
-                let output = IdentityNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
-                };
-                return Ok((output.into(), update));
+                IdentityNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             EPOCH_MANAGER_PACKAGE => {
-                let output = EpochManagerNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
-                };
-                return Ok((output.into(), update));
+                EpochManagerNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             CLOCK_PACKAGE => {
-                let output = ClockNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
-                };
-                return Ok((output.into(), update));
+                ClockNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             ACCOUNT_PACKAGE => {
-                let output = AccountNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
-                };
-                return Ok((output.into(), update));
+                AccountNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             ACCESS_CONTROLLER_PACKAGE => {
-                let output = AccessControllerNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
-                };
-                return Ok((output.into(), update));
+                AccessControllerNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             RESOURCE_MANAGER_PACKAGE => {
-                let output = ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?;
-                let update = CallFrameUpdate {
-                    node_refs_to_copy: output
-                        .global_references()
-                        .into_iter()
-                        .map(|a| RENodeId::Global(a))
-                        .collect(),
-                    nodes_to_move: output
-                        .owned_node_ids()
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e))
-                        })?
-                        .into_iter()
-                        .collect(),
+                ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?
+            }
+            _ => {
+                let package = {
+                    let handle = api.lock_substate(
+                        RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                        NodeModuleId::SELF,
+                        SubstateOffset::Package(PackageOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
+
+                    package
                 };
-                return Ok((output.into(), update));
+
+                let fn_abi = package
+                    .fn_abi(&self.export_name)
+                    .expect("TODO: Remove this expect");
+                let rtn_type = fn_abi.output.clone();
+
+                // Emit event
+                api.emit_wasm_instantiation_event(package.code())?;
+                let mut instance = api
+                    .scrypto_interpreter()
+                    .create_instance(self.package_address, &package.code);
+
+                let output = {
+                    let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
+
+                    let mut input = Vec::new();
+                    if let Some(component_id) = self.component_id {
+                        input.push(
+                            runtime
+                                .allocate_buffer(
+                                    scrypto_encode(&component_id).expect("Failed to encode component id"),
+                                )
+                                .expect("Failed to allocate buffer"),
+                        );
+                    }
+                    input.push(
+                        runtime
+                            .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
+                            .expect("Failed to allocate buffer"),
+                    );
+
+                    instance.invoke_export(&self.export_name, input, &mut runtime)?
+                };
+                let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
+                })?;
+
+                if !match_schema_with_value(&rtn_type, output.as_value()) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidScryptoFnOutput,
+                    ));
+                }
+
+                output
             }
-            _ => {}
-        }
-
-        let package = {
-            let handle = api.lock_substate(
-                RENodeId::Global(GlobalAddress::Package(self.package_address)),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let package = substate_ref.package_info().clone(); // TODO: Remove clone()
-            api.drop_lock(handle)?;
-
-            package
         };
 
-        let fn_abi = package
-            .fn_abi(&self.export_name)
-            .expect("TODO: Remove this expect");
-        let rtn_type = fn_abi.output.clone();
-
-        // Emit event
-        api.emit_wasm_instantiation_event(package.code())?;
-        let mut instance = api
-            .scrypto_interpreter()
-            .create_instance(self.package_address, &package.code);
-
-        let output = {
-            let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
-
-            let mut input = Vec::new();
-            if let Some(component_id) = self.component_id {
-                input.push(
-                    runtime
-                        .allocate_buffer(
-                            scrypto_encode(&component_id).expect("Failed to encode component id"),
-                        )
-                        .expect("Failed to allocate buffer"),
-                );
-            }
-            input.push(
-                runtime
-                    .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
-                    .expect("Failed to allocate buffer"),
-            );
-
-            instance.invoke_export(&self.export_name, input, &mut runtime)?
+        let update = CallFrameUpdate {
+            node_refs_to_copy: output
+                .global_references()
+                .into_iter()
+                .map(|a| RENodeId::Global(a))
+                .collect(),
+            nodes_to_move: output
+                .owned_node_ids()
+                .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
+                .into_iter()
+                .collect(),
         };
-        let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
-        })?;
-
-        let rtn = if !match_schema_with_value(&rtn_type, output.as_value()) {
-            Err(RuntimeError::KernelError(
-                KernelError::InvalidScryptoFnOutput,
-            ))
-        } else {
-            let update = CallFrameUpdate {
-                node_refs_to_copy: output
-                    .global_references()
-                    .into_iter()
-                    .map(|a| RENodeId::Global(a))
-                    .collect(),
-                nodes_to_move: output
-                    .owned_node_ids()
-                    .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
-                    .into_iter()
-                    .collect(),
-            };
-            Ok((output.into(), update))
-        };
-
-        rtn
+        Ok((output.into(), update))
     }
 }
 
