@@ -200,18 +200,19 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         25000 /* CreateNode */
-        + 94000 /* DropLock */
-        + 15000 /* DropNode */
-        + 264247 /* InstantiateWasm */
+        + 950000 /* DropLock */
+        + 17500 /* DropNode */
+        + 0 /* GetVisibleNodes */
+        + 264141 /* InstantiateWasm */
         + 18000 /* Invoke */
-        + 123000 /* LockSubstate */
-        + 382500 /* ReadSubstate */
+        + 1240000 /* LockSubstate */
+        + 395000 /* ReadSubstate */
         + 48500 /* RunNative */
-        + 1573245 /* RunWasm */
+        + 1573235 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 242500 /* WriteSubstate */
+        + 230000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );

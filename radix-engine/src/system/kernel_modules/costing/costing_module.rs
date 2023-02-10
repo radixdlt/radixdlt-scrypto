@@ -14,6 +14,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -144,12 +145,22 @@ impl KernelModule for CostingModule {
             }
         };
 
+        // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
+        let package_address = scrypto_fn_identifier.package_address;
+        if package_address == RESOURCE_MANAGER_PACKAGE
+            || package_address == IDENTITY_PACKAGE
+            || package_address == EPOCH_MANAGER_PACKAGE
+            || package_address == CLOCK_PACKAGE
+            || package_address == ACCOUNT_PACKAGE
+            || package_address == ACCESS_CONTROLLER_PACKAGE
+        {
+            return Ok(());
+        }
+
         /*
          * Apply package royalty
          */
-        let package_global_node_id = RENodeId::Global(GlobalAddress::Package(
-            scrypto_fn_identifier.package_address,
-        ));
+        let package_global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let (package_id, package_lock) = {
             let handle = api.lock_substate(
                 package_global_node_id,

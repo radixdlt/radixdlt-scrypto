@@ -151,6 +151,7 @@ impl VisibilityProperties {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
+                SubstateOffset::PackageTypeInfo => read_only,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
