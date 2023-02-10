@@ -8,17 +8,14 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::identity::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeGenerateUuidInvocation;
 use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
-use crate::data::types::{ManifestBucket, ManifestProof};
 use crate::data::ScryptoValue;
 use crate::*;
-use radix_engine_interface::data::ReplaceManifestValuesError;
-use sbor::rust::collections::{HashMap, HashSet};
+use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -66,7 +63,6 @@ pub enum NativeInvocation {
     EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
     Clock(ClockInvocation),
-    Identity(IdentityInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -77,29 +73,6 @@ pub enum NativeInvocation {
     TransactionRuntime(TransactionRuntimeInvocation),
     Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
-}
-
-impl NativeInvocation {
-    pub fn replace_ids(
-        &mut self,
-        _proof_replacements: &mut HashMap<ManifestProof, ProofId>,
-        bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
-    ) -> Result<(), ReplaceManifestValuesError> {
-        match self {
-            NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
-                for (_, validator_init) in &mut invocation.validator_set {
-                    let next_id = bucket_replacements
-                        .remove(&ManifestBucket(validator_init.initial_stake.0))
-                        .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
-                            validator_init.initial_stake.0,
-                        )))?;
-                    validator_init.initial_stake.0 = next_id;
-                }
-            }
-            _ => {} // TODO: Expand this
-        }
-        Ok(())
-    }
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -132,15 +105,9 @@ pub enum MetadataInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ClockInvocation {
-    Create(ClockCreateInvocation),
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum IdentityInvocation {
-    Create(IdentityCreateInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -159,13 +126,13 @@ pub enum ComponentInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
+    PublishNative(PackagePublishNativeInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum EpochManagerInvocation {
-    Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
@@ -198,13 +165,6 @@ pub enum AuthZoneStackInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceInvocation {
-    CreateNonFungible(ResourceManagerCreateNonFungibleInvocation),
-    CreateFungible(ResourceManagerCreateFungibleInvocation),
-    CreateNonFungibleWithInitialSupply(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation),
-    CreateUuidNonFungibleWithInitialSupply(
-        ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
-    ),
-    CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBurnBucketInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
@@ -270,9 +230,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountInvocation {
-    Create(AccountCreateInvocation),
-    New(AccountNewInvocation),
-
     LockFee(AccountLockFeeInvocation),
     LockContingentFee(AccountLockContingentFeeInvocation),
 
@@ -294,8 +251,6 @@ pub enum AccountInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    CreateGlobal(AccessControllerCreateGlobalInvocation),
-
     CreateProof(AccessControllerCreateProofInvocation),
 
     InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
@@ -337,6 +292,7 @@ impl NativeInvocation {
             },
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
+                PackageInvocation::PublishNative(..) => {}
                 PackageInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Package(
                         invocation.receiver,
@@ -416,11 +372,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::CreateNonFungible(..) => {}
-                ResourceInvocation::CreateFungible(..) => {}
-                ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
-                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(..) => {}
-                ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
@@ -489,16 +440,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerInvocation::Create(invocation) => {
-                    for (_key, validator_init) in &invocation.validator_set {
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(
-                            validator_init.stake_account_address,
-                        )));
-                        refs.insert(RENodeId::Global(GlobalAddress::Component(
-                            validator_init.validator_account_address,
-                        )));
-                    }
-                }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -563,7 +504,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
-                ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -579,9 +519,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-            },
-            NativeInvocation::Identity(invocation) => match invocation {
-                IdentityInvocation::Create(..) => {}
             },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {
@@ -603,7 +540,6 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {
-                AccountInvocation::Create(..) | AccountInvocation::New(..) => {}
                 AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })
                 | AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
                     receiver,
@@ -645,7 +581,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::CreateGlobal(..) => {}
                 AccessControllerInvocation::CreateProof(
                     AccessControllerCreateProofInvocation { receiver, .. },
                 )
@@ -729,6 +664,7 @@ impl NativeInvocation {
             },
             NativeInvocation::Package(i) => match i {
                 PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),
+                PackageInvocation::PublishNative(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
@@ -739,7 +675,6 @@ impl NativeInvocation {
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::EpochManager(i) => match i {
-                EpochManagerInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
                 EpochManagerInvocation::GetCurrentEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
                 EpochManagerInvocation::SetEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
                 EpochManagerInvocation::NextRound(i) => (get_native_fn(i), scrypto_encode(i)),
@@ -758,13 +693,9 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Clock(i) => match i {
-                ClockInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
                 ClockInvocation::GetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
                 ClockInvocation::CompareCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
                 ClockInvocation::SetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Identity(i) => match i {
-                IdentityInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Logger(i) => match i {
                 LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),
@@ -784,17 +715,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::ResourceManager(i) => match i {
-                ResourceInvocation::CreateNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::CreateFungible(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::CreateNonFungibleWithInitialSupply(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                ResourceInvocation::CreateFungibleWithInitialSupply(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 ResourceInvocation::BurnBucket(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::Burn(i) => (get_native_fn(i), scrypto_encode(i)),
@@ -864,9 +784,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::CreateGlobal(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccessControllerInvocation::InitiateRecoveryAsPrimary(i) => {
                     (get_native_fn(i), scrypto_encode(i))
@@ -900,8 +817,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Account(i) => match i {
-                AccountInvocation::Create(i) => (get_native_fn(i), scrypto_encode(i)),
-                AccountInvocation::New(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::LockContingentFee(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::Deposit(i) => (get_native_fn(i), scrypto_encode(i)),

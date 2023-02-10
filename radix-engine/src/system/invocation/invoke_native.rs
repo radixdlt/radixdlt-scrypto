@@ -2,8 +2,8 @@ use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
-    ComponentInvocation, EpochManagerInvocation, IdentityInvocation, LoggerInvocation,
-    MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
+    ComponentInvocation, EpochManagerInvocation, LoggerInvocation, MetadataInvocation,
+    NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
 
@@ -35,6 +35,10 @@ where
         },
         NativeInvocation::Package(package_invocation) => match package_invocation {
             PackageInvocation::Publish(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            PackageInvocation::PublishNative(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -219,26 +223,6 @@ where
         },
         NativeInvocation::ResourceManager(resource_manager_invocation) => {
             match resource_manager_invocation {
-                ResourceInvocation::CreateNonFungible(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateFungible(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateNonFungibleWithInitialSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 ResourceInvocation::BurnBucket(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
@@ -299,10 +283,6 @@ where
         }
         NativeInvocation::EpochManager(epoch_manager_invocation) => {
             match epoch_manager_invocation {
-                EpochManagerInvocation::Create(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
@@ -356,10 +336,6 @@ where
             }
         },
         NativeInvocation::Clock(clock_invocation) => match clock_invocation {
-            ClockInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ClockInvocation::SetCurrentTime(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -369,12 +345,6 @@ where
                 Ok(Box::new(rtn))
             }
             ClockInvocation::CompareCurrentTime(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Identity(identity_invocation) => match identity_invocation {
-            IdentityInvocation::Create(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -430,14 +400,6 @@ where
             }
         },
         NativeInvocation::Account(account_method) => match account_method {
-            AccountInvocation::Create(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccountInvocation::New(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccountInvocation::LockFee(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -492,10 +454,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::CreateGlobal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::CreateProof(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

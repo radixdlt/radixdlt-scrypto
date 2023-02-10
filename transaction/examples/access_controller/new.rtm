@@ -1,0 +1,2 @@
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("some_xrd");
+CREATE_ACCESS_CONTROLLER Bucket("some_xrd") Tuple(Enum(0u8), Enum(0u8), Enum(0u8)) Enum(0u8);

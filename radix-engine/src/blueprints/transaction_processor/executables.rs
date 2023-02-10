@@ -15,14 +15,10 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::AccountNewInvocation;
+use radix_engine_interface::api::{ClientDerefApi, ClientNodeApi};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
-use radix_engine_interface::blueprints::identity::IdentityCreateInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -117,6 +113,10 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
+
+                if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
+                    update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+                }
             }
             BasicInstruction::CallMethod {
                 args,
@@ -129,6 +129,10 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
+            }
+
+            BasicInstruction::CreateValidator { .. } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -208,15 +212,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::PublishPackage { .. }
             | BasicInstruction::PublishPackageWithOwner { .. }
             | BasicInstruction::BurnResource { .. }
-            | BasicInstruction::CreateFungibleResource { .. }
-            | BasicInstruction::CreateFungibleResourceWithOwner { .. }
-            | BasicInstruction::CreateNonFungibleResource { .. }
-            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
-            | BasicInstruction::CreateValidator { .. }
-            | BasicInstruction::CreateAccessController { .. }
-            | BasicInstruction::CreateIdentity { .. }
-            | BasicInstruction::AssertAccessRule { .. }
-            | BasicInstruction::CreateAccount { .. } => {}
+            | BasicInstruction::AssertAccessRule { .. } => {}
         },
         Instruction::System(invocation) => {
             for node_id in invocation.refs() {
@@ -248,6 +244,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             instruction_get_update(instruction, &mut call_frame_update);
         }
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
@@ -276,6 +273,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
@@ -544,127 +542,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-
-                Instruction::Basic(BasicInstruction::CreateFungibleResource {
-                    divisibility,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                }) => {
-                    if let Some(amount) = initial_supply {
-                        let rtn = api.call_native(
-                            ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                resource_address: None,
-                                divisibility: *divisibility,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                                initial_supply: *amount,
-                            },
-                        )?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    } else {
-                        let rtn = api.call_native(ResourceManagerCreateFungibleInvocation {
-                            divisibility: *divisibility,
-                            metadata: metadata.clone(),
-                            access_rules: access_rules.clone(),
-                        })?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    }
-                }
-                Instruction::Basic(BasicInstruction::CreateFungibleResourceWithOwner {
-                    divisibility,
-                    metadata,
-                    owner_badge,
-                    initial_supply,
-                }) => {
-                    if let Some(amount) = initial_supply {
-                        let rtn = api.call_native(
-                            ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                                resource_address: None,
-                                divisibility: *divisibility,
-                                metadata: metadata.clone(),
-                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                                initial_supply: *amount,
-                            },
-                        )?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    } else {
-                        let rtn = api.call_native(ResourceManagerCreateFungibleInvocation {
-                            divisibility: *divisibility,
-                            metadata: metadata.clone(),
-                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        })?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    }
-                }
-                Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
-                    id_type,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                }) => {
-                    if let Some(ids) = initial_supply {
-                        let rtn = api.call_native(
-                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: access_rules.clone(),
-                                entries: ids.clone(),
-                            },
-                        )?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    } else {
-                        let rtn = api.call_native(ResourceManagerCreateNonFungibleInvocation {
-                            resource_address: None,
-                            id_type: *id_type,
-                            metadata: metadata.clone(),
-                            access_rules: access_rules.clone(),
-                        })?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    }
-                }
-                Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
-                    id_type,
-                    metadata,
-                    owner_badge,
-                    initial_supply,
-                }) => {
-                    if let Some(ids) = initial_supply {
-                        let rtn = api.call_native(
-                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                                id_type: *id_type,
-                                metadata: metadata.clone(),
-                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                                entries: ids.clone(),
-                            },
-                        )?;
-
-                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    } else {
-                        let rtn = api.call_native(ResourceManagerCreateNonFungibleInvocation {
-                            resource_address: None,
-                            id_type: *id_type,
-                            metadata: metadata.clone(),
-                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        })?;
-
-                        InstructionOutput::Native(Box::new(rtn))
-                    }
-                }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
                     let rtn = api.call_native(ResourceManagerBurnBucketInvocation { bucket })?;
@@ -802,47 +679,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateAccessController {
-                    controlled_asset,
-                    primary_role,
-                    recovery_role,
-                    confirmation_role,
-                    timed_recovery_delay_in_minutes,
-                }) => {
-                    let rtn = api.call_native(AccessControllerCreateGlobalInvocation {
-                        controlled_asset: processor.get_bucket(controlled_asset)?.0,
-                        rule_set: RuleSet {
-                            primary_role: primary_role.clone(),
-                            recovery_role: recovery_role.clone(),
-                            confirmation_role: confirmation_role.clone(),
-                        },
-                        timed_recovery_delay_in_minutes: *timed_recovery_delay_in_minutes,
-                    })?;
-
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateIdentity { access_rule }) => {
-                    let rtn = api.call_native(IdentityCreateInvocation {
-                        access_rule: access_rule.clone(),
-                    })?;
-
-                    InstructionOutput::Native(Box::new(rtn))
-                }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateAccount { withdraw_rule }) => {
-                    let rtn = api.call_native(AccountNewInvocation {
-                        withdraw_rule: withdraw_rule.clone(),
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
                 Instruction::System(invocation) => {
-                    let mut invocation = invocation.clone();
-                    processor.replace_ids_native(&mut invocation)?;
+                    let invocation = invocation.clone();
                     let (fn_identifier, invocation) = invocation.flatten();
                     let rtn = api.call_native_raw(fn_identifier, invocation)?;
+
                     // TODO: Move buckets/proofs to worktop/authzone without serialization
                     let result = IndexedScryptoValue::from_vec(rtn.clone()).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -985,19 +830,6 @@ impl TransactionProcessor {
         }
 
         Ok(())
-    }
-
-    fn replace_ids_native(
-        &mut self,
-        invocation: &mut NativeInvocation,
-    ) -> Result<(), RuntimeError> {
-        invocation
-            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ReplaceManifestValuesError(e),
-                ))
-            })
     }
 
     fn replace_manifest_values<'a, Y>(

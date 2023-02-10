@@ -5,31 +5,13 @@ use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+pub const CLOCK_BLUEPRINT: &str = "Clock";
+
+pub const CLOCK_CREATE_IDENT: &str = "Create";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ClockCreateInvocation {
+pub struct ClockCreateInput {
     pub component_address: [u8; 26], // TODO: Clean this up
-}
-
-impl Invocation for ClockCreateInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Clock(ClockFn::Create))
-    }
-}
-
-impl SerializableInvocation for ClockCreateInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Clock(ClockFn::Create)
-    }
-}
-
-impl Into<CallTableInvocation> for ClockCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Clock(ClockInvocation::Create(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

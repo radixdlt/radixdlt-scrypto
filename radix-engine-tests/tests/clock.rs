@@ -1,10 +1,10 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -14,11 +14,12 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-    let instructions = vec![Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {
-            component_address: CLOCK.raw(),
-        }),
-    ))];
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: CLOCK_PACKAGE,
+        blueprint_name: CLOCK_BLUEPRINT.to_string(),
+        function_name: CLOCK_CREATE_IDENT.to_string(),
+        args: args!(CLOCK.raw()),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -42,11 +43,12 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-    let instructions = vec![Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {
-            component_address: CLOCK.raw(),
-        }),
-    ))];
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: CLOCK_PACKAGE,
+        blueprint_name: CLOCK_BLUEPRINT.to_string(),
+        function_name: CLOCK_CREATE_IDENT.to_string(),
+        args: args!(CLOCK.raw()),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

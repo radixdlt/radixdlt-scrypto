@@ -221,13 +221,12 @@ impl Parser {
                 divisibility: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
-            TokenKind::CreateFungibleResourceWithOwner => {
-                Instruction::CreateFungibleResourceWithOwner {
+            TokenKind::CreateFungibleResourceWithInitialSupply => {
+                Instruction::CreateFungibleResourceWithInitialSupply {
                     divisibility: self.parse_value()?,
                     metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
+                    access_rules: self.parse_value()?,
                     initial_supply: self.parse_value()?,
                 }
             }
@@ -235,13 +234,12 @@ impl Parser {
                 id_type: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
-            TokenKind::CreateNonFungibleResourceWithOwner => {
-                Instruction::CreateNonFungibleResourceWithOwner {
+            TokenKind::CreateNonFungibleResourceWithInitialSupply => {
+                Instruction::CreateNonFungibleResourceWithInitialSupply {
                     id_type: self.parse_value()?,
                     metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
+                    access_rules: self.parse_value()?,
                     initial_supply: self.parse_value()?,
                 }
             }
@@ -251,9 +249,7 @@ impl Parser {
             },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
-                primary_role: self.parse_value()?,
-                recovery_role: self.parse_value()?,
-                confirmation_role: self.parse_value()?,
+                rule_set: self.parse_value()?,
                 timed_recovery_delay_in_minutes: self.parse_value()?,
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {

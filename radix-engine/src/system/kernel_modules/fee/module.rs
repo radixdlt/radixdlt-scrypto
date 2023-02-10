@@ -6,7 +6,7 @@ use crate::system::kernel_modules::fee::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::*;
 
 use super::CostingReason;
 use super::ExecutionFeeReserve;
@@ -191,15 +191,14 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         _heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
-        match &actor.identifier {
-            FnIdentifier::Native(native_fn) => {
-                let cost_units = track.fee_table.run_native_fn_cost(&native_fn);
-                track
-                    .fee_reserve()
-                    .consume_execution(cost_units, CostingReason::RunNative)
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
-            }
-            _ => Ok(()),
-        }
+        let cost_units = match &actor.identifier {
+            FnIdentifier::Native(native_fn) => track.fee_table.run_native_fn_cost(&native_fn),
+            FnIdentifier::Scrypto(identifier) => track.fee_table.run_cost(&identifier),
+        };
+
+        track
+            .fee_reserve()
+            .consume_execution(cost_units, CostingReason::RunNative)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 }

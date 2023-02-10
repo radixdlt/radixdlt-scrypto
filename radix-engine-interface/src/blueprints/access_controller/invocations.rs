@@ -4,36 +4,28 @@ use crate::blueprints::resource::*;
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
+
 //=================================
 // Access Controller Create Global
 //=================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateGlobalInvocation {
-    pub controlled_asset: BucketId,
+pub const ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT: &str = "create_global";
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccessControllerCreateGlobalInput {
+    pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-impl Invocation for AccessControllerCreateGlobalInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateGlobal))
-    }
-}
-
-impl SerializableInvocation for AccessControllerCreateGlobalInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::CreateGlobal)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerCreateGlobalInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::CreateGlobal(self)).into()
+impl Clone for AccessControllerCreateGlobalInput {
+    fn clone(&self) -> Self {
+        Self {
+            controlled_asset: Bucket(self.controlled_asset.0),
+            rule_set: self.rule_set.clone(),
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
+        }
     }
 }
 

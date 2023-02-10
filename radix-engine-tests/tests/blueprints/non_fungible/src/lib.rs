@@ -1,6 +1,6 @@
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientNativeInvokeApi;
+use scrypto::radix_engine_interface::api::ClientPackageApi;
 
 #[derive(NonFungibleData)]
 pub struct Sandwich {
@@ -11,6 +11,8 @@ pub struct Sandwich {
 
 #[blueprint]
 mod non_fungible_test {
+    use std::collections::BTreeMap;
+
     struct NonFungibleTest {
         vault: Vault,
     }
@@ -301,16 +303,22 @@ mod non_fungible_test {
             );
 
             // creating non-fungible id with id type set to default (UUID)
-            let (_, bucket) = ScryptoEnv
-                .call_native(
-                    ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+            let rtn = ScryptoEnv
+                .call_function(
+                    RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                    scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
                         entries: encoded,
-                    },
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
+            let (_resource_address, bucket): (ResourceAddress, Bucket) =
+                scrypto_decode(&rtn).unwrap();
 
             bucket
         }
