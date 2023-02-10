@@ -4,7 +4,7 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sha2 = { version = "0.10.6", default-features = false, features = ["asm"] }
+sha2 = { version = "0.10.6", default-features = false }
 sha3 = { git = "https://github.com/RustCrypto/hashes", rev = "1f727ce37ff40fa0cce84eb8543a45bdd3ca4a4e", default-features = false, features = ["asm"] }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
@@ -20,7 +20,7 @@ serde = { version = "1.0.144", default-features = false, optional = true }
 serde_with = { version = "2.0.1", optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 bnum = { version = "0.4.0", default-features = false, features = ["numtraits"] }
-blake2 = { version = "0.10.6" }
+blake2 = { version = "0.10.6", default-features = false }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
@@ -59,3 +59,15 @@ trace = ["radix-engine-derive/trace"]
 # Enable serde derives
 serde = ["utils/serde", "sbor/serde", "scrypto-abi/serde", "serde/derive", "hex/serde", "serde_with"]
 
+sha2-default = [ "sha2/default" ]
+sha2-force-soft = ["sha2/force-soft"]
+sha2-asm = ["sha2/asm"]
+sha2-sha2-asm = ["sha2/sha2-asm" ]
+sha2-asm-aarch64 = [ "sha2/asm-aarch64" ]
+sha2-compress = [ "sha2/compress" ]
+
+blake2-default = [ "blake2/default" ]
+blake2-simd = [ "blake2/simd" ]
+blake2-simd_asm = [ "blake2/simd_asm" ]
+blake2-simd_opt = [ "blake2/simd_opt" ]
+blake2-size_opt = [ "blake2/size_opt" ]
