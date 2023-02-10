@@ -131,8 +131,8 @@ impl ExecutableInvocation for ScryptoInvocation {
 
         let handle = api.lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo,
+            NodeModuleId::PackageTypeInfo,
+            SubstateOffset::PackageTypeInfo,
             LockFlags::read_only(),
         )?;
         let substate_ref = api.get_ref(handle)?;
@@ -276,8 +276,8 @@ impl Executor for ScryptoExecutor {
     {
         let handle = api.lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo,
+            NodeModuleId::PackageTypeInfo,
+            SubstateOffset::PackageTypeInfo,
             LockFlags::read_only(),
         )?;
         let substate_ref = api.get_ref(handle)?;

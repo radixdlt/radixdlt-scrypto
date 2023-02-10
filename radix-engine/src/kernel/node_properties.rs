@@ -181,7 +181,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::TypeInfo => flags == LockFlags::read_only(),
+                SubstateOffset::PackageTypeInfo => flags == LockFlags::read_only(),
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
@@ -190,7 +190,7 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Application, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(offset, SubstateOffset::TypeInfo) {
+                    if matches!(offset, SubstateOffset::PackageTypeInfo) {
                         return true;
                     }
 
@@ -301,7 +301,7 @@ impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
             SubstateOffset::Global(..) => true,
-            SubstateOffset::TypeInfo => true,
+            SubstateOffset::PackageTypeInfo => true,
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,

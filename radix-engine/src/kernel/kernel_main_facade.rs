@@ -177,13 +177,13 @@ where
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
                 module_init.insert(
-                    NodeModuleId::TypeInfo,
+                    NodeModuleId::PackageTypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
                 );
             }
             (RENodeId::Package(..), RENodeInit::Package(..)) => {
                 module_init.insert(
-                    NodeModuleId::TypeInfo,
+                    NodeModuleId::PackageTypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
                 );
             }

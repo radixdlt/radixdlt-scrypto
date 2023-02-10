@@ -212,7 +212,7 @@ impl Into<ResourceAddress> for GlobalAddress {
     ScryptoDecode,
 )]
 pub enum NodeModuleId {
-    TypeInfo,
+    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
     Metadata,
     AccessRules,
@@ -360,7 +360,7 @@ pub enum AccessControllerOffset {
     ScryptoDecode,
 )]
 pub enum SubstateOffset {
-    TypeInfo,
+    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
     FeeReserve(FeeReserveOffset),

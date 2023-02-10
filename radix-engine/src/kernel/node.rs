@@ -41,7 +41,7 @@ impl RENodeModuleInit {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
             RENodeModuleInit::TypeInfo(type_info) => {
-                substates.insert(SubstateOffset::TypeInfo, type_info.into());
+                substates.insert(SubstateOffset::PackageTypeInfo, type_info.into());
             }
             RENodeModuleInit::Metadata(metadata) => {
                 substates.insert(
