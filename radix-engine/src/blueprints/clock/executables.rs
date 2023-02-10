@@ -67,8 +67,8 @@ impl ClockNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: ClockCreateInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
 

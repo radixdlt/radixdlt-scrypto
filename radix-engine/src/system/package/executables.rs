@@ -86,6 +86,7 @@ impl Executor for PackagePublishNativeInvocation {
 
         let package = NativePackageInfoSubstate {
             native_package_code_id: self.native_package_code_id,
+            dependent_resources: self.dependent_resources.into_iter().collect(),
         };
 
         // Create package node

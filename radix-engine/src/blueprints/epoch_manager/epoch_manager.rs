@@ -91,8 +91,8 @@ impl EpochManagerNativePackage {
             + ClientStaticInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: EpochManagerCreateInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(

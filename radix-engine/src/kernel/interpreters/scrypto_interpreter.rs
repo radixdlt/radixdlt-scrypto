@@ -129,15 +129,6 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-
-        match self.package_address {
-            EPOCH_MANAGER_PACKAGE => {
-                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-            }
-            _ => {}
-        }
-
         let handle = api.lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
             NodeModuleId::TypeInfo,
@@ -150,11 +141,29 @@ impl ExecutableInvocation for ScryptoInvocation {
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
+                let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
+                let handle = api.lock_substate(
+                    package_global,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.get_ref(handle)?;
+                let package = substate_ref.native_package_info();
+                for dependent_resource in &package.dependent_resources {
+                    node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+                        *dependent_resource,
+                    )));
+                }
+
+                api.drop_lock(handle)?;
+
                 self.fn_name.to_string() // TODO: Clean this up
             }
             TypeInfoSubstate::WasmPackage => {
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
                     ECDSA_SECP256K1_TOKEN,
                 )));
@@ -172,7 +181,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 )?;
                 let substate_ref = api.get_ref(handle)?;
                 let package = substate_ref.package_info(); // TODO: Remove clone()
-                // Find the abi
+                                                           // Find the abi
                 let abi = package.blueprint_abi(&self.blueprint_name).ok_or(
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                         self.package_address,
@@ -181,16 +190,16 @@ impl ExecutableInvocation for ScryptoInvocation {
                         ScryptoFnResolvingError::BlueprintNotFound,
                     )),
                 )?;
-                let fn_abi = abi
-                    .get_fn_abi(&self.fn_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoInvocation(
-                            self.package_address,
-                            self.blueprint_name.clone(),
-                            self.fn_name.clone(),
-                            ScryptoFnResolvingError::MethodNotFound,
-                        ),
-                    ))?;
+                let fn_abi =
+                    abi.get_fn_abi(&self.fn_name)
+                        .ok_or(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidScryptoInvocation(
+                                self.package_address,
+                                self.blueprint_name.clone(),
+                                self.fn_name.clone(),
+                                ScryptoFnResolvingError::MethodNotFound,
+                            ),
+                        ))?;
 
                 if fn_abi.mutability.is_some() != self.receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -227,7 +236,6 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(
             self.package_address,
         )));
-
 
         Ok((
             actor,
@@ -402,9 +410,7 @@ impl NativeVm {
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, input, api)
             }
-            CLOCK_PACKAGE_CODE_ID => {
-                ClockNativePackage::invoke_export(&export_name, input, api)
-            },
+            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(&export_name, input, api),
             ACCOUNT_PACKAGE_CODE_ID => {
                 AccountNativePackage::invoke_export(&export_name, input, api)
             }

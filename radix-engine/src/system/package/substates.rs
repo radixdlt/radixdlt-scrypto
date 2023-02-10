@@ -9,9 +9,10 @@ pub const ACCOUNT_PACKAGE_CODE_ID: u8 = 4u8;
 pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NativePackageInfoSubstate {
     pub native_package_code_id: u8,
+    pub dependent_resources: BTreeSet<ResourceAddress>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

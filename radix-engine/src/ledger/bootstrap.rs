@@ -62,85 +62,12 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
             }),
         )));
     }
 
-    // Identity Package
-    {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
-        let package_address = IDENTITY_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
-                package_address: Some(package_address), // TODO: Clean this up
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
-            }),
-        )));
-    }
-
-    // EpochManager Package
-    {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            EPOCH_MANAGER_PACKAGE,
-        )));
-        let package_address = EPOCH_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
-                package_address: Some(package_address), // TODO: Clean this up
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
-            }),
-        )));
-    }
-
-    // Clock Package
-    {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
-        let package_address = CLOCK_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
-                package_address: Some(package_address), // TODO: Clean this up
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
-            }),
-        )));
-    }
-
-    // Account Package
-    {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        let package_address = ACCOUNT_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
-                package_address: Some(package_address), // TODO: Clean this up
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
-            }),
-        )));
-    }
-
-    // AccessRules Package
-    {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            ACCESS_CONTROLLER_PACKAGE,
-        )));
-        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
-                package_address: Some(package_address), // TODO: Clean this up
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
-            }),
-        )));
-    }
-
-    // XRD
+    // XRD Token
     {
         let mut metadata = BTreeMap::new();
         metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
@@ -169,6 +96,106 @@ pub fn create_genesis(
             )
             .unwrap(),
         }));
+    }
+
+    // Package Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = PACKAGE_TOKEN.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
+        }));
+    }
+
+    // Identity Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
+        let package_address = IDENTITY_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // EpochManager Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            EPOCH_MANAGER_PACKAGE,
+        )));
+        let package_address = EPOCH_MANAGER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
+                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
+            }),
+        )));
+    }
+
+    // Clock Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
+        let package_address = CLOCK_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // Account Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        let package_address = ACCOUNT_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // AccessRules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            ACCESS_CONTROLLER_PACKAGE,
+        )));
+        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
     }
 
     // ECDSA
@@ -226,27 +253,6 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                resource_address,
-            })
-            .unwrap(),
-        }));
-    }
-
-    // Package Token
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
