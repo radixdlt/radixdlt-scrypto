@@ -5,6 +5,7 @@ use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::system::package::*;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
@@ -20,6 +21,7 @@ use radix_engine_interface::api::{
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use crate::system::type_info::TypeInfoSubstate;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -291,7 +293,33 @@ impl Executor for ScryptoExecutor {
                 AccessControllerNativePackage::invoke_export(&self.export_name, self.args, api)?
             }
             RESOURCE_MANAGER_PACKAGE => {
-                ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?
+                let handle = api.lock_substate(
+                    RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo,
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.get_ref(handle)?;
+                let type_info = substate_ref.type_info().clone();
+                api.drop_lock(handle)?;
+                match type_info {
+                    TypeInfoSubstate::NativePackage => {
+                        let handle = api.lock_substate(
+                            RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Package(PackageOffset::Info),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.get_ref(handle)?;
+                        let native_package_code_id = substate_ref.native_package_info().native_package_code_id;
+                        api.drop_lock(handle)?;
+                        match native_package_code_id {
+                            RESOURCE_MANAGER_PACKAGE_CODE_ID => ResourceManagerNativePackage::invoke_export(&self.export_name, self.args, api)?,
+                            _ => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)),
+                        }
+                    },
+                    _ => panic!(),
+                }
             }
             _ => {
                 let package = {

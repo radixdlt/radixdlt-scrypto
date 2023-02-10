@@ -1059,6 +1059,20 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn type_info(&self) -> &TypeInfoSubstate {
+        match self {
+            SubstateRef::TypeInfo(value) => *value,
+            _ => panic!("Not type info"),
+        }
+    }
+
+    pub fn native_package_info(&self) -> &NativePackageInfoSubstate {
+        match self {
+            SubstateRef::NativePackageInfo(value) => *value,
+            _ => panic!("Not a native package"),
+        }
+    }
+
     pub fn package_info(&self) -> &PackageInfoSubstate {
         match self {
             SubstateRef::PackageInfo(value) => *value,
