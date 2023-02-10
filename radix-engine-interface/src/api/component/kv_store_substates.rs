@@ -4,6 +4,8 @@ use radix_engine_derive::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::*;
 
+// TODO: Josh is leaning towards keeping `Entry::Key` as part of the substate key.
+// We will change this implementation if that is agreed.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialEq, Eq)]
 pub enum KeyValueStoreEntrySubstate {
     Some(ScryptoValue, ScryptoValue),

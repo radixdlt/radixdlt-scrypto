@@ -23,7 +23,6 @@ pub enum NativePackage {
     Package,
     Metadata,
     EpochManager,
-    Identity,
     Resource,
     KeyValueStore,
     Clock,
@@ -109,7 +108,6 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
-    Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
     Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
@@ -119,12 +117,12 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
-    Identity(IdentityFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
     Account(AccountFn),
     AccessController(AccessControllerFn),
+    Metadata(MetadataFn),
     Root,
 }
 
@@ -136,7 +134,6 @@ impl NativeFn {
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
-            NativeFn::Identity(..) => NativePackage::Identity,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -256,6 +253,7 @@ pub enum ComponentFn {
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
+    PublishNative,
     SetRoyaltyConfig,
     ClaimRoyalty,
 }
@@ -281,7 +279,6 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
-    Create,
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
@@ -339,9 +336,6 @@ impl EpochManagerPackage {
                     EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match epoch_manager_fn {
-                    EpochManagerFn::Create => {
-                        return Err(ResolveError::NotAMethod);
-                    }
                     EpochManagerFn::GetCurrentEpoch => {
                         let _args: EpochManagerGetCurrentEpochMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;
@@ -530,11 +524,6 @@ pub enum AuthZoneStackFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
-    CreateNonFungible,
-    CreateFungible,
-    CreateNonFungibleWithInitialSupply,
-    CreateUuidNonFungibleWithInitialSupply,
-    CreateFungibleWithInitialSupply,
     MintNonFungible,
     MintUuidNonFungible,
     MintFungible,
@@ -720,7 +709,6 @@ pub enum WorktopFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
-    Create,
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
@@ -736,9 +724,6 @@ impl ClockPackage {
     ) -> Result<ClockInvocation, ResolveError> {
         let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match clock_fn {
-            ClockFn::Create => {
-                return Err(ResolveError::NotAMethod);
-            }
             ClockFn::CompareCurrentTime => {
                 let args: ClockCompareCurrentTimeMethodArgs =
                     scrypto_decode(args).map_err(ResolveError::DecodeError)?;
@@ -769,30 +754,6 @@ impl ClockPackage {
 
         Ok(invocation)
     }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum IdentityFn {
-    Create,
 }
 
 #[derive(
@@ -889,25 +850,19 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    Create,
-
-    New,
-
-    Balance,
-
     LockFee,
     LockContingentFee,
 
     Deposit,
     DepositBatch,
 
+    WithdrawAll,
     Withdraw,
-    WithdrawByAmount,
-    WithdrawByIds,
+    WithdrawNonFungibles,
 
+    LockFeeAndWithdrawAll,
     LockFeeAndWithdraw,
-    LockFeeAndWithdrawByAmount,
-    LockFeeAndWithdrawByIds,
+    LockFeeAndWithdrawNonFungibles,
 
     CreateProof,
     CreateProofByAmount,
@@ -924,17 +879,6 @@ impl AccountPackage {
     ) -> Result<AccountInvocation, ResolveError> {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
-            AccountFn::Create | AccountFn::New => {
-                return Err(ResolveError::NotAMethod);
-            }
-            AccountFn::Balance => {
-                let args = scrypto_decode::<AccountBalanceMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::Balance(AccountBalanceInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                })
-            }
             AccountFn::LockFee => {
                 let args = scrypto_decode::<AccountLockFeeMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
@@ -967,30 +911,39 @@ impl AccountPackage {
                     buckets: args.buckets.into_iter().map(|x| x.0).collect(),
                 })
             }
+            AccountFn::WithdrawAll => {
+                let args = scrypto_decode::<AccountWithdrawAllMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::WithdrawAll(AccountWithdrawAllInvocation {
+                    receiver,
+                    resource_address: args.resource_address,
+                })
+            }
             AccountFn::Withdraw => {
                 let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
                 AccountInvocation::Withdraw(AccountWithdrawInvocation {
                     receiver,
                     resource_address: args.resource_address,
-                })
-            }
-            AccountFn::WithdrawByAmount => {
-                let args = scrypto_decode::<AccountWithdrawByAmountMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::WithdrawByAmount(AccountWithdrawByAmountInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
                     amount: args.amount,
                 })
             }
-            AccountFn::WithdrawByIds => {
-                let args = scrypto_decode::<AccountWithdrawByIdsMethodArgs>(args)
+            AccountFn::WithdrawNonFungibles => {
+                let args = scrypto_decode::<AccountWithdrawNonFungiblesMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::WithdrawByIds(AccountWithdrawByIdsInvocation {
+                AccountInvocation::WithdrawNonFungibles(AccountWithdrawNonFungiblesInvocation {
                     receiver,
                     resource_address: args.resource_address,
                     ids: args.ids,
+                })
+            }
+            AccountFn::LockFeeAndWithdrawAll => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawAllMethodArgs>(args)
+                    .map_err(ResolveError::DecodeError)?;
+                AccountInvocation::LockFeeAndWithdrawAll(AccountLockFeeAndWithdrawAllInvocation {
+                    receiver,
+                    amount_to_lock: args.amount_to_lock,
+                    resource_address: args.resource_address,
                 })
             }
             AccountFn::LockFeeAndWithdraw => {
@@ -1000,25 +953,14 @@ impl AccountPackage {
                     receiver,
                     amount_to_lock: args.amount_to_lock,
                     resource_address: args.resource_address,
+                    amount: args.amount,
                 })
             }
-            AccountFn::LockFeeAndWithdrawByAmount => {
-                let args = scrypto_decode::<AccountLockFeeAndWithdrawByAmountMethodArgs>(args)
+            AccountFn::LockFeeAndWithdrawNonFungibles => {
+                let args = scrypto_decode::<AccountLockFeeAndWithdrawNonFungiblesMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::LockFeeAndWithdrawByAmount(
-                    AccountLockFeeAndWithdrawByAmountInvocation {
-                        receiver,
-                        amount_to_lock: args.amount_to_lock,
-                        resource_address: args.resource_address,
-                        amount: args.amount,
-                    },
-                )
-            }
-            AccountFn::LockFeeAndWithdrawByIds => {
-                let args = scrypto_decode::<AccountLockFeeAndWithdrawByIdsMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::LockFeeAndWithdrawByIds(
-                    AccountLockFeeAndWithdrawByIdsInvocation {
+                AccountInvocation::LockFeeAndWithdrawNonFungibles(
+                    AccountLockFeeAndWithdrawNonFungiblesInvocation {
                         receiver,
                         amount_to_lock: args.amount_to_lock,
                         resource_address: args.resource_address,
@@ -1078,8 +1020,6 @@ impl AccountPackage {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    CreateGlobal,
-
     CreateProof,
 
     InitiateRecoveryAsPrimary,
@@ -1110,9 +1050,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::CreateGlobal => {
-                return Err(ResolveError::NotAMethod);
-            }
             AccessControllerFn::CreateProof => {
                 scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

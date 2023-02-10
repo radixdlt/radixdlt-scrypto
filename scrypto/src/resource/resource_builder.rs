@@ -1,6 +1,8 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -159,27 +161,40 @@ impl FungibleResourceBuilder {
     ///     .initial_supply(5);
     /// ```
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-                initial_supply: amount.into(),
-            })
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
             .unwrap();
-
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn initial_supply_with_owner<T: Into<Decimal>>(
@@ -187,27 +202,40 @@ impl FungibleResourceBuilder {
         amount: T,
         owner_badge: NonFungibleGlobalId,
     ) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                initial_supply: amount.into(),
-            })
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
             .unwrap();
-
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -287,28 +315,41 @@ impl FungibleResourceWithAuthBuilder {
     }
 
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let (_resource_address, bucket) = ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: None,
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: self.authorization,
-                initial_supply: amount.into(),
-            })
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                    initial_supply: amount.into(),
+                })
+                .unwrap(),
+            )
             .unwrap();
-
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateFungibleInvocation {
-                divisibility: self.divisibility,
-                metadata: self.metadata,
-                access_rules: self.authorization,
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    divisibility: self.divisibility,
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -442,25 +483,37 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: BTreeMap::new(),
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: BTreeMap::new(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleGlobalId) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -489,17 +542,22 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
             );
         }
 
-        ScryptoEnv
-            .call_native(
-                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: BTreeMap::new(),
                     entries: encoded,
-                },
+                })
+                .unwrap(),
             )
-            .unwrap()
-            .1
+            .unwrap();
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 
     pub fn initial_supply_with_owner<T, V>(
@@ -519,17 +577,21 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceBuilder<Y> {
             );
         }
 
-        let (_resource_address, bucket) = ScryptoEnv
-            .call_native(
-                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                     entries: encoded,
-                },
+                })
+                .unwrap(),
             )
             .unwrap();
-
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
         bucket
     }
 }
@@ -545,16 +607,24 @@ impl NonFungibleResourceBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        ScryptoEnv
-            .call_native(
-                ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                    metadata: self.metadata,
-                    access_rules: BTreeMap::new(),
-                    entries: encoded,
-                },
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY,
+                scrypto_encode(
+                    &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+                        metadata: self.metadata,
+                        access_rules: BTreeMap::new(),
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
             )
-            .unwrap()
-            .1
+            .unwrap();
+
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 }
 
@@ -645,14 +715,21 @@ impl<Y: IsNonFungibleLocalId> NonFungibleResourceWithAuthBuilder<Y> {
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        ScryptoEnv
-            .call_native(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: None,
-                id_type: Y::id_type(),
-                metadata: self.metadata,
-                access_rules: self.authorization,
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type: Y::id_type(),
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -670,17 +747,22 @@ impl<Y: IsNonAutoGeneratedNonFungibleLocalId> NonFungibleResourceWithAuthBuilder
             );
         }
 
-        ScryptoEnv
-            .call_native(
-                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: Y::id_type(),
                     metadata: self.metadata,
                     access_rules: self.authorization,
                     entries: encoded,
-                },
+                })
+                .unwrap(),
             )
-            .unwrap()
-            .1
+            .unwrap();
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 }
 
@@ -695,15 +777,23 @@ impl NonFungibleResourceWithAuthBuilder<u128> {
             encoded.insert((e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
-        ScryptoEnv
-            .call_native(
-                ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-                    metadata: self.metadata,
-                    access_rules: self.authorization,
-                    entries: encoded,
-                },
+        let rtn = ScryptoEnv
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY,
+                scrypto_encode(
+                    &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+                        metadata: self.metadata,
+                        access_rules: self.authorization,
+                        entries: encoded,
+                    },
+                )
+                .unwrap(),
             )
-            .unwrap()
-            .1
+            .unwrap();
+
+        let (_resource_address, bucket): (ResourceAddress, Bucket) = scrypto_decode(&rtn).unwrap();
+        bucket
     }
 }

@@ -823,6 +823,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "radiswap"
+version = "0.1.0"
+dependencies = [
+ "radix-engine",
+ "sbor",
+ "scrypto",
+ "scrypto-unit",
+ "transaction",
+]
+
+[[package]]
 name = "radix-engine"
 version = "0.8.0"
 dependencies = [

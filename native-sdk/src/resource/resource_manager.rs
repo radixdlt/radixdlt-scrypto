@@ -1,6 +1,7 @@
 use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
@@ -20,14 +21,23 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.call_native(ResourceManagerCreateFungibleInvocation {
-            metadata,
-            access_rules,
-            divisibility,
-        })
-        .map(|address| ResourceManager(address))
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    metadata,
+                    access_rules,
+                    divisibility,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
@@ -38,16 +48,25 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.call_native(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-            resource_address: None,
-            metadata,
-            access_rules,
-            divisibility,
-            initial_supply: amount,
-        })
-        .map(|(address, bucket)| (ResourceManager(address), bucket))
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    metadata,
+                    access_rules,
+                    divisibility,
+                    initial_supply: amount,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let (resource_address, bucket): (ResourceAddress, Bucket) =
+            scrypto_decode(result.as_slice()).unwrap();
+        Ok((ResourceManager(resource_address), bucket))
     }
 
     pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
@@ -57,15 +76,21 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.call_native(ResourceManagerCreateNonFungibleInvocation {
-            resource_address: None,
-            id_type,
-            metadata,
-            access_rules,
-        })
-        .map(|address| ResourceManager(address))
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                id_type,
+                metadata,
+                access_rules,
+            })
+            .unwrap(),
+        )?;
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     /// Mints non-fungible resources

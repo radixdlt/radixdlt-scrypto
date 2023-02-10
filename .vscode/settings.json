@@ -23,6 +23,7 @@
         "Untimed",
         "virtualizable",
         "Wasmer",
-        "Wasmi"
+        "Wasmi",
+        "radiswap"
     ]
 }

@@ -22,8 +22,8 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("${account_component_address}")
     "create_proof_by_amount"
-    Decimal("1")
-    ResourceAddress("${minter_badge_resource_address}");
+    ResourceAddress("${minter_badge_resource_address}")
+    Decimal("1");
 
 # Minting some amount of tokens from the mintable fungible resource
 MINT_FUNGIBLE 

@@ -43,7 +43,7 @@ pub enum InstructionList<'a> {
 pub struct Executable<'a> {
     instructions: InstructionList<'a>,
     blobs: &'a [Vec<u8>],
-    context: ExecutionContext,
+    pub context: ExecutionContext,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

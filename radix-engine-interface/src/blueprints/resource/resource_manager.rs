@@ -14,6 +14,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::*;
 
+pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
+
 #[derive(
     Debug,
     Clone,
@@ -58,168 +60,77 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
-    pub id_type: NonFungibleIdType,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-}
-
-impl Invocation for ResourceManagerCreateNonFungibleInvocation {
-    type Output = ResourceAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateNonFungible,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungible)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(self)).into()
-    }
-}
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT: &str = "create_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateFungibleInvocation {
+pub struct ResourceManagerCreateFungibleInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
-impl Invocation for ResourceManagerCreateFungibleInvocation {
-    type Output = ResourceAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateFungibleInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateFungible)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateFungibleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungible(self)).into()
-    }
-}
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+    "create_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdType,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
-}
-
-impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    type Output = (ResourceAddress, Bucket);
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateNonFungibleWithInitialSupply,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    type ScryptoOutput = (ResourceAddress, Bucket);
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungibleWithInitialSupply)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungibleWithInitialSupply(
-            self,
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
-}
-
-impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-    type Output = (ResourceAddress, Bucket);
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-    type ScryptoOutput = (ResourceAddress, Bucket);
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(self),
-        )
-        .into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-    pub resource_address: Option<[u8; 26]>, // TODO: Clean this up
+pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }
 
-impl Invocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-    type Output = (ResourceAddress, Bucket);
+pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
+    "create_fungible_with_initial_supply_and_address";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::CreateFungibleWithInitialSupply,
-        ))
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub initial_supply: Decimal,
+    pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
-impl SerializableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-    type ScryptoOutput = (ResourceAddress, Bucket);
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungible";
 
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateFungibleWithInitialSupply)
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateNonFungibleInput {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
-impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(self))
-            .into()
-    }
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+    "create_non_fungible_with_initial_supply";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+}
+
+pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
+    "create_non_fungible_with_address";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateNonFungibleWithAddressInput {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub resource_address: [u8; 26], // TODO: Clean this up
+}
+
+pub const RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY: &str =
+    "create_uuid_non_fungible_with_initial_supply";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

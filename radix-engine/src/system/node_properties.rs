@@ -2,8 +2,20 @@ use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use crate::kernel::kernel_api::LockFlags;
-use crate::system::global::GlobalAddressSubstate;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::types::{
+    AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
+    FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset,
+    RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
+    TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
+};
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
+use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
+use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
+use radix_engine_interface::constants::*;
 use sbor::rust::collections::BTreeMap;
 
 pub struct VisibilityProperties;
@@ -85,8 +97,35 @@ impl VisibilityProperties {
                         false
                     }
                 }
+                RENodeInit::ResourceManager(..)
+                | RENodeInit::Bucket(..)
+                | RENodeInit::NonFungibleStore(..) => {
+                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
+                }
+                RENodeInit::Identity() => {
+                    package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
+                }
+                RENodeInit::EpochManager(..) => {
+                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
+                }
+                RENodeInit::Validator(..) => {
+                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
+                }
+                RENodeInit::Clock(..) => {
+                    package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
+                }
+                RENodeInit::Account(..) => {
+                    package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
+                }
+                RENodeInit::AccessController(..) => {
+                    package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                        && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
+                }
                 RENodeInit::KeyValueStore => true,
-                RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
+                RENodeInit::Global(..) => true,
                 _ => false,
             },
             _ => true,
@@ -112,6 +151,7 @@ impl VisibilityProperties {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
+                SubstateOffset::PackageTypeInfo => read_only,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
@@ -141,9 +181,24 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
+                    if matches!(offset, SubstateOffset::PackageTypeInfo) {
+                        return true;
+                    }
+
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
+                        FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                            package_address, ..
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            || package_address.eq(&IDENTITY_PACKAGE)
+                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                            || package_address.eq(&CLOCK_PACKAGE)
+                            || package_address.eq(&ACCOUNT_PACKAGE)
+                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE) =>
+                        {
+                            true
+                        }
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
@@ -205,6 +260,13 @@ impl VisibilityProperties {
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
+                        FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                            package_address, ..
+                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            || package_address.eq(&IDENTITY_PACKAGE) =>
+                        {
+                            true
+                        }
 
                         // Scrypto
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
@@ -245,6 +307,7 @@ impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
             SubstateOffset::Global(..) => true,
+            SubstateOffset::PackageTypeInfo => true,
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,

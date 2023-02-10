@@ -783,7 +783,7 @@ impl<'s> FinalizingTrack<'s> {
                 Self::get_substate_output_id(substate_store, &substate_id)
             {
                 let next_version = existing_output_id.version + 1;
-                diff.down_substates.push(existing_output_id);
+                diff.down_substates.insert(existing_output_id);
                 next_version
             } else {
                 0

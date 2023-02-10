@@ -1,8 +1,5 @@
-use super::auth_converter::convert_contextless;
-use super::method_authorization::MethodAuthorization;
-use super::method_authorization::MethodAuthorizationError;
-use crate::blueprints::clock::Clock;
-use crate::blueprints::epoch_manager::EpochManager;
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::actor::ResolvedReceiver;
@@ -14,11 +11,23 @@ use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
+use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+};
 use transaction::model::AuthZoneParams;
+
+use super::auth_converter::convert_contextless;
+use super::method_authorization::MethodAuthorization;
+use super::method_authorization::MethodAuthorizationError;
+use super::HardAuthRule;
+use super::HardProofRule;
+use super::HardResourceOrNonFungible;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthError {
@@ -87,11 +96,41 @@ impl KernelModule for AuthModule {
 
         let method_auths = match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::Native(native_function),
+                identifier: FnIdentifier::Native(native_fn),
                 receiver: None,
-            } => match native_function {
-                NativeFn::EpochManager(EpochManagerFn::Create) => EpochManager::create_auth(),
-                NativeFn::Clock(ClockFn::Create) => Clock::create_auth(),
+            } => match native_fn {
+                NativeFn::Package(PackageFn::PublishNative) => {
+                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                        HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                            AuthAddresses::system_role(),
+                        )),
+                    ))]
+                }
+                _ => vec![],
+            },
+            ResolvedActor {
+                identifier: FnIdentifier::Scrypto(fn_identifier),
+                receiver: None,
+            } => match fn_identifier.package_address {
+                // TODO: Clean this up, move into package logic
+                EPOCH_MANAGER_PACKAGE => {
+                    if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
+                        && fn_identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
+                    {
+                        EpochManagerNativePackage::create_auth()
+                    } else {
+                        vec![]
+                    }
+                }
+                CLOCK_PACKAGE => {
+                    if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
+                        && fn_identifier.ident.eq(CLOCK_CREATE_IDENT)
+                    {
+                        ClockNativePackage::create_auth()
+                    } else {
+                        vec![]
+                    }
+                }
                 _ => vec![],
             },
             ResolvedActor {

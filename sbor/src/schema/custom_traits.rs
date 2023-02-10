@@ -3,7 +3,7 @@ use crate::rust::collections::*;
 use crate::rust::fmt::Debug;
 use crate::CustomValueKind;
 
-pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
+pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
     type CustomTypeExtension: CustomTypeExtension<
         CustomValueKind = Self::CustomValueKind,
@@ -13,7 +13,7 @@ pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
 
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
 
-pub trait CustomTypeExtension {
+pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,

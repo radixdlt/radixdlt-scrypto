@@ -169,13 +169,12 @@ pub enum Instruction {
         divisibility: Value,
         metadata: Value,
         access_rules: Value,
-        initial_supply: Value,
     },
 
-    CreateFungibleResourceWithOwner {
+    CreateFungibleResourceWithInitialSupply {
         divisibility: Value,
         metadata: Value,
-        owner_badge: Value,
+        access_rules: Value,
         initial_supply: Value,
     },
 
@@ -183,13 +182,12 @@ pub enum Instruction {
         id_type: Value,
         metadata: Value,
         access_rules: Value,
-        initial_supply: Value,
     },
 
-    CreateNonFungibleResourceWithOwner {
+    CreateNonFungibleResourceWithInitialSupply {
         id_type: Value,
         metadata: Value,
-        owner_badge: Value,
+        access_rules: Value,
         initial_supply: Value,
     },
 
@@ -199,9 +197,7 @@ pub enum Instruction {
     },
     CreateAccessController {
         controlled_asset: Value,
-        primary_role: Value,
-        recovery_role: Value,
-        confirmation_role: Value,
+        rule_set: Value,
         timed_recovery_delay_in_minutes: Value,
     },
     CreateIdentity {

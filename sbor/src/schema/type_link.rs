@@ -1,9 +1,10 @@
+use sbor::rust::fmt::Debug;
 use sbor::*;
 
 /// Marker trait for a link between [`TypeKind`]s:
 /// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
 /// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
-pub trait SchemaTypeLink: Clone + PartialEq + Eq {}
+pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq {}
 
 /// This is a global identifier for a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, Categorize)]

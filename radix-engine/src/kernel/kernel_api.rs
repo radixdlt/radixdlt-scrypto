@@ -17,7 +17,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -133,8 +132,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<EpochManagerCreateInvocation, E>
-    + Invokable<EpochManagerNextRoundInvocation, E>
+    Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
     + Invokable<EpochManagerUpdateValidatorInvocation, E>
@@ -146,7 +144,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ValidatorUpdateKeyInvocation, E>
     + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
-    + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
     + Invokable<ClockGetCurrentTimeInvocation, E>
     + Invokable<ClockCompareCurrentTimeInvocation, E>
@@ -174,6 +171,7 @@ pub trait KernelInvokeApi<E>:
     + Invokable<PackageSetRoyaltyConfigInvocation, E>
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
+    + Invokable<PackagePublishNativeInvocation, E>
     + Invokable<BucketTakeInvocation, E>
     + Invokable<BucketPutInvocation, E>
     + Invokable<BucketTakeNonFungiblesInvocation, E>
@@ -187,11 +185,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBurnBucketInvocation, E>
-    + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
-    + Invokable<ResourceManagerCreateFungibleInvocation, E>
-    + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
-    + Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
-    + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
@@ -225,11 +218,9 @@ pub trait KernelInvokeApi<E>:
     + Invokable<WorktopAssertContainsAmountInvocation, E>
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
-    + Invokable<IdentityCreateInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
-    + Invokable<AccessControllerCreateGlobalInvocation, E>
     + Invokable<AccessControllerCreateProofInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
     + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
@@ -241,19 +232,16 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    + Invokable<AccountCreateInvocation, E>
-    + Invokable<AccountNewInvocation, E>
-    + Invokable<AccountBalanceInvocation, E>
     + Invokable<AccountLockFeeInvocation, E>
     + Invokable<AccountLockContingentFeeInvocation, E>
     + Invokable<AccountDepositInvocation, E>
     + Invokable<AccountDepositBatchInvocation, E>
     + Invokable<AccountWithdrawInvocation, E>
-    + Invokable<AccountWithdrawByAmountInvocation, E>
-    + Invokable<AccountWithdrawByIdsInvocation, E>
+    + Invokable<AccountWithdrawAllInvocation, E>
+    + Invokable<AccountWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountLockFeeAndWithdrawInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByAmountInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawByIdsInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawAllInvocation, E>
+    + Invokable<AccountLockFeeAndWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountCreateProofInvocation, E>
     + Invokable<AccountCreateProofByAmountInvocation, E>
     + Invokable<AccountCreateProofByIdsInvocation, E>
