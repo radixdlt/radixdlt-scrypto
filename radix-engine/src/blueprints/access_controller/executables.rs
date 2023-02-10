@@ -121,12 +121,12 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         ));
 
         // Allocating an RENodeId and creating the access controller RENode
-        let node_id = api.allocate_node_id(RENodeType::AccessController)?;
-        api.create_node(node_id, access_controller, node_modules)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::AccessController)?;
+        api.kernel_create_node(node_id, access_controller, node_modules)?;
 
         // Creating a global component address for the access controller RENode
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalAccessController)?;
-        api.create_node(
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccessController)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::AccessController(node_id.into())),
             BTreeMap::new(),
@@ -953,17 +953,18 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+    let handle =
+        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let access_controller = substate.access_controller();
         access_controller.clone()
     };
 
     let rtn = access_controller_clone.transition(api, input)?;
 
-    api.drop_lock(handle)?;
+    api.kernel_drop_lock(handle)?;
 
     Ok(rtn)
 }
@@ -982,10 +983,11 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+    let handle =
+        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let access_controller = substate.access_controller();
         access_controller.clone()
     };
@@ -993,12 +995,12 @@ where
     let rtn = access_controller_clone.transition_mut(api, input)?;
 
     {
-        let mut substate = api.get_ref_mut(handle)?;
+        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
         let access_controller = substate.access_controller();
         *access_controller = access_controller_clone
     }
 
-    api.drop_lock(handle)?;
+    api.kernel_drop_lock(handle)?;
 
     Ok(rtn)
 }

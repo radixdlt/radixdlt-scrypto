@@ -17,10 +17,14 @@ pub struct TransactionRuntimeModule {
 
 impl KernelModule for TransactionRuntimeModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let hash = api.get_module_state().transaction_runtime.tx_hash.clone();
+        let hash = api
+            .kernel_get_module_state()
+            .transaction_runtime
+            .tx_hash
+            .clone();
 
-        let node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::TransactionRuntime)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::TransactionRuntime(TransactionRuntimeSubstate {
                 hash,
@@ -32,7 +36,7 @@ impl KernelModule for TransactionRuntimeModule {
     }
 
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        api.drop_node(RENodeId::TransactionRuntime)?;
+        api.kernel_drop_node(RENodeId::TransactionRuntime)?;
 
         Ok(())
     }

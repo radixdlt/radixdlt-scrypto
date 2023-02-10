@@ -46,8 +46,8 @@ impl Executor for IdentityCreateInvocation {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let node_id = Identity::create(self.access_rule, api)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;
-        api.create_node(
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Identity(node_id.into())),
             BTreeMap::new(),
@@ -73,7 +73,7 @@ impl Identity {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let underlying_node_id = api.allocate_node_id(RENodeType::Identity)?;
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Identity)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
@@ -101,7 +101,7 @@ impl Identity {
             }),
         );
 
-        api.create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
+        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
 
         Ok(underlying_node_id)
     }

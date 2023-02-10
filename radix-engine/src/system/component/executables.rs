@@ -44,10 +44,10 @@ impl Executor for ComponentGlobalizeInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
             BTreeMap::new(),
@@ -89,7 +89,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalComponent)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
         let component_address: ComponentAddress = global_node_id.into();
 
         // Add protection for metadata/royalties
@@ -120,7 +120,7 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
             access_rules,
         })?;
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
             BTreeMap::new(),
@@ -170,17 +170,17 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = self.royalty_config;
 
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -221,14 +221,14 @@ impl Executor for ComponentClaimRoyaltyInvocation {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
         let amount = api.call_native(VaultGetAmountInvocation {
@@ -241,7 +241,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         })?;
         let bucket_id = bucket.0;
 
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok((
             bucket,

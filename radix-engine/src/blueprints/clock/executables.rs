@@ -65,7 +65,7 @@ impl Executor for ClockCreateInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -89,7 +89,7 @@ impl Executor for ClockCreateInvocation {
             }),
         );
 
-        api.create_node(
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
@@ -100,7 +100,7 @@ impl Executor for ClockCreateInvocation {
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
             self.component_address,
         )));
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
@@ -158,8 +158,9 @@ impl Executor for ClockSetCurrentTimeExecutable {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_ref = api.get_ref_mut(handle)?;
+        let handle =
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
         substate_ref
             .current_time_rounded_to_minutes()
             .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
@@ -208,9 +209,13 @@ impl Executor for ClockGetCurrentTimeExecutable {
         match precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle =
-                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-                let substate_ref = api.get_ref(handle)?;
+                let handle = api.kernel_lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
@@ -267,13 +272,13 @@ impl Executor for ClockCompareCurrentTimeExecutable {
         match self.precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     self.node_id,
                     NodeModuleId::SELF,
                     offset,
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,

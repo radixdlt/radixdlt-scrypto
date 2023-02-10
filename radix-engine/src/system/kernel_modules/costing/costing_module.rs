@@ -55,8 +55,8 @@ fn apply_execution_cost<Y: KernelModuleApi<RuntimeError>, F>(
 where
     F: Fn(&FeeTable) -> u32,
 {
-    let cost_units = base_price(&api.get_module_state().costing.fee_table);
-    api.get_module_state()
+    let cost_units = base_price(&api.kernel_get_module_state().costing.fee_table);
+    api.kernel_get_module_state()
         .costing
         .fee_reserve
         .consume_multiplied_execution(cost_units, multiplier, reason)
@@ -70,7 +70,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     receiver: RoyaltyReceiver,
     amount: u32,
 ) -> Result<(), RuntimeError> {
-    api.get_module_state()
+    api.kernel_get_module_state()
         .costing
         .fee_reserve
         .consume_royalty(receiver, amount)
@@ -85,9 +85,9 @@ impl KernelModule for CostingModule {
         _fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        let current_depth = api.get_current_depth();
+        let current_depth = api.kernel_get_current_depth();
 
-        if current_depth == api.get_module_state().costing.max_call_depth {
+        if current_depth == api.kernel_get_module_state().costing.max_call_depth {
             return Err(RuntimeError::ModuleError(ModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached,
             )));
@@ -152,99 +152,99 @@ impl KernelModule for CostingModule {
             scrypto_fn_identifier.package_address,
         ));
         let (package_id, package_lock) = {
-            let handle = api.lock_substate(
+            let handle = api.kernel_lock_substate(
                 package_global_node_id,
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
                 LockFlags::read_only(),
             )?;
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let package_id = substate.global_address().node_deref().into();
             (package_id, handle)
         };
         let package_node_id = RENodeId::Package(package_id);
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             package_node_id,
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
         )?;
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let royalty_amount = substate
             .package_royalty_config()
             .royalty_config
             .get(&scrypto_fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
             .unwrap_or(0);
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         // TODO: refactor to defer substate loading to finalization.
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             package_node_id,
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         {
             let royalty_vault = substate.package_royalty_accumulator().royalty.clone();
             let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
-            let vault_handle = api.lock_substate(
+            let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Vault),
                 LockFlags::MUTABLE,
             )?;
-            api.drop_lock(vault_handle)?;
+            api.kernel_drop_lock(vault_handle)?;
         }
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         apply_royalty_cost(
             api,
             RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, package_id),
             royalty_amount,
         )?;
-        api.drop_lock(package_lock)?;
+        api.kernel_drop_lock(package_lock)?;
 
         /*
          * Apply component royalty
          */
         if let Some((component_address, component_id)) = optional_component {
             let component_node_id = RENodeId::Component(component_id);
-            let handle = api.lock_substate(
+            let handle = api.kernel_lock_substate(
                 component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
             )?;
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let royalty_amount = substate
                 .component_royalty_config()
                 .royalty_config
                 .get_rule(&scrypto_fn_identifier.ident)
                 .clone();
-            api.drop_lock(handle)?;
+            api.kernel_drop_lock(handle)?;
 
             // TODO: refactor to defer substate loading to finalization.
-            let handle = api.lock_substate(
+            let handle = api.kernel_lock_substate(
                 component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                 LockFlags::MUTABLE,
             )?;
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             {
                 let royalty_vault = substate.component_royalty_accumulator().royalty.clone();
                 let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
-                let vault_handle = api.lock_substate(
+                let vault_handle = api.kernel_lock_substate(
                     vault_node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                     LockFlags::MUTABLE,
                 )?;
-                api.drop_lock(vault_handle)?;
+                api.kernel_drop_lock(vault_handle)?;
             }
-            api.drop_lock(handle)?;
+            api.kernel_drop_lock(handle)?;
 
             apply_royalty_cost(
                 api,
@@ -343,7 +343,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+    fn on_instantiate_wasm_code<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         code: &[u8],
     ) -> Result<(), RuntimeError> {
@@ -371,7 +371,7 @@ impl KernelModule for CostingModule {
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
         let changes = api
-            .get_module_state()
+            .kernel_get_module_state()
             .costing
             .fee_reserve
             .lock_fee(vault_id, fee, contingent)

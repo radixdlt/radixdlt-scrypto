@@ -247,7 +247,7 @@ where
             kernel.initialize().expect("Failed to initialize kernel");
 
             // Invoke transaction processor
-            let mut invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+            let mut invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {

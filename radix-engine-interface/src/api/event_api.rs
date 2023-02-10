@@ -12,5 +12,7 @@ pub trait ClientEventApi<E> {
         contingent: bool,
     ) -> Result<Resource, E>;
 
-    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
+    fn on_instantiate_wasm_code(&mut self, code: &[u8]) -> Result<(), E>;
+
+    fn on_update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
 }

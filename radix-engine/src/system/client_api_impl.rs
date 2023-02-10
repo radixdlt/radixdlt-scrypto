@@ -46,7 +46,7 @@ where
     W: WasmEngine,
 {
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.drop_node(node_id)?;
+        self.kernel_drop_node(node_id)?;
         Ok(())
     }
 }
@@ -68,11 +68,11 @@ where
             LockFlags::read_only()
         };
 
-        self.lock_substate(node_id, NodeModuleId::SELF, offset, flags)
+        self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        self.get_ref(lock_handle)
+        self.kernel_get_substate_ref(lock_handle)
             .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
     }
 
@@ -81,9 +81,9 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let offset = self.get_lock_info(lock_handle)?.offset;
+        let offset = self.kernel_get_lock_info(lock_handle)?.offset;
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-        let mut substate_mut = self.get_ref_mut(lock_handle)?;
+        let mut substate_mut = self.kernel_get_substate_ref_mut(lock_handle)?;
 
         match substate {
             RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
@@ -100,7 +100,7 @@ where
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.drop_lock(lock_handle)
+        self.kernel_drop_lock(lock_handle)
     }
 }
 
@@ -112,8 +112,8 @@ where
         if let RENodeId::Global(..) = node_id {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
             let handle =
-                self.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
-            let substate_ref = self.get_ref(handle)?;
+                self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
+            let substate_ref = self.kernel_get_substate_ref(handle)?;
             Ok(Some((substate_ref.global_address().node_deref(), handle)))
         } else {
             Ok(None)
@@ -126,7 +126,7 @@ where
     W: WasmEngine,
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        self.actor_get_fn_identifier()
+        self.kernel_get_fn_identifier()
     }
 }
 
@@ -189,11 +189,11 @@ where
             })?;
 
         // Allocate node id
-        let node_id = self.allocate_node_id(RENodeType::Package)?;
+        let node_id = self.kernel_allocate_node_id(RENodeType::Package)?;
 
         // Create a royalty vault
         let royalty_vault_id = self
-            .invoke(ResourceManagerCreateVaultInvocation {
+            .kernel_invoke(ResourceManagerCreateVaultInvocation {
                 receiver: RADIX_TOKEN,
             })?
             .vault_id();
@@ -210,7 +210,7 @@ where
         // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
-        self.create_node(
+        self.kernel_create_node(
             node_id,
             RENodeInit::Package(PackageInfoSubstate {
                 code,
@@ -250,23 +250,23 @@ where
             )
             .expect("Failed to encode native fn return")),
             CallTableInvocation::Scrypto(scrypto_invocation) => self
-                .invoke(scrypto_invocation)
+                .kernel_invoke(scrypto_invocation)
                 .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
         }
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
-        let handle = self.lock_substate(
+        let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.get_ref(handle)?;
+        let substate_ref = self.kernel_get_substate_ref(handle)?;
         let package = substate_ref.package_info();
         let code = package.code().to_vec();
-        self.drop_lock(handle)?;
+        self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
     }
 
@@ -275,16 +275,16 @@ where
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
-        let handle = self.lock_substate(
+        let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.get_ref(handle)?;
+        let substate_ref = self.kernel_get_substate_ref(handle)?;
         let package = substate_ref.package_info();
         let abi = package.blueprint_abis.clone();
-        self.drop_lock(handle)?;
+        self.kernel_drop_lock(handle)?;
         Ok(abi)
     }
 }
@@ -298,13 +298,13 @@ where
         component_address: ComponentAddress,
     ) -> Result<ComponentId, RuntimeError> {
         let offset = SubstateOffset::Global(GlobalOffset::Global);
-        let handle = self.lock_substate(
+        let handle = self.kernel_lock_substate(
             RENodeId::Global(GlobalAddress::Component(component_address)),
             NodeModuleId::SELF,
             offset,
             LockFlags::empty(),
         )?;
-        let substate_ref = self.get_ref(handle)?;
+        let substate_ref = self.kernel_get_substate_ref(handle)?;
         Ok(substate_ref.global_address().node_deref().into())
     }
 
@@ -317,11 +317,11 @@ where
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, RuntimeError> {
         // Allocate node id
-        let node_id = self.allocate_node_id(RENodeType::Component)?;
+        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
 
         // Create a royalty vault
         let royalty_vault_id = self
-            .invoke(ResourceManagerCreateVaultInvocation {
+            .kernel_invoke(ResourceManagerCreateVaultInvocation {
                 receiver: RADIX_TOKEN,
             })?
             .vault_id();
@@ -340,7 +340,7 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = match self.actor_get_fn_identifier()? {
+        let package_address = match self.kernel_get_fn_identifier()? {
             FnIdentifier::Scrypto(s) => s.package_address,
             FnIdentifier::Native(_) => todo!(),
         };
@@ -350,7 +350,7 @@ where
         // FIXME: support native blueprints
         let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
 
-        self.create_node(
+        self.kernel_create_node(
             node_id,
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
@@ -373,9 +373,9 @@ where
         &mut self,
         component_id: ComponentId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        let node_id = self.allocate_node_id(RENodeType::GlobalComponent)?;
+        let node_id = self.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
 
-        self.create_node(
+        self.kernel_create_node(
             node_id,
             RENodeInit::Global(GlobalAddressSubstate::Component(component_id)),
             btreemap!(),
@@ -398,7 +398,7 @@ where
             )
             .expect("Failed to encode native fn return")),
             CallTableInvocation::Scrypto(scrypto_invocation) => self
-                .invoke(scrypto_invocation)
+                .kernel_invoke(scrypto_invocation)
                 .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
         }
     }
@@ -408,24 +408,24 @@ where
         component_id: ComponentId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let component_node_id = RENodeId::Component(component_id);
-        let handle = self.lock_substate(
+        let handle = self.kernel_lock_substate(
             component_node_id,
             NodeModuleId::ComponentTypeInfo,
             SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.get_ref(handle)?;
+        let substate_ref = self.kernel_get_substate_ref(handle)?;
         let info = substate_ref.component_info();
         let package_address = info.package_address.clone();
         let blueprint_ident = info.blueprint_name.clone();
-        self.drop_lock(handle)?;
+        self.kernel_drop_lock(handle)?;
         Ok((package_address, blueprint_ident))
     }
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+        let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
+        self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
 
         Ok(node_id.into())
     }
@@ -447,7 +447,11 @@ where
         KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 
-    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+    fn on_instantiate_wasm_code(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+        KernelModuleMixer::on_instantiate_wasm_code(self, code)
+    }
+
+    fn on_update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
 }

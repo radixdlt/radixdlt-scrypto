@@ -285,8 +285,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let worktop_node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        api.create_node(
+        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Worktop)?;
+        api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Worktop(WorktopSubstate::new()),
             BTreeMap::new(),
@@ -301,7 +301,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
         for (index, inst) in self.instructions.into_iter().enumerate() {
-            api.update_instruction_index(index)?;
+            api.on_update_instruction_index(index)?;
 
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
@@ -845,7 +845,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        api.drop_node(worktop_node_id)?;
+        api.kernel_drop_node(worktop_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

@@ -13,13 +13,13 @@ pub struct LoggerModule {}
 impl KernelModule for LoggerModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
-        let node_id = api.allocate_node_id(RENodeType::Logger)?;
-        api.create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Logger)?;
+        api.kernel_create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
         Ok(())
     }
 
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        api.drop_node(RENodeId::Logger)?;
+        api.kernel_drop_node(RENodeId::Logger)?;
 
         Ok(())
     }

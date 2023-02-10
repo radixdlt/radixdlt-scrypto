@@ -48,13 +48,13 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
         )?;
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
             transaction_runtime_substate.hash.clone(),
@@ -94,13 +94,13 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let tx_hash_substate = substate_mut.transaction_runtime();
 
         if tx_hash_substate.next_id == u32::MAX {

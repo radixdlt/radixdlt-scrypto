@@ -82,7 +82,7 @@ impl Executor for VaultTakeInvocation {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = api.lock_substate(
+        let vault_handle = api.kernel_lock_substate(
             RENodeId::Vault(self.receiver),
             NodeModuleId::SELF,
             offset,
@@ -90,13 +90,13 @@ impl Executor for VaultTakeInvocation {
         )?;
 
         let container = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault.take(self.amount)?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -143,11 +143,13 @@ impl Executor for VaultPutInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
+        let bucket = api
+            .kernel_drop_node(RENodeId::Bucket(self.bucket.0))?
+            .into();
 
-        let mut substate_mut = api.get_ref_mut(vault_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
         let vault = substate_mut.vault();
         vault.put(bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -191,7 +193,7 @@ impl Executor for VaultLockFeeInvocation {
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = api.lock_substate(
+        let vault_handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::SELF,
             offset,
@@ -200,7 +202,7 @@ impl Executor for VaultLockFeeInvocation {
 
         // Take by amount
         let fee = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
 
             // Check resource and take amount
@@ -223,7 +225,7 @@ impl Executor for VaultLockFeeInvocation {
 
         // Keep changes
         {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault.put(BucketSubstate::new(changes)).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -287,16 +289,16 @@ impl Executor for VaultTakeNonFungiblesInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let container = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault.take_non_fungibles(&self.non_fungible_local_ids)?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -340,9 +342,9 @@ impl Executor for VaultGetAmountInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(vault_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let amount = vault.total_amount();
 
@@ -380,9 +382,9 @@ impl Executor for VaultGetResourceAddressInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(vault_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let resource_address = vault.resource_address();
 
@@ -423,9 +425,9 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(vault_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let ids = vault.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -467,10 +469,10 @@ impl Executor for VaultCreateProofInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof(ResourceContainerId::Vault(self.receiver))
@@ -481,8 +483,8 @@ impl Executor for VaultCreateProofInvocation {
                 })?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((
@@ -522,10 +524,10 @@ impl Executor for VaultCreateProofByAmountInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_amount(self.amount, ResourceContainerId::Vault(self.receiver))
@@ -536,8 +538,8 @@ impl Executor for VaultCreateProofByAmountInvocation {
                 })?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((
@@ -577,10 +579,10 @@ impl Executor for VaultCreateProofByIdsInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_ids(&self.ids, ResourceContainerId::Vault(self.receiver))
@@ -591,8 +593,8 @@ impl Executor for VaultCreateProofByIdsInvocation {
                 })?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((

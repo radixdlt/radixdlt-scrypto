@@ -122,9 +122,9 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
-                let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                self.create_node(node_id, node, BTreeMap::new())?;
+                self.kernel_create_node(node_id, node, BTreeMap::new())?;
                 node_id
             };
 
@@ -167,9 +167,9 @@ where
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.allocate_node_id(RENodeType::Account)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Account)?;
                 let node = RENodeInit::Account(account_substate);
-                self.create_node(node_id, node, node_modules)?;
+                self.kernel_create_node(node_id, node, node_modules)?;
                 node_id
             };
             node_id
@@ -268,33 +268,33 @@ where
             RENodeId::Logger => Ok(()),
             RENodeId::TransactionRuntime => Ok(()),
             RENodeId::AuthZoneStack => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let auth_zone_stack = substate_ref_mut.auth_zone_stack();
                 auth_zone_stack.clear_all();
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
                 Ok(())
             }
             RENodeId::Proof(..) => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Proof(ProofOffset::Proof),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let proof = substate_ref_mut.proof();
                 proof.drop();
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
                 Ok(())
             }
             RENodeId::Worktop => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
@@ -302,7 +302,7 @@ where
                 )?;
 
                 let buckets = {
-                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                     let worktop = substate_ref_mut.worktop();
                     mem::replace(&mut worktop.resources, BTreeMap::new())
                 };
@@ -315,7 +315,7 @@ where
                     }
                 }
 
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
                 Ok(())
             }
             RENodeId::Bucket(..) => Ok(()),
@@ -329,7 +329,7 @@ where
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
                 // Need to go through api so that visibility issues can be caught
-                self.drop_node(child_node)?;
+                self.kernel_drop_node(child_node)?;
             }
         }
         // TODO: REmove
@@ -346,11 +346,11 @@ where
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
                 } else {
-                    api.drop_node(node_id)?;
+                    api.kernel_drop_node(node_id)?;
                 }
             }
             for worktop_id in worktops {
-                api.drop_node(worktop_id)?;
+                api.kernel_drop_node(worktop_id)?;
             }
 
             Ok(())
@@ -581,7 +581,7 @@ impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
 }
@@ -590,7 +590,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -621,14 +621,14 @@ where
         Ok(node)
     }
 
-    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+    fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
     }
 
-    fn create_node(
+    fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
@@ -736,19 +736,19 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_module_state(&mut self) -> &mut KernelModuleMixer {
+    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
 
-    fn get_current_depth(&self) -> usize {
+    fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    fn get_current_actor(&self) -> ResolvedActor {
+    fn kernel_get_current_actor(&self) -> ResolvedActor {
         self.current_frame.actor.clone()
     }
 
-    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
         self.heap
             .get_substate(
                 RENodeId::Bucket(bucket_id),
@@ -759,7 +759,7 @@ where
             .ok()
     }
 
-    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
         self.heap
             .get_substate(
                 RENodeId::Proof(proof_id),
@@ -770,7 +770,10 @@ where
             .ok()
     }
 
-    fn get_node_visibility_origin(&self, node_id: RENodeId) -> Option<RENodeVisibilityOrigin> {
+    fn kernel_get_node_visibility_origin(
+        &self,
+        node_id: RENodeId,
+    ) -> Option<RENodeVisibilityOrigin> {
         self.current_frame.get_node_visibility(node_id)
     }
 }
@@ -779,7 +782,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn lock_substate(
+    fn kernel_lock_substate(
         &mut self,
         node_id: RENodeId,
         module_id: NodeModuleId,
@@ -797,13 +800,13 @@ where
             RENodeId::Global(..)
                 if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
             {
-                let handle = self.lock_substate(
+                let handle = self.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                     LockFlags::empty(),
                 )?;
-                let substate_ref = self.get_ref(handle)?;
+                let substate_ref = self.kernel_get_substate_ref(handle)?;
                 (substate_ref.global_address().node_deref(), Some(handle))
             }
             _ => (node_id, None),
@@ -907,11 +910,11 @@ where
         Ok(lock_handle)
     }
 
-    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
         self.current_frame.get_lock_info(lock_handle)
     }
 
-    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
@@ -920,7 +923,10 @@ where
         Ok(())
     }
 
-    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
+    fn kernel_get_substate_ref(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<SubstateRef, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -941,7 +947,10 @@ where
         Ok(substate_ref)
     }
 
-    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
+    fn kernel_get_substate_ref_mut(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<SubstateRefMut, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -967,14 +976,8 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
+    fn kernel_get_scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
-    }
-
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_wasm_instantiation(self, code)?;
-
-        Ok(())
     }
 }
 
@@ -983,7 +986,7 @@ where
     W: WasmEngine,
     N: ExecutableInvocation,
 {
-    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+    fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
             &invocation.fn_identifier(),
