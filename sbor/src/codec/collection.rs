@@ -8,12 +8,10 @@ use crate::*;
 categorize_generic!(Vec<T>, <T>, ValueKind::Array);
 categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);
 categorize_generic!(HashSet<T>, <T>, ValueKind::Array);
-#[cfg(feature = "indexmap")]
 categorize_generic!(IndexSet<T>, <T>, ValueKind::Array);
 
 categorize_generic!(BTreeMap<K, V>, <K, V>, ValueKind::Map);
 categorize_generic!(HashMap<K, V>, <K, V>, ValueKind::Map);
-#[cfg(feature = "indexmap")]
 categorize_generic!(IndexMap<K, V>, <K, V>, ValueKind::Map);
 
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for Vec<T> {
@@ -68,7 +66,6 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Ord + 
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Hash> Encode<X, E>
     for IndexSet<T>
 {
@@ -140,7 +137,6 @@ impl<
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<
         X: CustomValueKind,
         E: Encoder<X>,
@@ -224,7 +220,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash + Eq> Decode<X, D>
     for IndexSet<T>
 {
@@ -298,7 +293,6 @@ impl<
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<
         X: CustomValueKind,
         D: Decoder<X>,
@@ -351,7 +345,6 @@ mod schema {
     }
 
     wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
-    #[cfg(feature = "indexmap")]
     wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
     impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
@@ -376,6 +369,5 @@ mod schema {
     }
 
     wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
-    #[cfg(feature = "indexmap")]
     wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);
 }

@@ -1,91 +1,13 @@
+use super::*;
 use crate::rust::collections::BTreeMap;
-use crate::rust::collections::BTreeSet;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
-use crate::*;
+use crate::schema::*;
 
-pub enum SchemaValidationError {
-    MetadataLengthMismatch,
-    DuplicateTypeHash,
-    TypeKindInvalidSchemaLocalIndex,
-    TypeKindInvalidWellKnownIndex,
-    TypeMetadataContainedUnexpectedChildNames,
-    TypeMetadataContainedWrongNumberOfChildNames,
-    TypeMetadataForFieldsContainedEnumVariantChildNames,
-    TypeMetadataForEnumIsNotEnumVariantChildNames,
-    TypeMetadataHasMismatchingEnumDiscriminator,
-    InvalidTypeName { message: String },
-    InvalidFieldName { message: String },
-    InvalidEnumVariantName { message: String },
-}
-
-pub fn validate_schema<E: CustomTypeExtension>(
-    schema: &Schema<E>,
-) -> Result<(), SchemaValidationError> {
-    let Schema {
-        type_kinds,
-        type_metadata,
-    } = schema;
-
-    let types_len = type_kinds.len();
-    if type_metadata.len() != types_len {
-        return Err(SchemaValidationError::MetadataLengthMismatch);
-    }
-
-    let unique_type_hashes = type_metadata
-        .iter()
-        .map(|m| m.type_hash)
-        .collect::<BTreeSet<_>>()
-        .len();
-
-    if unique_type_hashes != types_len {
-        return Err(SchemaValidationError::DuplicateTypeHash);
-    }
-
-    let context = TypeValidationContext {
-        local_types_len: types_len,
-    };
-
-    for (type_kind, type_metadata) in type_kinds.iter().zip(type_metadata.iter()) {
-        validate_schema_type(
-            &context,
-            SchemaTypeValidationRequest::<E> {
-                type_kind,
-                novel_type_metadata: type_metadata,
-            },
-        )?;
-    }
-    Ok(())
-}
-
-struct SchemaTypeValidationRequest<'a, E: CustomTypeExtension> {
-    type_kind: &'a SchemaTypeKind<E>,
-    novel_type_metadata: &'a NovelTypeMetadata,
-}
-
-pub struct TypeValidationContext {
-    pub local_types_len: usize,
-}
-
-pub struct CustomSchemaTypeValidationRequest<'a, E: CustomTypeExtension> {
-    pub custom_type_kind: &'a SchemaCustomTypeKind<E>,
-    pub type_metadata: &'a TypeMetadata,
-}
-
-fn validate_schema_type<'a, E: CustomTypeExtension>(
+pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
     context: &TypeValidationContext,
-    request: SchemaTypeValidationRequest<'a, E>,
+    type_kind: &SchemaTypeKind<E>,
+    type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {
-    let SchemaTypeValidationRequest {
-        type_kind,
-        novel_type_metadata,
-    } = request;
-
-    let NovelTypeMetadata {
-        type_hash: _, // We have already validated that the type hashes are distinct at the parent level
-        type_metadata,
-    } = novel_type_metadata;
-
     match type_kind {
         TypeKind::Any
         | TypeKind::Bool
@@ -99,65 +21,22 @@ fn validate_schema_type<'a, E: CustomTypeExtension>(
         | TypeKind::U32
         | TypeKind::U64
         | TypeKind::U128
-        | TypeKind::String => {
+        | TypeKind::String
+        | TypeKind::Array { .. }
+        | TypeKind::Map { .. } => {
             validate_childless_metadata(type_metadata)?;
-        }
-        TypeKind::Array { element_type } => {
-            validate_childless_metadata(type_metadata)?;
-            validate_index::<E>(context, element_type)?;
         }
         TypeKind::Tuple { field_types } => {
             validate_fields_metadata(type_metadata, field_types.len())?;
-            for field_type in field_types.iter() {
-                validate_index::<E>(context, field_type)?;
-            }
         }
         TypeKind::Enum { variants } => {
             validate_enum_metadata(type_metadata, variants)?;
-            for (_, field_types) in variants.iter() {
-                for field_type in field_types.iter() {
-                    validate_index::<E>(context, field_type)?;
-                }
-            }
-        }
-        TypeKind::Map {
-            key_type,
-            value_type,
-        } => {
-            validate_childless_metadata(type_metadata)?;
-            validate_index::<E>(context, key_type)?;
-            validate_index::<E>(context, value_type)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::validate_custom_schema_type(
-                context,
-                CustomSchemaTypeValidationRequest {
-                    custom_type_kind,
-                    type_metadata,
-                },
-            )?;
+            E::validate_type_metadata_with_type_kind(context, custom_type_kind, type_metadata)?;
         }
     }
 
-    Ok(())
-}
-
-pub fn validate_index<E: CustomTypeExtension>(
-    context: &TypeValidationContext,
-    type_index: &LocalTypeIndex,
-) -> Result<(), SchemaValidationError> {
-    match type_index {
-        LocalTypeIndex::WellKnown(well_known_index) => {
-            if resolve_well_known_type::<E>(*well_known_index).is_none() {
-                return Err(SchemaValidationError::TypeKindInvalidWellKnownIndex);
-            }
-        }
-        LocalTypeIndex::SchemaLocalIndex(schema_local_index) => {
-            if *schema_local_index >= context.local_types_len {
-                return Err(SchemaValidationError::TypeKindInvalidSchemaLocalIndex);
-            }
-        }
-    }
     Ok(())
 }
 

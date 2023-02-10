@@ -254,7 +254,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "indexmap")]
     pub fn test_encode_index_map_and_set() {
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes);

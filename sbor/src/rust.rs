@@ -211,7 +211,6 @@ pub mod collections {
         pub use hashset;
     }
 
-    #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexMap` itself.
     ///
@@ -274,7 +273,6 @@ pub mod collections {
         pub use indexmap;
     }
 
-    #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_set` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexSet` itself.
     ///
@@ -340,16 +338,10 @@ pub mod collections {
     pub use hash_map::HashMap;
     pub use hash_set::hashset;
     pub use hash_set::HashSet;
-    #[cfg(feature = "indexmap")]
     pub use index_map::indexmap;
-    #[cfg(feature = "indexmap")]
     pub use index_map::IndexMap;
-    #[cfg(feature = "indexmap")]
     pub use index_map::{new as index_map_new, with_capacity as index_map_with_capacity};
-    #[cfg(feature = "indexmap")]
     pub use index_set::indexset;
-    #[cfg(feature = "indexmap")]
     pub use index_set::IndexSet;
-    #[cfg(feature = "indexmap")]
     pub use index_set::{new as index_set_new, with_capacity as index_set_with_capacity};
 }

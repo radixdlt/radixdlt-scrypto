@@ -1,3 +1,4 @@
+use crate::rust::collections::*;
 use crate::rust::vec::Vec;
 use crate::*;
 
@@ -92,7 +93,6 @@ pub use schema::*;
 
 mod schema {
     use super::*;
-    use crate::rust::collections::BTreeMap;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum NoCustomTypeKind {}
@@ -118,7 +118,7 @@ mod schema {
 
         fn linearize_type_kind(
             _: Self::CustomTypeKind<GlobalTypeId>,
-            _: &BTreeMap<TypeHash, usize>,
+            _: &IndexSet<TypeHash>,
         ) -> Self::CustomTypeKind<LocalTypeIndex> {
             unreachable!("No custom type kinds exist")
         }
@@ -129,9 +129,25 @@ mod schema {
             None
         }
 
-        fn validate_custom_schema_type(
+        fn validate_type_kind(
             _: &TypeValidationContext,
-            _: CustomSchemaTypeValidationRequest<Self>,
+            _: &SchemaCustomTypeKind<Self>,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn validate_type_metadata_with_type_kind(
+            _: &TypeValidationContext,
+            _: &SchemaCustomTypeKind<Self>,
+            _: &TypeMetadata,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn validate_type_validation_with_type_kind(
+            _: &TypeValidationContext,
+            _: &SchemaCustomTypeKind<Self>,
+            _: &SchemaCustomTypeValidation<Self>,
         ) -> Result<(), SchemaValidationError> {
             unreachable!("No custom type kinds exist")
         }

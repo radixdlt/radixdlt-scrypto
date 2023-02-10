@@ -24,15 +24,27 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq {
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
-        type_indices: &BTreeMap<TypeHash, usize>,
+        type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex>;
 
     fn resolve_custom_well_known_type(
         well_known_index: u8,
     ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
-    fn validate_custom_schema_type(
+    fn validate_type_kind(
         context: &TypeValidationContext,
-        request: CustomSchemaTypeValidationRequest<Self>,
+        type_kind: &SchemaCustomTypeKind<Self>,
+    ) -> Result<(), SchemaValidationError>;
+
+    fn validate_type_metadata_with_type_kind(
+        context: &TypeValidationContext,
+        type_kind: &SchemaCustomTypeKind<Self>,
+        type_metadata: &TypeMetadata,
+    ) -> Result<(), SchemaValidationError>;
+
+    fn validate_type_validation_with_type_kind(
+        context: &TypeValidationContext,
+        type_kind: &SchemaCustomTypeKind<Self>,
+        type_validation: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError>;
 }

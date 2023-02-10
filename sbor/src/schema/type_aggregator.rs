@@ -13,28 +13,31 @@ pub fn generate_full_schema_from_single_type<
 pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     aggregator: TypeAggregator<C>,
 ) -> Schema<C::CustomTypeExtension> {
-    let mut type_indices = BTreeMap::new();
-    for (hash, (_, index)) in &aggregator.types {
-        type_indices.insert(hash.clone(), index.clone());
+    let type_count = aggregator.types.len();
+    let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
+
+    let mut type_kinds = Vec::with_capacity(type_count);
+    let mut type_metadata = Vec::with_capacity(type_count);
+    let mut type_validations = Vec::with_capacity(type_count);
+    for (type_hash, type_data) in aggregator.types {
+        type_kinds.push(linearize::<C::CustomTypeExtension>(
+            type_data.kind,
+            &type_indices,
+        ));
+        type_metadata.push(type_data.metadata.with_type_hash(type_hash));
+        type_validations.push(type_data.validation);
     }
 
-    let mut sorted_types = BTreeMap::new();
-    for (type_hash, (type_data, type_index)) in aggregator.types {
-        let kind = linearize::<C::CustomTypeExtension>(type_data.kind, &type_indices);
-        let metadata = type_data.metadata.with_type_hash(type_hash);
-        sorted_types.insert(type_index, (kind, metadata));
-    }
-
-    let mapped = sorted_types.into_iter().map(|(_, v)| v).unzip();
     Schema {
-        type_kinds: mapped.0,
-        type_metadata: mapped.1,
+        type_kinds,
+        type_metadata,
+        type_validations,
     }
 }
 
 fn linearize<E: CustomTypeExtension>(
     type_kind: TypeKind<E::CustomValueKind, E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
-    type_indices: &BTreeMap<TypeHash, usize>,
+    type_indices: &IndexSet<TypeHash>,
 ) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
@@ -85,7 +88,7 @@ fn linearize<E: CustomTypeExtension>(
 }
 
 pub fn resolve_local_type_ref(
-    type_indices: &BTreeMap<TypeHash, usize>,
+    type_indices: &IndexSet<TypeHash>,
     type_ref: &GlobalTypeId,
 ) -> LocalTypeIndex {
     match type_ref {
@@ -96,8 +99,8 @@ pub fn resolve_local_type_ref(
     }
 }
 
-fn resolve_index(type_indices: &BTreeMap<TypeHash, usize>, type_hash: &TypeHash) -> usize {
-    type_indices.get(type_hash).cloned().unwrap_or_else(|| {
+fn resolve_index(type_indices: &IndexSet<TypeHash>, type_hash: &TypeHash) -> usize {
+    type_indices.get_index_of(type_hash).unwrap_or_else(|| {
         panic!(
             "Fatal error in the type aggregation process - this is likely due to a type impl missing a dependent type in add_all_dependencies. The following type hash wasn't added in add_all_dependencies: {:?}",
             type_hash
@@ -106,15 +109,15 @@ fn resolve_index(type_indices: &BTreeMap<TypeHash, usize>, type_hash: &TypeHash)
 }
 
 pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
-    pub already_read_dependencies: BTreeSet<TypeHash>,
-    pub types: BTreeMap<TypeHash, (TypeData<C, GlobalTypeId>, usize)>,
+    already_read_dependencies: BTreeSet<TypeHash>,
+    types: IndexMap<TypeHash, TypeData<C, GlobalTypeId>>,
 }
 
 impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
             already_read_dependencies: BTreeSet::new(),
-            types: BTreeMap::new(),
+            types: IndexMap::default(),
         }
     }
 
@@ -147,15 +150,14 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
             GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,
         };
 
-        if let Some((_, index)) = self.types.get(&complex_type_hash) {
-            return LocalTypeIndex::SchemaLocalIndex(*index);
+        if let Some(index) = self.types.get_index_of(&complex_type_hash) {
+            return LocalTypeIndex::SchemaLocalIndex(index);
         }
 
         let new_index = self.types.len();
         let local_type_data =
             get_type_data().expect("Schema with a complex TypeRef did not have a TypeData");
-        self.types
-            .insert(complex_type_hash, (local_type_data, new_index));
+        self.types.insert(complex_type_hash, local_type_data);
         LocalTypeIndex::SchemaLocalIndex(new_index)
     }
 

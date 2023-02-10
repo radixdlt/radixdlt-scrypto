@@ -13,11 +13,6 @@ test_crates_features \
     "sbor" \
     "--release"
 
-echo "Testing sbor with indexmap..."
-test_crates_features \
-    "sbor" \
-    "--features indexmap"
-
 echo "Testing radix engine with wasmer..."
 test_crates_features \
     "radix-engine \

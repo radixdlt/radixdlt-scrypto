@@ -41,7 +41,9 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScryptoCustomTypeValidation {}
+pub enum ScryptoCustomTypeValidation {
+    None,
+}
 
 impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 
@@ -55,7 +57,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
-        type_indices: &BTreeMap<TypeHash, usize>,
+        type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
@@ -142,16 +144,11 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         ))
     }
 
-    fn validate_custom_schema_type(
+    fn validate_type_kind(
         context: &TypeValidationContext,
-        request: CustomSchemaTypeValidationRequest<Self>,
+        type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
-        let CustomSchemaTypeValidationRequest {
-            custom_type_kind,
-            type_metadata,
-        } = request;
-
-        match custom_type_kind {
+        match type_kind {
             ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -169,18 +166,82 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
-                validate_childless_metadata(type_metadata)?;
+                // No validations
             }
             ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
             } => {
-                validate_childless_metadata(type_metadata)?;
                 validate_index::<Self>(context, key_type)?;
                 validate_index::<Self>(context, value_type)?;
             }
         }
         Ok(())
+    }
+
+    fn validate_type_metadata_with_type_kind(
+        _: &TypeValidationContext,
+        type_kind: &SchemaCustomTypeKind<Self>,
+        type_metadata: &TypeMetadata,
+    ) -> Result<(), SchemaValidationError> {
+        // Even though they all map to the same thing, we keep the explicit match statement so that
+        // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
+        match type_kind {
+            ScryptoCustomTypeKind::PackageAddress
+            | ScryptoCustomTypeKind::ComponentAddress
+            | ScryptoCustomTypeKind::ResourceAddress
+            | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::NonFungibleGlobalId
+            | ScryptoCustomTypeKind::Blob
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Expression
+            | ScryptoCustomTypeKind::Hash
+            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
+            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
+            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
+            | ScryptoCustomTypeKind::EddsaEd25519Signature
+            | ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::PreciseDecimal
+            | ScryptoCustomTypeKind::NonFungibleLocalId
+            | ScryptoCustomTypeKind::KeyValueStore { .. } => {
+                validate_childless_metadata(type_metadata)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_type_validation_with_type_kind(
+        _: &TypeValidationContext,
+        type_kind: &SchemaCustomTypeKind<Self>,
+        _: &SchemaCustomTypeValidation<Self>,
+    ) -> Result<(), SchemaValidationError> {
+        // Even though they all map to the same thing, we keep the explicit match statement so that
+        // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
+        match type_kind {
+            ScryptoCustomTypeKind::PackageAddress
+            | ScryptoCustomTypeKind::ComponentAddress
+            | ScryptoCustomTypeKind::ResourceAddress
+            | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::NonFungibleGlobalId
+            | ScryptoCustomTypeKind::Blob
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Expression
+            | ScryptoCustomTypeKind::Hash
+            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
+            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
+            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
+            | ScryptoCustomTypeKind::EddsaEd25519Signature
+            | ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::PreciseDecimal
+            | ScryptoCustomTypeKind::NonFungibleLocalId
+            | ScryptoCustomTypeKind::KeyValueStore { .. } => {
+                // All other types currently should return early by having a `None` validation at the layer above,
+                // so if they get here then that's an error
+                return Err(SchemaValidationError::TypeValidationMismatch);
+            }
+        }
     }
 }
 

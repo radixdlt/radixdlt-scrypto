@@ -7,11 +7,14 @@ use crate::*;
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
     pub type_metadata: Vec<NovelTypeMetadata>,
+    pub type_validations: Vec<SchemaTypeValidation<E>>,
 }
 
 pub type SchemaTypeKind<E> =
     TypeKind<<E as CustomTypeExtension>::CustomValueKind, SchemaCustomTypeKind<E>, LocalTypeIndex>;
 pub type SchemaCustomTypeKind<E> = <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>;
+pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::CustomTypeValidation>;
+pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
 
 // TODO: Could get rid of the Cow by using some per-custom type once_cell to cache basic well-known-types,
 //       and return references to the static cached values
