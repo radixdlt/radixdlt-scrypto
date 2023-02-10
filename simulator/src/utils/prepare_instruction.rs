@@ -754,7 +754,10 @@ mod test {
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::String("HelloWorld".into()))
+        assert_eq!(
+            parsed_arg,
+            NonFungibleLocalId::string("HelloWorld").unwrap()
+        )
     }
 
     #[test]
@@ -769,10 +772,11 @@ mod test {
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleLocalId::Bytes(vec![
+            NonFungibleLocalId::bytes(vec![
                 196, 31, 169, 239, 42, 179, 31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73,
                 178, 64, 175, 124, 185, 57, 234, 210, 144, 88, 253, 255, 44
             ])
+            .unwrap()
         )
     }
 
@@ -786,7 +790,7 @@ mod test {
         let parsed_arg: NonFungibleLocalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleLocalId::Integer(12))
+        assert_eq!(parsed_arg, NonFungibleLocalId::integer(12))
     }
 
     #[test]
@@ -801,7 +805,7 @@ mod test {
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleLocalId::UUID(0xf7223dbc_bbd6_4769_8d6f_effce550080d)
+            NonFungibleLocalId::uuid(0xf7223dbc_bbd6_4769_8d6f_effce550080d).unwrap()
         )
     }
 
@@ -821,10 +825,11 @@ mod test {
             parsed_arg,
             NonFungibleGlobalId::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleLocalId::Bytes(vec![
+                NonFungibleLocalId::bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])
+                .unwrap()
             )
         )
     }
@@ -871,10 +876,11 @@ mod test {
         assert_eq!(
             resource_specifier,
             ResourceSpecifier::Ids(
-                BTreeSet::from([NonFungibleLocalId::Bytes(vec![
+                BTreeSet::from([NonFungibleLocalId::bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
                     57, 234, 210, 144, 88, 253, 255, 44
-                ])]),
+                ])
+                .unwrap()]),
                 ECDSA_SECP256K1_TOKEN
             )
         )
@@ -898,18 +904,21 @@ mod test {
             resource_specifier,
             ResourceSpecifier::Ids(
                 BTreeSet::from([
-                    NonFungibleLocalId::Bytes(vec![
+                    NonFungibleLocalId::bytes(vec![
                         31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124,
                         185, 57, 234, 210, 144, 88, 253, 255, 44
-                    ]),
-                    NonFungibleLocalId::Bytes(vec![
+                    ])
+                    .unwrap(),
+                    NonFungibleLocalId::bytes(vec![
                         216, 93, 196, 70, 216, 229, 239, 244, 141, 178, 91, 86, 246, 181, 0, 29,
                         20, 98, 123, 90, 25, 149, 152, 72, 90, 141
-                    ]),
-                    NonFungibleLocalId::Bytes(vec![
+                    ])
+                    .unwrap(),
+                    NonFungibleLocalId::bytes(vec![
                         0, 93, 26, 232, 123, 14, 124, 84, 1, 211, 142, 88, 212, 50, 145, 255, 189,
                         155, 166, 225, 218, 84, 248, 117, 4, 167
                     ])
+                    .unwrap()
                 ]),
                 ECDSA_SECP256K1_TOKEN
             )

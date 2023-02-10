@@ -123,7 +123,7 @@ mod vault_test {
         }
 
         fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_non_fungible_integer_id()
+            let bucket = ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "TestToken")
                 .initial_supply([(1u64, Data {})]);
             Vault::with_bucket(bucket)
@@ -131,7 +131,7 @@ mod vault_test {
 
         pub fn new_vault_with_take_non_fungible() -> ComponentAddress {
             let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleLocalId::Integer(1));
+            let bucket = vault.take_non_fungible(&NonFungibleLocalId::integer(1));
             vault.put(bucket);
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();

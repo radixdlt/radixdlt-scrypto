@@ -126,10 +126,11 @@ impl Executor for EpochManagerCreateInvocation {
 
             // TODO: remove mint and premint all tokens
             {
-                let non_fungible_local_id = NonFungibleLocalId::Bytes(
+                let non_fungible_local_id = NonFungibleLocalId::bytes(
                     scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
                         .unwrap(),
-                );
+                )
+                .unwrap();
                 let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
@@ -148,7 +149,7 @@ impl Executor for EpochManagerCreateInvocation {
         let mut validator_set = BTreeMap::new();
 
         for (key, validator_init) in self.validator_set {
-            let local_id = NonFungibleLocalId::Bytes(key.to_vec());
+            let local_id = NonFungibleLocalId::bytes(key.to_vec()).unwrap();
             let global_id =
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =
@@ -208,9 +209,10 @@ impl Executor for EpochManagerCreateInvocation {
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator)),
             rule!(allow_all),
         );
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
+        )
+        .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),

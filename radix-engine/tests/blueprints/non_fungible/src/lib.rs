@@ -23,7 +23,7 @@ mod non_fungible_test {
                 .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_address = ResourceBuilder::new_non_fungible_integer_id()
+            let resource_address = ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
@@ -39,7 +39,7 @@ mod non_fungible_test {
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address).mint_non_fungible(
-                    &NonFungibleLocalId::Integer(0),
+                    &NonFungibleLocalId::integer(0),
                     Sandwich {
                         name: "Test".to_owned(),
                         available: false,
@@ -66,7 +66,7 @@ mod non_fungible_test {
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {
-            ResourceBuilder::new_non_fungible_uuid_id()
+            ResourceBuilder::new_uuid_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .initial_supply_uuid([
@@ -82,7 +82,7 @@ mod non_fungible_test {
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
-            ResourceBuilder::new_non_fungible_integer_id()
+            ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
                     (
@@ -120,17 +120,17 @@ mod non_fungible_test {
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             let mut data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleLocalId::Integer(0));
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleLocalId::Integer(0), data);
+                    .update_non_fungible_data(&NonFungibleLocalId::integer(0), data);
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleLocalId::Integer(0));
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -139,12 +139,12 @@ mod non_fungible_test {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleLocalId::Integer(0)),
+                    .non_fungible_exists(&NonFungibleLocalId::integer(0)),
                 true
             );
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleLocalId::Integer(1)),
+                    .non_fungible_exists(&NonFungibleLocalId::integer(1)),
                 false
             );
             (mint_badge, bucket)
@@ -166,7 +166,7 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
-            let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::Integer(1));
+            let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::integer(1));
             assert_eq!(bucket.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
@@ -179,7 +179,7 @@ mod non_fungible_test {
             assert_eq!(bucket.amount(), 3.into());
 
             let mut non_fungibles = BTreeSet::new();
-            non_fungibles.insert(NonFungibleLocalId::Integer(1));
+            non_fungibles.insert(NonFungibleLocalId::integer(1));
 
             let non_fungible = bucket.take_non_fungibles(&non_fungibles);
             assert_eq!(bucket.amount(), 2.into());
@@ -207,13 +207,13 @@ mod non_fungible_test {
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Integer(1)])
+                BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
                 bucket.non_fungible_local_ids(),
                 BTreeSet::from([
-                    NonFungibleLocalId::Integer(2),
-                    NonFungibleLocalId::Integer(3)
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3)
                 ])
             );
             (bucket, non_fungible_bucket)
@@ -224,11 +224,11 @@ mod non_fungible_test {
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Integer(1)
+                NonFungibleLocalId::integer(1)
             );
             assert_eq!(
                 bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Integer(2)
+                NonFungibleLocalId::integer(2)
             );
             (bucket, non_fungible_bucket)
         }
@@ -238,13 +238,13 @@ mod non_fungible_test {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::Integer(1)])
+                BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
                 vault.non_fungible_local_ids(),
                 BTreeSet::from([
-                    NonFungibleLocalId::Integer(2),
-                    NonFungibleLocalId::Integer(3)
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3)
                 ])
             );
 
@@ -258,11 +258,11 @@ mod non_fungible_test {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_id(),
-                NonFungibleLocalId::Integer(1)
+                NonFungibleLocalId::integer(1)
             );
             assert_eq!(
                 vault.non_fungible_local_id(),
-                NonFungibleLocalId::Integer(2)
+                NonFungibleLocalId::integer(2)
             );
 
             NonFungibleTest { vault }.instantiate().globalize();
@@ -296,7 +296,7 @@ mod non_fungible_test {
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
             let mut encoded = BTreeMap::new();
             encoded.insert(
-                NonFungibleLocalId::Integer(0),
+                NonFungibleLocalId::integer(0),
                 (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
             );
 
@@ -317,7 +317,7 @@ mod non_fungible_test {
 
         pub fn create_string_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible_string_id().initial_supply([
+            ResourceBuilder::new_string_non_fungible().initial_supply([
                 (
                     "1".to_string(),
                     Sandwich {
@@ -337,7 +337,7 @@ mod non_fungible_test {
 
         pub fn create_bytes_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible_bytes_id().initial_supply([
+            ResourceBuilder::new_bytes_non_fungible().initial_supply([
                 (
                     1u32.to_le_bytes().to_vec(),
                     Sandwich {
@@ -357,21 +357,21 @@ mod non_fungible_test {
 
         pub fn create_uuid_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible_uuid_id().initial_supply_uuid([Sandwich {
+            ResourceBuilder::new_uuid_non_fungible().initial_supply_uuid([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
             }])
         }
 
         pub fn create_mintable_uuid_non_fungible() -> ResourceAddress {
-            ResourceBuilder::new_non_fungible_uuid_id()
+            ResourceBuilder::new_uuid_non_fungible()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .no_initial_supply()
         }
 
         pub fn create_uuid_non_fungible_and_mint() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            let resource_address = ResourceBuilder::new_non_fungible_uuid_id()
+            let resource_address = ResourceBuilder::new_uuid_non_fungible()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "Katz's Sandwiches")
                 .no_initial_supply();

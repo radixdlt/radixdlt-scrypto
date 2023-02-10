@@ -1610,7 +1610,7 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::Integer(1));
+        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::integer(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1763,7 +1763,7 @@ mod tests {
                     ),
                 ]),
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
+                    NonFungibleLocalId::integer(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
@@ -1797,7 +1797,7 @@ mod tests {
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 owner_badge: owner_badge.clone(),
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
+                    NonFungibleLocalId::integer(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
@@ -1827,7 +1827,7 @@ mod tests {
             BasicInstruction::MintNonFungible {
                 resource_address: resource,
                 entries: BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
+                    NonFungibleLocalId::integer(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)

@@ -230,11 +230,11 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_global_id = NonFungibleGlobalId::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleLocalId::Bytes(pk.to_vec()),
+        NonFungibleLocalId::bytes(pk.to_vec()).unwrap(),
     );
     let other_non_fungible_global_id = NonFungibleGlobalId::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleLocalId::Bytes(other_public_key.to_vec()),
+        NonFungibleLocalId::bytes(other_public_key.to_vec()).unwrap(),
     );
     let players = [non_fungible_global_id, other_non_fungible_global_id.clone()];
     let manifest1 = ManifestBuilder::new()
