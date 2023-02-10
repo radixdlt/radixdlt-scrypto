@@ -344,7 +344,7 @@ impl CallFrame {
 
         for node_id in call_frame_update.node_refs_to_copy {
             let location = parent.get_node_location(node_id)?;
-            let visibility = parent.get_node_visibility(node_id)?;
+            let visibility = parent.check_node_visibility(node_id)?;
             next_node_refs.insert(node_id, RENodeRefData::new(location, visibility));
         }
 
@@ -561,19 +561,22 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(
+    pub fn get_node_visibility(&self, node_id: RENodeId) -> Option<RENodeVisibilityOrigin> {
+        if self.owned_root_nodes.contains_key(&node_id) {
+            Some(RENodeVisibilityOrigin::Normal)
+        } else if let Some(ref_data) = self.node_refs.get(&node_id) {
+            Some(ref_data.visibility)
+        } else {
+            None
+        }
+    }
+
+    pub fn check_node_visibility(
         &self,
         node_id: RENodeId,
     ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
-        let visibility = if self.owned_root_nodes.contains_key(&node_id) {
-            RENodeVisibilityOrigin::Normal
-        } else if let Some(ref_data) = self.node_refs.get(&node_id) {
-            ref_data.visibility
-        } else {
-            return Err(CallFrameError::RENodeNotVisible(node_id));
-        };
-
-        Ok(visibility)
+        self.get_node_visibility(node_id)
+            .ok_or(CallFrameError::RENodeNotVisible(node_id))
     }
 
     pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {

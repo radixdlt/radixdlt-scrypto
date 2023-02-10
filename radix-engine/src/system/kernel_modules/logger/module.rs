@@ -25,13 +25,11 @@ impl KernelModule for LoggerModule {
     }
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
+        _api: &mut Y,
         _actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if api.get_visible_node_data(RENodeId::Logger).is_ok() {
-            call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);
-        }
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);
 
         Ok(())
     }

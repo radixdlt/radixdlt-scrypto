@@ -581,8 +581,8 @@ impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn actor(&mut self) -> Result<ResolvedActor, RuntimeError> {
-        Ok(self.current_frame.actor.clone())
+    fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
     }
 }
 
@@ -590,14 +590,6 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_visible_node_data(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<RENodeVisibilityOrigin, RuntimeError> {
-        let visibility = self.current_frame.get_node_visibility(node_id)?;
-        Ok(visibility)
-    }
-
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
@@ -776,6 +768,10 @@ where
             )
             .and_then(|substate| Ok(substate.proof().snapshot()))
             .ok()
+    }
+
+    fn get_node_visibility_origin(&self, node_id: RENodeId) -> Option<RENodeVisibilityOrigin> {
+        self.current_frame.get_node_visibility(node_id)
     }
 }
 

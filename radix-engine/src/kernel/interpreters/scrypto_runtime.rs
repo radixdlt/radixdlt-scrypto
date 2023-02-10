@@ -260,7 +260,7 @@ where
     }
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.fn_identifier()?;
+        let actor = self.api.get_fn_identifier()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)

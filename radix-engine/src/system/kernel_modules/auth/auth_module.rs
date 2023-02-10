@@ -136,7 +136,11 @@ impl KernelModule for AuthModule {
                         },
                     ) => {
                         let vault_node_id = RENodeId::Vault(*vault_id);
-                        let visibility = api.get_visible_node_data(vault_node_id)?;
+                        let visibility = api.get_node_visibility_origin(vault_node_id).ok_or(
+                            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
+                                vault_node_id,
+                            )),
+                        )?;
 
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);

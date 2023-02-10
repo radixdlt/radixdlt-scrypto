@@ -54,16 +54,14 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
+// Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
+// all methods are prefixed by the subsystem of kernel.
+
 pub trait KernelActorApi<E> {
-    fn actor(&mut self) -> Result<ResolvedActor, E>;
+    fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, E>;
 }
 
 pub trait KernelNodeApi {
-    fn get_visible_node_data(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<RENodeVisibilityOrigin, RuntimeError>;
-
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
@@ -84,6 +82,7 @@ pub trait KernelNodeApi {
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi {
     fn get_module_state(&mut self) -> &mut KernelModuleMixer;
+    fn get_node_visibility_origin(&self, node_id: RENodeId) -> Option<RENodeVisibilityOrigin>;
     fn get_current_depth(&self) -> usize;
     fn get_current_actor(&self) -> ResolvedActor;
     fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;

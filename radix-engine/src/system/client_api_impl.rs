@@ -125,8 +125,8 @@ impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        self.actor().map(|a| a.identifier)
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        self.actor_get_fn_identifier()
     }
 }
 
@@ -340,7 +340,7 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = match self.actor().map(|a| a.identifier)? {
+        let package_address = match self.actor_get_fn_identifier()? {
             FnIdentifier::Scrypto(s) => s.package_address,
             FnIdentifier::Native(_) => todo!(),
         };
