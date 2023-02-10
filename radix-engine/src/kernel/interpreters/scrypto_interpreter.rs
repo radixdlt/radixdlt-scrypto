@@ -8,7 +8,7 @@ use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNodeApi, ClientStaticInvokeApi,
+    ClientActorApi, ClientComponentApi, ClientMeteringApi, ClientNativeInvokeApi, ClientNodeApi,
     ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
@@ -229,7 +229,7 @@ impl Executor for ScryptoExecutor {
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
             + ClientMeteringApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
         let package = {

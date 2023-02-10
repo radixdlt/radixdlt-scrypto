@@ -9,10 +9,7 @@ mod interpreters;
 mod kernel;
 mod kernel_client_facade;
 mod kernel_main_facade;
-mod kernel_static_invoke_facade; // statically linked
 mod module;
-mod node;
-mod node_properties;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
 mod resources_tracker;
 mod track;
@@ -27,10 +24,7 @@ pub use kernel::*;
 pub use kernel_api::*;
 pub use kernel_client_facade::*;
 pub use kernel_main_facade::*;
-pub use kernel_static_invoke_facade::*;
 pub use module::*;
-pub use node::*;
-pub use node_properties::*;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
 pub use resources_tracker::*;
 pub use track::*;

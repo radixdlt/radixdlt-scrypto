@@ -23,14 +23,15 @@ for package in $packages; do
 done
 
 packages="
-    assets/blueprints/radiswap \
-    assets/blueprints/faucet \
+    assets/blueprints/radiswap/Cargo.toml \
+    assets/blueprints/faucet/Cargo.toml \
+    examples/hello-world/Cargo.toml \
+    examples/no-std/Cargo.toml \
     "
-packages+=$(find examples -maxdepth 1 -type d \( ! -name . \))
-packages+=$(find radix-engine-tests/tests/blueprints -maxdepth 1 -type d \( ! -name . \))
+packages+=$(find radix-engine-tests/tests/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
 
 for package in $packages; do
-    scrypto fmt --check --quiet --path $package ||
+    cargo fmt --check --quiet --manifest-path $package ||
         { echo "Code format check FAILED for $package"; failed=1; }
 done
 

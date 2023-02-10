@@ -8,7 +8,7 @@ mod factory {
 
     impl Factory {
         pub fn create_raw() -> ComponentAddress {
-            let mut component = Self {
+            let component = Self {
                 my_address: Option::None,
             }
             .instantiate();
@@ -26,7 +26,7 @@ mod factory {
         }
 
         pub fn create() -> ComponentAddress {
-            let mut component = Self {
+            let component = Self {
                 my_address: Option::None,
             }
             .instantiate();

@@ -38,11 +38,7 @@ fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers(
         let read_access_rules = test_runner.access_rules_chain(call);
 
         // Assert
-
-        assert_eq!(
-            access_rules.len() + 1, // TODO: The system adds a layer of access rules, is this the right abstraction?
-            read_access_rules.len(),
-        )
+        assert_eq!(access_rules.len(), read_access_rules.len(),)
     }
 }
 
@@ -293,7 +289,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 GlobalAddress::Component(test_runner.component_address),
-                1,
+                0,
                 AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
                 rule!(deny_all),
             )

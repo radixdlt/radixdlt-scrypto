@@ -4,11 +4,11 @@ use radix_engine::blueprints::resource::{
     NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
 };
 use radix_engine::ledger::*;
-use radix_engine::system::component::{ComponentInfoSubstate, ComponentStateSubstate};
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
-use radix_engine::system::package::PackageInfoSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
@@ -396,11 +396,9 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         component_address,
         kv_store_id
     );
-    for (last, (k, v)) in map.iter().identify_last() {
-        let key = IndexedScryptoValue::from_slice(k).unwrap();
-        let substate = v.clone().to_runtime();
-        if let Some(v) = &substate.kv_store_entry().0 {
-            let value = IndexedScryptoValue::from_slice(&v).unwrap();
+    for (last, (_hash, substate)) in map.iter().identify_last() {
+        let substate = substate.clone().to_runtime();
+        if let KeyValueStoreEntrySubstate::Some(key, value) = &substate.kv_store_entry() {
             let value_display_context =
                 ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
@@ -410,7 +408,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            for owned_node in value.owned_node_ids().unwrap() {
+            for owned_node in substate.kv_store_entry().owned_node_ids() {
                 match owned_node {
                     RENodeId::Vault(vault_id) => {
                         owned_vaults.push(vault_id);

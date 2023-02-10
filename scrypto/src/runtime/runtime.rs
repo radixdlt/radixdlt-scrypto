@@ -1,10 +1,12 @@
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
 };
-use radix_engine_interface::api::{ClientActorApi, Invokable};
+use radix_engine_interface::api::ClientActorApi;
+use radix_engine_interface::api::{
+    types::*, ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi,
+};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
-use radix_engine_interface::blueprints::transaction_hash::{
+use radix_engine_interface::blueprints::transaction_runtime::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
@@ -21,7 +23,7 @@ impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
         ScryptoEnv
-            .invoke(EpochManagerGetCurrentEpochInvocation {
+            .call_native(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
             })
             .unwrap()
@@ -84,7 +86,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         ScryptoEnv
-            .invoke(TransactionRuntimeGetHashInvocation {
+            .call_native(TransactionRuntimeGetHashInvocation {
                 receiver: RENodeId::TransactionRuntime.into(),
             })
             .unwrap()
@@ -93,7 +95,7 @@ impl Runtime {
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
         ScryptoEnv
-            .invoke(TransactionRuntimeGenerateUuidInvocation {
+            .call_native(TransactionRuntimeGenerateUuidInvocation {
                 receiver: RENodeId::TransactionRuntime.into(),
             })
             .unwrap()

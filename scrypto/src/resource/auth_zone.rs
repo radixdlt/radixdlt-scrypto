@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -19,7 +19,7 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        env.invoke(AuthZonePushInvocation {
+        env.call_native(AuthZonePushInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
             proof,
         })
@@ -28,7 +28,7 @@ impl ComponentAuthZone {
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
-        env.invoke(AuthZonePopInvocation {
+        env.call_native(AuthZonePopInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
         })
         .unwrap()
@@ -36,7 +36,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.invoke(AuthZoneCreateProofInvocation {
+        env.call_native(AuthZoneCreateProofInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
             resource_address,
         })
@@ -45,7 +45,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.invoke(AuthZoneCreateProofByAmountInvocation {
+        env.call_native(AuthZoneCreateProofByAmountInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
             amount,
             resource_address,
@@ -58,7 +58,7 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        env.invoke(AuthZoneCreateProofByIdsInvocation {
+        env.call_native(AuthZoneCreateProofByIdsInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
             ids: ids.clone(),
             resource_address,
@@ -68,7 +68,7 @@ impl ComponentAuthZone {
 
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.invoke(AuthZoneAssertAccessRuleInvocation {
+        env.call_native(AuthZoneAssertAccessRuleInvocation {
             receiver: RENodeId::AuthZoneStack.into(),
             access_rule,
         })

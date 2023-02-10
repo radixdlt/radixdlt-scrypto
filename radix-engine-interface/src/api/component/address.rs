@@ -53,10 +53,15 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::EddsaEd25519VirtualIdentityComponent => Ok(
                     Self::EddsaEd25519VirtualIdentity(copy_u8_array(&slice[1..])),
                 ),
+                EntityType::EcdsaSecp256k1VirtualIdentityComponent => Ok(
+                    Self::EcdsaSecp256k1VirtualIdentity(copy_u8_array(&slice[1..])),
+                ),
                 EntityType::AccessControllerComponent => {
                     Ok(Self::AccessController(copy_u8_array(&slice[1..])))
                 }
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+                EntityType::Resource | EntityType::Package => {
+                    Err(AddressError::InvalidEntityTypeId(slice[0]))
+                }
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }

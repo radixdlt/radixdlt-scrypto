@@ -1,7 +1,5 @@
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::api::{
-    ClientNodeApi, ClientStaticInvokeApi, ClientSubstateApi, Invokable,
-};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::math::Decimal;
@@ -16,10 +14,10 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let vault_id = api
-            .invoke(ResourceManagerCreateVaultInvocation {
+            .call_native(ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
             })?
             .vault_id();
@@ -33,9 +31,9 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(VaultPutInvocation {
+        api.call_native(VaultPutInvocation {
             receiver: self.0,
             bucket,
         })
@@ -47,9 +45,9 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(VaultTakeInvocation {
+        api.call_native(VaultTakeInvocation {
             receiver: self.0,
             amount,
         })
@@ -57,10 +55,10 @@ impl Vault {
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let amount = self.sys_amount(api)?;
-        api.invoke(VaultTakeInvocation {
+        api.call_native(VaultTakeInvocation {
             receiver: self.0,
             amount,
         })
@@ -72,9 +70,9 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(VaultTakeNonFungiblesInvocation {
+        api.call_native(VaultTakeNonFungiblesInvocation {
             receiver: self.0,
             non_fungible_local_ids: ids,
         })
@@ -82,9 +80,9 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<VaultGetAmountInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultGetAmountInvocation { receiver: self.0 })
+        sys_calls.call_native(VaultGetAmountInvocation { receiver: self.0 })
     }
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(
@@ -93,10 +91,10 @@ impl Vault {
     ) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         let amount = self.sys_amount(sys_calls)?;
-        sys_calls.invoke(VaultCreateProofByAmountInvocation {
+        sys_calls.call_native(VaultCreateProofByAmountInvocation {
             receiver: self.0,
             amount,
         })
@@ -108,9 +106,9 @@ impl Vault {
         amount: Decimal,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultCreateProofByAmountInvocation {
+        sys_calls.call_native(VaultCreateProofByAmountInvocation {
             receiver: self.0,
             amount,
         })
@@ -122,9 +120,9 @@ impl Vault {
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultCreateProofByIdsInvocation {
+        sys_calls.call_native(VaultCreateProofByIdsInvocation {
             receiver: self.0,
             ids,
         })
@@ -136,9 +134,9 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultLockFeeInvocation {
+        sys_calls.call_native(VaultLockFeeInvocation {
             receiver: self.0,
             amount,
             contingent: false,
@@ -151,9 +149,9 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultLockFeeInvocation {
+        sys_calls.call_native(VaultLockFeeInvocation {
             receiver: self.0,
             amount,
             contingent: true,
@@ -165,8 +163,8 @@ impl Vault {
         sys_calls: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientStaticInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(VaultGetResourceAddressInvocation { receiver: self.0 })
+        sys_calls.call_native(VaultGetResourceAddressInvocation { receiver: self.0 })
     }
 }

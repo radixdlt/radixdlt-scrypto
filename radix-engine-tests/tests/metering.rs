@@ -201,12 +201,12 @@ fn test_radiswap() {
         25000 /* CreateNode */
         + 93000 /* DropLock */
         + 15000 /* DropNode */
-        + 241149 /* InstantiateWasm */
+        + 263220 /* InstantiateWasm */
         + 18000 /* Invoke */
         + 121000 /* LockSubstate */
         + 372500 /* ReadSubstate */
         + 48500 /* RunNative */
-        + 1546550 /* RunWasm */
+        + 1573945 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

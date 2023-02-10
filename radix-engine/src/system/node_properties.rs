@@ -1,6 +1,6 @@
 use crate::{
     errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, RENodeInit, ResolvedActor, ResolvedReceiver},
+    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
     system::global::GlobalAddressSubstate,
 };
 use radix_engine_interface::api::types::{
@@ -11,7 +11,7 @@ use radix_engine_interface::api::types::{
     WorktopOffset,
 };
 
-use super::LockFlags;
+use super::node::RENodeInit;
 
 pub struct VisibilityProperties;
 
@@ -81,7 +81,7 @@ impl VisibilityProperties {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
                 }
-                RENodeInit::KeyValueStore(..) => true,
+                RENodeInit::KeyValueStore => true,
                 RENodeInit::Global(GlobalAddressSubstate::Component(..)) => true,
                 _ => false,
             },

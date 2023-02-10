@@ -1,19 +1,19 @@
-use super::PackageInfoSubstate;
-use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
-
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::{package::*, ClientDerefApi};
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };
@@ -66,10 +66,10 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let royalty_vault_id = api
-            .invoke(ResourceManagerCreateVaultInvocation {
+            .call_native(ResourceManagerCreateVaultInvocation {
                 receiver: RADIX_TOKEN,
             })?
             .vault_id();
@@ -223,7 +223,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -237,11 +237,11 @@ impl Executor for PackageClaimRoyaltyExecutable {
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
 
-        let amount = api.invoke(VaultGetAmountInvocation {
+        let amount = api.call_native(VaultGetAmountInvocation {
             receiver: royalty_vault.vault_id(),
         })?;
 
-        let bucket = api.invoke(VaultTakeInvocation {
+        let bucket = api.call_native(VaultTakeInvocation {
             receiver: royalty_vault.vault_id(),
             amount,
         })?;

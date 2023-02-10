@@ -14,7 +14,7 @@ mod chess {
                 rule!(deny_all),
             );
 
-            let mut component = Self { players }.instantiate();
+            let component = Self { players }.instantiate();
             component.add_access_check(access_rules);
             component.globalize()
         }

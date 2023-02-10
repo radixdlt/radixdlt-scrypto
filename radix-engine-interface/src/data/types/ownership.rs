@@ -43,6 +43,12 @@ impl Own {
             _ => panic!("Not a proof ownership"),
         }
     }
+    pub fn kv_store_id(&self) -> KeyValueStoreId {
+        match self {
+            Own::KeyValueStore(v) => v.clone(),
+            _ => panic!("Not a key-value store ownership"),
+        }
+    }
 }
 
 impl From<Bucket> for Own {

@@ -2,8 +2,9 @@ use crate::errors::ModuleError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::kernel_modules::fee::FeeReserve;
+use crate::system::node::RENodeInit;
 use crate::types::*;
-use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::Resource;
 
 #[derive(Clone)]

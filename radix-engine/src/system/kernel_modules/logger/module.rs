@@ -1,6 +1,6 @@
 use crate::{
     blueprints::logger::LoggerSubstate, errors::RuntimeError,
-    kernel::kernel_api::KernelSubstateApi, kernel::*,
+    kernel::kernel_api::KernelSubstateApi, kernel::*, system::node::RENodeInit,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use sbor::rust::collections::BTreeMap;

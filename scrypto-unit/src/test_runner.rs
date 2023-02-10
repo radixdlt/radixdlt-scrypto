@@ -990,7 +990,7 @@ impl TestRunner {
             .new_resource_addresses[0]
     }
 
-    pub fn instantiate_component<F>(
+    pub fn new_component<F>(
         &mut self,
         initial_proofs: Vec<NonFungibleGlobalId>,
         handler: F,
