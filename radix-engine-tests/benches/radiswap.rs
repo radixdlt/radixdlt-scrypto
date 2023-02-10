@@ -3,7 +3,14 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
-use transaction::builder::ManifestBuilder;
+use transaction::{
+    builder::{ManifestBuilder, TransactionBuilder},
+    model::{NotarizedTransaction, TransactionHeader},
+    validation::{
+        NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
+        ValidationConfig,
+    },
+};
 
 fn bench_radiswap(c: &mut Criterion) {
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -13,7 +20,7 @@ fn bench_radiswap(c: &mut Criterion) {
     // Radiswap operator
     let (pk2, _, account2) = test_runner.new_allocated_account();
     // Radiswap user
-    let (pk3, _, account3) = test_runner.new_allocated_account();
+    let (pk3, sk3, account3) = test_runner.new_allocated_account();
 
     // Publish package
     let package_address = test_runner.publish_package(
@@ -87,7 +94,6 @@ fn bench_radiswap(c: &mut Criterion) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
 
     // Swap 1 BTC into ETH
     let manifest = ManifestBuilder::new()
@@ -103,14 +109,46 @@ fn bench_radiswap(c: &mut Criterion) {
         )
         .build();
 
+    let mut transactions: Vec<Vec<u8>> = (1000..2000)
+        .map(|i| {
+            TransactionBuilder::new()
+                .header(TransactionHeader {
+                    version: 1,
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: 0,
+                    end_epoch_exclusive: 100,
+                    nonce: i,
+                    notary_public_key: pk3.clone().into(),
+                    notary_as_signatory: true,
+                    cost_unit_limit: 100_000_000,
+                    tip_percentage: 5,
+                })
+                .manifest(manifest.clone())
+                .notarize(&sk3)
+                .build()
+                .to_bytes()
+                .unwrap()
+        })
+        .collect();
+
     // Loop
     c.bench_function("Radiswap", |b| {
         b.iter(|| {
+            let payload = transactions.pop().unwrap();
+
+            // Decode
+            let transaction: NotarizedTransaction = scrypto_decode(&payload).unwrap();
+
+            // Validate
+            let executable = NotarizedTransactionValidator::new(ValidationConfig::default(
+                NetworkDefinition::simulator().id,
+            ))
+            .validate(&transaction, payload.len(), &TestIntentHashManager::new())
+            .unwrap();
+
+            // Execute & commit
             test_runner
-                .execute_manifest(
-                    manifest.clone(),
-                    vec![NonFungibleGlobalId::from_public_key(&pk3)],
-                )
+                .execute_transaction(executable)
                 .expect_commit_success();
         })
     });
