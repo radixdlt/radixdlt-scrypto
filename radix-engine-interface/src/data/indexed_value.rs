@@ -141,6 +141,7 @@ impl IndexedScryptoValue {
                 Own::Proof(proof_id) => node_ids.insert(RENodeId::Proof(*proof_id)),
                 Own::Vault(vault_id) => node_ids.insert(RENodeId::Vault(*vault_id)),
                 Own::Component(component_id) => node_ids.insert(RENodeId::Component(*component_id)),
+                Own::Account(component_id) => node_ids.insert(RENodeId::Account(*component_id)),
                 Own::KeyValueStore(kv_store_id) => {
                     node_ids.insert(RENodeId::KeyValueStore(*kv_store_id))
                 }

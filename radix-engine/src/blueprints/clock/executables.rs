@@ -1,4 +1,4 @@
-use crate::errors::RuntimeError;
+use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
@@ -14,9 +14,9 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientSubstateApi};
+use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::ClockGetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::ClockSetCurrentTimeInvocation;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -24,6 +24,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -33,35 +34,44 @@ const SECONDS_TO_MS_FACTOR: i64 = 1000;
 const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
 const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
 
-pub struct Clock;
-
-impl ExecutableInvocation for ClockCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Clock(ClockFn::Create));
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
+pub struct ClockNativePackage;
+impl ClockNativePackage {
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
     }
-}
 
-impl Executor for ClockCreateInvocation {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        match export_name {
+            CLOCK_CREATE_IDENT => Self::create(input, api),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
+    }
+
+    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
 
         let mut access_rules = AccessRules::new();
@@ -95,7 +105,7 @@ impl Executor for ClockCreateInvocation {
         )?;
 
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
-            self.component_address,
+            input.component_address,
         )));
         api.create_node(
             global_node_id,
@@ -103,16 +113,9 @@ impl Executor for ClockCreateInvocation {
             BTreeMap::new(),
         )?;
 
-        let system_address: ComponentAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
+        let address: ComponentAddress = global_node_id.into();
 
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((system_address, update))
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
 
@@ -283,15 +286,5 @@ impl Executor for ClockCompareCurrentTimeExecutable {
                 Ok((result, CallFrameUpdate::empty()))
             }
         }
-    }
-}
-
-impl Clock {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
     }
 }

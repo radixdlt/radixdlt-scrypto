@@ -427,7 +427,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .withdraw_all_from_account(account_component, RADIX_TOKEN)
         .call_method(
             component_address,
             "assert_access_rule",
@@ -474,7 +474,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .withdraw_all_from_account(account_component, RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.call_method(
                 component_address,

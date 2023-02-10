@@ -12,13 +12,13 @@ fn test_auth_rule(
     should_succeed: bool,
 ) {
     // Arrange
-    let account = test_runner.new_account_with_auth_rule(auth_rule);
+    let account = test_runner.new_account_with_auth_rule(auth_rule.clone());
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account, RADIX_TOKEN)
+        .withdraw_all_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
@@ -220,7 +220,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require(RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let account = test_runner.new_account_with_auth_rule(xrd_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -230,7 +230,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(account, RADIX_TOKEN);
+                builder.withdraw_all_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -254,7 +254,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let account = test_runner.new_account_with_auth_rule(xrd_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -264,7 +264,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(account, RADIX_TOKEN);
+                builder.withdraw_all_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -288,7 +288,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let account = test_runner.new_account_with_auth_rule(xrd_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -298,7 +298,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(account, RADIX_TOKEN);
+                builder.withdraw_all_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });

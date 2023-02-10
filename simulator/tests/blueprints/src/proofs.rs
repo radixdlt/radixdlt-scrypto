@@ -31,7 +31,7 @@ mod proofs {
                 )
                 .default(rule!(deny_all), rule!(deny_all));
 
-            let mut local_component = Self {}.instantiate();
+            let local_component = Self {}.instantiate();
             local_component.add_access_check(access_rules);
 
             (

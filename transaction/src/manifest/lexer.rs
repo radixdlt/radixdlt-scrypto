@@ -126,9 +126,9 @@ pub enum TokenKind {
     MintNonFungible,
     MintUuidNonFungible,
     CreateFungibleResource,
-    CreateFungibleResourceWithOwner,
+    CreateFungibleResourceWithInitialSupply,
     CreateNonFungibleResource,
-    CreateNonFungibleResourceWithOwner,
+    CreateNonFungibleResourceWithInitialSupply,
     CreateValidator,
     CreateAccessController,
     CreateIdentity,
@@ -470,15 +470,18 @@ impl Lexer {
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
+            "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
+            }
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
+            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
             }
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
             "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
+            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

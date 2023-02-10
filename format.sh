@@ -12,19 +12,19 @@ cd "$(dirname "$0")"
 
 (
     find "assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -n1 -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
+    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (
     find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -n1 -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
+    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (
     find "radix-engine-tests/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -n1 -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
+    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (
     find "simulator/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -n1 -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
+    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 
 echo "All packages have been formatted."

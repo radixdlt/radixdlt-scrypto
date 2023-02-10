@@ -34,7 +34,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::put_at_next_version;
-use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
+use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -327,6 +327,26 @@ impl TestRunner {
         }
     }
 
+    pub fn account_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Option<Decimal> {
+        if !matches!(
+            account_address,
+            ComponentAddress::Account(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..)
+        ) {
+            panic!("Method only works for accounts!")
+        }
+
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        vaults
+            .get(0)
+            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
+    }
+
     pub fn get_component_vaults(
         &mut self,
         component_address: ComponentAddress,
@@ -341,6 +361,16 @@ impl TestRunner {
             .traverse_all_descendents(None, node_id)
             .unwrap();
         vault_finder.to_vaults()
+    }
+
+    pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.amount())
     }
 
     pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
@@ -376,9 +406,11 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success();
+
         let account_component = receipt
             .expect_commit()
             .entity_changes
@@ -490,7 +522,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_with_auth_rule(&withdraw_auth);
+        let account = self.new_account_with_auth_rule(withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
 
@@ -1074,7 +1106,7 @@ impl TestRunner {
 }
 
 pub struct StateHashSupport {
-    tree_store: MemoryTreeStore,
+    tree_store: TypedInMemoryTreeStore,
     current_version: Version,
     current_hash: Hash,
 }
@@ -1082,7 +1114,7 @@ pub struct StateHashSupport {
 impl StateHashSupport {
     fn new() -> Self {
         StateHashSupport {
-            tree_store: MemoryTreeStore::new(),
+            tree_store: TypedInMemoryTreeStore::new(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
         }

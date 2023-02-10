@@ -310,6 +310,10 @@ impl CallFrame {
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );

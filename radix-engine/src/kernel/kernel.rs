@@ -118,11 +118,6 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Balance)),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_access_rule_and_mutability(
                     AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
@@ -542,6 +537,58 @@ where
                                 self.current_frame
                                     .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                 continue;
+                            }
+
+                            // TODO: Cleanup
+                            {
+                                if matches!(
+                                    global_address,
+                                    GlobalAddress::Package(RESOURCE_MANAGER_PACKAGE)
+                                ) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(
+                                    global_address,
+                                    GlobalAddress::Package(IDENTITY_PACKAGE)
+                                ) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(
+                                    global_address,
+                                    GlobalAddress::Package(EPOCH_MANAGER_PACKAGE)
+                                ) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(global_address, GlobalAddress::Package(CLOCK_PACKAGE)) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(global_address, GlobalAddress::Package(ACCOUNT_PACKAGE))
+                                {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(
+                                    global_address,
+                                    GlobalAddress::Package(ACCESS_CONTROLLER_PACKAGE)
+                                ) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
                             }
 
                             let offset = SubstateOffset::Global(GlobalOffset::Global);

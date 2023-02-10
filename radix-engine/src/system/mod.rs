@@ -7,3 +7,4 @@ pub mod node_modules;
 pub mod node_properties;
 pub mod node_substates;
 pub mod package;
+pub mod type_info;

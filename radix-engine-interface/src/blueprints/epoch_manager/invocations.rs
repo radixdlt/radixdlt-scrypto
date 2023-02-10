@@ -3,9 +3,21 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+
+// TODO: Remove this and replace with a macro/function making it easy
+// TODO: to use manifest buckets for any input struct
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ManifestValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: ManifestBucket,
+    pub stake_account_address: ComponentAddress,
+}
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorInit {
@@ -14,8 +26,10 @@ pub struct ValidatorInit {
     pub stake_account_address: ComponentAddress,
 }
 
+pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateInvocation {
+pub struct EpochManagerCreateInput {
     pub olympia_validator_token_address: [u8; 26], // TODO: Clean this up
     pub component_address: [u8; 26],               // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
@@ -24,7 +38,7 @@ pub struct EpochManagerCreateInvocation {
     pub num_unstake_epochs: u64,
 }
 
-impl Clone for EpochManagerCreateInvocation {
+impl Clone for EpochManagerCreateInput {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
         for (key, validator_init) in &self.validator_set {
@@ -46,28 +60,6 @@ impl Clone for EpochManagerCreateInvocation {
             rounds_per_epoch: self.rounds_per_epoch,
             num_unstake_epochs: self.num_unstake_epochs,
         }
-    }
-}
-
-impl Invocation for EpochManagerCreateInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::Create))
-    }
-}
-
-impl SerializableInvocation for EpochManagerCreateInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::Create)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
 
