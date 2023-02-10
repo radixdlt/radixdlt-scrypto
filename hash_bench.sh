@@ -1,10 +1,11 @@
 #!/bin/bash
 
 set -x
+set -e
 
 tstamp=`date -u  +%Y%m%d%H%M%S`
-
 mkdir -p results
+
 
 raw_file=results/hash_bench_${tstamp}.raw
 res_file=results/hash_bench_${tstamp}.log
@@ -33,10 +34,18 @@ blake2-simd_opt \
 blake2-size_opt \
 "
 
+# Apparently blake2-simd does not work on stable
+rustup update nightly
 for f in $blake2_features ; do
     echo "hash_${f}"
     cargo bench -p radix-engine-interface --features $f --bench hash hash/Blake2 -- --save-baseline hash_${f}
 done | tee -a $raw_file
+rustup update stable
+
+# bench Blake2 stable
+f=blake2-default
+echo "hash_${f}_stable"
+cargo bench -p radix-engine-interface --features $f --bench hash hash/Blake2 -- --save-baseline hash_${f}_stable
 
 set +x
 
@@ -46,3 +55,4 @@ cat $raw_file | \
     awk '{printf  $1"\t"$5"\t"$6"\t"$12"\t"$13 "\n"}' | tee $res_file
 
 echo "results: $raw_file $res_file"
+
