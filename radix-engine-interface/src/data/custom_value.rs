@@ -326,8 +326,8 @@ mod tests {
             EddsaEd25519Signature([4u8; 64]),
             Decimal::ONE,
             PreciseDecimal::ONE,
-            NonFungibleLocalId::Integer(1),
-            NonFungibleLocalId::Bytes(vec![2, 3]),
+            NonFungibleLocalId::integer(1),
+            NonFungibleLocalId::bytes(vec![2, 3]).unwrap(),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -383,14 +383,14 @@ mod tests {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Integer(
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::integer(
                             1
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(
-                            vec![2, 3]
-                        )),
+                        value: ScryptoCustomValue::NonFungibleLocalId(
+                            NonFungibleLocalId::bytes(vec![2, 3]).unwrap()
+                        ),
                     },
                 ]
             }

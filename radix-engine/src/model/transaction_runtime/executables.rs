@@ -127,19 +127,19 @@ mod tests {
             5,
         );
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
         );
 
         let id = generate_uuid(&Hash([0u8; 32]), 5);
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{00000000-0000-4000-8000-000000000005}"
         );
 
         let id = generate_uuid(&Hash([255u8; 32]), 5);
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{ffffffff-ffff-4fff-bfff-ffff00000005}"
         );
     }
