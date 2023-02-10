@@ -23,6 +23,7 @@ for package in $packages; do
 done
 
 packages="
+    assets/blueprints/radiswap/Cargo.toml \
     assets/blueprints/faucet/Cargo.toml \
     examples/hello-world/Cargo.toml \
     examples/no-std/Cargo.toml \

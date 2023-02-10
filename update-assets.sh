@@ -10,10 +10,8 @@ scrypto="scrypto"
 
 cd "$(dirname "$0")/assets/blueprints"
 
-echo "Building packages..."
+echo "Building faucet..."
 (cd faucet; $scrypto build)
-
-echo "Publishing artifacts..."
 npx wasm-opt@1.3 \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
@@ -22,5 +20,16 @@ npx wasm-opt@1.3 \
 cp \
   ./target/wasm32-unknown-unknown/release/faucet.abi \
   ../faucet.abi
+
+echo "Building radiswap..."
+(cd radiswap; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../radiswap.wasm \
+  ./target/wasm32-unknown-unknown/release/radiswap.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/radiswap.abi \
+  ../radiswap.abi
 
 echo "Done!"
