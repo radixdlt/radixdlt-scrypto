@@ -47,6 +47,11 @@ f=blake2-default
 echo "hash_${f}_stable"
 cargo bench -p radix-engine-interface --features $f --bench hash hash/Blake2 -- --save-baseline hash_${f}_stable
 
+# bench blake2_simd
+f=blake2b_simd
+echo "hash_${f}"
+cargo bench -p radix-engine-interface --bench hash hash/blake2b_simd -- --save-baseline hash_${f}
+
 set +x
 
 cat $raw_file | \

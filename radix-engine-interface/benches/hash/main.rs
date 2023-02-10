@@ -5,6 +5,8 @@ use blake3;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use radix_engine_interface::crypto::{sha256, sha256_twice, sha3};
 //use webb_pedersen_hash;
+//
+use blake2b_simd::Params;
 
 //use dusk_bls12_381::BlsScalar;
 //use dusk_bytes::Serializable;
@@ -23,6 +25,12 @@ fn blake2b_hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
     let mut hasher = Blake2b::<U32>::new();
     hasher.update(data);
     hasher.finalize().into()
+}
+
+fn blake2b_simd_hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
+    let mut hasher = Params::new().hash_length(32).to_state();
+    hasher.update(data.as_ref());
+    hasher.finalize().as_bytes().try_into().expect("incorrect slice length")
 }
 /*
 fn poseidon_hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
@@ -83,6 +91,11 @@ fn bench_hash(c: &mut Criterion) {
         // Blake2b
         group.bench_with_input(BenchmarkId::new("Blake2b", size.1), &data[..], |b, d| {
             b.iter(|| blake2b_hash(d))
+        });
+
+        // blake2b_simd
+        group.bench_with_input(BenchmarkId::new("blake2b_simd", size.1), &data[..], |b, d| {
+            b.iter(|| blake2b_simd_hash(d))
         });
 
         // Blake3

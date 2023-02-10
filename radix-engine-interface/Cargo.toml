@@ -38,6 +38,7 @@ dusk-poseidon = { version = "0.28.1" }
 dusk-bls12_381 = { version = "0.11.2" }
 dusk-bytes = { version = "0.1.6" }
 k12 = { version = "0.2.1" }
+blake2b_simd = { version = "1.0.1", default-features = false }
 
 [[bench]]
 name = "math"
