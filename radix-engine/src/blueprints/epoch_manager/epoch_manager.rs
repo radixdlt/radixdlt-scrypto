@@ -6,6 +6,8 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -14,7 +16,7 @@ use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -104,7 +106,7 @@ impl Executor for EpochManagerCreateInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(
@@ -135,7 +137,7 @@ impl Executor for EpochManagerCreateInvocation {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
             let resource_address: ResourceAddress =
-                api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                api.call_native(ResourceManagerCreateNonFungibleInvocation {
                     resource_address: Some(self.olympia_validator_token_address),
                     id_type: NonFungibleIdType::Bytes,
                     metadata,
@@ -152,7 +154,7 @@ impl Executor for EpochManagerCreateInvocation {
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.validator_account_address,
                 bucket: owner_token_bucket.0,
             })?;
@@ -168,7 +170,7 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.stake_account_address,
                 bucket: lp_bucket.0,
             })?;
@@ -480,7 +482,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -536,7 +538,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;

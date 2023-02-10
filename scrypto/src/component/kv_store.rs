@@ -1,18 +1,19 @@
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi};
-use radix_engine_interface::data::*;
-
+use radix_engine_interface::api::{ClientComponentApi, ClientSubstateApi};
 use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::marker::PhantomData;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::runtime::{DataRef, DataRefMut};
+use crate::runtime::{DataRef, DataRefMut, OriginalData};
+
+// TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
@@ -21,18 +22,14 @@ pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + Sc
     pub value: PhantomData<V>,
 }
 
-// TODO: de-duplication
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
-
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
-        let id = env.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
+        let id = env.new_key_value_store().unwrap();
 
         Self {
-            id: id.into(),
+            id,
             key: PhantomData,
             value: PhantomData,
         }
@@ -41,55 +38,73 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut env = ScryptoEnv;
-        let offset =
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
-        let lock_handle = env
+        let key_payload = scrypto_encode(key).unwrap();
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
+        let handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
             .unwrap();
-        let raw_bytes = env.sys_read(lock_handle).unwrap();
-        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let raw_bytes = env.sys_read_substate(handle).unwrap();
 
-        if value.0.is_none() {
-            env.sys_drop_lock(lock_handle).unwrap();
+        // Decode and create Ref
+        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        match substate {
+            KeyValueStoreEntrySubstate::Some(_, value) => Some(DataRef::new(
+                handle,
+                scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
+            )),
+            KeyValueStoreEntrySubstate::None => {
+                env.sys_drop_lock(handle).unwrap();
+                None
+            }
         }
-
-        value
-            .0
-            .map(|raw| DataRef::new(lock_handle, scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut env = ScryptoEnv;
-        let offset =
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
-        let lock_handle = env
+        let key_payload = scrypto_encode(key).unwrap();
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
+        let handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
-        let raw_bytes = env.sys_read(lock_handle).unwrap();
-        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let raw_bytes = env.sys_read_substate(handle).unwrap();
 
-        if value.0.is_none() {
-            env.sys_drop_lock(lock_handle).unwrap();
+        // Decode and create RefMut
+        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        match substate {
+            KeyValueStoreEntrySubstate::Some(key, value) => {
+                let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+                Some(DataRefMut::new(
+                    handle,
+                    OriginalData::KeyValueStoreEntry(key, value),
+                    rust_value,
+                ))
+            }
+            KeyValueStoreEntrySubstate::None => {
+                env.sys_drop_lock(handle).unwrap();
+                None
+            }
         }
-
-        value
-            .0
-            .map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let mut env = ScryptoEnv;
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-            scrypto_encode(&key).unwrap(),
-        ));
-        let lock_handle = env
+        let key_payload = scrypto_encode(&key).unwrap();
+        let value_payload = scrypto_encode(&value).unwrap();
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
+        let handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
-        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value).unwrap()));
-        env.sys_write(lock_handle, scrypto_encode(&substate).unwrap())
-            .unwrap();
-        env.sys_drop_lock(lock_handle).unwrap();
+        env.sys_write_substate(
+            handle,
+            scrypto_encode(&KeyValueStoreEntrySubstate::Some(
+                scrypto_decode(&key_payload).unwrap(),
+                scrypto_decode(&value_payload).unwrap(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        env.sys_drop_lock(handle).unwrap();
     }
 }
 
@@ -132,10 +147,10 @@ impl<
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::KeyValueStore(kv_store_id) => Ok(Self {
-                id: kv_store_id,
+        let own = Own::decode_body_with_value_kind(decoder, value_kind)?;
+        match own {
+            Own::KeyValueStore(_) => Ok(Self {
+                id: own.kv_store_id(),
                 key: PhantomData,
                 value: PhantomData,
             }),

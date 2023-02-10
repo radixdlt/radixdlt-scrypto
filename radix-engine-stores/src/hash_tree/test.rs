@@ -1,13 +1,13 @@
-use super::put_at_next_version;
-use super::tree_store::{
+use super::types::{Nibble, NibblePath, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::put_at_next_version;
+use crate::hash_tree::tree_store::{
     SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-    TypedInMemoryTreeStore,
+    TypedInMemoryTreeStore, Version,
 };
-use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use itertools::Itertools;
-use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::PackageAddress;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     GlobalAddress, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
 };
@@ -207,18 +207,21 @@ fn serialized_keys_are_strictly_increasing() {
 
 fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
-    let fake_kvs_key = vec![substate_offset_seed; substate_offset_seed as usize];
+    let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateId(
         RENodeId::Global(GlobalAddress::Package(fake_pkg_address)),
         NodeModuleId::SELF,
-        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_key)),
+        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
     )
 }
 
 fn value_hash(value_seed: u8) -> Option<Hash> {
-    let fake_kvs_value = Some(vec![value_seed; value_seed as usize]);
-    let fake_kvs_entry =
-        PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(fake_kvs_value));
+    let fake_kvs_key = scrypto_encode(&vec![value_seed; value_seed as usize]).unwrap();
+    let fake_kvs_value = scrypto_encode(&vec![value_seed; value_seed as usize]).unwrap();
+    let fake_kvs_entry = PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+        scrypto_decode(&fake_kvs_key).unwrap(),
+        scrypto_decode(&fake_kvs_value).unwrap(),
+    ));
     Some(hash(scrypto_encode(&fake_kvs_entry).unwrap()))
 }
 

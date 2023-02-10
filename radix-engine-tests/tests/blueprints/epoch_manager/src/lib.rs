@@ -1,5 +1,5 @@
 use crate::radix_engine_interface::blueprints::epoch_manager::EpochManagerNextRoundInvocation;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -14,7 +14,7 @@ mod epoch_manager_test {
 
         pub fn next_round(epoch_manager: ComponentAddress, round: u64) {
             ScryptoEnv
-                .invoke(EpochManagerNextRoundInvocation {
+                .call_native(EpochManagerNextRoundInvocation {
                     receiver: epoch_manager,
                     round,
                 })

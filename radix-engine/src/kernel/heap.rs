@@ -1,10 +1,10 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::errors::CallFrameError;
 use crate::kernel::Track;
 use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -36,7 +36,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref())
             }
@@ -70,7 +70,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref_mut())
             }

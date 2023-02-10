@@ -1,11 +1,9 @@
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNodeApi;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::collections::*;
-use sbor::rust::string::ToString;
-use scrypto::runtime::Runtime;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -44,20 +42,24 @@ impl ComponentSystem {
     }
 
     /// Instantiates a component.
-    pub fn create_component<T: ComponentState<C>, C: LocalComponent>(
+    pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
         &self,
         blueprint_name: &str,
         state: T,
-    ) -> Component {
+    ) -> OwnedComponent {
         let mut env = ScryptoEnv;
         let node_id = env
-            .sys_create_node(ScryptoRENode::Component(
-                Runtime::package_address(),
-                blueprint_name.to_string(),
-                scrypto_encode(&state).unwrap(),
-            ))
+            .new_component(
+                blueprint_name,
+                btreemap!(
+                    0 => scrypto_encode(&state).unwrap()
+                ),
+                Vec::new(),
+                RoyaltyConfigBuilder::new().default(0),
+                BTreeMap::new(),
+            )
             .unwrap();
-        Component(node_id.into())
+        OwnedComponent(node_id.into())
     }
 }
 

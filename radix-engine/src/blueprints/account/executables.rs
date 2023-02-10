@@ -1,20 +1,20 @@
-use crate::blueprints::kv_store::KeyValueStore;
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::ClientStaticInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -69,14 +69,14 @@ impl Executor for AccountCreateInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
             let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore(KeyValueStore::new());
+            let node = RENodeInit::KeyValueStore;
             api.create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
@@ -145,14 +145,14 @@ impl Executor for AccountNewInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
             let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore(KeyValueStore::new());
+            let node = RENodeInit::KeyValueStore;
             api.create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
@@ -244,7 +244,7 @@ impl Executor for AccountLockFeeExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
@@ -273,11 +273,15 @@ impl Executor for AccountLockFeeExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -340,7 +344,7 @@ impl Executor for AccountLockContingentFeeExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
@@ -369,11 +373,15 @@ impl Executor for AccountLockContingentFeeExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -436,7 +444,7 @@ impl Executor for AccountDepositExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = bucket_resource_address(api, self.bucket)?;
@@ -466,18 +474,21 @@ impl Executor for AccountDepositExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!"),
-                None => {
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!")
+                }
+                KeyValueStoreEntrySubstate::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_value =
-                        scrypto_encode(&Own::Vault(vault.0)).expect("Impossible Case!");
+                    let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
+                    let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                     let mut substate = api.get_ref_mut(kv_store_entry_lock_handle)?;
                     let entry = substate.kv_store_entry();
-                    *entry = KeyValueStoreEntrySubstate(Some(encoded_value));
+                    *entry =
+                        KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
 
                     vault
                 }
@@ -560,7 +571,7 @@ impl Executor for AccountDepositBatchExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let node_id = self.receiver;
@@ -595,18 +606,23 @@ impl Executor for AccountDepositBatchExecutable {
                 let substate = api.get_ref(kv_store_entry_lock_handle)?;
                 let entry = substate.kv_store_entry();
 
-                match entry.0 {
-                    Some(ref raw_bytes) => scrypto_decode::<Own>(&raw_bytes)
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"),
-                    None => {
+                match entry {
+                    KeyValueStoreEntrySubstate::Some(_, value) => {
+                        scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                            .map(|own| Vault(own.vault_id()))
+                            .expect("Impossible Case!")
+                    }
+                    KeyValueStoreEntrySubstate::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_value =
-                            scrypto_encode(&Own::Vault(vault.0)).expect("Impossible Case!");
+                        let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
+                        let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                         let mut substate = api.get_ref_mut(kv_store_entry_lock_handle)?;
                         let entry = substate.kv_store_entry();
-                        *entry = KeyValueStoreEntrySubstate(Some(encoded_value));
+                        *entry = KeyValueStoreEntrySubstate::Some(
+                            encoded_key.into(),
+                            encoded_value.into(),
+                        );
 
                         vault
                     }
@@ -671,7 +687,7 @@ impl Executor for AccountWithdrawAllExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -700,11 +716,15 @@ impl Executor for AccountWithdrawAllExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -768,7 +788,7 @@ impl Executor for AccountWithdrawExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -797,11 +817,15 @@ impl Executor for AccountWithdrawExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -867,7 +891,7 @@ impl Executor for AccountWithdrawNonFungiblesExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -896,11 +920,15 @@ impl Executor for AccountWithdrawNonFungiblesExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -955,14 +983,14 @@ impl Executor for AccountLockFeeAndWithdrawAllInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        api.invoke(AccountLockFeeInvocation {
+        api.call_native(AccountLockFeeInvocation {
             receiver: self.receiver,
             amount: self.amount_to_lock,
         })?;
-        let bucket = api.invoke(AccountWithdrawAllInvocation {
+        let bucket = api.call_native(AccountWithdrawAllInvocation {
             receiver: self.receiver,
             resource_address: self.resource_address,
         })?;
@@ -1011,14 +1039,14 @@ impl Executor for AccountLockFeeAndWithdrawInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        api.invoke(AccountLockFeeInvocation {
+        api.call_native(AccountLockFeeInvocation {
             receiver: self.receiver,
             amount: self.amount_to_lock,
         })?;
-        let bucket = api.invoke(AccountWithdrawInvocation {
+        let bucket = api.call_native(AccountWithdrawInvocation {
             receiver: self.receiver,
             resource_address: self.resource_address,
             amount: self.amount,
@@ -1068,14 +1096,14 @@ impl Executor for AccountLockFeeAndWithdrawNonFungiblesInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        api.invoke(AccountLockFeeInvocation {
+        api.call_native(AccountLockFeeInvocation {
             receiver: self.receiver,
             amount: self.amount_to_lock,
         })?;
-        let bucket = api.invoke(AccountWithdrawNonFungiblesInvocation {
+        let bucket = api.call_native(AccountWithdrawNonFungiblesInvocation {
             receiver: self.receiver,
             resource_address: self.resource_address,
             ids: self.ids,
@@ -1132,7 +1160,7 @@ impl Executor for AccountCreateProofExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -1165,11 +1193,15 @@ impl Executor for AccountCreateProofExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -1235,7 +1267,7 @@ impl Executor for AccountCreateProofByAmountExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -1268,11 +1300,15 @@ impl Executor for AccountCreateProofByAmountExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 
@@ -1338,7 +1374,7 @@ impl Executor for AccountCreateProofByIdsExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         let resource_address = self.resource_address;
@@ -1367,11 +1403,15 @@ impl Executor for AccountCreateProofByIdsExecutable {
             let substate = api.get_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
-            match entry.0 {
-                Some(ref raw_bytes) => Ok(scrypto_decode::<Own>(&raw_bytes)
-                    .map(|own| Vault(own.vault_id()))
-                    .expect("Impossible Case!")),
-                None => Err(AccountError::VaultDoesNotExist { resource_address }),
+            match entry {
+                KeyValueStoreEntrySubstate::Some(_, value) => {
+                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"))
+                }
+                KeyValueStoreEntrySubstate::None => {
+                    Err(AccountError::VaultDoesNotExist { resource_address })
+                }
             }
         }?;
 

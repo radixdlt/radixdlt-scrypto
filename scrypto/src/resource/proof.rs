@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{ProofId, RENodeId};
-use radix_engine_interface::api::{ClientNodeApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -57,7 +57,7 @@ impl ScryptoProof for Proof {
 
     fn clone(&self) -> Self {
         let mut env = ScryptoEnv;
-        env.invoke(ProofCloneInvocation { receiver: self.0 })
+        env.call_native(ProofCloneInvocation { receiver: self.0 })
             .unwrap()
     }
 

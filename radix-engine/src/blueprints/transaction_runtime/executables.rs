@@ -8,7 +8,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::transaction_hash::*;
+use radix_engine_interface::blueprints::transaction_runtime::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeError {
