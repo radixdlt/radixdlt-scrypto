@@ -85,10 +85,7 @@ impl Vault {
         api.call_native(VaultGetAmountInvocation { receiver: self.0 })
     }
 
-    pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Proof, E>
+    pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,

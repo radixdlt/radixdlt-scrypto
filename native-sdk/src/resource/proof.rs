@@ -30,10 +30,7 @@ impl SysProof for Proof {
         api.call_native(ProofCloneInvocation { receiver: self.0 })
     }
 
-    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
+    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E>,
     {
