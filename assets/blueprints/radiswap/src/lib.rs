@@ -184,7 +184,7 @@ mod radiswap {
                 self.a_pool.take(a_amount)
             };
 
-            // Accrued fees change the raio
+            // Accrued fees change the ratio
             self.lp_per_asset_ratio =
                 lp_resource_manager.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
 
