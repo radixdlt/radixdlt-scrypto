@@ -207,6 +207,7 @@ impl Into<ResourceAddress> for GlobalAddress {
 pub enum NodeModuleId {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
+    ComponentTypeInfo,
     Metadata,
     AccessRules,
     AccessRules1,
@@ -225,6 +226,11 @@ pub enum AccessRulesChainOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentTypeInfoOffset {
+    TypeInfo,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MetadataOffset {
     Metadata,
 }
@@ -237,8 +243,8 @@ pub enum RoyaltyOffset {
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
-    Info,
-    State,
+    /// Component application state at offset `0x00`.
+    State0,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -384,6 +390,10 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+
+    // Node modules
+    // TODO: align with module ID allocation?
+    ComponentTypeInfo(ComponentTypeInfoOffset),
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),

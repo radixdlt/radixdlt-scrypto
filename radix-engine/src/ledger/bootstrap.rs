@@ -5,7 +5,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackagePublishInvocation, PackagePublishNativeInvocation,

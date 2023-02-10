@@ -391,6 +391,30 @@ impl WasmModule {
                                 }
                             }
                         }
+                        LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
                         _ => {}
                     };
                 }

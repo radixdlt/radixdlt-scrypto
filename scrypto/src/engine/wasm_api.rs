@@ -51,6 +51,11 @@ extern "C" {
     // Component API
     //===============
 
+    pub fn lookup_global_component(
+        component_address_ptr: *const u8,
+        component_address_len: usize,
+    ) -> Buffer;
+
     pub fn new_component(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
@@ -64,7 +69,11 @@ extern "C" {
         metadata_len: usize,
     ) -> Buffer;
 
+    pub fn new_key_value_store() -> Buffer;
+
     pub fn globalize_component(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+    pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -75,8 +84,6 @@ extern "C" {
         args_ptr: *const u8,
         args_len: usize,
     ) -> Buffer;
-
-    pub fn new_key_value_store() -> Buffer;
 
     //===============
     // Package API
@@ -166,6 +173,14 @@ pub unsafe fn call_native(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn lookup_global_component(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn new_component(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
@@ -182,6 +197,11 @@ pub unsafe fn new_component(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_key_value_store() -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn globalize_component(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
@@ -190,7 +210,10 @@ pub unsafe fn globalize_component(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store() -> Buffer {
+pub unsafe fn get_component_type_info(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
     todo!()
 }
 

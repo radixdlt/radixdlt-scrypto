@@ -84,8 +84,8 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 let component_info = {
                     let handle = api.lock_substate(
                         component_node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Component(ComponentOffset::Info),
+                        NodeModuleId::ComponentTypeInfo,
+                        SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.get_ref(handle)?;
@@ -110,8 +110,8 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             let component_info = {
                 let handle = api.lock_substate(
                     component_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::Info),
+                    NodeModuleId::ComponentTypeInfo,
+                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;

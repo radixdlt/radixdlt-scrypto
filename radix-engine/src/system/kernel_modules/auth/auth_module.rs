@@ -7,7 +7,7 @@ use crate::system::kernel_modules::auth::method_authorization::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible,
 };
 use crate::types::*;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
@@ -217,7 +217,7 @@ impl AuthModule {
 
                 let component_node_id = RENodeId::Component(*component_id);
                 let state = {
-                    let offset = SubstateOffset::Component(ComponentOffset::State);
+                    let offset = SubstateOffset::Component(ComponentOffset::State0);
                     let handle = system_api.lock_substate(
                         component_node_id,
                         NodeModuleId::SELF,

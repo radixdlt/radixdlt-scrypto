@@ -2,9 +2,8 @@ pub mod actor_api;
 pub mod component;
 pub mod component_api;
 pub mod deref_api;
-pub mod kernel_modules; // TODO: remove
 pub mod metering_api;
-pub mod native_invoke_api; // TODO: consider removing statically linked invocations.
+pub mod native_invoke_api;
 pub mod node_api;
 pub mod node_modules;
 pub mod package;
@@ -32,7 +31,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientNativeInvokeApi<E>  // TODO: restrict and protect native invocations
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
-    + ClientDerefApi<E>
+    + ClientDerefApi<E>  // TODO: remove
     + ClientMeteringApi<E>
 {
 }

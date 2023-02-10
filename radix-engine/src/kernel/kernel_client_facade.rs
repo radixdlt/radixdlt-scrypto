@@ -1,3 +1,4 @@
+use super::Invokable;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
@@ -35,8 +36,6 @@ use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-use super::Invokable;
 
 impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
@@ -296,6 +295,21 @@ where
     R: FeeReserve,
     M: BaseModule<R>,
 {
+    fn lookup_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<ComponentId, RuntimeError> {
+        let offset = SubstateOffset::Global(GlobalOffset::Global);
+        let handle = self.lock_substate(
+            RENodeId::Global(GlobalAddress::Component(component_address)),
+            NodeModuleId::SELF,
+            offset,
+            LockFlags::empty(),
+        )?;
+        let substate_ref = self.get_ref(handle)?;
+        Ok(substate_ref.global_address().node_deref().into())
+    }
+
     fn new_component(
         &mut self,
         blueprint_ident: &str,
@@ -340,11 +354,11 @@ where
 
         self.create_node(
             node_id,
-            RENodeInit::Component(
-                ComponentInfoSubstate::new(package_address, blueprint_ident.to_string()),
-                ComponentStateSubstate::new(abi_enforced_app_substate),
-            ),
+            RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
+                NodeModuleId::ComponentTypeInfo => RENodeModuleInit::ComponentTypeInfo(
+                    ComponentInfoSubstate::new(package_address, blueprint_ident.to_string())
+                ),
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
                     royalty_accumulator_substate
@@ -391,15 +405,15 @@ where
         }
     }
 
-    fn get_type_info(
+    fn get_component_type_info(
         &mut self,
         component_id: ComponentId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let component_node_id = RENodeId::Component(component_id);
         let handle = self.lock_substate(
             component_node_id,
-            NodeModuleId::SELF,
-            SubstateOffset::Component(ComponentOffset::Info),
+            NodeModuleId::ComponentTypeInfo,
+            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.get_ref(handle)?;

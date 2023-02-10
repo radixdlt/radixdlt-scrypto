@@ -12,7 +12,7 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};

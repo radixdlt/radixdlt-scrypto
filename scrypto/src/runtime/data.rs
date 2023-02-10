@@ -124,7 +124,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),
-                SubstateOffset::Component(ComponentOffset::State),
+                SubstateOffset::Component(ComponentOffset::State0),
                 false,
             )
             .unwrap();
@@ -141,7 +141,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let lock_handle = env
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),
-                SubstateOffset::Component(ComponentOffset::State),
+                SubstateOffset::Component(ComponentOffset::State0),
                 true,
             )
             .unwrap();

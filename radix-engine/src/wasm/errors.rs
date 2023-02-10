@@ -131,6 +131,8 @@ pub enum WasmRuntimeError {
     InvalidMetadata(DecodeError),
     /// Invalid component id
     InvalidComponentId(DecodeError),
+    /// Invalid component address
+    InvalidComponentAddress(DecodeError),
     /// Costing error
     CostingError(FeeReserveError),
 }
