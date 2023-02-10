@@ -24,7 +24,7 @@ mod faucet {
             let epoch = Runtime::current_epoch();
             assert!(self.transactions.get(&transaction_hash).is_none());
             self.transactions.insert(transaction_hash, epoch);
-            self.vault.take(1000)
+            self.vault.take(10000)
         }
 
         /// Locks fees.
