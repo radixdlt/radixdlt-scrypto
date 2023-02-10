@@ -339,66 +339,65 @@ pub fn decompile_instruction<F: fmt::Write>(
             function_name,
             args,
         } => {
-            if package_address.eq(&ACCOUNT_PACKAGE)
-                && blueprint_name.eq(ACCOUNT_BLUEPRINT)
-                && function_name.eq(ACCOUNT_CREATE_LOCAL_IDENT)
-            {
-                write!(f, "CREATE_ACCOUNT")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&IDENTITY_PACKAGE)
-                && blueprint_name.eq(IDENTITY_BLUEPRINT)
-                && function_name.eq(IDENTITY_CREATE_IDENT)
-            {
-                write!(f, "CREATE_IDENTITY")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                && blueprint_name.eq(&ACCESS_CONTROLLER_BLUEPRINT)
-                && function_name.eq(ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT)
-            {
-                f.write_str("CREATE_ACCESS_CONTROLLER")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq(RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT)
-            {
-                f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq(RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT)
-            {
-                f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq(RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT)
-            {
-                f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(&RESOURCE_MANAGER_BLUEPRINT)
-                && function_name.eq(RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT)
-            {
-                f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
-            } else {
-                write!(
-                    f,
-                    "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
-                    package_address.display(context.bech32_encoder),
-                    blueprint_name,
-                    function_name,
-                )?;
-                format_args(f, context, args)?;
-                f.write_str(";")?;
+            match (
+                package_address,
+                blueprint_name.as_str(),
+                function_name.as_str(),
+            ) {
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT) => {
+                    write!(f, "CREATE_ACCOUNT")?;
+                }
+                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => {
+                    write!(f, "CREATE_IDENTITY")?;
+                }
+                (
+                    &ACCESS_CONTROLLER_PACKAGE,
+                    ACCESS_CONTROLLER_BLUEPRINT,
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                ) => {
+                    write!(f, "CREATE_ACCESS_CONTROLLER")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                ) => {
+                    write!(f, "CREATE_FUNGIBLE_RESOURCE")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                ) => {
+                    write!(f, "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                ) => {
+                    write!(f, "CREATE_NON_FUNGIBLE_RESOURCE")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                ) => {
+                    write!(f, "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                }
+                _ => {
+                    write!(
+                        f,
+                        "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
+                        package_address.display(context.bech32_encoder),
+                        blueprint_name,
+                        function_name,
+                    )?;
+                }
             }
+
+            format_args(f, context, args)?;
+            f.write_str(";")?;
         }
         BasicInstruction::CallMethod {
             component_address,
