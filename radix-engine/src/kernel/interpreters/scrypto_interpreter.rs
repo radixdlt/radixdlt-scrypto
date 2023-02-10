@@ -138,85 +138,82 @@ impl ExecutableInvocation for ScryptoInvocation {
             _ => {}
         }
 
-        match self.package_address {
-            IDENTITY_PACKAGE
-            | EPOCH_MANAGER_PACKAGE
-            | CLOCK_PACKAGE
-            | ACCOUNT_PACKAGE
-            | ACCESS_CONTROLLER_PACKAGE
-            | RESOURCE_MANAGER_PACKAGE => {
-                let executor = ScryptoExecutor {
-                    package_address: self.package_address,
-                    export_name: self.fn_name.to_string(),
-                    component_id: receiver,
-                    args: args.into(),
-                };
+        let handle = api.lock_substate(
+            RENodeId::Global(GlobalAddress::Package(self.package_address)),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo,
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(handle)?;
+        let type_info = substate_ref.type_info().clone();
+        api.drop_lock(handle)?;
 
-                return Ok((
-                    actor,
-                    CallFrameUpdate {
-                        nodes_to_move,
-                        node_refs_to_copy,
-                    },
-                    executor,
-                ));
+        let export_name = match type_info {
+            TypeInfoSubstate::NativePackage => {
+                self.fn_name.to_string() // TODO: Clean this up
             }
-            _ => {}
-        }
+            TypeInfoSubstate::WasmPackage => {
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+                    ECDSA_SECP256K1_TOKEN,
+                )));
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+                    EDDSA_ED25519_TOKEN,
+                )));
 
-        // Signature check + retrieve export_name
-        let export_name = {
-            let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
+                let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
 
-            let handle = api.lock_substate(
-                package_global,
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.get_ref(handle)?;
-            let package = substate_ref.package_info(); // TODO: Remove clone()
-                                                       // Find the abi
-            let abi = package.blueprint_abi(&self.blueprint_name).ok_or(
-                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                    self.package_address,
-                    self.blueprint_name.clone(),
-                    self.fn_name.clone(),
-                    ScryptoFnResolvingError::BlueprintNotFound,
-                )),
-            )?;
-            let fn_abi = abi
-                .get_fn_abi(&self.fn_name)
-                .ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoInvocation(
+                let handle = api.lock_substate(
+                    package_global,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.get_ref(handle)?;
+                let package = substate_ref.package_info(); // TODO: Remove clone()
+                // Find the abi
+                let abi = package.blueprint_abi(&self.blueprint_name).ok_or(
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                         self.package_address,
                         self.blueprint_name.clone(),
                         self.fn_name.clone(),
-                        ScryptoFnResolvingError::MethodNotFound,
-                    ),
-                ))?;
+                        ScryptoFnResolvingError::BlueprintNotFound,
+                    )),
+                )?;
+                let fn_abi = abi
+                    .get_fn_abi(&self.fn_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoInvocation(
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.fn_name.clone(),
+                            ScryptoFnResolvingError::MethodNotFound,
+                        ),
+                    ))?;
 
-            if fn_abi.mutability.is_some() != self.receiver.is_some() {
-                return Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidInvocation,
-                ));
+                if fn_abi.mutability.is_some() != self.receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidInvocation,
+                    ));
+                }
+
+                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoInvocation(
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.fn_name.clone(),
+                            ScryptoFnResolvingError::InvalidInput,
+                        ),
+                    ));
+                }
+
+                let export_name = fn_abi.export_name.clone();
+                api.drop_lock(handle)?;
+
+                export_name
             }
-
-            if !match_schema_with_value(&fn_abi.input, args.as_value()) {
-                return Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoInvocation(
-                        self.package_address,
-                        self.blueprint_name.clone(),
-                        self.fn_name.clone(),
-                        ScryptoFnResolvingError::InvalidInput,
-                    ),
-                ));
-            }
-
-            let export_name = fn_abi.export_name.clone();
-            api.drop_lock(handle)?;
-
-            export_name
         };
 
         let executor = ScryptoExecutor {
@@ -230,14 +227,7 @@ impl ExecutableInvocation for ScryptoInvocation {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(
             self.package_address,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
+
 
         Ok((
             actor,
@@ -412,7 +402,9 @@ impl NativeVm {
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, input, api)
             }
-            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(&export_name, input, api),
+            CLOCK_PACKAGE_CODE_ID => {
+                ClockNativePackage::invoke_export(&export_name, input, api)
+            },
             ACCOUNT_PACKAGE_CODE_ID => {
                 AccountNativePackage::invoke_export(&export_name, input, api)
             }

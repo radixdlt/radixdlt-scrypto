@@ -80,7 +80,7 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -146,7 +146,7 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateLocalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.

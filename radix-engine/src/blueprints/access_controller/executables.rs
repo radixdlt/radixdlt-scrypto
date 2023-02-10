@@ -97,7 +97,7 @@ impl AccessControllerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccessControllerCreateGlobalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {

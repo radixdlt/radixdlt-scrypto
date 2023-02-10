@@ -38,7 +38,8 @@ impl IdentityNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: IdentityCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+        let input: IdentityCreateInput =
+        scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let node_id = Identity::create(input.access_rule, api)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalIdentity)?;

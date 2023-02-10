@@ -486,7 +486,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_non_fungible_resource_manager(
@@ -512,7 +512,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
@@ -543,7 +543,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -612,7 +612,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -678,7 +678,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_fungible_resource_manager(
@@ -704,7 +704,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -764,7 +764,7 @@ impl ResourceManagerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).unwrap();
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
             input.resource_address,
