@@ -1,5 +1,5 @@
 use super::*;
-use sbor::rust::collections::*;
+use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
     T: Describe<E::CustomTypeKind<GlobalTypeId>>,

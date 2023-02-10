@@ -1,6 +1,5 @@
 use super::*;
-use crate::rust::collections::BTreeMap;
-use crate::rust::vec::Vec;
+use crate::rust::prelude::*;
 use crate::schema::*;
 
 pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
@@ -122,12 +121,12 @@ pub fn validate_enum_metadata(
 fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
     if name.len() == 0 {
         return Err(SchemaValidationError::InvalidTypeName {
-            message: "Type name cannot be empty".to_owned(),
+            message: "Type name cannot be empty".into(),
         });
     }
     if name.len() > 100 {
         return Err(SchemaValidationError::InvalidTypeName {
-            message: "Type name cannot be more than 100 characters".to_owned(),
+            message: "Type name cannot be more than 100 characters".into(),
         });
     }
     for char in name.chars() {
@@ -136,7 +135,7 @@ fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
                 // We need to validate this because we need to generate types from these names
                 // Rust is much less prescriptive for identifier names (see https://doc.rust-lang.org/reference/identifiers.html and https://unicode.org/reports/tr31/)
                 // But we can always loosen this later
-                message: "At present, types names must match [0-9A-Za-z_]+".to_owned(),
+                message: "At present, types names must match [0-9A-Za-z_]+".into(),
             });
         }
     }
@@ -146,18 +145,18 @@ fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
 fn validate_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
     if name.len() == 0 {
         return Err(SchemaValidationError::InvalidEnumVariantName {
-            message: "Enum variant name cannot be empty".to_owned(),
+            message: "Enum variant name cannot be empty".into(),
         });
     }
     if name.len() > 100 {
         return Err(SchemaValidationError::InvalidEnumVariantName {
-            message: "Enum variant name cannot be more than 100 characters".to_owned(),
+            message: "Enum variant name cannot be more than 100 characters".into(),
         });
     }
     for char in name.chars() {
         if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
             return Err(SchemaValidationError::InvalidEnumVariantName {
-                message: "At present, enum variant names must match [0-9A-Za-z_]+".to_owned(),
+                message: "At present, enum variant names must match [0-9A-Za-z_]+".into(),
             });
         }
     }
@@ -167,18 +166,18 @@ fn validate_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
 fn validate_field_name(name: &str) -> Result<(), SchemaValidationError> {
     if name.len() == 0 {
         return Err(SchemaValidationError::InvalidFieldName {
-            message: "Field name cannot be empty".to_owned(),
+            message: "Field name cannot be empty".into(),
         });
     }
     if name.len() > 100 {
         return Err(SchemaValidationError::InvalidFieldName {
-            message: "Field name cannot be more than 100 characters".to_owned(),
+            message: "Field name cannot be more than 100 characters".into(),
         });
     }
     for char in name.chars() {
         if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
             return Err(SchemaValidationError::InvalidFieldName {
-                message: "At present, field names must match [0-9A-Za-z_]+".to_owned(),
+                message: "At present, field names must match [0-9A-Za-z_]+".into(),
             });
         }
     }

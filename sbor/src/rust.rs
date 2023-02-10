@@ -1,3 +1,35 @@
+pub mod prelude {
+    // See eg https://doc.rust-lang.org/std/prelude/index.html
+
+    // std::prelude::v1
+    pub use super::marker::{Copy, Send, Sized, Sync, Unpin};
+    pub use super::ops::{Drop, Fn, FnMut, FnOnce};
+    pub use super::mem::drop;
+    pub use super::boxed::Box;
+    pub use super::borrow::ToOwned;
+    pub use super::clone::Clone;
+    pub use super::cmp::{PartialEq, PartialOrd, Eq, Ord};
+    pub use super::convert::{AsRef, AsMut, Into, From};
+    pub use super::default::Default;
+    pub use super::iter::{Iterator, Extend, IntoIterator, DoubleEndedIterator, ExactSizeIterator};
+    pub use super::option::Option::{self, Some, None};
+    pub use super::result::Result::{self, Ok, Err};
+    pub use super::string::{String, ToString};
+    pub use super::vec::Vec;
+
+    // std::prelude::rust_2021
+    pub use super::convert::{TryFrom, TryInto};
+    pub use super::iter::FromIterator;
+
+    // And some extra useful additions we use a lot:
+    pub use super::collections::*;
+    pub use super::fmt::{Debug, Display};
+    pub use super::str::FromStr;
+    pub use super::format;
+    pub use super::vec;
+    pub use super::marker::PhantomData;
+}
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -40,6 +72,14 @@ pub use core::ops;
 pub use core::ptr;
 #[cfg(feature = "alloc")]
 pub use core::slice;
+#[cfg(feature = "alloc")]
+pub use core::clone;
+#[cfg(feature = "alloc")]
+pub use core::default;
+#[cfg(feature = "alloc")]
+pub use core::option;
+#[cfg(feature = "alloc")]
+pub use core::result;
 
 #[cfg(not(feature = "alloc"))]
 pub use std::alloc;
@@ -83,6 +123,14 @@ pub use std::string;
 pub use std::sync;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
+#[cfg(not(feature = "alloc"))]
+pub use std::clone;
+#[cfg(not(feature = "alloc"))]
+pub use std::default;
+#[cfg(not(feature = "alloc"))]
+pub use std::option;
+#[cfg(not(feature = "alloc"))]
+pub use std::result;
 
 /// Collection types.
 pub mod collections {
