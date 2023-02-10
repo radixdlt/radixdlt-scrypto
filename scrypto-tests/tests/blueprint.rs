@@ -42,12 +42,17 @@ mod simple {
     }
 }
 
-#[blueprint]
-mod empty_with_use_statements {
-    use sbor::BasicValue;
-    use scrypto::model::ComponentAddress;
+#[allow(unused_imports)]
+mod wrapper {
+    use super::*;
 
-    struct Empty1 {}
+    #[blueprint]
+    mod empty_with_use_statements {
+        use sbor::BasicValue;
+        use scrypto::model::ComponentAddress;
 
-    impl Empty1 {}
+        struct Empty1 {}
+
+        impl Empty1 {}
+    }
 }
