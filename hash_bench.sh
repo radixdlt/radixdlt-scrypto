@@ -57,6 +57,8 @@ set +x
 
 cat $raw_file | \
     awk '!/thrpt:/&&NR>1{print OFS}{printf "%s ",$0}END{print OFS}' | \
+    grep -A1 "^hash"  | sed -E 's/^ *time:/time:/g' | \
+    awk '!/^time:/&&NR>1{print OFS}{printf "%s ",$0}END{print OFS}' | \
     grep "^hash" | \
     awk '{printf  $1"\t"$5"\t"$6"\t"$12"\t"$13 "\n"}' | tee $res_file
 
