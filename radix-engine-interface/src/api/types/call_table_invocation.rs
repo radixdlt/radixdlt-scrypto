@@ -125,6 +125,7 @@ pub enum ComponentInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
+    PublishNative(PackagePublishNativeInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
@@ -290,6 +291,7 @@ impl NativeInvocation {
             },
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
+                PackageInvocation::PublishNative(..) => {}
                 PackageInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Package(
                         invocation.receiver,

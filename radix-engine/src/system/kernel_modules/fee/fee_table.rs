@@ -247,6 +247,7 @@ impl FeeTable {
             },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
+                PackageFn::PublishNative => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },

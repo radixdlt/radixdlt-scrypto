@@ -249,6 +249,7 @@ pub enum ComponentFn {
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
+    PublishNative,
     SetRoyaltyConfig,
     ClaimRoyalty,
 }

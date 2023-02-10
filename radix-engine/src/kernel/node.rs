@@ -98,6 +98,7 @@ pub enum RENodeInit {
     Identity(),
     Component(ComponentInfoSubstate, ComponentStateSubstate),
     Package(PackageInfoSubstate),
+    NativePackage(NativePackageInfoSubstate),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
@@ -175,6 +176,12 @@ impl RENodeInit {
                 );
             }
             RENodeInit::Package(package_info) => {
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::Info),
+                    package_info.into(),
+                );
+            }
+            RENodeInit::NativePackage(package_info) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),

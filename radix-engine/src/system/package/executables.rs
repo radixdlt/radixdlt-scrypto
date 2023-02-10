@@ -17,6 +17,7 @@ use radix_engine_interface::api::{package::*, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };
+use crate::system::package::NativePackageInfoSubstate;
 
 pub struct Package;
 
@@ -41,6 +42,72 @@ impl Package {
             code: code,
             blueprint_abis: abi,
         })
+    }
+}
+
+impl ExecutableInvocation for PackagePublishNativeInvocation {
+    type Exec = Self;
+
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let actor = ResolvedActor::function(NativeFn::Package(PackageFn::PublishNative));
+        Ok((actor, CallFrameUpdate::empty(), self))
+    }
+}
+
+impl Executor for PackagePublishNativeInvocation {
+    type Output = PackageAddress;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+    {
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+        let access_rules = AccessRulesChainSubstate {
+            access_rules_chain: vec![self.access_rules],
+        };
+
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules),
+        );
+
+        let package = NativePackageInfoSubstate {
+            native_package_code_id: self.native_package_code_id,
+        };
+
+        // Create package node
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
+        let package_id: PackageId = node_id.into();
+
+        // Globalize
+        let global_node_id = if let Some(address) = self.package_address {
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+        } else {
+            api.allocate_node_id(RENodeType::GlobalPackage)?
+        };
+
+        api.create_node(
+            global_node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            BTreeMap::new(),
+        )?;
+
+        let package_address: PackageAddress = global_node_id.into();
+        Ok((package_address, CallFrameUpdate::empty()))
     }
 }
 

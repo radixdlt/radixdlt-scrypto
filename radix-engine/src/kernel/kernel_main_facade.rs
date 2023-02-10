@@ -175,6 +175,9 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+            (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
+                module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage));
+            }
             (RENodeId::Package(..), RENodeInit::Package(..)) => {
                 module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage));
             }

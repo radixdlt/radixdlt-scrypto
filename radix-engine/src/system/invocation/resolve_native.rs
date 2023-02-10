@@ -54,6 +54,12 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            PackageFn::PublishNative => {
+                let invocation = scrypto_decode::<PackagePublishNativeInvocation>(&invocation)
+                    .map_err(|_| InterpreterError::InvalidInvocation)?;
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             PackageFn::SetRoyaltyConfig => {
                 let invocation = scrypto_decode::<PackageSetRoyaltyConfigInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

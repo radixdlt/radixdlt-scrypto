@@ -1,6 +1,19 @@
 use crate::types::*;
 use sbor::rust::fmt::{Debug, Formatter};
 
+pub const RESOURCE_MANAGER_PACKAGE_CODE_ID: u8 = 0u8;
+pub const IDENTITY_PACKAGE_CODE_ID: u8 = 1u8;
+pub const EPOCH_MANAGER_PACKAGE_CODE_ID: u8 = 2u8;
+pub const CLOCK_PACKAGE_CODE_ID: u8 = 3u8;
+pub const ACCOUNT_PACKAGE_CODE_ID: u8 = 4u8;
+pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
+
+/// A collection of blueprints, compiled and published as a single unit.
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+pub struct NativePackageInfoSubstate {
+    pub native_package_code_id: u8,
+}
+
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct PackageInfoSubstate {

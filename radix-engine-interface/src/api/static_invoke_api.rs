@@ -56,6 +56,7 @@ pub trait ClientStaticInvokeApi<E>:
     + Invokable<PackageSetRoyaltyConfigInvocation, E>
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
+    + Invokable<PackagePublishNativeInvocation, E>
     + Invokable<BucketTakeInvocation, E>
     + Invokable<BucketPutInvocation, E>
     + Invokable<BucketTakeNonFungiblesInvocation, E>

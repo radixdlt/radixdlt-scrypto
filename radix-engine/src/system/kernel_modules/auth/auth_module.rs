@@ -9,10 +9,12 @@ use radix_engine_interface::api::types::{
     VaultOffset,
 };
 use radix_engine_interface::api::ClientActorApi;
+use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
+use crate::system::kernel_modules::auth::method_authorization::{HardAuthRule, HardProofRule, HardResourceOrNonFungible};
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -46,6 +48,19 @@ impl AuthModule {
         }
 
         let method_auths = match &actor {
+            ResolvedActor {
+                identifier: FnIdentifier::Native(native_fn),
+                receiver: None,
+            } => match native_fn {
+                NativeFn::Package(PackageFn::PublishNative) => {
+                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                        HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                            AuthAddresses::system_role(),
+                        )),
+                    ))]
+                }
+                _ => vec![]
+            }
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(fn_identifier),
                 receiver: None,

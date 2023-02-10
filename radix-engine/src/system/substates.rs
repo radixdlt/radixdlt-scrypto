@@ -33,6 +33,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
+use crate::system::package::NativePackageInfoSubstate;
 use crate::system::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -51,6 +52,7 @@ pub enum PersistedSubstate {
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(PackageInfoSubstate),
+    NativePackageInfo(NativePackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
     Vault(VaultSubstate),
@@ -143,6 +145,7 @@ impl PersistedSubstate {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
+            PersistedSubstate::NativePackageInfo(value) => RuntimeSubstate::NativePackageInfo(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -181,6 +184,7 @@ pub enum RuntimeSubstate {
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    NativePackageInfo(NativePackageInfoSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
@@ -229,6 +233,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
+            RuntimeSubstate::NativePackageInfo(value) => PersistedSubstate::NativePackageInfo(value.clone()),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value.clone())
             }
@@ -281,6 +286,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
+            RuntimeSubstate::NativePackageInfo(value) => PersistedSubstate::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }
@@ -363,6 +369,7 @@ impl RuntimeSubstate {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
+            RuntimeSubstate::NativePackageInfo(value) => SubstateRefMut::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -406,6 +413,7 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
+            RuntimeSubstate::NativePackageInfo(value) => SubstateRef::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
             }
@@ -579,6 +587,12 @@ impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
 impl Into<RuntimeSubstate> for PackageInfoSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageInfo(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for NativePackageInfoSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::NativePackageInfo(self)
     }
 }
 
@@ -886,6 +900,7 @@ pub enum SubstateRef<'a> {
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     PackageInfo(&'a PackageInfoSubstate),
+    NativePackageInfo(&'a NativePackageInfoSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
     Vault(&'a VaultRuntimeSubstate),
@@ -920,6 +935,7 @@ impl<'a> SubstateRef<'a> {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::PackageInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::NativePackageInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1261,6 +1277,7 @@ pub enum SubstateRefMut<'a> {
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
+    NativePackageInfo(&'a mut NativePackageInfoSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
