@@ -7,7 +7,7 @@ use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
     model::{NotarizedTransaction, TransactionHeader},
     validation::{
-        NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
+        HashStatus, NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
         ValidationConfig,
     },
 };
@@ -109,7 +109,8 @@ fn bench_radiswap(c: &mut Criterion) {
         )
         .build();
 
-    let mut transactions: Vec<Vec<u8>> = (1000..2000)
+    let mut intent_hash_mgr = TestIntentHashManager::new();
+    let mut transactions: Vec<Vec<u8>> = (1_000..20_000)
         .map(|i| {
             TransactionBuilder::new()
                 .header(TransactionHeader {
@@ -136,20 +137,26 @@ fn bench_radiswap(c: &mut Criterion) {
         b.iter(|| {
             let payload = transactions.pop().unwrap();
 
-            // Decode
+            // Decode payload
             let transaction: NotarizedTransaction = scrypto_decode(&payload).unwrap();
 
             // Validate
             let executable = NotarizedTransactionValidator::new(ValidationConfig::default(
                 NetworkDefinition::simulator().id,
             ))
-            .validate(&transaction, payload.len(), &TestIntentHashManager::new())
+            .validate(&transaction, payload.len(), &intent_hash_mgr)
             .unwrap();
 
             // Execute & commit
             test_runner
                 .execute_transaction(executable)
                 .expect_commit_success();
+
+            // Update intent hash manager
+            intent_hash_mgr.insert(
+                transaction.signed_intent.intent.hash().unwrap(),
+                HashStatus::Committed,
+            );
         })
     });
 }
