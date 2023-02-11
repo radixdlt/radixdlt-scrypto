@@ -172,41 +172,12 @@ pub struct AccountCreateProofInput {
 // Account Create Proof By Amount
 //================================
 
+pub const ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofByAmountMethodArgs {
+pub struct AccountCreateProofByAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofByAmountInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByAmount))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofByAmountInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProofByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProofByAmount(self)).into()
-    }
 }
 
 //=============================

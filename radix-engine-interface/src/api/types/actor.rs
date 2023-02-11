@@ -847,7 +847,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    CreateProofByAmount,
     CreateProofByIds,
 }
 
@@ -861,15 +860,6 @@ impl AccountPackage {
     ) -> Result<AccountInvocation, ResolveError> {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
-            AccountFn::CreateProofByAmount => {
-                let args = scrypto_decode::<AccountCreateProofByAmountMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                    amount: args.amount,
-                })
-            }
             AccountFn::CreateProofByIds => {
                 let args = scrypto_decode::<AccountCreateProofByIdsMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

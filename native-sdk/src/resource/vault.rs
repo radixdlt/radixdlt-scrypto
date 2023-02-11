@@ -102,8 +102,8 @@ impl Vault {
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
         amount: Decimal,
+        sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,

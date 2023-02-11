@@ -583,12 +583,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
-            AccountFn::CreateProofByAmount => {
-                let invocation =
-                    scrypto_decode::<AccountCreateProofByAmountInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::CreateProofByIds => {
                 let invocation = scrypto_decode::<AccountCreateProofByIdsInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

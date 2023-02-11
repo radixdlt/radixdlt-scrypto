@@ -141,6 +141,12 @@ impl AccountNativePackage {
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
+            ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::create_proof_by_amount(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -795,112 +801,32 @@ impl AccountNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
-}
 
-//================================
-// Account Create Proof By Amount
-//================================
-
-pub struct AccountCreateProofByAmountExecutable {
-    pub receiver: RENodeId,
-    pub amount: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl ExecutableInvocation for AccountCreateProofByAmountInvocation {
-    type Exec = AccountCreateProofByAmountExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::CreateProofByAmount),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            resource_address: self.resource_address,
-            amount: self.amount,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountCreateProofByAmountExecutable {
-    type Output = Proof;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn create_proof_by_amount<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        let resource_address = self.resource_address;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        // TODO: Remove decode/encode mess
+        let input: AccountCreateProofByAmountInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(), // TODO: should this be an R or RW lock?
+        let proof = Self::get_vault(
+            receiver,
+            input.resource_address,
+            |vault, api| vault.sys_create_proof_by_amount(input.amount, api),
+            api,
         )?;
 
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
-            let account = substate.account();
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-            handle
-        };
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
-        let vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
-
-            match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                KeyValueStoreEntrySubstate::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
-            }
-        }?;
-
-        // Create Proof
-        let proof = vault.sys_create_proof_by_amount(api, self.amount)?;
-
-        // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
-
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
-        Ok((proof, call_frame_update))
+        Ok(IndexedScryptoValue::from_typed(&proof))
     }
 }
 

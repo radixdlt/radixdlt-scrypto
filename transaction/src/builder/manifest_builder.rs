@@ -922,8 +922,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let method_ident = AccountFn::CreateProofByAmount;
-        let args = scrypto_encode(&AccountCreateProofByAmountMethodArgs {
+        let args = scrypto_encode(&AccountCreateProofByAmountInput {
             resource_address,
             amount,
         })
@@ -931,7 +930,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             args,
         })
         .0

@@ -478,7 +478,7 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountCreateProofByAmountMethodArgs::describe(),
+                input: AccountCreateProofByAmountInput::describe(),
                 output: <AccountCreateProofByAmountInvocation as Invocation>::Output::describe(),
             };
             fns.push(fn_def);

@@ -148,7 +148,11 @@ impl FeeTable {
                 ACCOUNT_WITHDRAW_IDENT => self.fixed_low,
                 ACCOUNT_WITHDRAW_ALL_IDENT => self.fixed_low,
                 ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => self.fixed_low,
+                ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => self.fixed_low,
                 ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => self.fixed_low,
+                ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => self.fixed_low,
+                ACCOUNT_CREATE_PROOF_IDENT => self.fixed_low,
+                ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
 
@@ -286,7 +290,6 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::CreateProofByAmount => self.fixed_low,
                 AccountFn::CreateProofByIds => self.fixed_low,
             },
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
