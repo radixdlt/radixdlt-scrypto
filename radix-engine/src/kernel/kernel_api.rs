@@ -227,7 +227,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    + Invokable<AccountWithdrawAllInvocation, E>
     + Invokable<AccountWithdrawNonFungiblesInvocation, E>
     + Invokable<AccountLockFeeAndWithdrawInvocation, E>
     + Invokable<AccountLockFeeAndWithdrawAllInvocation, E>

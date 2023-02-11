@@ -87,16 +87,7 @@ pub struct AccountDepositBatchInput {
 pub const ACCOUNT_WITHDRAW_IDENT: &str = "withdraw";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawMethodArgs {
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawInvocation {
-    pub receiver: ComponentAddress,
+pub struct AccountWithdrawInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
@@ -105,39 +96,11 @@ pub struct AccountWithdrawInvocation {
 // Account Withdraw All
 //==================
 
+pub const ACCOUNT_WITHDRAW_ALL_IDENT: &str = "withdraw_all";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawAllMethodArgs {
+pub struct AccountWithdrawAllInput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawAllInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountWithdrawAllInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawAll))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawAllInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::WithdrawAll)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawAllInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::WithdrawAll(self)).into()
-    }
 }
 
 //=========================

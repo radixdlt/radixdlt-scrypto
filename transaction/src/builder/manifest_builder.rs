@@ -849,7 +849,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountWithdrawMethodArgs {
+        let args = scrypto_encode(&AccountWithdrawInput {
             resource_address,
             amount,
         })
@@ -869,12 +869,11 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let method_ident = AccountFn::WithdrawAll;
-        let args = scrypto_encode(&AccountWithdrawAllMethodArgs { resource_address }).unwrap();
+        let args = scrypto_encode(&AccountWithdrawAllInput { resource_address }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
             args,
         })
         .0

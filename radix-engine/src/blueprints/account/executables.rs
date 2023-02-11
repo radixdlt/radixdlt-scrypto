@@ -106,6 +106,12 @@ impl AccountNativePackage {
                 ))?;
                 Self::withdraw(receiver, input, api)
             }
+            ACCOUNT_WITHDRAW_ALL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::withdraw_all(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -501,23 +507,20 @@ impl AccountNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn withdraw<Y>(
+    fn withdraw_internal<Y, F>(
         receiver: ComponentId,
-        input: ScryptoValue,
+        resource_address: ResourceAddress,
+        vault_fn: F,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
+            F: FnOnce(&mut Vault, &mut Y) -> Result<Bucket, RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountWithdrawMethodArgs = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let resource_address = input.resource_address;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.lock_substate(
@@ -558,7 +561,7 @@ impl AccountNativePackage {
         }?;
 
         // Withdraw to bucket
-        let bucket = vault.sys_take(input.amount, api)?;
+        let bucket = vault_fn(&mut vault, api)?;
 
         // Drop locks (LIFO)
         api.drop_lock(kv_store_entry_lock_handle)?;
@@ -566,50 +569,12 @@ impl AccountNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
-}
 
-//==================
-// Account Withdraw
-//==================
-
-pub struct AccountWithdrawAllExecutable {
-    pub receiver: RENodeId,
-    pub resource_address: ResourceAddress,
-}
-
-impl ExecutableInvocation for AccountWithdrawAllInvocation {
-    type Exec = AccountWithdrawAllExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor =
-            ResolvedActor::method(NativeFn::Account(AccountFn::WithdrawAll), resolved_receiver);
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            resource_address: self.resource_address,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountWithdrawAllExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn withdraw<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -617,53 +582,30 @@ impl Executor for AccountWithdrawAllExecutable {
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        let resource_address = self.resource_address;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        // TODO: Remove decode/encode mess
+        let input: AccountWithdrawInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        Self::withdraw_internal(receiver, input.resource_address, |vault, api| vault.sys_take(input.amount, api), api)
+    }
 
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
-            let account = substate.account();
-            let kv_store_id = account.vaults.key_value_store_id();
+    fn withdraw_all<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccountWithdrawAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-            handle
-        };
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
-        let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
-
-            match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                KeyValueStoreEntrySubstate::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
-            }
-        }?;
-
-        // Withdraw to bucket
-        let bucket = vault.sys_take_all(api)?;
-
-        // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
-
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, call_frame_update))
+        Self::withdraw_internal(receiver, input.resource_address, |vault, api| vault.sys_take_all(api), api)
     }
 }
 
@@ -784,8 +726,9 @@ impl ExecutableInvocation for AccountLockFeeAndWithdrawAllInvocation {
     where
         Self: Sized,
     {
-        let call_frame_update =
+        let mut call_frame_update =
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(self.resource_address)));
         let actor = ResolvedActor::method(
             NativeFn::Account(AccountFn::LockFeeAndWithdrawAll),
             ResolvedReceiver {
@@ -822,10 +765,15 @@ impl Executor for AccountLockFeeAndWithdrawAllInvocation {
             })
             .unwrap(),
         )?;
-        let bucket = api.call_native(AccountWithdrawAllInvocation {
-            receiver: self.receiver,
-            resource_address: self.resource_address,
-        })?;
+        let rtn = api.call_method(
+            ScryptoReceiver::Global(self.receiver),
+            ACCOUNT_WITHDRAW_ALL_IDENT,
+            scrypto_encode(&AccountWithdrawAllInput {
+                resource_address: self.resource_address,
+            })
+                .unwrap(),
+        )?;
+        let bucket: Bucket = scrypto_decode(&rtn).unwrap();
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
         Ok((bucket, call_frame_update))
@@ -888,7 +836,7 @@ impl Executor for AccountLockFeeAndWithdrawInvocation {
         let rtn = api.call_method(
             ScryptoReceiver::Global(self.receiver),
             ACCOUNT_WITHDRAW_IDENT,
-            scrypto_encode(&AccountWithdrawMethodArgs {
+            scrypto_encode(&AccountWithdrawInput {
                 resource_address: self.resource_address,
                 amount: self.amount_to_lock,
             })
