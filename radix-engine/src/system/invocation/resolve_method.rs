@@ -5,11 +5,11 @@ use crate::{
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
-use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::api::{
     types::CallTableInvocation,
     types::{ScryptoInvocation, ScryptoReceiver},
 };
+use radix_engine_interface::blueprints::account::*;
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     receiver: ScryptoReceiver,
@@ -68,7 +68,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Account(..) => {
                 match method_name {
-                    ACCOUNT_LOCK_FEE_IDENT => {
+                    ACCOUNT_LOCK_FEE_IDENT | ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
                         /*
                         let component_node_id =
                             RENodeId::Global(GlobalAddress::Component(component_address));
@@ -97,15 +97,18 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                         CallTableInvocation::Scrypto(method_invocation)
                     }
                     _ => {
-                        let invocation =
-                            AccountPackage::resolve_method_invocation(component_address, method_name, args)
-                                .map_err(|e| {
-                                    RuntimeError::ApplicationError(
-                                        ApplicationError::TransactionProcessorError(
-                                            TransactionProcessorError::ResolveError(e),
-                                        ),
-                                    )
-                                })?;
+                        let invocation = AccountPackage::resolve_method_invocation(
+                            component_address,
+                            method_name,
+                            args,
+                        )
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::ResolveError(e),
+                                ),
+                            )
+                        })?;
                         CallTableInvocation::Native(NativeInvocation::Account(invocation))
                     }
                 }

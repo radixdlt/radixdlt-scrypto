@@ -141,6 +141,8 @@ impl FeeTable {
             (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => match identifier.ident.as_str() {
                 ACCOUNT_CREATE_LOCAL_IDENT => self.fixed_low,
                 ACCOUNT_CREATE_GLOBAL_IDENT => self.fixed_low,
+                ACCOUNT_LOCK_FEE_IDENT => self.fixed_low,
+                ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
 
@@ -278,8 +280,6 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::LockContingentFee => self.fixed_low,
-
                 AccountFn::Deposit => self.fixed_low,
                 AccountFn::DepositBatch => self.fixed_low,
 

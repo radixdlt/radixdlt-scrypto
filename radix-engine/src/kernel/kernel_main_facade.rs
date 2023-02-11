@@ -1,4 +1,3 @@
-use radix_engine_interface::api::component::ComponentInfoSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
@@ -14,6 +13,7 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;

@@ -832,12 +832,11 @@ impl ManifestBuilder {
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let method_ident = AccountFn::LockContingentFee;
-        let args = scrypto_encode(&AccountLockContingentFeeMethodArgs { amount }).unwrap();
+        let args = scrypto_encode(&AccountLockContingentFeeInput { amount }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
         })
         .0

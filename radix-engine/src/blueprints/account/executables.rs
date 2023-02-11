@@ -63,25 +63,31 @@ impl AccountNativePackage {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string())
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 Self::create_global(input, api)
-            },
+            }
             ACCOUNT_CREATE_LOCAL_IDENT => {
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string())
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 Self::create_local(input, api)
-            },
+            }
             ACCOUNT_LOCK_FEE_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string())
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee(receiver, input, api)
-            },
+            }
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::lock_contingent_fee(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -212,118 +218,12 @@ impl AccountNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Own::Account(component_id)))
     }
 
-    fn lock_fee<Y>(
+    fn lock_fee_internal<Y>(
         receiver: ComponentId,
-        input: ScryptoValue,
+        amount: Decimal,
+        contingent: bool,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
-    {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let resource_address = RADIX_TOKEN;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        let handle =
-            api.lock_substate(
-                RENodeId::Account(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::Account(AccountOffset::Account),
-                LockFlags::read_only(),
-            )?; // TODO: should this be an R or RW lock?
-
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
-            let account = substate.account();
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-            handle
-        };
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
-        let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
-
-            match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                KeyValueStoreEntrySubstate::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
-            }
-        }?;
-
-        // Lock fee against the vault
-        vault.sys_lock_fee(api, input.amount)?;
-
-        // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-}
-
-//=============================
-// Account Lock Contingent Fee
-//=============================
-
-pub struct AccountLockContingentFeeExecutable {
-    pub receiver: RENodeId,
-    pub amount: Decimal,
-}
-
-impl ExecutableInvocation for AccountLockContingentFeeInvocation {
-    type Exec = AccountLockContingentFeeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockContingentFee),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            amount: self.amount,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountLockContingentFeeExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -334,10 +234,12 @@ impl Executor for AccountLockContingentFeeExecutable {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_substate(
+            RENodeId::Account(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Account(AccountOffset::Account),
+            LockFlags::read_only(),
+        )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -370,13 +272,55 @@ impl Executor for AccountLockContingentFeeExecutable {
         }?;
 
         // Lock fee against the vault
-        vault.sys_lock_contingent_fee(api, self.amount)?;
+        if !contingent {
+            vault.sys_lock_fee(api, amount)?;
+        } else {
+            vault.sys_lock_contingent_fee(api, amount)?;
+        }
 
         // Drop locks (LIFO)
         api.drop_lock(kv_store_entry_lock_handle)?;
         api.drop_lock(handle)?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn lock_fee<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        Self::lock_fee_internal(receiver, input.amount, false, api)
+    }
+
+    fn lock_contingent_fee<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        Self::lock_fee_internal(receiver, input.amount, true, api)
     }
 }
 
@@ -977,7 +921,8 @@ impl Executor for AccountLockFeeAndWithdrawAllInvocation {
             ACCOUNT_LOCK_FEE_IDENT,
             scrypto_encode(&AccountLockFeeInput {
                 amount: self.amount_to_lock,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
         let bucket = api.call_native(AccountWithdrawAllInvocation {
             receiver: self.receiver,
@@ -1038,7 +983,8 @@ impl Executor for AccountLockFeeAndWithdrawInvocation {
             ACCOUNT_LOCK_FEE_IDENT,
             scrypto_encode(&AccountLockFeeInput {
                 amount: self.amount_to_lock,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
         let bucket = api.call_native(AccountWithdrawInvocation {
             receiver: self.receiver,
@@ -1094,13 +1040,14 @@ impl Executor for AccountLockFeeAndWithdrawNonFungiblesInvocation {
             + ClientNodeApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-    // TODO: Do this internally rather than external calls
+        // TODO: Do this internally rather than external calls
         api.call_method(
             ScryptoReceiver::Global(self.receiver),
             ACCOUNT_LOCK_FEE_IDENT,
             scrypto_encode(&AccountLockFeeInput {
                 amount: self.amount_to_lock,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
         let bucket = api.call_native(AccountWithdrawNonFungiblesInvocation {
             receiver: self.receiver,

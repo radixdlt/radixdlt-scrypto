@@ -583,11 +583,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
-            AccountFn::LockContingentFee => {
-                let invocation = scrypto_decode::<AccountLockContingentFeeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::Deposit => {
                 let invocation = scrypto_decode::<AccountDepositInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

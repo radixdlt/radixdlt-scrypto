@@ -49,39 +49,11 @@ pub struct AccountLockFeeInput {
 // Account Lock Contingent Fee
 //=============================
 
+pub const ACCOUNT_LOCK_CONTINGENT_FEE_IDENT: &str = "lock_contingent_fee";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockContingentFeeMethodArgs {
+pub struct AccountLockContingentFeeInput {
     pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockContingentFeeInvocation {
-    pub receiver: ComponentAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountLockContingentFeeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockContingentFee))
-    }
-}
-
-impl SerializableInvocation for AccountLockContingentFeeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockContingentFee)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockContingentFeeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockContingentFee(self)).into()
-    }
 }
 
 //=================

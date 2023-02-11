@@ -351,7 +351,6 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             };
             fns.push(fn_def);
         }
-         */
         {
             let fn_ident = AccountFn::LockContingentFee;
 
@@ -359,11 +358,12 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockContingentFeeMethodArgs::describe(),
+                input: AccountLockContingentFeeInput::describe(),
                 output: <AccountLockContingentFeeInvocation as Invocation>::Output::describe(),
             };
             fns.push(fn_def);
         }
+         */
         {
             let fn_ident = AccountFn::Deposit;
 
