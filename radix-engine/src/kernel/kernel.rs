@@ -21,7 +21,9 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_IDENT;
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
 };
@@ -169,7 +171,7 @@ where
                     AccessRule::DenyAll,
                 );
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::DepositBatch)),
+                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );

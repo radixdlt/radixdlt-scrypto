@@ -375,7 +375,6 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             };
             fns.push(fn_def);
         }
-         */
         {
             let fn_ident = AccountFn::DepositBatch;
 
@@ -388,6 +387,7 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             };
             fns.push(fn_def);
         }
+         */
         {
             let fn_ident = AccountFn::Withdraw;
 

@@ -400,10 +400,6 @@ where
             }
         },
         NativeInvocation::Account(account_method) => match account_method {
-            AccountInvocation::DepositBatch(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccountInvocation::WithdrawAll(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

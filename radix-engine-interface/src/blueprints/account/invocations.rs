@@ -71,39 +71,11 @@ pub struct AccountDepositInput {
 // Account Deposit Batch
 //=======================
 
+pub const ACCOUNT_DEPOSIT_BATCH_IDENT: &str = "deposit_batch";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountDepositBatchMethodArgs {
+pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountDepositBatchInvocation {
-    pub receiver: ComponentAddress,
-    pub buckets: Vec<BucketId>,
-}
-
-impl Invocation for AccountDepositBatchInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::DepositBatch))
-    }
-}
-
-impl SerializableInvocation for AccountDepositBatchInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::DepositBatch)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountDepositBatchInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::DepositBatch(self)).into()
-    }
 }
 
 //==================

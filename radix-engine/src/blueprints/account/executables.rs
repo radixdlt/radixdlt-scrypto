@@ -94,6 +94,12 @@ impl AccountNativePackage {
                 ))?;
                 Self::deposit(receiver, input, api)
             }
+            ACCOUNT_DEPOSIT_BATCH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::deposit_batch(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -404,69 +410,12 @@ impl AccountNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//=======================
-// Account Deposit Batch
-//=======================
-
-pub struct AccountDepositBatchExecutable {
-    pub receiver: RENodeId,
-    pub buckets: Vec<BucketId>,
-}
-
-impl ExecutableInvocation for AccountDepositBatchInvocation {
-    type Exec = AccountDepositBatchExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate {
-            nodes_to_move: self
-                .buckets
-                .iter()
-                .map(|bucket_id| RENodeId::Bucket(*bucket_id))
-                .collect(),
-
-            node_refs_to_copy: self
-                .buckets
-                .iter()
-                .map(|bucket_id| {
-                    bucket_resource_address(deref, *bucket_id).map(|resource_address| {
-                        RENodeId::Global(GlobalAddress::Resource(resource_address))
-                        // Required for vault creation
-                    })
-                })
-                .collect::<Result<_, _>>()?,
-        };
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::DepositBatch),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            buckets: self.buckets,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountDepositBatchExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn deposit_batch<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -474,17 +423,23 @@ impl Executor for AccountDepositBatchExecutable {
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        // TODO: Remove decode/encode mess
+        let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Account(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Account(AccountOffset::Account),
+            LockFlags::read_only(),
+        )?; // TODO: should this be an R or RW lock?
 
         // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
         // KV-store entries again and again because of buckets that have the same resource address.
         // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
         // resolved.
-        for bucket in self.buckets {
-            let resource_address = bucket_resource_address(api, bucket)?;
+        for bucket in input.buckets {
+            let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
@@ -530,14 +485,14 @@ impl Executor for AccountDepositBatchExecutable {
             };
 
             // Put the bucket in the vault
-            vault.sys_put(Bucket(bucket), api)?;
+            vault.sys_put(bucket, api)?;
 
             api.drop_lock(kv_store_entry_lock_handle)?;
         }
 
         api.drop_lock(handle)?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -1357,7 +1312,7 @@ fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Account(AccountFn::DepositBatch)),
+        AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );
