@@ -227,7 +227,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    + Invokable<AccountCreateProofInvocation, E>
     + Invokable<AccountCreateProofByAmountInvocation, E>
     + Invokable<AccountCreateProofByIdsInvocation, E>
 {

@@ -161,39 +161,11 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
 // Account Create Proof
 //======================
 
+pub const ACCOUNT_CREATE_PROOF_IDENT: &str = "create_proof";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofMethodArgs {
+pub struct AccountCreateProofInput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountCreateProofInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProof))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProof)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProof(self)).into()
-    }
 }
 
 //================================
