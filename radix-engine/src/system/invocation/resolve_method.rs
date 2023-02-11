@@ -71,7 +71,8 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                     ACCOUNT_LOCK_FEE_IDENT
                     | ACCOUNT_LOCK_CONTINGENT_FEE_IDENT
                     | ACCOUNT_DEPOSIT_IDENT
-                    | ACCOUNT_DEPOSIT_BATCH_IDENT => {
+                    | ACCOUNT_DEPOSIT_BATCH_IDENT
+                    | ACCOUNT_WITHDRAW_IDENT => {
                         /*
                         let component_node_id =
                             RENodeId::Global(GlobalAddress::Component(component_address));

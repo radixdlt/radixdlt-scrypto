@@ -67,6 +67,8 @@ pub struct AccountDepositInput {
     pub bucket: Bucket,
 }
 
+pub type AccountDepositOutput = ();
+
 //=======================
 // Account Deposit Batch
 //=======================
@@ -78,8 +80,29 @@ pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
-//==================
+//============================
 // Account Withdraw
+//============================
+
+pub const ACCOUNT_WITHDRAW_IDENT: &str = "withdraw";
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+pub struct AccountWithdrawMethodArgs {
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
+pub struct AccountWithdrawInvocation {
+    pub receiver: ComponentAddress,
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
+//==================
+// Account Withdraw All
 //==================
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
@@ -114,47 +137,6 @@ impl SerializableInvocation for AccountWithdrawAllInvocation {
 impl Into<CallTableInvocation> for AccountWithdrawAllInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Account(AccountInvocation::WithdrawAll(self)).into()
-    }
-}
-
-//============================
-// Account Withdraw By Amount
-//============================
-
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawMethodArgs {
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountWithdrawInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Withdraw))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Withdraw)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Withdraw(self)).into()
     }
 }
 

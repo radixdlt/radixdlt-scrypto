@@ -843,6 +843,27 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
+    pub fn withdraw_from_account(
+        &mut self,
+        account: ComponentAddress,
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        let args = scrypto_encode(&AccountWithdrawMethodArgs {
+            resource_address,
+            amount,
+        })
+        .unwrap();
+
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
+            args,
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
     pub fn withdraw_all_from_account(
         &mut self,
         account: ComponentAddress,
@@ -850,28 +871,6 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let method_ident = AccountFn::WithdrawAll;
         let args = scrypto_encode(&AccountWithdrawAllMethodArgs { resource_address }).unwrap();
-
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: account,
-            method_name: method_ident.to_string(),
-            args,
-        })
-        .0
-    }
-
-    /// Withdraws resource from an account.
-    pub fn withdraw_from_account(
-        &mut self,
-        account: ComponentAddress,
-        resource_address: ResourceAddress,
-        amount: Decimal,
-    ) -> &mut Self {
-        let method_ident = AccountFn::Withdraw;
-        let args = scrypto_encode(&AccountWithdrawMethodArgs {
-            resource_address,
-            amount,
-        })
-        .unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,

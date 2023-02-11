@@ -588,11 +588,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            AccountFn::Withdraw => {
-                let invocation = scrypto_decode::<AccountWithdrawInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::WithdrawNonFungibles => {
                 let invocation =
                     scrypto_decode::<AccountWithdrawNonFungiblesInvocation>(&invocation)

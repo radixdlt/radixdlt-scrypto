@@ -231,7 +231,6 @@ pub enum WorktopInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountInvocation {
     WithdrawAll(AccountWithdrawAllInvocation),
-    Withdraw(AccountWithdrawInvocation),
     WithdrawNonFungibles(AccountWithdrawNonFungiblesInvocation),
 
     LockFeeAndWithdrawAll(AccountLockFeeAndWithdrawAllInvocation),
@@ -537,7 +536,6 @@ impl NativeInvocation {
                 AccountInvocation::WithdrawAll(AccountWithdrawAllInvocation {
                     receiver, ..
                 })
-                | AccountInvocation::Withdraw(AccountWithdrawInvocation { receiver, .. })
                 | AccountInvocation::WithdrawNonFungibles(
                     AccountWithdrawNonFungiblesInvocation { receiver, .. },
                 )
@@ -802,7 +800,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Account(i) => match i {
-                AccountInvocation::Withdraw(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::LockFeeAndWithdraw(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),

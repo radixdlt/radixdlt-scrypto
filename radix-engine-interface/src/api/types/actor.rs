@@ -847,9 +847,8 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    //DepositBatch,
+    //Withdraw,
     WithdrawAll,
-    Withdraw,
     WithdrawNonFungibles,
 
     LockFeeAndWithdrawAll,
@@ -872,12 +871,13 @@ impl AccountPackage {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
             /*
-            AccountFn::DepositBatch => {
-                let args = scrypto_decode::<AccountDepositBatchMethodArgs>(args)
+            AccountFn::Withdraw => {
+                let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::DepositBatch(AccountDepositBatchInvocation {
+                AccountInvocation::Withdraw(AccountWithdrawInvocation {
                     receiver,
-                    buckets: args.buckets.into_iter().map(|x| x.0).collect(),
+                    resource_address: args.resource_address,
+                    amount: args.amount,
                 })
             }
              */
@@ -887,15 +887,6 @@ impl AccountPackage {
                 AccountInvocation::WithdrawAll(AccountWithdrawAllInvocation {
                     receiver,
                     resource_address: args.resource_address,
-                })
-            }
-            AccountFn::Withdraw => {
-                let args = scrypto_decode::<AccountWithdrawMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::Withdraw(AccountWithdrawInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                    amount: args.amount,
                 })
             }
             AccountFn::WithdrawNonFungibles => {
