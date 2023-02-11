@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::types::*;
+use radix_engine::{transaction::TransactionReceipt, types::*};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
@@ -127,32 +127,50 @@ fn bench_radiswap(c: &mut Criterion) {
         .to_bytes()
         .unwrap();
 
-    // Loop
+    // To profile with flamegraph, run
+    // ```
+    // sudo cargo flamegraph --bench radiswap --features flamegraph
+    // ```
     let mut nonce = 100u32;
+    #[cfg(feature = "flamegraph")]
+    for _ in 0..1000 {
+        do_swap(&mut test_runner, &transaction_payload, nonce);
+        nonce += 1;
+    }
+    #[cfg(not(feature = "flamegraph"))]
     c.bench_function("Radiswap", |b| {
         b.iter(|| {
-            // Decode payload
-            let transaction: NotarizedTransaction = scrypto_decode(&transaction_payload).unwrap();
-
-            // Validate
-            let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(
-                NetworkDefinition::simulator().id,
-            ))
-            .validate(
-                &transaction,
-                transaction_payload.len(),
-                &TestIntentHashManager::new(),
-            )
-            .unwrap();
-
-            // Execute & commit
-            executable.context.transaction_hash = hash(nonce.to_le_bytes());
-            test_runner
-                .execute_transaction(executable)
-                .expect_commit_success();
+            do_swap(&mut test_runner, &transaction_payload, nonce);
             nonce += 1;
         })
     });
+}
+
+fn do_swap(
+    test_runner: &mut TestRunner,
+    transaction_payload: &[u8],
+    nonce: u32,
+) -> TransactionReceipt {
+    // Decode payload
+    let transaction: NotarizedTransaction = scrypto_decode(&transaction_payload).unwrap();
+
+    // Validate
+    let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(
+        NetworkDefinition::simulator().id,
+    ))
+    .validate(
+        &transaction,
+        transaction_payload.len(),
+        &TestIntentHashManager::new(),
+    )
+    .unwrap();
+
+    // Execute & commit
+    executable.context.transaction_hash = hash(nonce.to_le_bytes());
+    let receipt = test_runner.execute_transaction(executable);
+    receipt.expect_commit_success();
+
+    receipt
 }
 
 criterion_group!(radiswap, bench_radiswap);

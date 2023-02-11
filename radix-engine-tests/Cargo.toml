@@ -51,3 +51,4 @@ std = ["sbor/std", "transaction/std", "radix-engine/std", "radix-engine-interfac
 alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
+flamegraph = []
