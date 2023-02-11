@@ -115,8 +115,23 @@ pub struct AccountWithdrawNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
+pub type AccountWithdrawNonFungiblesOutput = Bucket;
+
+//=====================================
+// Account Withdraw
+//=====================================
+
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT: &str = "lock_fee_and_withdraw";
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+pub struct AccountLockFeeAndWithdrawInput {
+    pub amount_to_lock: Decimal,
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
 //===========================
-// Account Withdraw And Lock
+// Account Withdraw All And Lock
 //===========================
 
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
@@ -125,49 +140,6 @@ pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw
 pub struct AccountLockFeeAndWithdrawAllInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
-}
-
-//=====================================
-// Account Withdraw By Amount And Lock
-//=====================================
-
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeAndWithdrawMethodArgs {
-    pub amount_to_lock: Decimal,
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawInvocation {
-    pub receiver: ComponentAddress,
-    pub amount_to_lock: Decimal,
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountLockFeeAndWithdrawInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdraw))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeAndWithdrawInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFeeAndWithdraw)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFeeAndWithdraw(self)).into()
-    }
 }
 
 //==================================

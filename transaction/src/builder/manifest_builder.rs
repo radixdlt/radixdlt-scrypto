@@ -760,8 +760,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdraw;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawMethodArgs {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawInput {
             resource_address,
             amount,
             amount_to_lock,
@@ -770,7 +769,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args: args,
         })
         .0

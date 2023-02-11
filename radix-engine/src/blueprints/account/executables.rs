@@ -118,7 +118,12 @@ impl AccountNativePackage {
                 ))?;
                 Self::withdraw_non_fungibles(receiver, input, api)
             }
-
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::lock_fee_and_withdraw(receiver, input, api)
+            }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -660,6 +665,33 @@ impl AccountNativePackage {
         )
     }
 
+    fn lock_fee_and_withdraw<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientNodeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccountLockFeeAndWithdrawInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
+
+        Self::withdraw_internal(
+            receiver,
+            input.resource_address,
+            |vault, api| vault.sys_take(input.amount, api),
+            api,
+        )
+    }
+
     fn lock_fee_and_withdraw_all<Y>(
         receiver: ComponentId,
         input: ScryptoValue,
@@ -685,80 +717,6 @@ impl AccountNativePackage {
             |vault, api| vault.sys_take_all(api),
             api,
         )
-    }
-}
-
-
-//=====================================
-// Account Withdraw By Amount And Lock
-//=====================================
-
-impl ExecutableInvocation for AccountLockFeeAndWithdrawInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockFeeAndWithdraw),
-            ResolvedReceiver {
-                derefed_from: None,
-                receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
-            },
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountLockFeeAndWithdrawInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
-            + ClientApi<RuntimeError>,
-    {
-        // TODO: Do this internally rather than external calls
-        api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_LOCK_FEE_IDENT,
-            scrypto_encode(&AccountLockFeeInput {
-                amount: self.amount_to_lock,
-            })
-            .unwrap(),
-        )?;
-        let rtn = api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_WITHDRAW_IDENT,
-            scrypto_encode(&AccountWithdrawInput {
-                resource_address: self.resource_address,
-                amount: self.amount_to_lock,
-            })
-            .unwrap(),
-        )?;
-        let bucket: Bucket = scrypto_decode(&rtn).unwrap();
-
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, call_frame_update))
     }
 }
 
