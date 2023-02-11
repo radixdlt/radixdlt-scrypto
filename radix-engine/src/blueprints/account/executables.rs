@@ -130,6 +130,12 @@ impl AccountNativePackage {
                 ))?;
                 Self::lock_fee_and_withdraw_all(receiver, input, api)
             }
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::lock_fee_and_withdraw_non_fungibles(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -718,78 +724,32 @@ impl AccountNativePackage {
             api,
         )
     }
-}
 
-//==================================
-// Account Withdraw By Ids And Lock
-//==================================
-
-impl ExecutableInvocation for AccountLockFeeAndWithdrawNonFungiblesInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockFeeAndWithdrawNonFungibles),
-            ResolvedReceiver {
-                derefed_from: None,
-                receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
-            },
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountLockFeeAndWithdrawNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn lock_fee_and_withdraw_non_fungibles<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+            + ClientNodeApi<RuntimeError>,
     {
-        // TODO: Do this internally rather than external calls
-        api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_LOCK_FEE_IDENT,
-            scrypto_encode(&AccountLockFeeInput {
-                amount: self.amount_to_lock,
-            })
-            .unwrap(),
-        )?;
-        let rtn = api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&AccountWithdrawNonFungiblesInput {
-                resource_address: self.resource_address,
-                ids: self.ids,
-            })
-            .unwrap(),
-        )?;
-        let bucket: Bucket = scrypto_decode(&rtn).unwrap();
+        // TODO: Remove decode/encode mess
+        let input: AccountLockFeeAndWithdrawNonFungiblesInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, call_frame_update))
+        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
+
+        Self::withdraw_internal(
+            receiver,
+            input.resource_address,
+            |vault, api| vault.sys_take_non_fungibles(input.ids, api),
+            api,
+        )
     }
 }
 

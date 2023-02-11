@@ -430,7 +430,7 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountLockFeeAndWithdrawInput::describe(),
-                output: <AccountLockFeeAndWithdrawInvocation as Invocation>::Output::describe(),
+                output: AccountLockFeeAndWithdrawOutput::describe(),
             };
             fns.push(fn_def);
         }
@@ -453,7 +453,7 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
                 ident: fn_ident.to_string(),
                 export_name: fn_ident.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockFeeAndWithdrawNonFungiblesMethodArgs::describe(),
+                input: AccountLockFeeAndWithdrawNonFungiblesInput::describe(),
                 output: <AccountLockFeeAndWithdrawNonFungiblesInvocation as Invocation>::Output::describe(
                 ),
             };

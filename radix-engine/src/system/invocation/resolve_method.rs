@@ -75,8 +75,9 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                     | ACCOUNT_WITHDRAW_IDENT
                     | ACCOUNT_WITHDRAW_ALL_IDENT
                     | ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
-                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT
                     | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT
+                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT
+                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT
 
                     => {
                         /*

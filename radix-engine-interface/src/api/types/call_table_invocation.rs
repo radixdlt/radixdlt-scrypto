@@ -230,8 +230,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountInvocation {
-    LockFeeAndWithdrawNonFungibles(AccountLockFeeAndWithdrawNonFungiblesInvocation),
-
     CreateProof(AccountCreateProofInvocation),
     CreateProofByAmount(AccountCreateProofByAmountInvocation),
     CreateProofByIds(AccountCreateProofByIdsInvocation),
@@ -528,10 +526,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::Account(account_method) => match account_method {
-                AccountInvocation::LockFeeAndWithdrawNonFungibles(
-                    AccountLockFeeAndWithdrawNonFungiblesInvocation { receiver, .. },
-                )
-                | AccountInvocation::CreateProof(AccountCreateProofInvocation {
+                AccountInvocation::CreateProof(AccountCreateProofInvocation {
                     receiver, ..
                 })
                 | AccountInvocation::CreateProofByAmount(AccountCreateProofByAmountInvocation {
@@ -785,9 +780,6 @@ impl NativeInvocation {
                 AccountInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccountInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
-                AccountInvocation::LockFeeAndWithdrawNonFungibles(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
             },
         };
 

@@ -782,8 +782,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdrawNonFungibles;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawNonFungiblesMethodArgs {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
             ids,
@@ -792,7 +791,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
         .0
