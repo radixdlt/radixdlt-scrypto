@@ -4,7 +4,6 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
     clock::*, epoch_manager::*, logger::*, resource::*, transaction_runtime::*,
@@ -579,13 +578,6 @@ pub fn resolve_native(
                 let invocation =
                     scrypto_decode::<AccessControllerStopTimedRecoveryInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Account(account_fn) => match account_fn {
-            AccountFn::CreateProofByIds => {
-                let invocation = scrypto_decode::<AccountCreateProofByIdsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

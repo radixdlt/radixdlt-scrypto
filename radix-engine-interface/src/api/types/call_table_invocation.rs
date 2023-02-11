@@ -5,7 +5,6 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
-use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::*;
@@ -71,7 +70,6 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
-    Account(AccountInvocation),
     AccessController(AccessControllerInvocation),
 }
 
@@ -226,11 +224,6 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum AccountInvocation {
-    CreateProofByIds(AccountCreateProofByIdsInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -523,14 +516,6 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GetHash(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
-            NativeInvocation::Account(account_method) => match account_method {
-                AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
-                    receiver,
-                    ..
-                }) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
-                }
-            },
             NativeInvocation::AccessController(method) => match method {
                 AccessControllerInvocation::CreateProof(
                     AccessControllerCreateProofInvocation { receiver, .. },
@@ -766,9 +751,6 @@ impl NativeInvocation {
                 AccessControllerInvocation::StopTimedRecovery(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }
-            },
-            NativeInvocation::Account(i) => match i {
-                AccountInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 

@@ -1,4 +1,3 @@
-use crate::api::component::ComponentAddress;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
@@ -184,39 +183,10 @@ pub struct AccountCreateProofByAmountInput {
 // Account Create Proof By Ids
 //=============================
 
+pub const ACCOUNT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofByIdsMethodArgs {
+pub struct AccountCreateProofByIdsInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofByIdsInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for AccountCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByIds))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofByIdsInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProofByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProofByIds(self)).into()
-    }
 }

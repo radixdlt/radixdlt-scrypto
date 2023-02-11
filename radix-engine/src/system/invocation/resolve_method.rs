@@ -67,64 +67,32 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Account(..) => {
-                match method_name {
-                    ACCOUNT_LOCK_FEE_IDENT
-                    | ACCOUNT_LOCK_CONTINGENT_FEE_IDENT
-                    | ACCOUNT_DEPOSIT_IDENT
-                    | ACCOUNT_DEPOSIT_BATCH_IDENT
-                    | ACCOUNT_WITHDRAW_IDENT
-                    | ACCOUNT_WITHDRAW_ALL_IDENT
-                    | ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
-                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT
-                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT
-                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT
-                    | ACCOUNT_CREATE_PROOF_IDENT
-                    | ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT
+                /*
+                let component_node_id =
+                    RENodeId::Global(GlobalAddress::Component(component_address));
+                let component_info = {
+                    let handle = api.lock_substate(
+                        component_node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                    => {
-                        /*
-                        let component_node_id =
-                            RENodeId::Global(GlobalAddress::Component(component_address));
-                        let component_info = {
-                            let handle = api.lock_substate(
-                                component_node_id,
-                                NodeModuleId::SELF,
-                                SubstateOffset::Component(ComponentOffset::Info),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = api.get_ref(handle)?;
-                            let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                            api.drop_lock(handle)?;
+                    component_info
+                };
+                 */
 
-                            component_info
-                        };
-                         */
-
-                        let method_invocation = ScryptoInvocation {
-                            package_address: ACCOUNT_PACKAGE,
-                            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                            receiver: Some(ScryptoReceiver::Global(component_address.clone())),
-                            fn_name: method_name.to_string(),
-                            args: args.to_owned(),
-                        };
-                        CallTableInvocation::Scrypto(method_invocation)
-                    }
-                    _ => {
-                        let invocation = AccountPackage::resolve_method_invocation(
-                            component_address,
-                            method_name,
-                            args,
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::ResolveError(e),
-                                ),
-                            )
-                        })?;
-                        CallTableInvocation::Native(NativeInvocation::Account(invocation))
-                    }
-                }
+                let method_invocation = ScryptoInvocation {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                    receiver: Some(ScryptoReceiver::Global(component_address.clone())),
+                    fn_name: method_name.to_string(),
+                    args: args.to_owned(),
+                };
+                CallTableInvocation::Scrypto(method_invocation)
             }
             ComponentAddress::Normal(..) => {
                 let component_node_id =

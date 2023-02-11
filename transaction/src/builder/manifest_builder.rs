@@ -943,8 +943,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::CreateProofByIds;
-        let args = scrypto_encode(&AccountCreateProofByIdsMethodArgs {
+        let args = scrypto_encode(&AccountCreateProofByIdsInput {
             resource_address,
             ids: ids.clone(),
         })
@@ -952,7 +951,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
             args,
         })
         .0

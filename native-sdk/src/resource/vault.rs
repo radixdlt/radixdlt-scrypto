@@ -116,8 +116,8 @@ impl Vault {
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
         ids: BTreeSet<NonFungibleLocalId>,
+        sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,

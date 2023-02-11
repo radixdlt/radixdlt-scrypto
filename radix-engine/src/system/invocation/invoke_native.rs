@@ -399,12 +399,6 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Account(account_method) => match account_method {
-            AccountInvocation::CreateProofByIds(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
         NativeInvocation::AccessController(method) => match method {
             AccessControllerInvocation::CreateProof(invocation) => {
                 let rtn = api.invoke(invocation)?;

@@ -2,7 +2,6 @@ use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
 use crate::blueprints::access_controller::*;
-use crate::blueprints::account::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::data::scrypto_decode;
@@ -29,7 +28,6 @@ pub enum NativePackage {
     Logger,
     TransactionRuntime,
     TransactionProcessor,
-    Account,
     AccessController,
 }
 
@@ -119,7 +117,6 @@ pub enum NativeFn {
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
-    Account(AccountFn),
     AccessController(AccessControllerFn),
     Metadata(MetadataFn),
 }
@@ -141,7 +138,6 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
-            NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
         }
     }
@@ -824,54 +820,6 @@ pub enum TransactionRuntimeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum AccountFn {
-    CreateProofByIds,
-}
-
-pub struct AccountPackage;
-
-impl AccountPackage {
-    pub fn resolve_method_invocation(
-        receiver: ComponentAddress,
-        method_name: &str,
-        args: &[u8],
-    ) -> Result<AccountInvocation, ResolveError> {
-        let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
-        let invocation = match account_fn {
-            AccountFn::CreateProofByIds => {
-                let args = scrypto_decode::<AccountCreateProofByIdsMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::CreateProofByIds(AccountCreateProofByIdsInvocation {
-                    receiver,
-                    resource_address: args.resource_address,
-                    ids: args.ids,
-                })
-            }
-        };
-        Ok(invocation)
-    }
 }
 
 #[derive(

@@ -105,7 +105,6 @@ impl AuthModule {
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Clock(..))
                             || matches!(method, NativeFn::Component(..))
-                            || matches!(method, NativeFn::Account(..))
                             || matches!(method, NativeFn::AccessController(..)) =>
                     {
                         let handle = system_api.lock_substate(
