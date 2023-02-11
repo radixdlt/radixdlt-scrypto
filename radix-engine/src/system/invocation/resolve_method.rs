@@ -74,7 +74,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                     | ACCOUNT_DEPOSIT_BATCH_IDENT
                     | ACCOUNT_WITHDRAW_IDENT
                     | ACCOUNT_WITHDRAW_ALL_IDENT
-                    => {
+                    | ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
                         /*
                         let component_node_id =
                             RENodeId::Global(GlobalAddress::Component(component_address));

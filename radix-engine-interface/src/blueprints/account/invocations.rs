@@ -107,41 +107,12 @@ pub struct AccountWithdrawAllInput {
 // Account Withdraw By Ids
 //=========================
 
+pub const ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "withdraw_non_fungibles";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawNonFungiblesMethodArgs {
+pub struct AccountWithdrawNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawNonFungiblesInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for AccountWithdrawNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawNonFungibles))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawNonFungiblesInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::WithdrawNonFungibles)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawNonFungiblesInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::WithdrawNonFungibles(self)).into()
-    }
 }
 
 //===========================

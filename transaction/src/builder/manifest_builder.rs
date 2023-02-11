@@ -886,8 +886,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::WithdrawNonFungibles;
-        let args = scrypto_encode(&AccountWithdrawNonFungiblesMethodArgs {
+        let args = scrypto_encode(&AccountWithdrawNonFungiblesInput {
             ids: ids.clone(),
             resource_address,
         })
@@ -895,7 +894,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
         .0

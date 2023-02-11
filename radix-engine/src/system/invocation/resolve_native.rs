@@ -583,12 +583,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Account(account_fn) => match account_fn {
-            AccountFn::WithdrawNonFungibles => {
-                let invocation =
-                    scrypto_decode::<AccountWithdrawNonFungiblesInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccountFn::LockFeeAndWithdrawAll => {
                 let invocation =
                     scrypto_decode::<AccountLockFeeAndWithdrawAllInvocation>(&invocation)

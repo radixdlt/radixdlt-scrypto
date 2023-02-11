@@ -64,7 +64,7 @@ impl Vault {
         })
     }
 
-    pub fn sys_take_ids<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

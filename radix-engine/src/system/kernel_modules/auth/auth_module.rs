@@ -160,9 +160,9 @@ impl AuthModule {
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => {
-                                substate.native_fn_authorization(FnIdentifier::Native(NativeFn::Vault(vault_fn.clone())))
-                            }
+                            RENodeVisibilityOrigin::Normal => substate.native_fn_authorization(
+                                FnIdentifier::Native(NativeFn::Vault(vault_fn.clone())),
+                            ),
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
@@ -189,17 +189,15 @@ impl AuthModule {
             ResolvedActor {
                 identifier,
                 receiver:
-                Some(ResolvedReceiver {
-                         receiver: RENodeId::Account(component_id),
-                         ..
-                     }),
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Account(component_id),
+                        ..
+                    }),
             } => {
                 let handle = system_api.lock_substate(
                     RENodeId::Account(*component_id),
                     NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(
-                        AccessRulesChainOffset::AccessRulesChain,
-                    ),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = system_api.get_ref(handle)?;
@@ -207,7 +205,6 @@ impl AuthModule {
                 let auth = substate.native_fn_authorization(identifier.clone());
                 system_api.drop_lock(handle)?;
                 auth
-
             }
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(method_identifier),
