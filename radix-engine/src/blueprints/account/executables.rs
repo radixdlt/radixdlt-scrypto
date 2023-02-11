@@ -118,6 +118,13 @@ impl AccountNativePackage {
                 ))?;
                 Self::withdraw_non_fungibles(receiver, input, api)
             }
+
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::lock_fee_and_withdraw_all(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -253,7 +260,7 @@ impl AccountNativePackage {
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -312,7 +319,7 @@ impl AccountNativePackage {
         api.drop_lock(kv_store_entry_lock_handle)?;
         api.drop_lock(handle)?;
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
     fn lock_fee<Y>(
@@ -331,7 +338,9 @@ impl AccountNativePackage {
         let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        Self::lock_fee_internal(receiver, input.amount, false, api)
+        Self::lock_fee_internal(receiver, input.amount, false, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn lock_contingent_fee<Y>(
@@ -350,7 +359,9 @@ impl AccountNativePackage {
         let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        Self::lock_fee_internal(receiver, input.amount, true, api)
+        Self::lock_fee_internal(receiver, input.amount, true, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn deposit<Y>(
@@ -648,79 +659,35 @@ impl AccountNativePackage {
             api,
         )
     }
-}
 
-//===========================
-// Account Withdraw And Lock
-//===========================
-
-impl ExecutableInvocation for AccountLockFeeAndWithdrawAllInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(self.receiver)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Account(AccountFn::LockFeeAndWithdrawAll),
-            ResolvedReceiver {
-                derefed_from: None,
-                receiver: RENodeId::Global(GlobalAddress::Component(self.receiver)),
-            },
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccountLockFeeAndWithdrawAllInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn lock_fee_and_withdraw_all<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        // TODO: Do this internally rather than external calls
-        api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_LOCK_FEE_IDENT,
-            scrypto_encode(&AccountLockFeeInput {
-                amount: self.amount_to_lock,
-            })
-            .unwrap(),
-        )?;
-        let rtn = api.call_method(
-            ScryptoReceiver::Global(self.receiver),
-            ACCOUNT_WITHDRAW_ALL_IDENT,
-            scrypto_encode(&AccountWithdrawAllInput {
-                resource_address: self.resource_address,
-            })
-            .unwrap(),
-        )?;
-        let bucket: Bucket = scrypto_decode(&rtn).unwrap();
+        // TODO: Remove decode/encode mess
+        let input: AccountLockFeeAndWithdrawAllInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, call_frame_update))
+        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
+
+        Self::withdraw_internal(
+            receiver,
+            input.resource_address,
+            |vault, api| vault.sys_take_all(api),
+            api,
+        )
     }
 }
+
 
 //=====================================
 // Account Withdraw By Amount And Lock

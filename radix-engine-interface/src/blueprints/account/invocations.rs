@@ -119,41 +119,12 @@ pub struct AccountWithdrawNonFungiblesInput {
 // Account Withdraw And Lock
 //===========================
 
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeAndWithdrawAllMethodArgs {
+pub struct AccountLockFeeAndWithdrawAllInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawAllInvocation {
-    pub receiver: ComponentAddress,
-    pub amount_to_lock: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountLockFeeAndWithdrawAllInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdrawAll))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeAndWithdrawAllInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFeeAndWithdrawAll)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawAllInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFeeAndWithdrawAll(self)).into()
-    }
 }
 
 //=====================================

@@ -400,10 +400,6 @@ where
             }
         },
         NativeInvocation::Account(account_method) => match account_method {
-            AccountInvocation::LockFeeAndWithdrawAll(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccountInvocation::LockFeeAndWithdraw(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

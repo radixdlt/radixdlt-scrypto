@@ -752,26 +752,6 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn lock_fee_and_withdraw_all(
-        &mut self,
-        account: ComponentAddress,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdrawAll;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawAllMethodArgs {
-            amount_to_lock: amount,
-            resource_address,
-        })
-        .unwrap();
-
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: account,
-            method_name: method_ident.to_string(),
-            args,
-        })
-        .0
-    }
 
     pub fn lock_fee_and_withdraw(
         &mut self,
@@ -899,6 +879,27 @@ impl ManifestBuilder {
         })
         .0
     }
+
+    pub fn lock_fee_and_withdraw_all(
+        &mut self,
+        account: ComponentAddress,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawAllInput {
+            amount_to_lock: amount,
+            resource_address,
+        })
+            .unwrap();
+
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
+            args,
+        })
+            .0
+    }
+
 
     /// Creates resource proof from an account.
     pub fn create_proof_from_account(
