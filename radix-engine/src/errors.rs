@@ -162,7 +162,7 @@ pub enum KernelError {
         mode: ExecutionMode,
         actor: ResolvedActor,
     },
-    InvalidSubstateVisibility {
+    InvalidSubstateAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,

@@ -60,39 +60,11 @@ pub struct AccountLockContingentFeeInput {
 // Account Deposit
 //=================
 
+pub const ACCOUNT_DEPOSIT_IDENT: &str = "deposit";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountDepositMethodArgs {
+pub struct AccountDepositInput {
     pub bucket: Bucket,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountDepositInvocation {
-    pub receiver: ComponentAddress,
-    pub bucket: BucketId,
-}
-
-impl Invocation for AccountDepositInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Deposit))
-    }
-}
-
-impl SerializableInvocation for AccountDepositInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Deposit)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountDepositInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Deposit(self)).into()
-    }
 }
 
 //=======================

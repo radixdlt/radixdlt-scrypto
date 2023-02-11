@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
-use radix_engine_interface::blueprints::account::AccountDepositInvocation;
+use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -147,10 +147,14 @@ impl EpochManagerNativePackage {
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
-            api.call_native(AccountDepositInvocation {
-                receiver: validator_init.validator_account_address,
-                bucket: owner_token_bucket.0,
-            })?;
+            api.call_method(
+                ScryptoReceiver::Global(validator_init.validator_account_address),
+                ACCOUNT_DEPOSIT_IDENT,
+                scrypto_encode(&AccountDepositInput {
+                    bucket: owner_token_bucket,
+                })
+                .unwrap(),
+            )?;
 
             let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
@@ -163,10 +167,12 @@ impl EpochManagerNativePackage {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.call_native(AccountDepositInvocation {
-                receiver: validator_init.stake_account_address,
-                bucket: lp_bucket.0,
-            })?;
+
+            api.call_method(
+                ScryptoReceiver::Global(validator_init.stake_account_address),
+                ACCOUNT_DEPOSIT_IDENT,
+                scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
+            )?;
         }
 
         let current_validator_set = ValidatorSetSubstate {

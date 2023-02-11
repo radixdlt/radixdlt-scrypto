@@ -68,7 +68,9 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Account(..) => {
                 match method_name {
-                    ACCOUNT_LOCK_FEE_IDENT | ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
+                    ACCOUNT_LOCK_FEE_IDENT
+                    | ACCOUNT_LOCK_CONTINGENT_FEE_IDENT
+                    | ACCOUNT_DEPOSIT_IDENT => {
                         /*
                         let component_node_id =
                             RENodeId::Global(GlobalAddress::Component(component_address));

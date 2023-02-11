@@ -21,6 +21,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
+use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_IDENT;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
 };
@@ -163,7 +164,7 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
+                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );

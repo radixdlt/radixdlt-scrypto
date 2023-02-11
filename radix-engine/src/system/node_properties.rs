@@ -132,7 +132,7 @@ impl VisibilityProperties {
         }
     }
 
-    pub fn check_substate_visibility(
+    pub fn check_substate_access(
         mode: ExecutionMode,
         actor: &ResolvedActor,
         node_id: RENodeId,
@@ -296,6 +296,10 @@ impl VisibilityProperties {
 
                             Some(ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),
+                                ..
+                            })
+                            | Some(ResolvedReceiver {
+                                receiver: RENodeId::Account(component_address),
                                 ..
                             }) => match (node_id, offset) {
                                 (

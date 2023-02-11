@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::resource::Proof;
 
 use super::AccountSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
-use native_sdk::resource::Vault;
+use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -87,6 +87,12 @@ impl AccountNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_contingent_fee(receiver, input, api)
+            }
+            ACCOUNT_DEPOSIT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::deposit(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -322,52 +328,12 @@ impl AccountNativePackage {
 
         Self::lock_fee_internal(receiver, input.amount, true, api)
     }
-}
 
-//=================
-// Account Deposit
-//=================
-
-pub struct AccountDepositExecutable {
-    pub receiver: RENodeId,
-    pub bucket: BucketId,
-}
-
-impl ExecutableInvocation for AccountDepositInvocation {
-    type Exec = AccountDepositExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            bucket_resource_address(deref, self.bucket)?, // Required for vault creation
-        )));
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(NativeFn::Account(AccountFn::Deposit), resolved_receiver);
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            bucket: self.bucket,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccountDepositExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn deposit<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -375,13 +341,19 @@ impl Executor for AccountDepositExecutable {
             + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
-        let resource_address = bucket_resource_address(api, self.bucket)?;
+        // TODO: Remove decode/encode mess
+        let input: AccountDepositInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let node_id = self.receiver;
-        let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_substate(
+            RENodeId::Account(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Account(AccountOffset::Account),
+            LockFlags::read_only(),
+        )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -424,13 +396,13 @@ impl Executor for AccountDepositExecutable {
         };
 
         // Put the bucket in the vault
-        vault.sys_put(Bucket(self.bucket), api)?;
+        vault.sys_put(input.bucket, api)?;
 
         // Drop locks (LIFO)
         api.drop_lock(kv_store_entry_lock_handle)?;
         api.drop_lock(handle)?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -1380,7 +1352,7 @@ impl Executor for AccountCreateProofByIdsExecutable {
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
+        AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );

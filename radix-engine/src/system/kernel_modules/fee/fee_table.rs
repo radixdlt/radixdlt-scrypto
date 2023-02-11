@@ -143,6 +143,7 @@ impl FeeTable {
                 ACCOUNT_CREATE_GLOBAL_IDENT => self.fixed_low,
                 ACCOUNT_LOCK_FEE_IDENT => self.fixed_low,
                 ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => self.fixed_low,
+                ACCOUNT_DEPOSIT_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
 
@@ -280,7 +281,6 @@ impl FeeTable {
             }
             // TODO: Investigate what sensible costing for native components looks like
             NativeFn::Account(account_fn) => match account_fn {
-                AccountFn::Deposit => self.fixed_low,
                 AccountFn::DepositBatch => self.fixed_low,
 
                 AccountFn::WithdrawAll => self.fixed_low,

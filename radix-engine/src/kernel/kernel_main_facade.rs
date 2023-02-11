@@ -284,7 +284,7 @@ where
 
         // Authorization
         let actor = &self.current_frame.actor;
-        if !VisibilityProperties::check_substate_visibility(
+        if !VisibilityProperties::check_substate_access(
             current_mode,
             actor,
             node_id,
@@ -292,7 +292,7 @@ where
             flags,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateVisibility {
+                KernelError::InvalidSubstateAccess {
                     mode: current_mode,
                     actor: actor.clone(),
                     node_id,

@@ -847,8 +847,7 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccountFn {
-    //LockContingentFee,
-    Deposit,
+    //Deposit,
     DepositBatch,
 
     WithdrawAll,
@@ -875,15 +874,6 @@ impl AccountPackage {
         let account_fn = AccountFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match account_fn {
             /*
-            AccountFn::LockContingentFee => {
-                let args = scrypto_decode::<AccountLockContingentFeeMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccountInvocation::LockContingentFee(AccountLockContingentFeeInvocation {
-                    receiver,
-                    amount: args.amount,
-                })
-            }
-             */
             AccountFn::Deposit => {
                 let args = scrypto_decode::<AccountDepositMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
@@ -892,6 +882,7 @@ impl AccountPackage {
                     bucket: args.bucket.0,
                 })
             }
+             */
             AccountFn::DepositBatch => {
                 let args = scrypto_decode::<AccountDepositBatchMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;
