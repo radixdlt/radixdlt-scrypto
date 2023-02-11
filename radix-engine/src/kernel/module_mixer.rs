@@ -20,6 +20,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
@@ -610,58 +611,31 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn on_instantiate_wasm_code<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        code: &[u8],
-    ) -> Result<(), RuntimeError> {
-        if api.kernel_get_module_state().kernel_debug_enabled {
-            KernelDebugModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().costing_enabled {
-            CostingModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().node_move_enabled {
-            NodeMoveModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().auth_enabled {
-            AuthModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().logger_enabled {
-            LoggerModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::on_instantiate_wasm_code(api, code)?;
-        }
-        if api.kernel_get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::on_instantiate_wasm_code(api, code)?;
-        }
-        Ok(())
-    }
-
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         units: u32,
+        reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
         if api.kernel_get_module_state().kernel_debug_enabled {
-            KernelDebugModule::on_consume_cost_units(api, units)?;
+            KernelDebugModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().costing_enabled {
-            CostingModule::on_consume_cost_units(api, units)?;
+            CostingModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().node_move_enabled {
-            NodeMoveModule::on_consume_cost_units(api, units)?;
+            NodeMoveModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().auth_enabled {
-            AuthModule::on_consume_cost_units(api, units)?;
+            AuthModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().logger_enabled {
-            LoggerModule::on_consume_cost_units(api, units)?;
+            LoggerModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::on_consume_cost_units(api, units)?;
+            TransactionRuntimeModule::on_consume_cost_units(api, units, reason)?;
         }
         if api.kernel_get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::on_consume_cost_units(api, units)?;
+            ExecutionTraceModule::on_consume_cost_units(api, units, reason)?;
         }
         Ok(())
     }

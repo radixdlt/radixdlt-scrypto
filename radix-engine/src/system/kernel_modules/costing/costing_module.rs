@@ -14,6 +14,7 @@ use radix_engine_interface::api::types::{
     FnIdentifier, GlobalAddress, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset,
     SubstateOffset, VaultId, VaultOffset,
 };
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
@@ -354,25 +355,21 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_instantiate_wasm_code<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        code: &[u8],
-    ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
-            CostingReason::InstantiateWasm,
-            |fee_table| fee_table.wasm_instantiation_per_byte(),
-            code.len(),
-        )
-    }
-
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         units: u32,
+        reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
         // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
         // These values will be tweaked, alongside the whole fee table.
-        apply_execution_cost(api, CostingReason::RunWasm, |_| units, 5)
+        apply_execution_cost(
+            api,
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+            },
+            |_| units,
+            5,
+        )
     }
 
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(

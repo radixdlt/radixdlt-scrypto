@@ -19,8 +19,8 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientEventApi, ClientNativeInvokeApi,
-    ClientNodeApi, ClientSubstateApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi,
+    ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
@@ -275,7 +275,7 @@ impl Executor for ScryptoExecutor {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
-            + ClientEventApi<RuntimeError>
+            + ClientUnsafeApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
@@ -329,7 +329,6 @@ impl Executor for ScryptoExecutor {
                 let rtn_type = fn_abi.output.clone();
 
                 // Emit event
-                api.on_instantiate_wasm_code(package.code())?;
                 let mut instance = api
                     .kernel_get_scrypto_interpreter()
                     .create_instance(self.package_address, &package.code);

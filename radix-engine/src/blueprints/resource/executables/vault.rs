@@ -16,8 +16,8 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -189,7 +189,7 @@ impl Executor for VaultLockFeeInvocation {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
+            + ClientUnsafeApi<RuntimeError>,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

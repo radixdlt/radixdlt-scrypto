@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::api::{
     ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi,
@@ -278,7 +278,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
+            + ClientUnsafeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
@@ -300,7 +300,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
         for (index, inst) in self.instructions.into_iter().enumerate() {
-            api.on_update_instruction_index(index)?;
+            api.update_instruction_index(index)?;
 
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {

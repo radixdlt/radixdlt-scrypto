@@ -29,9 +29,10 @@ use radix_engine_interface::api::component::{
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientEventApi,
-    ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi,
+    ClientNodeApi, ClientPackageApi, ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -430,13 +431,18 @@ where
     }
 }
 
-impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_consume_cost_units(self, units)
+    fn consume_cost_units(
+        &mut self,
+        units: u32,
+        reason: ClientCostingReason,
+    ) -> Result<(), RuntimeError> {
+        KernelModuleMixer::on_consume_cost_units(self, units, reason)
     }
+
     fn credit_cost_units(
         &mut self,
         vault_id: VaultId,
@@ -446,11 +452,7 @@ where
         KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 
-    fn on_instantiate_wasm_code(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_instantiate_wasm_code(self, code)
-    }
-
-    fn on_update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
 }
