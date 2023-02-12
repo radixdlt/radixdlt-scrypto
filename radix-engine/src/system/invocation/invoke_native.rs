@@ -400,10 +400,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::CreateProof(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::InitiateRecoveryAsPrimary(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

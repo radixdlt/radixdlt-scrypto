@@ -15,6 +15,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 
@@ -196,7 +197,15 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: ACCESS_CONTROLLER_PACKAGE,
+                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Account(..), RENodeInit::Account(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,

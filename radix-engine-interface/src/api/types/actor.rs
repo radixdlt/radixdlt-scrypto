@@ -843,8 +843,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    CreateProof,
-
     InitiateRecoveryAsPrimary,
     InitiateRecoveryAsRecovery,
 
@@ -873,13 +871,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::CreateProof => {
-                scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::CreateProof(AccessControllerCreateProofInvocation {
-                    receiver,
-                })
-            }
             AccessControllerFn::InitiateRecoveryAsPrimary => {
                 let args =
                     scrypto_decode::<AccessControllerInitiateRecoveryAsPrimaryMethodArgs>(args)

@@ -508,12 +508,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AccessController(ac_fn) => match ac_fn {
-            AccessControllerFn::CreateProof => {
-                let invocation =
-                    scrypto_decode::<AccessControllerCreateProofInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccessControllerFn::InitiateRecoveryAsPrimary => {
                 let invocation = scrypto_decode::<
                     AccessControllerInitiateRecoveryAsPrimaryInvocation,

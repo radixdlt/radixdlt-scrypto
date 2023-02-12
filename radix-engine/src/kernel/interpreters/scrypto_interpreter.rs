@@ -60,6 +60,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             let original_node_id = match receiver {
                 ScryptoReceiver::Global(component_address) => match component_address {
                     ComponentAddress::Normal(..)
+                    | ComponentAddress::AccessController(..)
                     | ComponentAddress::Account(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                     | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
@@ -69,7 +70,6 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::EpochManager(..)
                     | ComponentAddress::Validator(..)
                     | ComponentAddress::Identity(..)
-                    | ComponentAddress::AccessController(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                     | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
                         return Err(RuntimeError::InterpreterError(
@@ -436,7 +436,7 @@ impl NativeVm {
                 AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
-                AccessControllerNativePackage::invoke_export(&export_name, input, api)
+                AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,

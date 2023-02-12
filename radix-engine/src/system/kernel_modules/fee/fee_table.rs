@@ -135,6 +135,7 @@ impl FeeTable {
             (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_CREATE_PROOF_IDENT => self.fixed_low,
                     _ => self.fixed_low,
                 }
             }
@@ -290,8 +291,6 @@ impl FeeTable {
                 }
             }
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::CreateProof => self.fixed_low,
-
                 AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
                 AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,
 

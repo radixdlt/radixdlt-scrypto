@@ -185,26 +185,7 @@ impl AuthModule {
                     _ => vec![],
                 }
             }
-            ResolvedActor {
-                identifier,
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: RENodeId::Account(component_id),
-                        ..
-                    }),
-            } => {
-                let handle = system_api.lock_substate(
-                    RENodeId::Account(*component_id),
-                    NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let substate = substate_ref.access_rules_chain();
-                let auth = substate.native_fn_authorization(identifier.clone());
-                system_api.drop_lock(handle)?;
-                auth
-            }
+
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(method_identifier),
                 receiver:
@@ -266,8 +247,26 @@ impl AuthModule {
                     auth
                 }
             }
-
-            _ => vec![],
+            ResolvedActor {
+                identifier,
+                receiver:
+                Some(ResolvedReceiver {
+                         receiver,
+                         ..
+                     }),
+            } => {
+                let handle = system_api.lock_substate(
+                    *receiver,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let substate = substate_ref.access_rules_chain();
+                let auth = substate.native_fn_authorization(identifier.clone());
+                system_api.drop_lock(handle)?;
+                auth
+            }
         };
 
         let handle = system_api.lock_substate(

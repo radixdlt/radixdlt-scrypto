@@ -1492,7 +1492,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                scrypto_encode(&AccessControllerCreateProofMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerCreateProofInput {}).unwrap(),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();

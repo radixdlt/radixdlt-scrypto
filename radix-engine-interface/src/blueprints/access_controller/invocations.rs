@@ -43,34 +43,10 @@ impl Clone for AccessControllerCreateGlobalInput {
 // Access Controller Create Proof
 //================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateProofMethodArgs;
+pub const ACCESS_CONTROLLER_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateProofInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for AccessControllerCreateProofInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(AccessControllerFn::CreateProof))
-    }
-}
-
-impl SerializableInvocation for AccessControllerCreateProofInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::CreateProof)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerCreateProofInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::CreateProof(self)).into()
-    }
+pub struct AccessControllerCreateProofInput {
 }
 
 //================================================

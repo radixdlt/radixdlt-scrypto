@@ -67,6 +67,7 @@ pub struct AccessControllerNativePackage;
 impl AccessControllerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
+        receiver: Option<ComponentId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -78,7 +79,20 @@ impl AccessControllerNativePackage {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::create_global(input, api)
+            },
+            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::create_proof(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -141,65 +155,31 @@ impl AccessControllerNativePackage {
         let address: ComponentAddress = global_node_id.into();
         Ok(IndexedScryptoValue::from_typed(&address))
     }
-}
 
-//================================
-// Access Controller Create Proof
-//================================
-
-pub struct AccessControllerCreateProofExecutable {
-    pub receiver: RENodeId,
-}
-
-impl ExecutableInvocation for AccessControllerCreateProofInvocation {
-    type Exec = AccessControllerCreateProofExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CreateProof),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCreateProofExecutable {
-    type Output = Proof;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn create_proof<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let _input: AccessControllerCreateProofInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let proof = transition(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerCreateProofStateMachineInput,
         )?;
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
 
-        Ok((proof, call_frame_update))
+        Ok(IndexedScryptoValue::from_typed(&proof))
     }
 }
 
@@ -854,7 +834,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(AccessControllerFn::CreateProof)),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string()),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(

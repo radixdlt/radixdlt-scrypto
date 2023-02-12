@@ -228,8 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    CreateProof(AccessControllerCreateProofInvocation),
-
     InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
     InitiateRecoveryAsRecovery(AccessControllerInitiateRecoveryAsRecoveryInvocation),
 
@@ -517,10 +515,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::CreateProof(
-                    AccessControllerCreateProofInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::InitiateRecoveryAsPrimary(
+                AccessControllerInvocation::InitiateRecoveryAsPrimary(
                     AccessControllerInitiateRecoveryAsPrimaryInvocation { receiver, .. },
                 )
                 | AccessControllerInvocation::InitiateRecoveryAsRecovery(
@@ -720,7 +715,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 AccessControllerInvocation::InitiateRecoveryAsPrimary(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }
