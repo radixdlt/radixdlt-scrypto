@@ -228,9 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    LockPrimaryRole(AccessControllerLockPrimaryRoleInvocation),
-    UnlockPrimaryRole(AccessControllerUnlockPrimaryRoleInvocation),
-
     StopTimedRecovery(AccessControllerStopTimedRecoveryInvocation),
 }
 
@@ -498,13 +495,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::LockPrimaryRole(
-                    AccessControllerLockPrimaryRoleInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::UnlockPrimaryRole(
-                    AccessControllerUnlockPrimaryRoleInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::StopTimedRecovery(
+                AccessControllerInvocation::StopTimedRecovery(
                     AccessControllerStopTimedRecoveryInvocation { receiver, .. },
                 ) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
@@ -667,12 +658,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::LockPrimaryRole(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessControllerInvocation::UnlockPrimaryRole(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::StopTimedRecovery(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

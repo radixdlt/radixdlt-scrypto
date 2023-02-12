@@ -400,14 +400,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::LockPrimaryRole(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::UnlockPrimaryRole(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::StopTimedRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

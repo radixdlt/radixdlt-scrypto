@@ -143,6 +143,8 @@ impl FeeTable {
                     ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => self.fixed_low,
+                    ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => self.fixed_low,
                     _ => self.fixed_low,
                 }
             }
@@ -298,9 +300,6 @@ impl FeeTable {
                 }
             }
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::LockPrimaryRole => self.fixed_low,
-                AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
-
                 AccessControllerFn::StopTimedRecovery => self.fixed_low,
             },
         }

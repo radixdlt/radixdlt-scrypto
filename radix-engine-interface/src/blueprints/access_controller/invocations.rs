@@ -131,74 +131,19 @@ pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 // Access Controller Lock Primary Role
 //=====================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerLockPrimaryRoleMethodArgs;
+pub const ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE: &str = "lock_primary_role";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerLockPrimaryRoleInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for AccessControllerLockPrimaryRoleInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::LockPrimaryRole,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerLockPrimaryRoleInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::LockPrimaryRole)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerLockPrimaryRoleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::LockPrimaryRole(self)).into()
-    }
-}
+pub struct AccessControllerLockPrimaryRoleInput;
 
 //=======================================
 // Access Controller Unlock Primary Role
 //=======================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerUnlockPrimaryRoleMethodArgs;
+pub const ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE: &str = "unlock_primary_role";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerUnlockPrimaryRoleInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for AccessControllerUnlockPrimaryRoleInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::UnlockPrimaryRole,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::UnlockPrimaryRole)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerUnlockPrimaryRoleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::UnlockPrimaryRole(self))
-            .into()
-    }
-}
+pub struct AccessControllerUnlockPrimaryRoleInput;
 
 //=======================================
 // Access Controller Stop Timed Recovery

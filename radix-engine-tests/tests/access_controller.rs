@@ -1625,7 +1625,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                scrypto_encode(&AccessControllerLockPrimaryRoleMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1637,7 +1637,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                scrypto_encode(&AccessControllerUnlockPrimaryRoleMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)

@@ -215,8 +215,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
-    + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
-    + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
     + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
 {
 }

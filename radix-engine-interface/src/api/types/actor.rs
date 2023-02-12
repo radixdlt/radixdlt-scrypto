@@ -843,9 +843,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    LockPrimaryRole,
-    UnlockPrimaryRole,
-
     StopTimedRecovery,
 }
 
@@ -860,20 +857,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::LockPrimaryRole => {
-                scrypto_decode::<AccessControllerLockPrimaryRoleMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::LockPrimaryRole(
-                    AccessControllerLockPrimaryRoleInvocation { receiver },
-                )
-            }
-            AccessControllerFn::UnlockPrimaryRole => {
-                scrypto_decode::<AccessControllerUnlockPrimaryRoleMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::UnlockPrimaryRole(
-                    AccessControllerUnlockPrimaryRoleInvocation { receiver },
-                )
-            }
             AccessControllerFn::StopTimedRecovery => {
                 let args = scrypto_decode::<AccessControllerStopTimedRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

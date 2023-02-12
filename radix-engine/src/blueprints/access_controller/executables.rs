@@ -135,6 +135,18 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::lock_primary_role(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::unlock_primary_role(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -443,123 +455,56 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//=====================================
-// Access Controller Lock Primary Role
-//=====================================
 
-pub struct AccessControllerLockPrimaryRoleExecutable {
-    pub receiver: RENodeId,
-}
-
-impl ExecutableInvocation for AccessControllerLockPrimaryRoleInvocation {
-    type Exec = AccessControllerLockPrimaryRoleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::LockPrimaryRole),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerLockPrimaryRoleExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn lock_primary_role<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let _input: AccessControllerLockPrimaryRoleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerLockPrimaryRoleStateMachineInput,
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//=======================================
-// Access Controller Unlock Primary Role
-//=======================================
-
-pub struct AccessControllerUnlockPrimaryRoleExecutable {
-    pub receiver: RENodeId,
-}
-
-impl ExecutableInvocation for AccessControllerUnlockPrimaryRoleInvocation {
-    type Exec = AccessControllerUnlockPrimaryRoleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::UnlockPrimaryRole),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn unlock_primary_role<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let _input: AccessControllerUnlockPrimaryRoleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerUnlockPrimaryRoleStateMachineInput,
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -677,15 +622,11 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::LockPrimaryRole,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string()),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::UnlockPrimaryRole,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string()),
         recovery_group.into(),
     );
 
