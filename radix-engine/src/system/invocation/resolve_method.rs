@@ -55,7 +55,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 match method_name {
                     ACCESS_CONTROLLER_CREATE_PROOF_IDENT
                     | ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT
-                    | ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
+                    | ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT
+                    | ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL
+                    | ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL
+                    => {
                         let component_node_id =
                             RENodeId::Global(GlobalAddress::Component(component_address));
                         let component_info = {

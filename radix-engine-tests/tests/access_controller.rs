@@ -1548,17 +1548,17 @@ impl AccessControllerTestRunner {
         };
 
         let method_name = match proposer {
-            Proposer::Primary => AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
-            Proposer::Recovery => AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal,
+            Proposer::Primary => ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL,
+            Proposer::Recovery => ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL,
         };
 
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
+                method_name,
                 scrypto_encode(
-                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
+                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
                             recovery_role: proposed_recovery_role,

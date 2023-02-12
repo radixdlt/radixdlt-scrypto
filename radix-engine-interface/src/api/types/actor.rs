@@ -843,9 +843,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    QuickConfirmPrimaryRoleRecoveryProposal,
-    QuickConfirmRecoveryRoleRecoveryProposal,
-
     TimedConfirmRecovery,
 
     CancelPrimaryRoleRecoveryProposal,
@@ -868,36 +865,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => {
-                let args = scrypto_decode::<
-                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs,
-                >(args)
-                .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
-                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
-                        receiver,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
-            AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => {
-                let args = scrypto_decode::<
-                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalMethodArgs,
-                >(args)
-                .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
-                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
-                        receiver,
-                        proposal_to_confirm: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
             AccessControllerFn::TimedConfirmRecovery => {
                 let args = scrypto_decode::<AccessControllerTimedConfirmRecoveryMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

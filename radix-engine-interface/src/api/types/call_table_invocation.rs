@@ -228,13 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    QuickConfirmPrimaryRoleRecoveryProposal(
-        AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation,
-    ),
-    QuickConfirmRecoveryRoleRecoveryProposal(
-        AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation,
-    ),
-
     TimedConfirmRecovery(AccessControllerTimedConfirmRecoveryInvocation),
 
     CancelPrimaryRoleRecoveryProposal(AccessControllerCancelPrimaryRoleRecoveryProposalInvocation),
@@ -512,19 +505,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
-                    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
-                        receiver,
-                        ..
-                    },
-                )
-                | AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(
-                    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
-                        receiver,
-                        ..
-                    },
-                )
-                | AccessControllerInvocation::TimedConfirmRecovery(
+                AccessControllerInvocation::TimedConfirmRecovery(
                     AccessControllerTimedConfirmRecoveryInvocation { receiver, .. },
                 )
                 | AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
@@ -706,12 +687,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::TimedConfirmRecovery(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

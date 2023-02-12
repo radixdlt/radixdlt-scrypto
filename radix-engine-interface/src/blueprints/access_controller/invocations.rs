@@ -77,90 +77,24 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
 // Access Controller Quick Confirm Primary Role Recovery
 //=======================================================
 
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL: &str = "quick_confirm_primary_role_recovery_proposal";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
+pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal_to_confirm: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
-    }
-}
-
-impl Into<CallTableInvocation>
-    for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation
-{
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(self),
-        )
-        .into()
-    }
 }
 
 //========================================================
 // Access Controller Quick Confirm Recovery Role Recovery
 //========================================================
 
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL: &str = "quick_confirm_recovery_role_recovery_proposal";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalMethodArgs {
+pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal_to_confirm: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal)
-    }
-}
-
-impl Into<CallTableInvocation>
-    for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation
-{
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(self),
-        )
-        .into()
-    }
 }
 
 //=================================

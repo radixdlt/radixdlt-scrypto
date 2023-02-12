@@ -201,7 +201,7 @@ fn test_radiswap() {
         25000 /* CreateNode */
         + 104500 /* DropLock */
         + 15000 /* DropNode */
-        + 262841 /* InstantiateWasm */
+        + 262917 /* InstantiateWasm */
         + 19000 /* Invoke */
         + 144000 /* LockSubstate */
         + 477500 /* ReadSubstate */

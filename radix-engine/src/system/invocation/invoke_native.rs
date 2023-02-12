@@ -400,14 +400,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::QuickConfirmRecoveryRoleRecoveryProposal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::TimedConfirmRecovery(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
