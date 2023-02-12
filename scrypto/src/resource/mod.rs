@@ -13,7 +13,10 @@ pub use bucket::*;
 pub use non_fungible::NonFungible;
 pub use proof::*;
 pub use proof_rule::*;
-pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
+pub use resource_builder::{
+    CreateWithNoSupplyBuilder, ResourceBuilder, SetOwnerBuilder, UpdateAuthBuilder,
+    UpdateMetadataBuilder, UpdateNonFungibleAuthBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE,
+};
 pub use resource_manager::*;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::*;

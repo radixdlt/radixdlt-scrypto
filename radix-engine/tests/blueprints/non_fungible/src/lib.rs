@@ -20,7 +20,7 @@ mod non_fungible_test {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_integer_non_fungible()
@@ -34,7 +34,7 @@ mod non_fungible_test {
                     rule!(require(mint_badge.resource_address())),
                     rule!(deny_all),
                 )
-                .no_initial_supply();
+                .create_with_no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -69,7 +69,7 @@ mod non_fungible_test {
             ResourceBuilder::new_uuid_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .burnable(rule!(allow_all), rule!(deny_all))
-                .initial_supply_uuid([
+                .mint_initial_supply([
                     Sandwich {
                         name: "Zero".to_owned(),
                         available: true,
@@ -84,7 +84,7 @@ mod non_fungible_test {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply([
+                .mint_initial_supply([
                     (
                         1u64.into(),
                         Sandwich {
@@ -317,7 +317,7 @@ mod non_fungible_test {
 
         pub fn create_string_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_string_non_fungible().initial_supply([
+            ResourceBuilder::new_string_non_fungible().mint_initial_supply([
                 (
                     "1".try_into().unwrap(),
                     Sandwich {
@@ -336,7 +336,7 @@ mod non_fungible_test {
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
-            ResourceBuilder::new_bytes_non_fungible().initial_supply([
+            ResourceBuilder::new_bytes_non_fungible().mint_initial_supply([
                 (
                     1u32.to_le_bytes().to_vec().try_into().unwrap(),
                     Sandwich {
@@ -355,7 +355,7 @@ mod non_fungible_test {
         }
 
         pub fn create_uuid_non_fungible() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible().initial_supply_uuid([Sandwich {
+            ResourceBuilder::new_uuid_non_fungible().mint_initial_supply([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
             }])
@@ -364,7 +364,7 @@ mod non_fungible_test {
         pub fn create_mintable_uuid_non_fungible() -> ResourceAddress {
             ResourceBuilder::new_uuid_non_fungible()
                 .mintable(rule!(allow_all), rule!(deny_all))
-                .no_initial_supply()
+                .create_with_no_initial_supply()
         }
 
         pub fn create_uuid_non_fungible_and_mint() -> Bucket {
@@ -372,7 +372,7 @@ mod non_fungible_test {
             let resource_address = ResourceBuilder::new_uuid_non_fungible()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "Katz's Sandwiches")
-                .no_initial_supply();
+                .create_with_no_initial_supply();
 
             borrow_resource_manager!(resource_address).mint_uuid_non_fungible(Sandwich {
                 name: "Test".to_owned(),
