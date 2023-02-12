@@ -145,12 +145,12 @@ impl ExecutableInvocation for ScryptoInvocation {
                 let handle = api.lock_substate(
                     package_global,
                     NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::NativeCode),
+                    SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
-                let package = substate_ref.native_package_info();
-                for dependent_resource in &package.dependent_resources {
+                let info = substate_ref.package_info(); // TODO: Remove clone()
+                for dependent_resource in &info.dependent_resources {
                     node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
                         *dependent_resource,
                     )));
@@ -175,7 +175,6 @@ impl ExecutableInvocation for ScryptoInvocation {
                 )));
 
                 let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
-
                 let handle = api.lock_substate(
                     package_global,
                     NodeModuleId::SELF,
@@ -183,9 +182,15 @@ impl ExecutableInvocation for ScryptoInvocation {
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
-                let package = substate_ref.package_info(); // TODO: Remove clone()
-                                                           // Find the abi
-                let abi = package.blueprint_abi(&self.blueprint_name).ok_or(
+                let info = substate_ref.package_info(); // TODO: Remove clone()
+                for dependent_resource in &info.dependent_resources {
+                    node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+                        *dependent_resource,
+                    )));
+                }
+
+                // Find the abi
+                let abi = info.blueprint_abi(&self.blueprint_name).ok_or(
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                         self.package_address,
                         self.blueprint_name.clone(),
@@ -296,8 +301,7 @@ impl Executor for ScryptoExecutor {
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
-                let native_package_code_id =
-                    substate_ref.native_package_info().native_package_code_id;
+                let native_package_code_id = substate_ref.native_code().native_package_code_id;
                 api.drop_lock(handle)?;
                 NativeVm::invoke_native_package(
                     native_package_code_id,

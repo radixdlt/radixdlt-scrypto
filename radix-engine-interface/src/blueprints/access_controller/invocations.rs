@@ -14,7 +14,6 @@ impl AccessControllerAbi {
     }
 }
 
-
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 
 //=================================

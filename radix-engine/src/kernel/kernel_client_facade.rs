@@ -217,9 +217,8 @@ where
                     blueprint_abis: abi,
                     dependent_resources: BTreeSet::new(),
                 },
-                WasmCodeSubstate {
-                code,
-            }),
+                WasmCodeSubstate { code },
+            ),
             btreemap!(
                 NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
                     royalty_config_substate,

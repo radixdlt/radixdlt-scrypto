@@ -228,8 +228,7 @@ impl VisibilityProperties {
                                 | (
                                     RENodeId::Package(_),
                                     SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
-                                )
-                                => read_only,
+                                ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
                                 (
@@ -258,8 +257,7 @@ impl VisibilityProperties {
                                 | (
                                     RENodeId::Package(_),
                                     SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
-                                )
-                                => read_only,
+                                ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
                                 (

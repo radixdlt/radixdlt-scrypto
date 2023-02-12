@@ -17,7 +17,6 @@ impl EpochManagerAbi {
     }
 }
 
-
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 
 // TODO: Remove this and replace with a macro/function making it easy

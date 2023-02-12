@@ -156,7 +156,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.sys_lock_substate(
             package_global,
-            SubstateOffset::Package(PackageOffset::NativeCode),
+            SubstateOffset::Package(PackageOffset::WasmCode),
             false,
         )?;
         let substate = self.sys_read_substate(handle)?;

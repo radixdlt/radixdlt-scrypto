@@ -4,14 +4,15 @@ use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstate
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::package::WasmCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
-use radix_engine_interface::api::package::PackageInfoSubstate;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -84,9 +85,7 @@ impl Publish {
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = WasmCodeSubstate {
-                code,
-            };
+            let validated_package = WasmCodeSubstate { code };
             let output_value = OutputValue {
                 substate: PersistedSubstate::WasmCode(validated_package),
                 version: previous_version.unwrap_or(0),
@@ -105,6 +104,7 @@ impl Publish {
 
             let package_info = PackageInfoSubstate {
                 blueprint_abis: abi,
+                dependent_resources: BTreeSet::new(),
             };
 
             let output_value = OutputValue {

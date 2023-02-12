@@ -1,13 +1,13 @@
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::*;
-use radix_engine_interface::math::Decimal;
-use sbor::rust::collections::{BTreeSet, BTreeMap};
-use sbor::rust::fmt::Debug;
-use scrypto_abi::{BlueprintAbi, Fields, Type};
 use crate::data::types::Own;
+use crate::*;
 use radix_engine_interface::abi::LegacyDescribe;
+use radix_engine_interface::math::Decimal;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
+use sbor::rust::fmt::Debug;
 use scrypto_abi::Fn;
+use scrypto_abi::{BlueprintAbi, Fields, Type};
 
 pub struct AccountAbi;
 
@@ -177,7 +177,6 @@ pub struct AccountCreateLocalInput {
     pub withdraw_rule: AccessRule,
 }
 
-
 pub type AccountCreateLocalOutput = Own;
 
 //=============
@@ -309,7 +308,6 @@ pub type AccountLockFeeAndWithdrawOutput = ();
 
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
 
-
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawAllInput {
     pub amount_to_lock: Decimal,
@@ -322,8 +320,8 @@ pub type AccountLockFeeAndWithdrawAllOutput = ();
 // Account Withdraw By Ids And Lock
 //==================================
 
-pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "lock_fee_and_withdraw_non_fungibles";
-
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str =
+    "lock_fee_and_withdraw_non_fungibles";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesInput {

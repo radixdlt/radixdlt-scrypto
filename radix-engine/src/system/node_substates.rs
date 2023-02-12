@@ -46,7 +46,7 @@ pub enum PersistedSubstate {
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(PackageInfoSubstate),
     WasmCode(WasmCodeSubstate),
-    NativePackageInfo(NativePackageInfoSubstate),
+    NativePackageInfo(NativeCodeSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
     Vault(VaultSubstate),
@@ -140,9 +140,7 @@ impl PersistedSubstate {
             }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
             PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
-            PersistedSubstate::NativePackageInfo(value) => {
-                RuntimeSubstate::NativePackageInfo(value)
-            }
+            PersistedSubstate::NativePackageInfo(value) => RuntimeSubstate::NativeCode(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -181,7 +179,7 @@ pub enum RuntimeSubstate {
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
-    NativePackageInfo(NativePackageInfoSubstate),
+    NativeCode(NativeCodeSubstate),
     WasmCode(WasmCodeSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
@@ -232,7 +230,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
             RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
-            RuntimeSubstate::NativePackageInfo(value) => {
+            RuntimeSubstate::NativeCode(value) => {
                 PersistedSubstate::NativePackageInfo(value.clone())
             }
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
@@ -288,9 +286,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
-            RuntimeSubstate::NativePackageInfo(value) => {
-                PersistedSubstate::NativePackageInfo(value)
-            }
+            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }
@@ -374,7 +370,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
             RuntimeSubstate::WasmCode(value) => SubstateRefMut::WasmCode(value),
-            RuntimeSubstate::NativePackageInfo(value) => SubstateRefMut::NativePackageInfo(value),
+            RuntimeSubstate::NativeCode(value) => SubstateRefMut::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -419,7 +415,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
             RuntimeSubstate::WasmCode(value) => SubstateRef::WasmCode(value),
-            RuntimeSubstate::NativePackageInfo(value) => SubstateRef::NativePackageInfo(value),
+            RuntimeSubstate::NativeCode(value) => SubstateRef::NativeCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
             }
@@ -602,9 +598,9 @@ impl Into<RuntimeSubstate> for PackageInfoSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for NativePackageInfoSubstate {
+impl Into<RuntimeSubstate> for NativeCodeSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::NativePackageInfo(self)
+        RuntimeSubstate::NativeCode(self)
     }
 }
 
@@ -913,7 +909,7 @@ pub enum SubstateRef<'a> {
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     WasmCode(&'a WasmCodeSubstate),
     PackageInfo(&'a PackageInfoSubstate),
-    NativePackageInfo(&'a NativePackageInfoSubstate),
+    NativeCode(&'a NativeCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
     Vault(&'a VaultRuntimeSubstate),
@@ -948,7 +944,7 @@ impl<'a> SubstateRef<'a> {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::PackageInfo(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::NativePackageInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::NativeCode(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1086,9 +1082,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn native_package_info(&self) -> &NativePackageInfoSubstate {
+    pub fn native_code(&self) -> &NativeCodeSubstate {
         match self {
-            SubstateRef::NativePackageInfo(value) => *value,
+            SubstateRef::NativeCode(value) => *value,
             _ => panic!("Not a native package"),
         }
     }
@@ -1299,7 +1295,7 @@ pub enum SubstateRefMut<'a> {
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
     WasmCode(&'a mut WasmCodeSubstate),
-    NativePackageInfo(&'a mut NativePackageInfoSubstate),
+    NativePackageInfo(&'a mut NativeCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     NonFungible(&'a mut NonFungibleSubstate),

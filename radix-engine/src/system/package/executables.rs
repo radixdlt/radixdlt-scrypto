@@ -37,9 +37,7 @@ impl Package {
     ) -> Result<WasmCodeSubstate, PrepareError> {
         WasmValidator::default().validate(&code, abi)?;
 
-        Ok(WasmCodeSubstate {
-            code: code,
-        })
+        Ok(WasmCodeSubstate { code: code })
     }
 }
 
@@ -71,11 +69,12 @@ impl Executor for PackagePublishNativeInvocation {
         let access_rules = AccessRulesChainSubstate {
             access_rules_chain: vec![self.access_rules],
         };
-        let blueprint_abis = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
+        let blueprint_abis =
+            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidAbi(e),
+                ))
+            })?;
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
@@ -87,15 +86,17 @@ impl Executor for PackagePublishNativeInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules),
         );
 
-        let package = NativePackageInfoSubstate {
-            native_package_code_id: self.native_package_code_id,
+        let info = PackageInfoSubstate {
             dependent_resources: self.dependent_resources.into_iter().collect(),
             blueprint_abis,
+        };
+        let code = NativeCodeSubstate {
+            native_package_code_id: self.native_package_code_id,
         };
 
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
+        api.create_node(node_id, RENodeInit::NativePackage(info, code), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -146,11 +147,12 @@ impl Executor for PackagePublishInvocation {
             })?
             .vault_id();
 
-        let blueprint_abis = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
+        let blueprint_abis =
+            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidAbi(e),
+                ))
+            })?;
         let wasm_code_substate = Package::new(self.code, &blueprint_abis).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(e),
@@ -195,7 +197,11 @@ impl Executor for PackagePublishInvocation {
 
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(node_id, RENodeInit::WasmPackage(package_info_substate, wasm_code_substate), node_modules)?;
+        api.create_node(
+            node_id,
+            RENodeInit::WasmPackage(package_info_substate, wasm_code_substate),
+            node_modules,
+        )?;
         let package_id: PackageId = node_id.into();
 
         // Globalize

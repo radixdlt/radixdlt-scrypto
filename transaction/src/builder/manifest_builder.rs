@@ -752,7 +752,6 @@ impl ManifestBuilder {
         .0
     }
 
-
     pub fn lock_fee_and_withdraw(
         &mut self,
         account: ComponentAddress,
@@ -888,16 +887,15 @@ impl ManifestBuilder {
             amount_to_lock: amount,
             resource_address,
         })
-            .unwrap();
+        .unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
             args,
         })
-            .0
+        .0
     }
-
 
     /// Creates resource proof from an account.
     pub fn create_proof_from_account(

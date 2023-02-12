@@ -14,10 +14,8 @@ pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct NativePackageInfoSubstate {
+pub struct NativeCodeSubstate {
     pub native_package_code_id: u8,
-    pub dependent_resources: BTreeSet<ResourceAddress>,
-    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -26,18 +24,15 @@ pub struct WasmCodeSubstate {
     pub code: Vec<u8>,
 }
 
-
 impl WasmCodeSubstate {
     pub fn code(&self) -> &[u8] {
         &self.code
     }
 }
 
-
 impl Debug for WasmCodeSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("WasmCodeSubstate")
-            .finish()
+        f.debug_struct("WasmCodeSubstate").finish()
     }
 }
 

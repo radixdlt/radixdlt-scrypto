@@ -48,7 +48,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 global.node_deref(),
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::NativeCode),
+                SubstateOffset::Package(PackageOffset::WasmCode),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into())
