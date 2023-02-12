@@ -228,11 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    CancelPrimaryRoleRecoveryProposal(AccessControllerCancelPrimaryRoleRecoveryProposalInvocation),
-    CancelRecoveryRoleRecoveryProposal(
-        AccessControllerCancelRecoveryRoleRecoveryProposalInvocation,
-    ),
-
     LockPrimaryRole(AccessControllerLockPrimaryRoleInvocation),
     UnlockPrimaryRole(AccessControllerUnlockPrimaryRoleInvocation),
 
@@ -503,17 +498,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
-                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-                        receiver, ..
-                    },
-                )
-                | AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(
-                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-                        receiver, ..
-                    },
-                )
-                | AccessControllerInvocation::LockPrimaryRole(
+                AccessControllerInvocation::LockPrimaryRole(
                     AccessControllerLockPrimaryRoleInvocation { receiver, .. },
                 )
                 | AccessControllerInvocation::UnlockPrimaryRole(
@@ -682,12 +667,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::LockPrimaryRole(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

@@ -400,14 +400,6 @@ where
             }
         },
         NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AccessControllerInvocation::LockPrimaryRole(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

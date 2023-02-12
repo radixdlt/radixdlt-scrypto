@@ -123,6 +123,18 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::timed_confirm_recovery(receiver, input, api)
             }
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::cancel_primary_role_recovery_proposal(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -381,119 +393,55 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//===========================================
-// Access Controller Cancel Recovery Attempt
-//===========================================
-
-pub struct AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
-    pub receiver: RENodeId,
-}
-
-impl ExecutableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-    type Exec = AccessControllerCancelPrimaryRoleRecoveryProposalExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelPrimaryRoleRecoveryProposal),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn cancel_primary_role_recovery_proposal<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-pub struct AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
-    pub receiver: RENodeId,
-}
-
-impl ExecutableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-    type Exec = AccessControllerCancelRecoveryRoleRecoveryProposalExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecoveryRoleRecoveryProposal),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn cancel_recovery_role_recovery_proposal<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -709,9 +657,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
         primary_group.into(),
     );
 
@@ -727,9 +673,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(

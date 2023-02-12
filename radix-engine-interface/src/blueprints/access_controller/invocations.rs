@@ -113,79 +113,19 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
 // Access Controller Cancel Primary Role Recovery Proposal
 //=========================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs;
+pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "cancel_primary_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::CancelPrimaryRoleRecoveryProposal)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(self),
-        )
-        .into()
-    }
-}
+pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
 
 //==========================================================
 // Access Controller Cancel Recovery Role Recovery Proposal
 //==========================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryRoleRecoveryProposalMethodArgs;
+pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "cancel_recovery_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::CancelRecoveryRoleRecoveryProposal)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerCancelRecoveryRoleRecoveryProposalInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(
-            AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(self),
-        )
-        .into()
-    }
-}
+pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 
 //=====================================
 // Access Controller Lock Primary Role

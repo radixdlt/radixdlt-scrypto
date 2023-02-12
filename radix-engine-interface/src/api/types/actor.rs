@@ -843,9 +843,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    CancelPrimaryRoleRecoveryProposal,
-    CancelRecoveryRoleRecoveryProposal,
-
     LockPrimaryRole,
     UnlockPrimaryRole,
 
@@ -863,22 +860,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::CancelPrimaryRoleRecoveryProposal => {
-                scrypto_decode::<AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
-                    AccessControllerCancelPrimaryRoleRecoveryProposalInvocation { receiver },
-                )
-            }
-            AccessControllerFn::CancelRecoveryRoleRecoveryProposal => {
-                scrypto_decode::<AccessControllerCancelRecoveryRoleRecoveryProposalMethodArgs>(
-                    args,
-                )
-                .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::CancelRecoveryRoleRecoveryProposal(
-                    AccessControllerCancelRecoveryRoleRecoveryProposalInvocation { receiver },
-                )
-            }
             AccessControllerFn::LockPrimaryRole => {
                 scrypto_decode::<AccessControllerLockPrimaryRoleMethodArgs>(args)
                     .map_err(ResolveError::DecodeError)?;

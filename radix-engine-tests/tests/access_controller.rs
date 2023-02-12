@@ -1602,8 +1602,8 @@ impl AccessControllerTestRunner {
 
     pub fn cancel_recovery_attempt(&mut self, as_role: Role) -> TransactionReceipt {
         let method_name = match as_role {
-            Role::Primary => AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
-            Role::Recovery => AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
+            Role::Primary => ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+            Role::Recovery => ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
             Role::Confirmation => panic!("No method for the given role"),
         };
 
@@ -1611,8 +1611,8 @@ impl AccessControllerTestRunner {
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs)
+                method_name,
+                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput)
                     .unwrap(),
             )
             .build();
