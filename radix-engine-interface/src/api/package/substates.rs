@@ -40,6 +40,7 @@ impl Debug for WasmCodeSubstate {
 pub struct PackageInfoSubstate {
     pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
     pub dependent_resources: BTreeSet<ResourceAddress>,
+    pub dependent_components: BTreeSet<ComponentAddress>,
 }
 
 impl PackageInfoSubstate {

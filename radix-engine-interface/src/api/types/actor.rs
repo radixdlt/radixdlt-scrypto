@@ -843,9 +843,6 @@ pub enum TransactionProcessorFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessControllerFn {
-    InitiateRecoveryAsPrimary,
-    InitiateRecoveryAsRecovery,
-
     QuickConfirmPrimaryRoleRecoveryProposal,
     QuickConfirmRecoveryRoleRecoveryProposal,
 
@@ -871,34 +868,6 @@ impl AccessControllerPackage {
         let access_controller_fn =
             AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
         let invocation = match access_controller_fn {
-            AccessControllerFn::InitiateRecoveryAsPrimary => {
-                let args =
-                    scrypto_decode::<AccessControllerInitiateRecoveryAsPrimaryMethodArgs>(args)
-                        .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::InitiateRecoveryAsPrimary(
-                    AccessControllerInitiateRecoveryAsPrimaryInvocation {
-                        receiver,
-                        proposal: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
-            AccessControllerFn::InitiateRecoveryAsRecovery => {
-                let args =
-                    scrypto_decode::<AccessControllerInitiateRecoveryAsRecoveryMethodArgs>(args)
-                        .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::InitiateRecoveryAsRecovery(
-                    AccessControllerInitiateRecoveryAsRecoveryInvocation {
-                        receiver,
-                        proposal: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
             AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => {
                 let args = scrypto_decode::<
                     AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs,

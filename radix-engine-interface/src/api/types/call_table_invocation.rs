@@ -228,9 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    InitiateRecoveryAsPrimary(AccessControllerInitiateRecoveryAsPrimaryInvocation),
-    InitiateRecoveryAsRecovery(AccessControllerInitiateRecoveryAsRecoveryInvocation),
-
     QuickConfirmPrimaryRoleRecoveryProposal(
         AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation,
     ),
@@ -515,13 +512,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::InitiateRecoveryAsPrimary(
-                    AccessControllerInitiateRecoveryAsPrimaryInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::InitiateRecoveryAsRecovery(
-                    AccessControllerInitiateRecoveryAsRecoveryInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
+                AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(
                     AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation {
                         receiver,
                         ..
@@ -715,12 +706,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::InitiateRecoveryAsPrimary(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessControllerInvocation::InitiateRecoveryAsRecovery(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::QuickConfirmPrimaryRoleRecoveryProposal(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

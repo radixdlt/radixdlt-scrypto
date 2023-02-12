@@ -136,6 +136,8 @@ impl FeeTable {
                 match identifier.ident.as_str() {
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_CREATE_PROOF_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => self.fixed_low,
                     _ => self.fixed_low,
                 }
             }
@@ -291,9 +293,6 @@ impl FeeTable {
                 }
             }
             NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
-                AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,
-
                 AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => self.fixed_low,
                 AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => self.fixed_low,
 

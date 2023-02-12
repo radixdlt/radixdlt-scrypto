@@ -1508,8 +1508,8 @@ impl AccessControllerTestRunner {
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let method_name = match as_role {
-            Role::Primary => AccessControllerFn::InitiateRecoveryAsPrimary,
-            Role::Recovery => AccessControllerFn::InitiateRecoveryAsRecovery,
+            Role::Primary => ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
+            Role::Recovery => ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
             Role::Confirmation => panic!("Confirmation Role can't initiate recovery!"),
         };
 
@@ -1517,8 +1517,8 @@ impl AccessControllerTestRunner {
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
+                method_name,
+                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

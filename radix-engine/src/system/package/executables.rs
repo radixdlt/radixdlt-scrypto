@@ -88,6 +88,7 @@ impl Executor for PackagePublishNativeInvocation {
 
         let info = PackageInfoSubstate {
             dependent_resources: self.dependent_resources.into_iter().collect(),
+            dependent_components: self.dependent_components.into_iter().collect(),
             blueprint_abis,
         };
         let code = NativeCodeSubstate {
@@ -161,6 +162,7 @@ impl Executor for PackagePublishInvocation {
         let package_info_substate = PackageInfoSubstate {
             blueprint_abis,
             dependent_resources: BTreeSet::new(),
+            dependent_components: BTreeSet::new(),
         };
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: self.royalty_config,

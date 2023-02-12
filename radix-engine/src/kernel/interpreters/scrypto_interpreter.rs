@@ -156,6 +156,12 @@ impl ExecutableInvocation for ScryptoInvocation {
                     )));
                 }
 
+                for dependent_component in &info.dependent_components {
+                    node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(
+                        *dependent_component,
+                    )));
+                }
+
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
 

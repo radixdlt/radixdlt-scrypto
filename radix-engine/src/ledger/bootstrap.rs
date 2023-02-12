@@ -62,6 +62,7 @@ pub fn create_genesis(
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
+                dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
             }),
@@ -128,10 +129,11 @@ pub fn create_genesis(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                dependent_resources: vec![],
             }),
         )));
     }
@@ -150,6 +152,7 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -166,6 +169,7 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -182,6 +186,7 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -200,6 +205,7 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
+                dependent_components: vec![CLOCK],
             }),
         )));
     }

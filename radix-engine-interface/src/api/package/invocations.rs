@@ -43,6 +43,7 @@ pub struct PackagePublishNativeInvocation {
     pub native_package_code_id: u8,
     pub abi: Vec<u8>,
     pub dependent_resources: Vec<ResourceAddress>,
+    pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 }

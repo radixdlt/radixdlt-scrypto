@@ -53,86 +53,24 @@ pub struct AccessControllerCreateProofInput {
 // Access Controller Initiate Recovery As Primary
 //================================================
 
+pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT: &str = "initiate_recovery_as_primary";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
+pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::InitiateRecoveryAsPrimary,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::InitiateRecoveryAsPrimary(
-            self,
-        ))
-        .into()
-    }
 }
 
 //=================================================
 // Access Controller Initiate Recovery As Recovery
 //=================================================
 
+pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT: &str = "initiate_recovery_as_recovery";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsRecoveryMethodArgs {
+pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::InitiateRecoveryAsRecovery,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::InitiateRecoveryAsRecovery(
-            self,
-        ))
-        .into()
-    }
 }
 
 //=======================================================

@@ -216,6 +216,7 @@ where
                 PackageInfoSubstate {
                     blueprint_abis: abi,
                     dependent_resources: BTreeSet::new(),
+                    dependent_components: BTreeSet::new(),
                 },
                 WasmCodeSubstate { code },
             ),

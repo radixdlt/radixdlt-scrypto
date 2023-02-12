@@ -93,6 +93,18 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::initial_recovery_as_primary(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::initial_recovery_as_recovery(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -181,131 +193,66 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
-}
 
-//=====================================
-// Access Controller Initiate Recovery
-//=====================================
-
-pub struct AccessControllerInitiateRecoveryAsPrimaryExecutable {
-    pub receiver: RENodeId,
-    pub proposal: RecoveryProposal,
-}
-
-impl ExecutableInvocation for AccessControllerInitiateRecoveryAsPrimaryInvocation {
-    type Exec = AccessControllerInitiateRecoveryAsPrimaryExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsPrimary),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            proposal: self.proposal,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn initial_recovery_as_primary<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let input: AccessControllerInitiateRecoveryAsPrimaryInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
-                proposal: self.proposal,
+                proposal: RecoveryProposal {
+                    rule_set: input.rule_set,
+                    timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
+                },
             },
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-pub struct AccessControllerInitiateRecoveryAsRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub proposal: RecoveryProposal,
-}
-
-impl ExecutableInvocation for AccessControllerInitiateRecoveryAsRecoveryInvocation {
-    type Exec = AccessControllerInitiateRecoveryAsRecoveryExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::InitiateRecoveryAsRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            proposal: self.proposal,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn initial_recovery_as_recovery<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let input: AccessControllerInitiateRecoveryAsRecoveryInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
-                proposal: self.proposal,
+                proposal: RecoveryProposal {
+                    rule_set: input.rule_set,
+                    timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
+                },
             },
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -838,9 +785,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::InitiateRecoveryAsPrimary,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string()),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
@@ -854,9 +799,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let recovery_group = "recovery";
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::InitiateRecoveryAsRecovery,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string()),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
