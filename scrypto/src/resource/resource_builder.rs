@@ -7,6 +7,7 @@ use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -705,6 +706,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId> private::CanCreateWithNoSupply
 ///
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
+    use super::*;
     use radix_engine_interface::{
         api::wasm::SerializableInvocation,
         model::{AccessRule, NonFungibleGlobalId, ResourceAddress, ResourceMethodAuthKey},
