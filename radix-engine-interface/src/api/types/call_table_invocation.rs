@@ -4,7 +4,6 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
@@ -60,7 +59,6 @@ pub enum NativeInvocation {
     Component(ComponentInvocation),
     EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
-    Clock(ClockInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -97,13 +95,6 @@ pub enum AccessRulesChainInvocation {
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ClockInvocation {
-    GetCurrentTime(ClockGetCurrentTimeInvocation),
-    CompareCurrentTime(ClockCompareCurrentTimeInvocation),
-    SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -451,23 +442,6 @@ impl NativeInvocation {
                     )));
                 }
             },
-            NativeInvocation::Clock(clock_method) => match clock_method {
-                ClockInvocation::SetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ClockInvocation::GetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ClockInvocation::CompareCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-            },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {
                     refs.insert(RENodeId::Logger);
@@ -551,11 +525,6 @@ impl NativeInvocation {
                 ValidatorInvocation::UpdateAcceptDelegatedStake(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }
-            },
-            NativeInvocation::Clock(i) => match i {
-                ClockInvocation::GetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
-                ClockInvocation::CompareCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
-                ClockInvocation::SetCurrentTime(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Logger(i) => match i {
                 LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),

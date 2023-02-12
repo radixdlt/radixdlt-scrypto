@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
 use radix_engine_interface::blueprints::{
-    clock::*, epoch_manager::*, logger::*, resource::*, transaction_runtime::*,
+    epoch_manager::*, logger::*, resource::*, transaction_runtime::*,
 };
 
 pub fn resolve_native(
@@ -422,23 +422,6 @@ pub fn resolve_native(
                 let invocation =
                     scrypto_decode::<ValidatorUpdateAcceptDelegatedStakeInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Clock(clock_fn) => match clock_fn {
-            ClockFn::SetCurrentTime => {
-                let invocation = scrypto_decode::<ClockSetCurrentTimeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ClockFn::GetCurrentTime => {
-                let invocation = scrypto_decode::<ClockGetCurrentTimeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ClockFn::CompareCurrentTime => {
-                let invocation = scrypto_decode::<ClockCompareCurrentTimeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

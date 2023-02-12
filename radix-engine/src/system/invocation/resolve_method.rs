@@ -40,20 +40,11 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 })?;
                 CallTableInvocation::Native(invocation)
             }
-            ComponentAddress::Clock(..) => {
-                let invocation =
-                    ClockPackage::resolve_method_invocation(component_address, method_name, args)
-                        .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::ResolveError(e),
-                        ))
-                    })?;
-                CallTableInvocation::Native(NativeInvocation::Clock(invocation))
-            }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Account(..)
             | ComponentAddress::AccessController(..)
+            | ComponentAddress::Clock(..)
             | ComponentAddress::Normal(..) => {
                 let component_node_id =
                     RENodeId::Global(GlobalAddress::Component(component_address));

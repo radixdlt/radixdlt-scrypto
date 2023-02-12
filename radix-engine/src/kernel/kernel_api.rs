@@ -13,7 +13,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::Resource;
@@ -137,9 +136,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ValidatorUpdateKeyInvocation, E>
     + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
     + Invokable<EpochManagerCreateValidatorInvocation, E>
-    + Invokable<ClockSetCurrentTimeInvocation, E>
-    + Invokable<ClockGetCurrentTimeInvocation, E>
-    + Invokable<ClockCompareCurrentTimeInvocation, E>
     + Invokable<MetadataSetInvocation, E>
     + Invokable<MetadataGetInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>

@@ -61,13 +61,13 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Global(component_address) => match component_address {
                     ComponentAddress::Normal(..)
                     | ComponentAddress::AccessController(..)
+                    | ComponentAddress::Clock(..)
                     | ComponentAddress::Account(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                     | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
-                    ComponentAddress::Clock(..)
-                    | ComponentAddress::EpochManager(..)
+                    ComponentAddress::EpochManager(..)
                     | ComponentAddress::Validator(..)
                     | ComponentAddress::Identity(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
@@ -437,7 +437,9 @@ impl NativeVm {
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, input, api)
             }
-            CLOCK_PACKAGE_CODE_ID => ClockNativePackage::invoke_export(&export_name, input, api),
+            CLOCK_PACKAGE_CODE_ID => {
+                ClockNativePackage::invoke_export(&export_name, receiver, input, api)
+            },
             ACCOUNT_PACKAGE_CODE_ID => {
                 AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }

@@ -1,8 +1,8 @@
-use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::blueprints::clock::{
-    ClockCompareCurrentTimeInvocation, ClockGetCurrentTimeInvocation, TimePrecision,
-};
+use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::blueprints::clock::{CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT, ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision};
 use radix_engine_interface::constants::CLOCK;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -20,11 +20,14 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoEnv;
-        env.call_native(ClockGetCurrentTimeInvocation {
-            receiver: CLOCK,
-            precision: precision,
-        })
-        .unwrap()
+        let rtn = env.call_method(
+            ScryptoReceiver::Global(CLOCK),
+            CLOCK_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ClockGetCurrentTimeInput {
+                precision
+            }).unwrap()
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns true if current time, rounded down to a given precision,
@@ -60,12 +63,14 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoEnv;
-        env.call_native(ClockCompareCurrentTimeInvocation {
-            receiver: CLOCK,
-            instant: instant,
-            precision: precision,
-            operator: operator,
-        })
-        .unwrap()
+        let rtn = env.call_method(
+            ScryptoReceiver::Global(CLOCK),
+            CLOCK_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&ClockCompareCurrentTimeInput {
+                instant, precision, operator,
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }

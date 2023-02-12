@@ -1,7 +1,6 @@
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
-use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::data::scrypto_decode;
 use crate::*;
@@ -23,7 +22,6 @@ pub enum NativePackage {
     EpochManager,
     Resource,
     KeyValueStore,
-    Clock,
     Logger,
     TransactionRuntime,
     TransactionProcessor,
@@ -111,7 +109,6 @@ pub enum NativeFn {
     Vault(VaultFn),
     Proof(ProofFn),
     Worktop(WorktopFn),
-    Clock(ClockFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
@@ -131,7 +128,6 @@ impl NativeFn {
             | NativeFn::Vault(..)
             | NativeFn::Proof(..)
             | NativeFn::Worktop(..) => NativePackage::Resource,
-            NativeFn::Clock(..) => NativePackage::Clock,
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
@@ -675,74 +671,6 @@ pub enum WorktopFn {
     AssertContainsAmount,
     AssertContainsNonFungibles,
     Drain,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ClockFn {
-    SetCurrentTime,
-    GetCurrentTime,
-    CompareCurrentTime,
-}
-
-pub struct ClockPackage;
-
-impl ClockPackage {
-    pub fn resolve_method_invocation(
-        receiver: ComponentAddress,
-        method_name: &str,
-        args: &[u8],
-    ) -> Result<ClockInvocation, ResolveError> {
-        let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
-        let invocation = match clock_fn {
-            ClockFn::CompareCurrentTime => {
-                let args: ClockCompareCurrentTimeMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                ClockInvocation::CompareCurrentTime(ClockCompareCurrentTimeInvocation {
-                    receiver,
-                    instant: args.instant,
-                    precision: args.precision,
-                    operator: args.operator,
-                })
-            }
-            ClockFn::GetCurrentTime => {
-                let args: ClockGetCurrentTimeMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
-                    receiver,
-                    precision: args.precision,
-                })
-            }
-            ClockFn::SetCurrentTime => {
-                let args: ClockSetCurrentTimeMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
-                    receiver,
-                    current_time_ms: args.current_time_ms,
-                })
-            }
-        };
-
-        Ok(invocation)
-    }
 }
 
 #[derive(

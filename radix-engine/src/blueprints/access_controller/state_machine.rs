@@ -24,6 +24,7 @@ pub(super) trait Transition<I> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>;
@@ -38,6 +39,7 @@ pub(super) trait TransitionMut<I> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>;
@@ -138,6 +140,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
@@ -289,6 +292,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,

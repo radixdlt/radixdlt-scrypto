@@ -17,6 +17,7 @@ use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
@@ -195,7 +196,15 @@ where
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
+            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: CLOCK_PACKAGE,
+                        blueprint_name: CLOCK_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
                 module_init.insert(

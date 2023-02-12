@@ -203,6 +203,10 @@ impl VisibilityProperties {
                         return true;
                     }
 
+                    if matches!(offset, SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo)) {
+                        return true;
+                    }
+
                     match &actor.identifier {
                         // Native
                         FnIdentifier::Native(..) => true,
@@ -290,7 +294,9 @@ impl VisibilityProperties {
                             package_address, ..
                         }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                             || package_address.eq(&IDENTITY_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE) =>
+                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                            || package_address.eq(&CLOCK_PACKAGE)
+                        =>
                         {
                             true
                         }

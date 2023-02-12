@@ -645,6 +645,7 @@ fn transition<Y, I>(
 where
     Y: KernelNodeApi
         + KernelSubstateApi
+        + ClientApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientNativeInvokeApi<RuntimeError>,
@@ -674,6 +675,7 @@ fn transition_mut<Y, I>(
 where
     Y: KernelNodeApi
         + KernelSubstateApi
+        + ClientApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientNativeInvokeApi<RuntimeError>,

@@ -2,6 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -132,6 +133,14 @@ impl FeeTable {
                 EPOCH_MANAGER_CREATE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
+            (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    CLOCK_GET_CURRENT_TIME_IDENT => self.fixed_low,
+                    CLOCK_SET_CURRENT_TIME_IDENT => self.fixed_high,
+                    CLOCK_COMPARE_CURRENT_TIME_IDENT => self.fixed_high,
+                    _ => self.fixed_low,
+                }
+            }
             (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
@@ -200,11 +209,6 @@ impl FeeTable {
                 ValidatorFn::ClaimXrd => self.fixed_low,
                 ValidatorFn::UpdateKey => self.fixed_low,
                 ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
-            },
-            NativeFn::Clock(clock_method) => match clock_method {
-                ClockFn::SetCurrentTime => self.fixed_low,
-                ClockFn::GetCurrentTime => self.fixed_high,
-                ClockFn::CompareCurrentTime => self.fixed_high,
             },
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,

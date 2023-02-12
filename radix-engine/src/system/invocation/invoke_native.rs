@@ -1,7 +1,7 @@
 use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ClockInvocation,
+    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation,
     ComponentInvocation, EpochManagerInvocation, LoggerInvocation, MetadataInvocation,
     NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
@@ -331,20 +331,6 @@ where
                 Ok(Box::new(rtn))
             }
             ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Clock(clock_invocation) => match clock_invocation {
-            ClockInvocation::SetCurrentTime(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ClockInvocation::GetCurrentTime(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ClockInvocation::CompareCurrentTime(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
