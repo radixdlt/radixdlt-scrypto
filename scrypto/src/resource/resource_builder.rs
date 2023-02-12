@@ -22,6 +22,8 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 ///
 /// ### Example
 /// ```no_run
+/// use scrypto::prelude::*;
+///
 /// let bucket = ResourceBuilder::new_fungible()
 ///     .metadata("name", "TestToken")
 ///     .mint_initial_supply(5);
@@ -68,6 +70,8 @@ impl ResourceBuilder {
 ///
 /// ### Example
 /// ```no_run
+/// use scrypto::prelude::*;
+///
 /// let bucket = ResourceBuilder::new_fungible()
 ///     .metadata("name", "TestToken")
 ///     .mint_initial_supply(5);
@@ -172,6 +176,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .mintable(rule!(require(badge.resource_address())), LOCKED);
@@ -196,6 +202,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .burnable(rule!(require(badge.resource_address())), LOCKED);
@@ -220,6 +228,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .recallable(rule!(require(badge.resource_address())), LOCKED);
@@ -244,6 +254,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .restrict_withdraw(rule!(require(badge.resource_address())), LOCKED);
@@ -268,6 +280,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .restrict_deposit(rule!(require(badge.resource_address())), LOCKED);
@@ -292,6 +306,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Sets the resource to allow its metadata to be updated with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .updateable_metadata(rule!(require(badge.resource_address())), LOCKED);
@@ -319,6 +335,8 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
     ///    .updateable_metadata(rule!(require(badge.resource_address())), LOCKED);
@@ -369,6 +387,8 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     /// ### Examples
     ///
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// // Only permits whole-number balances.
     /// ResourceBuilder::new_fungible()
     ///    .divisibility(0);
@@ -389,6 +409,8 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     ///
     /// # Example
     /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
     /// let bucket = ResourceBuilder::new_fungible()
     ///     .mint_initial_supply(5);
     /// ```
