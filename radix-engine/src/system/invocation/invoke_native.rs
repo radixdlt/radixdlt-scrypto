@@ -399,11 +399,5 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::AccessController(method) => match method {
-            AccessControllerInvocation::StopTimedRecovery(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
     }
 }

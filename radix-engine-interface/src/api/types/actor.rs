@@ -1,7 +1,6 @@
 use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
-use crate::blueprints::access_controller::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::data::scrypto_decode;
@@ -28,7 +27,6 @@ pub enum NativePackage {
     Logger,
     TransactionRuntime,
     TransactionProcessor,
-    AccessController,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -117,7 +115,6 @@ pub enum NativeFn {
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
-    AccessController(AccessControllerFn),
     Metadata(MetadataFn),
 }
 
@@ -138,7 +135,6 @@ impl NativeFn {
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
-            NativeFn::AccessController(..) => NativePackage::AccessController,
         }
     }
 }
@@ -820,58 +816,4 @@ pub enum TransactionRuntimeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum AccessControllerFn {
-    StopTimedRecovery,
-}
-
-pub struct AccessControllerPackage;
-
-impl AccessControllerPackage {
-    pub fn resolve_method_invocation(
-        receiver: ComponentAddress,
-        method_name: &str,
-        args: &[u8],
-    ) -> Result<AccessControllerInvocation, ResolveError> {
-        let access_controller_fn =
-            AccessControllerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
-        let invocation = match access_controller_fn {
-            AccessControllerFn::StopTimedRecovery => {
-                let args = scrypto_decode::<AccessControllerStopTimedRecoveryMethodArgs>(args)
-                    .map_err(ResolveError::DecodeError)?;
-                AccessControllerInvocation::StopTimedRecovery(
-                    AccessControllerStopTimedRecoveryInvocation {
-                        receiver,
-                        proposal: RecoveryProposal {
-                            rule_set: args.rule_set,
-                            timed_recovery_delay_in_minutes: args.timed_recovery_delay_in_minutes,
-                        },
-                    },
-                )
-            }
-        };
-
-        Ok(invocation)
-    }
 }

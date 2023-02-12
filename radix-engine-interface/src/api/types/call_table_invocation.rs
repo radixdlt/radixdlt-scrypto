@@ -4,7 +4,6 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::access_controller::*;
 use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::*;
@@ -70,7 +69,6 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
-    AccessController(AccessControllerInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -224,11 +222,6 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum AccessControllerInvocation {
-    StopTimedRecovery(AccessControllerStopTimedRecoveryInvocation),
 }
 
 impl NativeInvocation {
@@ -494,13 +487,6 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GetHash(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
-            NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::StopTimedRecovery(
-                    AccessControllerStopTimedRecoveryInvocation { receiver, .. },
-                ) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
-                }
-            },
         }
 
         refs
@@ -654,11 +640,6 @@ impl NativeInvocation {
             NativeInvocation::TransactionRuntime(i) => match i {
                 TransactionRuntimeInvocation::GetHash(i) => (get_native_fn(i), scrypto_encode(i)),
                 TransactionRuntimeInvocation::GenerateUuid(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-            },
-            NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::StopTimedRecovery(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }
             },

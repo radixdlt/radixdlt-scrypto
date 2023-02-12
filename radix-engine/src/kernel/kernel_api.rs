@@ -13,7 +13,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::logger::*;
@@ -215,7 +214,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
-    + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
 {
 }
 

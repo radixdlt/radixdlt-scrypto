@@ -149,39 +149,10 @@ pub struct AccessControllerUnlockPrimaryRoleInput;
 // Access Controller Stop Timed Recovery
 //=======================================
 
+pub const ACCESS_CONTROLLER_STOP_TIMED_RECOVERY: &str = "stop_timed_recovery";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerStopTimedRecoveryMethodArgs {
+pub struct AccessControllerStopTimedRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerStopTimedRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerStopTimedRecoveryInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::StopTimedRecovery,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerStopTimedRecoveryInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::StopTimedRecovery)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerStopTimedRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::StopTimedRecovery(self))
-            .into()
-    }
 }

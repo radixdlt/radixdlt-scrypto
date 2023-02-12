@@ -2,13 +2,11 @@ use super::state_machine::*;
 use super::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
-    KernelSubstateApi, LockFlags, ResolvedActor,
+    KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
@@ -146,6 +144,12 @@ impl AccessControllerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::stop_timed_recovery(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
@@ -506,68 +510,35 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//=======================================
-// Access Controller Stop Timed Recovery
-//=======================================
-
-pub struct AccessControllerStopTimedRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub proposal: RecoveryProposal,
-}
-
-impl ExecutableInvocation for AccessControllerStopTimedRecoveryInvocation {
-    type Exec = AccessControllerStopTimedRecoveryExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::StopTimedRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            proposal: self.proposal,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerStopTimedRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn stop_timed_recovery<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let input: AccessControllerStopTimedRecoveryInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerStopTimedRecoveryStateMachineInput {
-                proposal: self.proposal,
+                proposal: RecoveryProposal {
+                    rule_set: input.rule_set,
+                    timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
+                },
             },
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -639,9 +610,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
 
     // Other methods
     access_rules.set_method_access_rule(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::StopTimedRecovery,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string()),
         access_rule_or(
             [
                 rule_set.primary_role.clone(),
@@ -660,18 +629,12 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
-    // TODO: Remove
-    let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
-        scrypto_encode(&PackageIdentifier::Native(NativePackage::AccessController)).unwrap(),
-    );
-    let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
-
     let non_fungible_local_id = NonFungibleLocalId::Bytes(
         scrypto_encode(&PackageIdentifier::Scrypto(ACCESS_CONTROLLER_PACKAGE)).unwrap(),
     );
     let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
-    access_rules.default(rule!(deny_all), rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)))
+    access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
 }
 
 fn transition<Y, I>(

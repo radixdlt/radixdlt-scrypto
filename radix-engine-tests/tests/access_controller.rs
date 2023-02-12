@@ -240,7 +240,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+            scrypto_encode(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
@@ -1656,7 +1656,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                scrypto_encode(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

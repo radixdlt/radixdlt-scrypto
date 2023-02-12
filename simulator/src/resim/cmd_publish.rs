@@ -105,6 +105,7 @@ impl Publish {
             let package_info = PackageInfoSubstate {
                 blueprint_abis: abi,
                 dependent_resources: BTreeSet::new(),
+                dependent_components: BTreeSet::new(),
             };
 
             let output_value = OutputValue {

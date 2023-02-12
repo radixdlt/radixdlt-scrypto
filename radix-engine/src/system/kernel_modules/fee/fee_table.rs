@@ -299,9 +299,6 @@ impl FeeTable {
                     TransactionProcessorFn::Run => self.fixed_high,
                 }
             }
-            NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
-                AccessControllerFn::StopTimedRecovery => self.fixed_low,
-            },
         }
     }
 
