@@ -338,32 +338,26 @@ pub fn export_abi_by_component(
 pub fn export_account_abi() -> abi::BlueprintAbi {
     let fns = {
         let mut fns = Vec::new();
-        /*
         {
-            let fn_ident = AccountFn::LockFee;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+                export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockFeeMethodArgs::describe(),
-                output: <AccountLockFeeInvocation as Invocation>::Output::describe(),
+                input: AccountLockFeeInput::describe(),
+                output: AccountLockFeeOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::LockContingentFee;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+                export_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountLockContingentFeeInput::describe(),
-                output: <AccountLockContingentFeeInvocation as Invocation>::Output::describe(),
+                output: AccountLockContingentFeeOutput::describe(),
             };
             fns.push(fn_def);
         }
-         */
         {
             let fn_def = Fn {
                 ident: ACCOUNT_DEPOSIT_IDENT.to_string(),
@@ -374,44 +368,36 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             };
             fns.push(fn_def);
         }
-        /*
         {
-            let fn_ident = AccountFn::DepositBatch;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+                export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountDepositBatchMethodArgs::describe(),
-                output: <AccountDepositBatchInvocation as Invocation>::Output::describe(),
+                input: AccountDepositBatchInput::describe(),
+                output: AccountDepositBatchOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::Withdraw;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_WITHDRAW_IDENT.to_string(),
+                export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountWithdrawMethodArgs::describe(),
-                output: <AccountWithdrawInvocation as Invocation>::Output::describe(),
+                input: AccountWithdrawInput::describe(),
+                output: AccountWithdrawOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::Withdraw;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
+                export_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountWithdrawMethodArgs::describe(),
-                output: <AccountWithdrawInvocation as Invocation>::Output::describe(),
+                input: AccountWithdrawAllInput::describe(),
+                output: AccountWithdrawAllOutput::describe(),
             };
             fns.push(fn_def);
         }
-         */
         {
             let fn_def = Fn {
                 ident: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
@@ -423,11 +409,9 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::LockFeeAndWithdraw;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountLockFeeAndWithdrawInput::describe(),
                 output: AccountLockFeeAndWithdrawOutput::describe(),
@@ -435,63 +419,52 @@ pub fn export_account_abi() -> abi::BlueprintAbi {
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::LockFeeAndWithdraw;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
-                input: AccountLockFeeAndWithdrawInput::describe(),
-                output: <AccountLockFeeAndWithdrawInvocation as Invocation>::Output::describe(),
+                input: AccountLockFeeAndWithdrawAllInput::describe(),
+                output: AccountLockFeeAndWithdrawAllInput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::LockFeeAndWithdrawNonFungibles;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountLockFeeAndWithdrawNonFungiblesInput::describe(),
-                output: <AccountLockFeeAndWithdrawNonFungiblesInvocation as Invocation>::Output::describe(
-                ),
+                output: AccountLockFeeAndWithdrawNonFungiblesOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::CreateProof;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountCreateProofInput::describe(),
-                output: <AccountCreateProofInvocation as Invocation>::Output::describe(),
+                output: AccountCreateProofOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::CreateProofByAmount;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountCreateProofByAmountInput::describe(),
-                output: <AccountCreateProofByAmountInvocation as Invocation>::Output::describe(),
+                output: AccountCreateProofByAmountOutput::describe(),
             };
             fns.push(fn_def);
         }
         {
-            let fn_ident = AccountFn::CreateProofByIds;
-
             let fn_def = Fn {
-                ident: fn_ident.to_string(),
-                export_name: fn_ident.to_string(),
+                ident: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
                 mutability: Some(abi::SelfMutability::Mutable),
                 input: AccountCreateProofByIdsInput::describe(),
-                output: <AccountCreateProofByIdsInvocation as Invocation>::Output::describe(),
+                output: AccountCreateProofByIdsOutput::describe(),
             };
             fns.push(fn_def);
         }

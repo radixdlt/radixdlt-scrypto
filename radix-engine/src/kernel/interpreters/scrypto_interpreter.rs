@@ -156,6 +156,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                     )));
                 }
 
+                // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
+                // TODO: in the native package itself.
+
                 api.drop_lock(handle)?;
 
                 self.fn_name.to_string() // TODO: Clean this up

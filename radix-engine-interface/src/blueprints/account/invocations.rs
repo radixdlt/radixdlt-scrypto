@@ -4,6 +4,7 @@ use crate::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
+use crate::data::types::Own;
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
@@ -20,6 +21,9 @@ pub struct AccountCreateLocalInput {
     pub withdraw_rule: AccessRule,
 }
 
+
+pub type AccountCreateLocalOutput = Own;
+
 //=============
 // Account New
 //=============
@@ -33,6 +37,8 @@ pub struct AccountCreateGlobalInput {
     pub withdraw_rule: AccessRule,
 }
 
+pub type AccountCreateGlobalOutput = ComponentAddress;
+
 //==================
 // Account Lock Fee
 //==================
@@ -44,6 +50,8 @@ pub struct AccountLockFeeInput {
     pub amount: Decimal,
 }
 
+pub type AccountLockFeeOutput = ();
+
 //=============================
 // Account Lock Contingent Fee
 //=============================
@@ -54,6 +62,8 @@ pub const ACCOUNT_LOCK_CONTINGENT_FEE_IDENT: &str = "lock_contingent_fee";
 pub struct AccountLockContingentFeeInput {
     pub amount: Decimal,
 }
+
+pub type AccountLockContingentFeeOutput = ();
 
 //=================
 // Account Deposit
@@ -79,6 +89,8 @@ pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
+pub type AccountDepositBatchOutput = ();
+
 //============================
 // Account Withdraw
 //============================
@@ -91,6 +103,8 @@ pub struct AccountWithdrawInput {
     pub amount: Decimal,
 }
 
+pub type AccountWithdrawOutput = Bucket;
+
 //==================
 // Account Withdraw All
 //==================
@@ -101,6 +115,8 @@ pub const ACCOUNT_WITHDRAW_ALL_IDENT: &str = "withdraw_all";
 pub struct AccountWithdrawAllInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type AccountWithdrawAllOutput = Bucket;
 
 //=========================
 // Account Withdraw By Ids
@@ -137,11 +153,14 @@ pub type AccountLockFeeAndWithdrawOutput = ();
 
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
 
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawAllInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
 }
+
+pub type AccountLockFeeAndWithdrawAllOutput = ();
 
 //==================================
 // Account Withdraw By Ids And Lock
@@ -149,12 +168,15 @@ pub struct AccountLockFeeAndWithdrawAllInput {
 
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "lock_fee_and_withdraw_non_fungibles";
 
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
+
+pub type AccountLockFeeAndWithdrawNonFungiblesOutput = ();
 
 //======================
 // Account Create Proof
@@ -166,6 +188,8 @@ pub const ACCOUNT_CREATE_PROOF_IDENT: &str = "create_proof";
 pub struct AccountCreateProofInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type AccountCreateProofOutput = Proof;
 
 //================================
 // Account Create Proof By Amount
@@ -179,6 +203,8 @@ pub struct AccountCreateProofByAmountInput {
     pub amount: Decimal,
 }
 
+pub type AccountCreateProofByAmountOutput = Proof;
+
 //=============================
 // Account Create Proof By Ids
 //=============================
@@ -190,3 +216,5 @@ pub struct AccountCreateProofByIdsInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
+
+pub type AccountCreateProofByIdsOutput = Proof;
