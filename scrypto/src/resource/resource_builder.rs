@@ -179,13 +179,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .mintable(rule!(require(badge.resource_address())), LOCKED);
+    ///    .mintable(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible()
-    ///    .mintable(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    ///    .mintable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn mintable<R: Into<AccessRule>>(
         self,
@@ -205,13 +207,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .burnable(rule!(require(badge.resource_address())), LOCKED);
+    ///    .burnable(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible()
-    ///    .burnable(rule!(allow_all), MUTABLE(rule!(/* ... */)));
+    ///    .burnable(rule!(allow_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn burnable<R: Into<AccessRule>>(
         self,
@@ -231,13 +235,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .recallable(rule!(require(badge.resource_address())), LOCKED);
+    ///    .recallable(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible()
-    ///    .recallable(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    ///    .recallable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn recallable<R: Into<AccessRule>>(
         self,
@@ -257,13 +263,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .restrict_withdraw(rule!(require(badge.resource_address())), LOCKED);
+    ///    .restrict_withdraw(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible()
-    ///    .restrict_withdraw(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    ///    .restrict_withdraw(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn restrict_withdraw<R: Into<AccessRule>>(
         self,
@@ -283,13 +291,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .restrict_deposit(rule!(require(badge.resource_address())), LOCKED);
+    ///    .restrict_deposit(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible()
-    ///    .restrict_deposit(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    ///    .restrict_deposit(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn restrict_deposit<R: Into<AccessRule>>(
         self,
@@ -309,13 +319,15 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to allow its metadata to be updated with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(require(badge.resource_address())), LOCKED);
+    ///    .updateable_metadata(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not allow its metadata to be updated, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    ///    .updateable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn updateable_metadata<R: Into<AccessRule>>(
         self,
@@ -338,13 +350,15 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(require(badge.resource_address())), LOCKED);
+    /// ResourceBuilder::new_uuid_non_fungible()
+    ///    .updateable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
+    /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(deny_all), MUTABLE(rule!(/* ... */)));
+    /// ResourceBuilder::new_uuid_non_fungible()
+    ///    .updateable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn updateable_non_fungible_data<R: Into<AccessRule>>(
         self,
