@@ -65,18 +65,44 @@ impl EpochManagerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
+        receiver: Option<ComponentId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
-            EPOCH_MANAGER_CREATE_IDENT => Self::create(input, api),
+            EPOCH_MANAGER_CREATE_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::create(input, api)
+            },
+            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::get_current_epoch(receiver, input, api)
+            },
+            EPOCH_MANAGER_SET_EPOCH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::set_epoch(receiver, input, api)
+            },
+            EPOCH_MANAGER_NEXT_ROUND_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::next_round(receiver, input, api)
+            },
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -84,8 +110,8 @@ impl EpochManagerNativePackage {
     }
 
     fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -133,7 +159,7 @@ impl EpochManagerNativePackage {
                     access_rules,
                     resource_address: input.olympia_validator_token_address,
                 })
-                .unwrap(),
+                    .unwrap(),
             )?;
             let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)
@@ -153,7 +179,7 @@ impl EpochManagerNativePackage {
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
                 })
-                .unwrap(),
+                    .unwrap(),
             )?;
 
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -187,11 +213,11 @@ impl EpochManagerNativePackage {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::NextRound)),
+            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string()),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)),
+            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
@@ -207,7 +233,7 @@ impl EpochManagerNativePackage {
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
+            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_SET_EPOCH_IDENT.to_string()),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
@@ -240,194 +266,137 @@ impl EpochManagerNativePackage {
         let component_address: ComponentAddress = global_node_id.into();
         Ok(IndexedScryptoValue::from_typed(&component_address))
     }
-}
 
-pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
-
-impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
-    type Exec = EpochManagerGetCurrentEpochExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
+    fn get_current_epoch<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let _input: EpochManagerGetCurrentEpochInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let actor = ResolvedActor::method(
-            NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch),
-            resolved_receiver,
-        );
-        let executor = EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver);
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for EpochManagerGetCurrentEpochExecutable {
-    type Output = u64;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelSubstateApi,
-    {
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(handle)?;
+            api.lock_substate(
+                RENodeId::EpochManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                LockFlags::read_only(),
+            )?;
+
+        let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
-        Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
+
+        Ok(IndexedScryptoValue::from_typed(&epoch_manager.epoch))
     }
-}
 
-pub struct EpochManagerNextRoundExecutable {
-    node_id: RENodeId,
-    round: u64,
-}
-
-impl ExecutableInvocation for EpochManagerNextRoundInvocation {
-    type Exec = EpochManagerNextRoundExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
+    fn next_round<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let input: EpochManagerNextRoundInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let actor = ResolvedActor::method(
-            NativeFn::EpochManager(EpochManagerFn::NextRound),
-            resolved_receiver,
-        );
-        let executor = EpochManagerNextRoundExecutable {
-            node_id: resolved_receiver.receiver,
-            round: self.round,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for EpochManagerNextRoundExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelSubstateApi,
-    {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = system_api.lock_substate(
-            self.node_id,
+        let mgr_handle = api.lock_substate(
+            RENodeId::EpochManager(receiver),
             NodeModuleId::SELF,
             offset,
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
+        let mut substate_mut = api.get_ref_mut(mgr_handle)?;
         let epoch_manager = substate_mut.epoch_manager();
 
-        if self.round <= epoch_manager.round {
+        if input.round <= epoch_manager.round {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
                     from: epoch_manager.round,
-                    to: self.round,
+                    to: input.round,
                 }),
             ));
         }
 
-        if self.round >= epoch_manager.rounds_per_epoch {
+        if input.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = system_api.lock_substate(
-                self.node_id,
+            let handle = api.lock_substate(
+                RENodeId::EpochManager(receiver),
                 NodeModuleId::SELF,
                 offset,
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let mut substate_mut = api.get_ref_mut(handle)?;
             let preparing_validator_set = substate_mut.validator_set();
             let prepared_epoch = preparing_validator_set.epoch;
             let next_validator_set = preparing_validator_set.validator_set.clone();
             preparing_validator_set.epoch = prepared_epoch + 1;
 
-            let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
+            let mut substate_mut = api.get_ref_mut(mgr_handle)?;
             let epoch_manager = substate_mut.epoch_manager();
             epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
 
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-            let handle = system_api.lock_substate(
-                self.node_id,
+            let handle = api.lock_substate(
+                RENodeId::EpochManager(receiver),
                 NodeModuleId::SELF,
                 offset,
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let mut substate_mut = api.get_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set;
         } else {
-            epoch_manager.round = self.round;
+            epoch_manager.round = input.round;
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
-
-impl ExecutableInvocation for EpochManagerSetEpochInvocation {
-    type Exec = EpochManagerSetEpochExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
+    fn set_epoch<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let input: EpochManagerSetEpochInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let actor = ResolvedActor::method(
-            NativeFn::EpochManager(EpochManagerFn::SetEpoch),
-            resolved_receiver,
-        );
-        let executor = EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch);
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for EpochManagerSetEpochExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelSubstateApi,
-    {
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        substate_mut.epoch_manager().epoch = self.1;
-        Ok(((), CallFrameUpdate::empty()))
+            api.lock_substate(
+                RENodeId::EpochManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        substate_mut.epoch_manager().epoch = input.epoch;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 

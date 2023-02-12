@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::api::{ClientPackageApi};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientNodeApi};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
@@ -874,7 +874,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientNativeInvokeApi<RuntimeError>,
+        Y: ClientComponentApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

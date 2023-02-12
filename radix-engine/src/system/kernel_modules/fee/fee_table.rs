@@ -131,6 +131,9 @@ impl FeeTable {
             },
             (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => match identifier.ident.as_str() {
                 EPOCH_MANAGER_CREATE_IDENT => self.fixed_low,
+                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => self.fixed_low,
+                EPOCH_MANAGER_SET_EPOCH_IDENT => self.fixed_low,
+                EPOCH_MANAGER_NEXT_ROUND_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => {
@@ -195,9 +198,6 @@ impl FeeTable {
                 }
             }
             NativeFn::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerFn::GetCurrentEpoch => self.fixed_low,
-                EpochManagerFn::NextRound => self.fixed_low,
-                EpochManagerFn::SetEpoch => self.fixed_low,
                 EpochManagerFn::UpdateValidator => self.fixed_low,
                 EpochManagerFn::CreateValidator => self.fixed_low,
             },

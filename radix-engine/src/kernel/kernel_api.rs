@@ -124,10 +124,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<EpochManagerNextRoundInvocation, E>
-    + Invokable<EpochManagerGetCurrentEpochInvocation, E>
-    + Invokable<EpochManagerSetEpochInvocation, E>
-    + Invokable<EpochManagerUpdateValidatorInvocation, E>
+    Invokable<EpochManagerUpdateValidatorInvocation, E>
     + Invokable<ValidatorRegisterInvocation, E>
     + Invokable<ValidatorUnregisterInvocation, E>
     + Invokable<ValidatorStakeInvocation, E>

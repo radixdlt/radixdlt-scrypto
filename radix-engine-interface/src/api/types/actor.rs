@@ -264,9 +264,6 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
-    GetCurrentEpoch,
-    NextRound,
-    SetEpoch,
     CreateValidator,
     UpdateValidator,
 }
@@ -321,33 +318,6 @@ impl EpochManagerPackage {
                     EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match epoch_manager_fn {
-                    EpochManagerFn::GetCurrentEpoch => {
-                        let _args: EpochManagerGetCurrentEpochMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
-                            EpochManagerGetCurrentEpochInvocation { receiver },
-                        ))
-                    }
-                    EpochManagerFn::NextRound => {
-                        let args: EpochManagerNextRoundMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
-                            EpochManagerNextRoundInvocation {
-                                receiver,
-                                round: args.round,
-                            },
-                        ))
-                    }
-                    EpochManagerFn::SetEpoch => {
-                        let args: EpochManagerSetEpochMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
-                            EpochManagerSetEpochInvocation {
-                                receiver,
-                                epoch: args.epoch,
-                            },
-                        ))
-                    }
                     EpochManagerFn::CreateValidator => {
                         let args: EpochManagerCreateValidatorMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;

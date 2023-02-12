@@ -18,6 +18,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 
@@ -195,7 +196,15 @@ where
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
-            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
+            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: EPOCH_MANAGER_PACKAGE,
+                        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
                 module_init.insert(

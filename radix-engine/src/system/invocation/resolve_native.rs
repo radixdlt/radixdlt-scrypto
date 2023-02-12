@@ -358,22 +358,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
-            EpochManagerFn::GetCurrentEpoch => {
-                let invocation =
-                    scrypto_decode::<EpochManagerGetCurrentEpochInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            EpochManagerFn::NextRound => {
-                let invocation = scrypto_decode::<EpochManagerNextRoundInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            EpochManagerFn::SetEpoch => {
-                let invocation = scrypto_decode::<EpochManagerSetEpochInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             EpochManagerFn::CreateValidator => {
                 let invocation =
                     scrypto_decode::<EpochManagerCreateValidatorInvocation>(&invocation)

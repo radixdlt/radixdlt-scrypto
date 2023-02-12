@@ -72,100 +72,23 @@ impl Clone for EpochManagerCreateInput {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerGetCurrentEpochMethodArgs {}
+pub const EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: ComponentAddress,
-}
+pub struct EpochManagerGetCurrentEpochInput;
 
-impl Invocation for EpochManagerGetCurrentEpochInvocation {
-    type Output = u64;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch))
-    }
-}
-
-impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
-    type ScryptoOutput = u64;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerSetEpochMethodArgs {
+pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerSetEpochInvocation {
-    pub receiver: ComponentAddress,
-    pub epoch: u64,
-}
-
-impl Invocation for EpochManagerSetEpochInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch))
-    }
-}
-
-impl SerializableInvocation for EpochManagerSetEpochInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::SetEpoch)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerNextRoundMethodArgs {
+pub struct EpochManagerNextRoundInput {
     pub round: u64,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerNextRoundInvocation {
-    pub receiver: ComponentAddress,
-    pub round: u64,
-}
-
-impl Invocation for EpochManagerNextRoundInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::NextRound))
-    }
-}
-
-impl SerializableInvocation for EpochManagerNextRoundInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::NextRound)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

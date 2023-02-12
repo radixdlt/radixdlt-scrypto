@@ -283,18 +283,6 @@ where
         }
         NativeInvocation::EpochManager(epoch_manager_invocation) => {
             match epoch_manager_invocation {
-                EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                EpochManagerInvocation::NextRound(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                EpochManagerInvocation::SetEpoch(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 EpochManagerInvocation::CreateValidator(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))

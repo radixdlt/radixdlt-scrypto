@@ -19,12 +19,9 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::types::{
-    EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
+use radix_engine_interface::api::types::{RENodeId, VaultOffset,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
-};
+use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::math::Decimal;
@@ -1009,12 +1006,13 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
-                receiver: EPOCH_MANAGER,
-                epoch,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerSetEpochInput {
+                epoch
+            }).unwrap()
+        })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1031,11 +1029,12 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
-                receiver: EPOCH_MANAGER,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap()
+        })];
+
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

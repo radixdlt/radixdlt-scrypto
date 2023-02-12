@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -14,17 +14,21 @@ pub struct Runtime {}
 impl Runtime {
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
     where
-        Y: ClientNativeInvokeApi<E>,
+        Y: ClientComponentApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.call_native(EpochManagerGetCurrentEpochInvocation {
-            receiver: EPOCH_MANAGER,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Global(EPOCH_MANAGER),
+            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientComponentApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
@@ -45,7 +49,7 @@ impl Runtime {
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientComponentApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(

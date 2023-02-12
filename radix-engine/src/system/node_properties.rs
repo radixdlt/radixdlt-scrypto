@@ -296,6 +296,7 @@ impl VisibilityProperties {
                             || package_address.eq(&IDENTITY_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
+                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                         =>
                         {
                             true

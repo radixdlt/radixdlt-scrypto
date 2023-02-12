@@ -120,9 +120,6 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum EpochManagerInvocation {
-    GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
-    SetEpoch(EpochManagerSetEpochInvocation),
-    NextRound(EpochManagerNextRoundInvocation),
     CreateValidator(EpochManagerCreateValidatorInvocation),
     UpdateValidator(EpochManagerUpdateValidatorInvocation),
 }
@@ -379,21 +376,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                EpochManagerInvocation::NextRound(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                EpochManagerInvocation::SetEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
                 EpochManagerInvocation::CreateValidator(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -509,9 +491,6 @@ impl NativeInvocation {
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::EpochManager(i) => match i {
-                EpochManagerInvocation::GetCurrentEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
-                EpochManagerInvocation::SetEpoch(i) => (get_native_fn(i), scrypto_encode(i)),
-                EpochManagerInvocation::NextRound(i) => (get_native_fn(i), scrypto_encode(i)),
                 EpochManagerInvocation::CreateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
                 EpochManagerInvocation::UpdateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
             },

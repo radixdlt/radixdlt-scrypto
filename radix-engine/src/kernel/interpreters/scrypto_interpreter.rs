@@ -61,17 +61,17 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Global(component_address) => match component_address {
                     ComponentAddress::Normal(..)
                     | ComponentAddress::AccessController(..)
+                    | ComponentAddress::EpochManager(..)
                     | ComponentAddress::Clock(..)
                     | ComponentAddress::Account(..)
                     | ComponentAddress::Identity(..)
+                    | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                    | ComponentAddress::EddsaEd25519VirtualIdentity(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                     | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
-                    ComponentAddress::EpochManager(..)
-                    | ComponentAddress::Validator(..)
-                    | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                    | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+                    ComponentAddress::Validator(..) => {
                         return Err(RuntimeError::InterpreterError(
                             InterpreterError::InvalidInvocation,
                         ));
@@ -173,6 +173,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+                node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
                     ECDSA_SECP256K1_TOKEN,
                 )));
@@ -432,7 +433,7 @@ impl NativeVm {
                 ResourceManagerNativePackage::invoke_export(&export_name, input, api)
             }
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
-                EpochManagerNativePackage::invoke_export(&export_name, input, api)
+                EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             IDENTITY_PACKAGE_CODE_ID => {
                 IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
