@@ -145,7 +145,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 let handle = api.lock_substate(
                     package_global,
                     NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    SubstateOffset::Package(PackageOffset::NativeCode),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
@@ -292,7 +292,7 @@ impl Executor for ScryptoExecutor {
                 let handle = api.lock_substate(
                     RENodeId::Global(GlobalAddress::Package(self.package_address)),
                     NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    SubstateOffset::Package(PackageOffset::NativeCode),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.get_ref(handle)?;
@@ -308,7 +308,7 @@ impl Executor for ScryptoExecutor {
                 )?
             }
             TypeInfoSubstate::WasmPackage => {
-                let package = {
+                let rtn_type = {
                     let handle = api.lock_substate(
                         RENodeId::Global(GlobalAddress::Package(self.package_address)),
                         NodeModuleId::SELF,
@@ -316,22 +316,34 @@ impl Executor for ScryptoExecutor {
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.get_ref(handle)?;
-                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    let package_info = substate_ref.package_info();
+                    let fn_abi = package_info
+                        .fn_abi(&self.export_name)
+                        .expect("TODO: Remove this expect");
+                    let rtn_type = fn_abi.output.clone();
+                    api.drop_lock(handle)?;
+                    rtn_type
+                };
+
+                let wasm_code = {
+                    let handle = api.lock_substate(
+                        RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                        NodeModuleId::SELF,
+                        SubstateOffset::Package(PackageOffset::WasmCode),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.wasm_code().clone(); // TODO: Remove clone()
                     api.drop_lock(handle)?;
 
                     package
                 };
 
-                let fn_abi = package
-                    .fn_abi(&self.export_name)
-                    .expect("TODO: Remove this expect");
-                let rtn_type = fn_abi.output.clone();
-
                 // Emit event
-                api.emit_wasm_instantiation_event(package.code())?;
+                api.emit_wasm_instantiation_event(wasm_code.code())?;
                 let mut instance = api
                     .scrypto_interpreter()
-                    .create_instance(self.package_address, &package.code);
+                    .create_instance(self.package_address, &wasm_code.code);
 
                 let output = {
                     let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));

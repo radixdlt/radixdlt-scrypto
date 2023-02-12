@@ -33,13 +33,12 @@ pub enum PackageError {
 impl Package {
     fn new(
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
-    ) -> Result<PackageInfoSubstate, PrepareError> {
-        WasmValidator::default().validate(&code, &abi)?;
+        abi: &BTreeMap<String, BlueprintAbi>,
+    ) -> Result<WasmCodeSubstate, PrepareError> {
+        WasmValidator::default().validate(&code, abi)?;
 
-        Ok(PackageInfoSubstate {
+        Ok(WasmCodeSubstate {
             code: code,
-            blueprint_abis: abi,
         })
     }
 }
@@ -147,16 +146,20 @@ impl Executor for PackagePublishInvocation {
             })?
             .vault_id();
 
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+        let blueprint_abis = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
         })?;
-        let package = Package::new(self.code, abi).map_err(|e| {
+        let wasm_code_substate = Package::new(self.code, &blueprint_abis).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(e),
             ))
         })?;
+        let package_info_substate = PackageInfoSubstate {
+            blueprint_abis,
+            dependent_resources: BTreeSet::new(),
+        };
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: self.royalty_config,
         };
@@ -192,7 +195,7 @@ impl Executor for PackagePublishInvocation {
 
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(node_id, RENodeInit::Package(package), node_modules)?;
+        api.create_node(node_id, RENodeInit::WasmPackage(package_info_substate, wasm_code_substate), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize

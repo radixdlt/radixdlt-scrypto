@@ -183,7 +183,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
                 );
             }
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+            (RENodeId::Package(..), RENodeInit::WasmPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),

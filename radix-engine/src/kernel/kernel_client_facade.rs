@@ -212,9 +212,13 @@ where
 
         self.create_node(
             node_id,
-            RENodeInit::Package(PackageInfoSubstate {
+            RENodeInit::WasmPackage(
+                PackageInfoSubstate {
+                    blueprint_abis: abi,
+                    dependent_resources: BTreeSet::new(),
+                },
+                WasmCodeSubstate {
                 code,
-                blueprint_abis: abi,
             }),
             btreemap!(
                 NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
@@ -260,11 +264,11 @@ where
         let handle = self.lock_substate(
             package_global,
             NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
+            SubstateOffset::Package(PackageOffset::NativeCode),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.get_ref(handle)?;
-        let package = substate_ref.package_info();
+        let package = substate_ref.wasm_code();
         let code = package.code().to_vec();
         self.drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))

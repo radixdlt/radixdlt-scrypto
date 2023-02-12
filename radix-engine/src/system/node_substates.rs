@@ -45,6 +45,7 @@ pub enum PersistedSubstate {
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(PackageInfoSubstate),
+    WasmCode(WasmCodeSubstate),
     NativePackageInfo(NativePackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
@@ -138,6 +139,7 @@ impl PersistedSubstate {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
+            PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
             PersistedSubstate::NativePackageInfo(value) => {
                 RuntimeSubstate::NativePackageInfo(value)
             }
@@ -180,6 +182,7 @@ pub enum RuntimeSubstate {
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     NativePackageInfo(NativePackageInfoSubstate),
+    WasmCode(WasmCodeSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
@@ -228,6 +231,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
+            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
             RuntimeSubstate::NativePackageInfo(value) => {
                 PersistedSubstate::NativePackageInfo(value.clone())
             }
@@ -283,6 +287,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
+            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
             RuntimeSubstate::NativePackageInfo(value) => {
                 PersistedSubstate::NativePackageInfo(value)
             }
@@ -368,6 +373,7 @@ impl RuntimeSubstate {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
+            RuntimeSubstate::WasmCode(value) => SubstateRefMut::WasmCode(value),
             RuntimeSubstate::NativePackageInfo(value) => SubstateRefMut::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
@@ -412,6 +418,7 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
+            RuntimeSubstate::WasmCode(value) => SubstateRef::WasmCode(value),
             RuntimeSubstate::NativePackageInfo(value) => SubstateRef::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
@@ -580,6 +587,12 @@ impl Into<RuntimeSubstate> for ValidatorSubstate {
 impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::CurrentTimeRoundedToMinutes(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for WasmCodeSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::WasmCode(self)
     }
 }
 
@@ -765,9 +778,9 @@ impl Into<ResourceManagerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<PackageInfoSubstate> for RuntimeSubstate {
-    fn into(self) -> PackageInfoSubstate {
-        if let RuntimeSubstate::PackageInfo(package) = self {
+impl Into<WasmCodeSubstate> for RuntimeSubstate {
+    fn into(self) -> WasmCodeSubstate {
+        if let RuntimeSubstate::WasmCode(package) = self {
             package
         } else {
             panic!("Not a resource manager");
@@ -898,6 +911,7 @@ pub enum SubstateRef<'a> {
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
+    WasmCode(&'a WasmCodeSubstate),
     PackageInfo(&'a PackageInfoSubstate),
     NativePackageInfo(&'a NativePackageInfoSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
@@ -1076,6 +1090,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::NativePackageInfo(value) => *value,
             _ => panic!("Not a native package"),
+        }
+    }
+
+    pub fn wasm_code(&self) -> &WasmCodeSubstate {
+        match self {
+            SubstateRef::WasmCode(value) => *value,
+            _ => panic!("Not wasm code"),
         }
     }
 
@@ -1277,6 +1298,7 @@ pub enum SubstateRefMut<'a> {
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
+    WasmCode(&'a mut WasmCodeSubstate),
     NativePackageInfo(&'a mut NativePackageInfoSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),

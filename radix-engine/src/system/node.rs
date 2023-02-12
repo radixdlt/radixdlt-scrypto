@@ -100,7 +100,7 @@ pub enum RENodeInit {
     NonFungibleStore(NonFungibleStore),
     Identity(),
     Component(ComponentStateSubstate),
-    Package(PackageInfoSubstate),
+    WasmPackage(PackageInfoSubstate, WasmCodeSubstate),
     NativePackage(NativePackageInfoSubstate),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(
@@ -167,15 +167,19 @@ impl RENodeInit {
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENodeInit::Package(package_info) => {
+            RENodeInit::WasmPackage(package_info, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
                 );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::WasmCode),
+                    code.into(),
+                );
             }
             RENodeInit::NativePackage(package_info) => {
                 substates.insert(
-                    SubstateOffset::Package(PackageOffset::Info),
+                    SubstateOffset::Package(PackageOffset::NativeCode),
                     package_info.into(),
                 );
             }
