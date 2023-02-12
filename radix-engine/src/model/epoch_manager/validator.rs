@@ -592,15 +592,16 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let (unstake_resource_manager, bucket) = ResourceManager::new_fungible_with_initial_supply(
-            0,
-            amount,
-            BTreeMap::new(),
-            liquidity_token_auth,
-            api,
-        )?;
+        let (liquidity_token_resource_manager, bucket) =
+            ResourceManager::new_fungible_with_initial_supply(
+                18,
+                amount,
+                BTreeMap::new(),
+                liquidity_token_auth,
+                api,
+            )?;
 
-        Ok((unstake_resource_manager.0, bucket))
+        Ok((liquidity_token_resource_manager.0, bucket))
     }
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
@@ -627,10 +628,10 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager =
-            ResourceManager::new_fungible(0, BTreeMap::new(), liquidity_token_auth, api)?;
+        let liquidity_token_resource_manager =
+            ResourceManager::new_fungible(18, BTreeMap::new(), liquidity_token_auth, api)?;
 
-        Ok(unstake_resource_manager.0)
+        Ok(liquidity_token_resource_manager.0)
     }
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
