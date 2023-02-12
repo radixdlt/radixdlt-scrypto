@@ -17,6 +17,7 @@ pub struct IdentityNativePackage;
 impl IdentityNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
+        receiver: Option<ComponentId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -28,7 +29,14 @@ impl IdentityNativePackage {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
-            IDENTITY_CREATE_IDENT => Self::create(input, api),
+            IDENTITY_CREATE_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::create(input, api)
+            },
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),

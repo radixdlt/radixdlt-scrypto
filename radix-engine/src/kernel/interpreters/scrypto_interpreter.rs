@@ -63,13 +63,13 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::AccessController(..)
                     | ComponentAddress::Clock(..)
                     | ComponentAddress::Account(..)
+                    | ComponentAddress::Identity(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                     | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
                     ComponentAddress::EpochManager(..)
                     | ComponentAddress::Validator(..)
-                    | ComponentAddress::Identity(..)
                     | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                     | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
                         return Err(RuntimeError::InterpreterError(
@@ -431,11 +431,11 @@ impl NativeVm {
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(&export_name, input, api)
             }
-            IDENTITY_PACKAGE_CODE_ID => {
-                IdentityNativePackage::invoke_export(&export_name, input, api)
-            }
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, input, api)
+            }
+            IDENTITY_PACKAGE_CODE_ID => {
+                IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             CLOCK_PACKAGE_CODE_ID => {
                 ClockNativePackage::invoke_export(&export_name, receiver, input, api)

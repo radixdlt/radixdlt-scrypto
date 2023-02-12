@@ -18,15 +18,6 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
 ) -> Result<CallTableInvocation, RuntimeError> {
     let invocation = match receiver {
         ScryptoReceiver::Global(component_address) => match component_address {
-            ComponentAddress::Identity(..)
-            | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-            | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::ResolveError(ResolveError::NotAMethod),
-                    ),
-                ));
-            }
             ComponentAddress::EpochManager(..) | ComponentAddress::Validator(..) => {
                 let invocation = EpochManagerPackage::resolve_method_invocation(
                     component_address,
@@ -40,7 +31,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 })?;
                 CallTableInvocation::Native(invocation)
             }
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+            ComponentAddress::Identity(..)
+            | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+            | ComponentAddress::EddsaEd25519VirtualIdentity(..)
+            | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Account(..)
             | ComponentAddress::AccessController(..)

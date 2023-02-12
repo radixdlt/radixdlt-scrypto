@@ -18,6 +18,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
+use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
@@ -205,7 +206,15 @@ where
                     }),
                 );
             }
-            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
+            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: IDENTITY_PACKAGE,
+                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
