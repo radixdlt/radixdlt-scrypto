@@ -1548,8 +1548,8 @@ impl AccessControllerTestRunner {
         };
 
         let method_name = match proposer {
-            Proposer::Primary => ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL,
-            Proposer::Recovery => ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL,
+            Proposer::Primary => ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+            Proposer::Recovery => ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         };
 
         let manifest = self
@@ -1581,14 +1581,12 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
-        let method_name = AccessControllerFn::TimedConfirmRecovery;
-
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
+                ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
+                scrypto_encode(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

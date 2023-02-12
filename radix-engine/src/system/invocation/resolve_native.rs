@@ -508,12 +508,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AccessController(ac_fn) => match ac_fn {
-            AccessControllerFn::TimedConfirmRecovery => {
-                let invocation =
-                    scrypto_decode::<AccessControllerTimedConfirmRecoveryInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccessControllerFn::CancelPrimaryRoleRecoveryProposal => {
                 let invocation = scrypto_decode::<
                     AccessControllerCancelPrimaryRoleRecoveryProposalInvocation,

@@ -77,7 +77,7 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
 // Access Controller Quick Confirm Primary Role Recovery
 //=======================================================
 
-pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL: &str = "quick_confirm_primary_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "quick_confirm_primary_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
@@ -89,7 +89,7 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
 // Access Controller Quick Confirm Recovery Role Recovery
 //========================================================
 
-pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL: &str = "quick_confirm_recovery_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "quick_confirm_recovery_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
@@ -101,41 +101,12 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
 // Access Controller Timed Confirm
 //=================================
 
+pub const ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT: &str = "timed_confirm_recovery";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
+pub struct AccessControllerTimedConfirmRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerTimedConfirmRecoveryInvocation {
-    pub receiver: ComponentAddress,
-    pub proposal_to_confirm: RecoveryProposal,
-}
-
-impl Invocation for AccessControllerTimedConfirmRecoveryInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AccessController(
-            AccessControllerFn::TimedConfirmRecovery,
-        ))
-    }
-}
-
-impl SerializableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery)
-    }
-}
-
-impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::TimedConfirmRecovery(self))
-            .into()
-    }
 }
 
 //=========================================================

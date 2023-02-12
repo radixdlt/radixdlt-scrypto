@@ -228,8 +228,6 @@ pub enum WorktopInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessControllerInvocation {
-    TimedConfirmRecovery(AccessControllerTimedConfirmRecoveryInvocation),
-
     CancelPrimaryRoleRecoveryProposal(AccessControllerCancelPrimaryRoleRecoveryProposalInvocation),
     CancelRecoveryRoleRecoveryProposal(
         AccessControllerCancelRecoveryRoleRecoveryProposalInvocation,
@@ -505,10 +503,7 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
             NativeInvocation::AccessController(method) => match method {
-                AccessControllerInvocation::TimedConfirmRecovery(
-                    AccessControllerTimedConfirmRecoveryInvocation { receiver, .. },
-                )
-                | AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
+                AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(
                     AccessControllerCancelPrimaryRoleRecoveryProposalInvocation {
                         receiver, ..
                     },
@@ -687,9 +682,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AccessController(i) => match i {
-                AccessControllerInvocation::TimedConfirmRecovery(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessControllerInvocation::CancelPrimaryRoleRecoveryProposal(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

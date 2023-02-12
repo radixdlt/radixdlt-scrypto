@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, CLOCK, PACKAGE_TOKEN};
+use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
 };
@@ -105,17 +105,23 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::initial_recovery_as_recovery(receiver, input, api)
             }
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL => {
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
             }
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL => {
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::timed_confirm_recovery(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
@@ -338,76 +344,42 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-//==========================================
-// Access Controller Timed Confirm Recovery
-//==========================================
-
-pub struct AccessControllerTimedConfirmRecoveryExecutable {
-    pub receiver: RENodeId,
-    pub proposal_to_confirm: RecoveryProposal,
-}
-
-impl ExecutableInvocation for AccessControllerTimedConfirmRecoveryInvocation {
-    type Exec = AccessControllerTimedConfirmRecoveryExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::TimedConfirmRecovery),
-            resolved_receiver,
-        );
-
-        let executor = Self::Exec {
-            receiver: resolved_receiver.receiver,
-            proposal_to_confirm: self.proposal_to_confirm,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    fn timed_confirm_recovery<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        let input: AccessControllerTimedConfirmRecoveryInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let recovery_proposal = transition_mut(
-            self.receiver,
+            RENodeId::AccessController(receiver),
             api,
             AccessControllerTimedConfirmRecoveryStateMachineInput {
-                proposal_to_confirm: self.proposal_to_confirm,
+                proposal_to_confirm: RecoveryProposal {
+                    rule_set: input.rule_set,
+                    timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
+                }
             },
         )?;
 
         // Update the access rules
         update_access_rules(
             api,
-            self.receiver,
+            RENodeId::AccessController(receiver),
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -751,9 +723,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::Native(NativeFn::AccessController(
-            AccessControllerFn::TimedConfirmRecovery,
-        )),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string()),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
@@ -797,11 +767,11 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         ),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL.to_string()),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL.to_string()),
+        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
