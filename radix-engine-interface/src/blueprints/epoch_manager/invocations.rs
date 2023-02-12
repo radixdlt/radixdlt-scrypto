@@ -7,6 +7,16 @@ use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+use scrypto_abi::BlueprintAbi;
+
+pub struct EpochManagerAbi;
+
+impl EpochManagerAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 

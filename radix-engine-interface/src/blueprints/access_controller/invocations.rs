@@ -2,7 +2,18 @@ use crate::api::types::*;
 use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+use scrypto_abi::BlueprintAbi;
+
+pub struct AccessControllerAbi;
+
+impl AccessControllerAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 

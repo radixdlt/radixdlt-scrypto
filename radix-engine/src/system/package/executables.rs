@@ -72,6 +72,11 @@ impl Executor for PackagePublishNativeInvocation {
         let access_rules = AccessRulesChainSubstate {
             access_rules_chain: vec![self.access_rules],
         };
+        let blueprint_abis = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidAbi(e),
+            ))
+        })?;
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
@@ -86,6 +91,7 @@ impl Executor for PackagePublishNativeInvocation {
         let package = NativePackageInfoSubstate {
             native_package_code_id: self.native_package_code_id,
             dependent_resources: self.dependent_resources.into_iter().collect(),
+            blueprint_abis,
         };
 
         // Create package node

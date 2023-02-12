@@ -14,6 +14,14 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::*;
 
+pub struct ResourceManagerAbi;
+
+impl ResourceManagerAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 
 #[derive(
