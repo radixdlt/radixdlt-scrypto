@@ -242,7 +242,7 @@ where
             kernel.initialize().expect("Failed to initialize kernel");
 
             // Invoke transaction processor
-            let mut invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {
@@ -256,13 +256,7 @@ where
             });
 
             // Teardown
-            let (modules, optional_error) = kernel.teardown();
-            if let Some(error) = optional_error {
-                if invoke_result.is_ok() {
-                    // Overwrites invoke result
-                    invoke_result = Err(error);
-                }
-            }
+            let (modules, invoke_result) = kernel.teardown(invoke_result);
             let fee_reserve = modules.costing.take_fee_reserve();
             let (vault_ops, events) = modules.execution_trace.collect_events();
 

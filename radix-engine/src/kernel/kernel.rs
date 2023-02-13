@@ -1,5 +1,6 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
+use crate::blueprints::transaction_processor::InstructionOutput;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
@@ -79,26 +80,28 @@ where
     }
 
     // TODO: Josh holds some concern about this interface; will look into this again.
-    pub fn teardown(mut self) -> (KernelModuleMixer, Option<RuntimeError>) {
-        // Rewind call stack
-        loop {
-            if let Some(f) = self.prev_frame_stack.pop() {
-                self.current_frame = f;
-            } else {
-                break;
+    pub fn teardown<T>(
+        mut self,
+        previous_result: Result<T, RuntimeError>,
+    ) -> (KernelModuleMixer, Result<T, RuntimeError>) {
+        let new_result = match previous_result {
+            Ok(output) => {
+                // Sanity check call frame
+                assert!(self.prev_frame_stack.is_empty());
+
+                // Tear down kernel modules
+                match self
+                    .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+                        KernelModuleMixer::on_teardown(api)
+                    }) {
+                    Ok(_) => Ok(output),
+                    Err(error) => Err(error),
+                }
             }
-        }
+            Err(error) => Err(error),
+        };
 
-        // Tear down kernel modules
-        let result = self
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_teardown(api)
-            });
-
-        match result {
-            Ok(_) => (self.module, None),
-            Err(e) => (self.module, Some(e)),
-        }
+        (self.module, new_result)
     }
 
     fn create_virtual_account(
