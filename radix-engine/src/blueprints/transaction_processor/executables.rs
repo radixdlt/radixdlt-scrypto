@@ -553,38 +553,61 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     amount,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        amount: amount.clone(),
-                    })?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintFungibleInput {
+                            amount: amount.clone(),
+                        }).unwrap()
+                    )?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintNonFungible {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintNonFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        entries: entries.clone(),
-                    })?;
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintNonFungibleInput {
+                            entries: entries.clone(),
+                        }).unwrap()
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintUuidNonFungible {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintUuidNonFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        entries: entries.clone(),
-                    })?;
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
+                            entries: entries.clone(),
+                        }).unwrap()
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => {
                     let rtn = api.call_native(VaultRecallInvocation {

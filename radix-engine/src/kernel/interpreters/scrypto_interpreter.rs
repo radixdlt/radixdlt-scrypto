@@ -61,6 +61,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Global(component_address) => {
                     RENodeId::Global(GlobalAddress::Component(component_address))
                 }
+                ScryptoReceiver::Resource(resource_address) => {
+                    RENodeId::Global(GlobalAddress::Resource(resource_address))
+                },
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
             };
 
@@ -401,7 +404,7 @@ impl NativeVm {
     {
         match native_package_code_id {
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {
-                ResourceManagerNativePackage::invoke_export(&export_name, input, api)
+                ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             EPOCH_MANAGER_PACKAGE_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)

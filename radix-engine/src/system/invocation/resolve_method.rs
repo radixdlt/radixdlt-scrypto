@@ -16,6 +16,9 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         ScryptoReceiver::Global(component_address) => {
             RENodeId::Global(GlobalAddress::Component(component_address))
         }
+        ScryptoReceiver::Resource(resource_address) => {
+            RENodeId::Global(GlobalAddress::Resource(resource_address))
+        }
         ScryptoReceiver::Component(component_id) => {
             // TODO: Fix this as this is wrong id for native components
             // TODO: Will be easier to fix this when local handles are implemented

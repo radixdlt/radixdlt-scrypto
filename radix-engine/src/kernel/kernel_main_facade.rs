@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::{Resource, RESOURCE_MANAGER_BLUEPRINT};
 
 impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
 where
@@ -197,7 +197,15 @@ where
             }
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
+            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,

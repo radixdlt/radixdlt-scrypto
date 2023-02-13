@@ -25,7 +25,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi};
-use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -216,21 +216,17 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::MintNonFungible,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string()),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::MintUuidNonFungible,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string()),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::MintFungible)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_FUNGIBLE.to_string()),
         "mint".to_string(),
         DenyAll,
     );
@@ -441,36 +437,94 @@ pub struct ResourceManagerNativePackage;
 impl ResourceManagerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
+        receiver: Option<ResourceManagerId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
         match export_name {
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => Self::create_non_fungible(input, api),
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::create_non_fungible(input, api)
+            },
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
                 Self::create_non_fungible_with_address(input, api)
             }
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
                 Self::create_non_fungible_with_initial_supply(input, api)
             }
             RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
                 Self::create_uuid_non_fungible_with_initial_supply(input, api)
             }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => Self::create_fungible(input, api),
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::create_fungible(input, api)
+            },
             RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
                 Self::create_fungible_with_initial_supply(input, api)
             }
             RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
                 Self::create_fungible_with_initial_supply_and_address(input, api)
             }
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::mint_non_fungible(receiver, input, api)
+            }
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::mint_uuid_non_fungible(receiver, input, api)
+            }
+            RESOURCE_MANAGER_MINT_FUNGIBLE => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::mint_fungible(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -479,8 +533,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -506,8 +560,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -538,8 +592,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -608,8 +662,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -675,8 +729,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -702,8 +756,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
@@ -762,8 +816,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -819,6 +873,262 @@ impl ResourceManagerNativePackage {
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
+    }
+
+    fn mint_non_fungible<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerMintNonFungibleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let (resource, non_fungibles) = {
+            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let resource_manager = substate_mut.resource_manager();
+
+            let id_type = match resource_manager.resource_type {
+                ResourceType::NonFungible { id_type } => id_type,
+                _ => {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ))
+                }
+            };
+
+            if id_type == NonFungibleIdType::UUID {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ),
+                ));
+            }
+
+            let amount: Decimal = input.entries.len().into();
+            resource_manager.total_supply += amount;
+            // Allocate non-fungibles
+            let mut ids = BTreeSet::new();
+            let mut non_fungibles = BTreeMap::new();
+            for (id, data) in input.entries {
+                if id.id_type() != id_type {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                id.id_type(),
+                                id_type,
+                            ),
+                        ),
+                    ));
+                }
+
+                let non_fungible = NonFungible::new(data.0, data.1);
+                ids.insert(id.clone());
+                non_fungibles.insert(id, non_fungible);
+            }
+
+            (
+                Resource::new_non_fungible(resource_manager.resource_address, ids, id_type),
+                non_fungibles,
+            )
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(resource)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        let (nf_store_id, resource_address) = {
+            let substate_ref = api.get_ref(resman_handle)?;
+            let resource_manager = substate_ref.resource_manager();
+            (
+                resource_manager.nf_store_id.clone(),
+                resource_manager.resource_address,
+            )
+        };
+
+        for (id, non_fungible) in non_fungibles {
+            let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
+            let offset =
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
+            let non_fungible_handle =
+                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+
+            {
+                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                let non_fungible_mut = substate_mut.non_fungible();
+
+                if non_fungible_mut.0.is_some() {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleAlreadyExists(
+                                NonFungibleGlobalId::new(resource_address, id),
+                            ),
+                        ),
+                    ));
+                }
+
+                *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+            }
+
+            api.drop_lock(non_fungible_handle)?;
+        }
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+
+    fn mint_uuid_non_fungible<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerMintUuidNonFungibleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let bucket_id = {
+            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let resource_manager = substate_mut.resource_manager();
+            let resource_address = resource_manager.resource_address;
+            let id_type = match resource_manager.resource_type {
+                ResourceType::NonFungible { id_type } => id_type,
+                _ => {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ))
+                }
+            };
+            let nf_store_id = resource_manager.nf_store_id.unwrap();
+
+            if id_type != NonFungibleIdType::UUID {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ),
+                ));
+            }
+
+            let amount: Decimal = input.entries.len().into();
+            resource_manager.total_supply += amount;
+            // Allocate non-fungibles
+            let mut ids = BTreeSet::new();
+            for data in input.entries {
+                // TODO: Is this enough bits to prevent hash collisions?
+                // TODO: Possibly use an always incrementing timestamp
+                let uuid = Runtime::generate_uuid(api)?;
+                let id = NonFungibleLocalId::UUID(uuid);
+                ids.insert(id.clone());
+
+                {
+                    let node_id = RENodeId::NonFungibleStore(nf_store_id);
+                    let offset =
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
+                    let non_fungible_handle =
+                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+                    let non_fungible = NonFungible::new(data.0, data.1);
+                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                    let non_fungible_mut = substate_mut.non_fungible();
+                    *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+                    api.drop_lock(non_fungible_handle)?;
+                }
+            }
+
+            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+            api.create_node(
+                node_id,
+                RENodeInit::Bucket(BucketSubstate::new(Resource::new_non_fungible(
+                    resource_address,
+                    ids,
+                    id_type,
+                ))),
+                BTreeMap::new(),
+            )?;
+            let bucket_id: BucketId = node_id.into();
+            bucket_id
+        };
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+    fn mint_fungible<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerMintFungibleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let resource = {
+            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let resource_manager = substate_mut.resource_manager();
+            let result =
+                resource_manager.mint_fungible(input.amount, resource_manager.resource_address)?;
+            result
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(resource)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 }
 
@@ -1261,324 +1571,6 @@ impl Executor for ResourceManagerCreateBucketExecutable {
     }
 }
 
-pub struct ResourceManagerMintNonFungibleExecutable(
-    RENodeId,
-    BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
-);
-
-impl ExecutableInvocation for ResourceManagerMintNonFungibleInvocation {
-    type Exec = ResourceManagerMintNonFungibleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible),
-            resolved_receiver,
-        );
-        let executor =
-            ResourceManagerMintNonFungibleExecutable(resolved_receiver.receiver, self.entries);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ResourceManagerMintNonFungibleExecutable {
-    type Output = Bucket;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let (resource, non_fungibles) = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
-
-            let id_type = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_type } => id_type,
-                _ => {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ))
-                }
-            };
-
-            if id_type == NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            let amount: Decimal = self.1.len().into();
-            resource_manager.total_supply += amount;
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            let mut non_fungibles = BTreeMap::new();
-            for (id, data) in self.1 {
-                if id.id_type() != id_type {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                                id.id_type(),
-                                id_type,
-                            ),
-                        ),
-                    ));
-                }
-
-                let non_fungible = NonFungible::new(data.0, data.1);
-                ids.insert(id.clone());
-                non_fungibles.insert(id, non_fungible);
-            }
-
-            (
-                Resource::new_non_fungible(resource_manager.resource_address, ids, id_type),
-                non_fungibles,
-            )
-        };
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(resource)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-
-        let (nf_store_id, resource_address) = {
-            let substate_ref = api.get_ref(resman_handle)?;
-            let resource_manager = substate_ref.resource_manager();
-            (
-                resource_manager.nf_store_id.clone(),
-                resource_manager.resource_address,
-            )
-        };
-
-        for (id, non_fungible) in non_fungibles {
-            let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
-            let offset =
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-            let non_fungible_handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-            {
-                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                let non_fungible_mut = substate_mut.non_fungible();
-
-                if non_fungible_mut.0.is_some() {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleAlreadyExists(
-                                NonFungibleGlobalId::new(resource_address, id),
-                            ),
-                        ),
-                    ));
-                }
-
-                *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
-            }
-
-            api.drop_lock(non_fungible_handle)?;
-        }
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
-    }
-}
-
-pub struct ResourceManagerMintUuidNonFungibleExecutable(RENodeId, Vec<(Vec<u8>, Vec<u8>)>);
-
-impl ExecutableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
-    type Exec = ResourceManagerMintUuidNonFungibleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::MintUuidNonFungible),
-            resolved_receiver,
-        );
-        let executor =
-            ResourceManagerMintUuidNonFungibleExecutable(resolved_receiver.receiver, self.entries);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let bucket_id = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
-            let resource_address = resource_manager.resource_address;
-            let id_type = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_type } => id_type,
-                _ => {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ))
-                }
-            };
-            let nf_store_id = resource_manager.nf_store_id.unwrap();
-
-            if id_type != NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            let amount: Decimal = self.1.len().into();
-            resource_manager.total_supply += amount;
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            for data in self.1 {
-                // TODO: Is this enough bits to prevent hash collisions?
-                // TODO: Possibly use an always incrementing timestamp
-                let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleLocalId::UUID(uuid);
-                ids.insert(id.clone());
-
-                {
-                    let node_id = RENodeId::NonFungibleStore(nf_store_id);
-                    let offset =
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                    let non_fungible_handle =
-                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-                    let non_fungible = NonFungible::new(data.0, data.1);
-                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                    let non_fungible_mut = substate_mut.non_fungible();
-                    *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
-                    api.drop_lock(non_fungible_handle)?;
-                }
-            }
-
-            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            api.create_node(
-                node_id,
-                RENodeInit::Bucket(BucketSubstate::new(Resource::new_non_fungible(
-                    resource_address,
-                    ids,
-                    id_type,
-                ))),
-                BTreeMap::new(),
-            )?;
-            let bucket_id: BucketId = node_id.into();
-            bucket_id
-        };
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
-    }
-}
-
-pub struct ResourceManagerMintFungibleExecutable(RENodeId, Decimal);
-
-impl ExecutableInvocation for ResourceManagerMintFungibleInvocation {
-    type Exec = ResourceManagerMintFungibleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::MintFungible),
-            resolved_receiver,
-        );
-        let executor =
-            ResourceManagerMintFungibleExecutable(resolved_receiver.receiver, self.amount);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ResourceManagerMintFungibleExecutable {
-    type Output = Bucket;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let resource = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
-            let result =
-                resource_manager.mint_fungible(self.1, resource_manager.resource_address)?;
-            result
-        };
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(resource)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
-    }
-}
 
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = ResourceManagerGetResourceTypeExecutable;

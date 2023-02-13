@@ -5,11 +5,10 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInvocation, MetadataSetInvocation,
 };
-use radix_engine_interface::api::types::{
-    GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
-};
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::types::{GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn, ScryptoReceiver};
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -243,11 +242,16 @@ impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
         let mut env = ScryptoEnv;
-        env.call_native(ResourceManagerMintFungibleInvocation {
-            amount: amount.into(),
-            receiver: self.0,
-        })
-        .unwrap()
+
+        let rtn = env.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintFungibleInput {
+                amount: amount.into(),
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Mints non-fungible resources
@@ -262,11 +266,15 @@ impl ResourceManager {
             (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
         );
         let mut env = ScryptoEnv;
-        env.call_native(ResourceManagerMintNonFungibleInvocation {
-            entries,
-            receiver: self.0,
-        })
-        .unwrap()
+        let rtn = env.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintNonFungibleInput {
+                entries,
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Mints uuid non-fungible resources
@@ -274,11 +282,16 @@ impl ResourceManager {
         let mut entries = Vec::new();
         entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
         let mut env = ScryptoEnv;
-        env.call_native(ResourceManagerMintUuidNonFungibleInvocation {
-            entries,
-            receiver: self.0,
-        })
-        .unwrap()
+
+        let rtn = env.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
+                entries,
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.

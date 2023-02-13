@@ -132,9 +132,6 @@ pub enum ResourceInvocation {
     BurnBucket(ResourceManagerBurnBucketInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
-    MintNonFungible(ResourceManagerMintNonFungibleInvocation),
-    MintUuidNonFungible(ResourceManagerMintUuidNonFungibleInvocation),
-    MintFungible(ResourceManagerMintFungibleInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
@@ -314,21 +311,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::MintNonFungible(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::MintUuidNonFungible(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::MintFungible(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
                 ResourceInvocation::GetResourceType(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
@@ -442,9 +424,6 @@ impl NativeInvocation {
                 ResourceInvocation::BurnBucket(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::Burn(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::MintNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::MintUuidNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::MintFungible(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::CreateBucket(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::CreateVault(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::UpdateVaultAuth(i) => (get_native_fn(i), scrypto_encode(i)),

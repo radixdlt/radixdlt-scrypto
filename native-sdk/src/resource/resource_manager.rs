@@ -1,5 +1,6 @@
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::api::{ClientApi, ClientNodeApi};
+use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
@@ -100,7 +101,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
         let mut entries = BTreeMap::new();
         entries.insert(
@@ -108,10 +109,15 @@ impl ResourceManager {
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
-        api.call_native(ResourceManagerMintNonFungibleInvocation {
-            entries,
-            receiver: self.0,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintNonFungibleInput {
+                entries
+            }).unwrap()
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     /// Mints non-fungible resources
@@ -121,16 +127,21 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
         entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
 
-        api.call_native(ResourceManagerMintUuidNonFungibleInvocation {
-            entries,
-            receiver: self.0,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
+                entries
+            }).unwrap()
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     /// Mints non-fungible resources
@@ -140,12 +151,17 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(ResourceManagerMintFungibleInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_MINT_FUNGIBLE,
+            scrypto_encode(&ResourceManagerMintFungibleInput {
+                amount
+            }).unwrap()
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn get_non_fungible_mutable_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(

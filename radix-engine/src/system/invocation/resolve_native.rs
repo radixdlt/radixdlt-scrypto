@@ -306,24 +306,6 @@ pub fn resolve_native(
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            ResourceManagerFn::MintNonFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerMintNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::MintUuidNonFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerMintUuidNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::MintFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerMintFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ResourceManagerFn::GetResourceType => {
                 let invocation =
                     scrypto_decode::<ResourceManagerGetResourceTypeInvocation>(&invocation)

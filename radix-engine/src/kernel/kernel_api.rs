@@ -166,9 +166,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
     + Invokable<ResourceManagerCreateVaultInvocation, E>
     + Invokable<ResourceManagerCreateBucketInvocation, E>
-    + Invokable<ResourceManagerMintNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintFungibleInvocation, E>
     + Invokable<ResourceManagerGetResourceTypeInvocation, E>
     + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
     + Invokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
