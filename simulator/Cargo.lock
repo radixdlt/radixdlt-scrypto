@@ -1676,7 +1676,18 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "secp256k1",
+ "transaction-derive",
  "utils",
+]
+
+[[package]]
+name = "transaction-derive"
+version = "0.8.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor-derive-common",
+ "syn",
 ]
 
 [[package]]

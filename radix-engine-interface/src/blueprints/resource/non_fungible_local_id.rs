@@ -145,6 +145,60 @@ impl NonFungibleLocalId {
             }
         }
     }
+
+    pub fn encode_body_common<X: CustomValueKind, E: Encoder<X>>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
+        match self {
+            NonFungibleLocalId::String(v) => {
+                encoder.write_byte(0)?;
+                encoder.write_size(v.len())?;
+                encoder.write_slice(v.as_bytes())?;
+            }
+            NonFungibleLocalId::Integer(v) => {
+                encoder.write_byte(1)?;
+                encoder.write_slice(&v.to_be_bytes())?; // TODO: variable length encoding?
+            }
+            NonFungibleLocalId::Bytes(v) => {
+                encoder.write_byte(2)?;
+                encoder.write_size(v.len())?;
+                encoder.write_slice(v.as_slice())?;
+            }
+            NonFungibleLocalId::UUID(v) => {
+                encoder.write_byte(3)?;
+                encoder.write_slice(&v.to_be_bytes())?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
+        let local_id = match decoder.read_byte()? {
+            0 => {
+                let size = decoder.read_size()?;
+                Self::String(
+                    String::from_utf8(decoder.read_slice(size)?.to_vec())
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                )
+            }
+            1 => Self::Integer(u64::from_be_bytes(copy_u8_array(decoder.read_slice(8)?))),
+            2 => {
+                let size = decoder.read_size()?;
+                Self::Bytes(decoder.read_slice(size)?.to_vec())
+            }
+            3 => Self::UUID(u128::from_be_bytes(copy_u8_array(decoder.read_slice(16)?))),
+            _ => return Err(DecodeError::InvalidCustomValue),
+        };
+
+        local_id
+            .validate_contents()
+            .map_err(|_| DecodeError::InvalidCustomValue)?;
+
+        Ok(local_id)
+    }
 }
 
 //========
@@ -190,27 +244,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        match self {
-            NonFungibleLocalId::String(v) => {
-                encoder.write_byte(0)?;
-                encoder.write_size(v.len())?;
-                encoder.write_slice(v.as_bytes())?;
-            }
-            NonFungibleLocalId::Integer(v) => {
-                encoder.write_byte(1)?;
-                encoder.write_slice(&v.to_be_bytes())?; // TODO: variable length encoding?
-            }
-            NonFungibleLocalId::Bytes(v) => {
-                encoder.write_byte(2)?;
-                encoder.write_size(v.len())?;
-                encoder.write_slice(v.as_slice())?;
-            }
-            NonFungibleLocalId::UUID(v) => {
-                encoder.write_byte(3)?;
-                encoder.write_slice(&v.to_be_bytes())?;
-            }
-        }
-        Ok(())
+        self.encode_body_common(encoder)
     }
 }
 
@@ -220,28 +254,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let local_id = match decoder.read_byte()? {
-            0 => {
-                let size = decoder.read_size()?;
-                Self::String(
-                    String::from_utf8(decoder.read_slice(size)?.to_vec())
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                )
-            }
-            1 => Self::Integer(u64::from_be_bytes(copy_u8_array(decoder.read_slice(8)?))),
-            2 => {
-                let size = decoder.read_size()?;
-                Self::Bytes(decoder.read_slice(size)?.to_vec())
-            }
-            3 => Self::UUID(u128::from_be_bytes(copy_u8_array(decoder.read_slice(16)?))),
-            _ => return Err(DecodeError::InvalidCustomValue),
-        };
-
-        local_id
-            .validate_contents()
-            .map_err(|_| DecodeError::InvalidCustomValue)?;
-
-        Ok(local_id)
+        Self::decode_body_common(decoder)
     }
 }
 
