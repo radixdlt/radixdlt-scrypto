@@ -12,5 +12,5 @@ pub trait ClientMeteringApi<E> {
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), E>;
 
-    fn memory_consumption(&mut self, size: usize);
+    fn wasm_memory_consumption(&mut self, size: usize);
 }

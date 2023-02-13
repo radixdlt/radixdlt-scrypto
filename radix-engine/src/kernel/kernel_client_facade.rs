@@ -308,8 +308,8 @@ where
         Ok(rtn)
     }
 
-    fn memory_consumption(&mut self, size: usize) {
-        self.current_frame.consumed_wasm_memory += size;
+    fn wasm_memory_consumption(&mut self, size: usize) {
+        self.current_frame.consumed_wasm_memory = size;
     }
 }
 

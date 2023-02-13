@@ -1,4 +1,8 @@
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{ModuleError, RuntimeError},
+    system::kernel_modules::transaction_limits::TransactionLimitsError,
+    types::*,
+};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -132,7 +136,7 @@ fn test_grow_memory() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "40"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -187,7 +191,7 @@ fn test_grow_memory_out_of_cost_unit() {
 }
 
 #[test]
-fn test_max_memory_exceeded() {
+fn test_max_instance_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
@@ -213,5 +217,44 @@ fn test_max_memory_exceeded() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(is_transaction_limit_error)
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxWasmInstanceMemoryExceeded(_)
+            ))
+        )
+    })
+}
+
+#[test]
+fn test_max_transaction_memory_exceeded() {
+    // Test recursive instantiation of WASM with memory allocation of 1 MiB
+    // for each call (+additional memory for transaction execution).
+
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "Caller",
+            "recursive_with_memory",
+            args!(8u32, 1024 * 1024 as usize),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxWasmMemoryExceeded(_)
+            ))
+        )
+    })
 }

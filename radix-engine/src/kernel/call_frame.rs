@@ -101,6 +101,7 @@ pub struct CallFrame {
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
 
+    /// WASM instance consumed memory for this call frame
     pub consumed_wasm_memory: usize,
 }
 

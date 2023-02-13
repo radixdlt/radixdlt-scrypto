@@ -201,8 +201,12 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn memory_consumption(&mut self, size: usize) {
-        self.api.memory_consumption(size);
+    fn set_wasm_memory_consumption(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.wasm_memory_consumption(size);
+        Ok(())
     }
 }
 
@@ -298,7 +302,11 @@ impl WasmRuntime for NopWasmRuntime {
             .consume_execution(n, CostingReason::RunWasm)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::CostingError(e)))
     }
-    fn memory_consumption(&mut self, size: usize) {
-        //self.api.
+
+    fn set_wasm_memory_consumption(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

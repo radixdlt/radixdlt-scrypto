@@ -30,7 +30,10 @@ impl KernelModule {
             execution_trace: ExecutionTraceModule::new(config.max_sys_call_trace_depth),
             royalty: RoyaltyModule::default(),
             costing: CostingModule::new(config.max_call_depth),
-            limits: TransactionLimitsModule::new(config.max_wasm_mem_per_transaction),
+            limits: TransactionLimitsModule::new(
+                config.max_wasm_mem_per_transaction,
+                config.max_wasm_mem_per_instance,
+            ),
         }
     }
 }
