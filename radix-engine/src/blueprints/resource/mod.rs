@@ -1,4 +1,6 @@
 mod executables;
+mod package;
+mod resource_manager;
 mod substates;
 mod worktop;
 

@@ -30,6 +30,48 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerSubstate {
+    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
+    pub resource_type: ResourceType,
+    pub total_supply: Decimal,
+    pub nf_store_id: Option<NonFungibleStoreId>,
+}
+
+impl ResourceManagerSubstate {
+    pub fn new(
+        resource_type: ResourceType,
+        nf_store_id: Option<NonFungibleStoreId>,
+        resource_address: ResourceAddress,
+    ) -> ResourceManagerSubstate {
+        Self {
+            resource_type,
+            total_supply: 0.into(),
+            nf_store_id,
+            resource_address,
+        }
+    }
+
+    pub fn check_fungible_amount(
+        &self,
+        amount: Decimal,
+    ) -> Result<(), InvokeError<ResourceManagerError>> {
+        let divisibility = self.resource_type.divisibility();
+
+        if amount.is_negative()
+            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+                != BnumI256::from(0)
+        {
+            Err(InvokeError::SelfError(ResourceManagerError::InvalidAmount(
+                amount,
+                divisibility,
+            )))
+        } else {
+            Ok(())
+        }
+    }
+}
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceManagerError {
@@ -390,172 +432,10 @@ where
     Ok(resource_address)
 }
 
-pub struct ResourceManagerNativePackage;
+pub struct ResourceManagerBlueprint;
 
-impl ResourceManagerNativePackage {
-    pub fn invoke_export<Y>(
-        export_name: &str,
-        receiver: Option<ResourceManagerId>,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
-    {
-        match export_name {
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_non_fungible(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_non_fungible_with_address(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_non_fungible_with_initial_supply(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_uuid_non_fungible_with_initial_supply(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_fungible(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_fungible_with_initial_supply(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::create_fungible_with_initial_supply_and_address(input, api)
-            }
-            RESOURCE_MANAGER_BURN_BUCKET_IDENT => {
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                Self::burn_bucket(input, api)
-            }
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::mint_non_fungible(receiver, input, api)
-            }
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::mint_uuid_non_fungible(receiver, input, api)
-            }
-            RESOURCE_MANAGER_MINT_FUNGIBLE => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::mint_fungible(receiver, input, api)
-            }
-            RESOURCE_MANAGER_BURN_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::burn(receiver, input, api)
-            }
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::create_bucket(receiver, input, api)
-            }
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::create_vault(receiver, input, api)
-            }
-            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::update_vault_auth(receiver, input, api)
-            }
-            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::set_vault_auth_mutability(receiver, input, api)
-            }
-            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::update_non_fungible_data(receiver, input, api)
-            }
-            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::non_fungible_exists(receiver, input, api)
-            }
-            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::get_resource_type(receiver, input, api)
-            }
-            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::get_total_supply(receiver, input, api)
-            }
-            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::get_non_fungible(receiver, input, api)
-            }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
-            )),
-        }
-    }
-
-    fn create_non_fungible<Y>(
+impl ResourceManagerBlueprint {
+    pub(crate) fn create_non_fungible<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -582,7 +462,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    fn create_non_fungible_with_address<Y>(
+    pub(crate) fn create_non_fungible_with_address<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -614,7 +494,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    fn create_non_fungible_with_initial_supply<Y>(
+    pub(crate) fn create_non_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -684,7 +564,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    fn create_uuid_non_fungible_with_initial_supply<Y>(
+    pub(crate) fn create_uuid_non_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -751,7 +631,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    fn create_fungible<Y>(
+    pub(crate) fn create_fungible<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -778,7 +658,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
-    fn create_fungible_with_initial_supply<Y>(
+    pub(crate) fn create_fungible_with_initial_supply<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -838,7 +718,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    fn create_fungible_with_initial_supply_and_address<Y>(
+    pub(crate) fn create_fungible_with_initial_supply_and_address<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -901,7 +781,10 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    fn burn_bucket<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    pub(crate) fn burn_bucket<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -918,7 +801,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn mint_non_fungible<Y>(
+    pub(crate) fn mint_non_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1039,7 +922,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    fn mint_uuid_non_fungible<Y>(
+    pub(crate) fn mint_uuid_non_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1128,7 +1011,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    fn mint_fungible<Y>(
+    pub(crate) fn mint_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1154,9 +1037,34 @@ impl ResourceManagerNativePackage {
         let resource = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
-            let result =
-                resource_manager.mint_fungible(input.amount, resource_manager.resource_address)?;
-            result
+
+            if let ResourceType::Fungible { divisibility } = resource_manager.resource_type {
+                // check amount
+                resource_manager.check_fungible_amount(input.amount)?;
+
+                // Practically impossible to overflow the Decimal type with this limit in place.
+                if input.amount > dec!("1000000000000000000") {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::MaxMintAmountExceeded,
+                        ),
+                    ));
+                }
+
+                resource_manager.total_supply += input.amount;
+
+                Resource::new_fungible(
+                    resource_manager.resource_address,
+                    divisibility,
+                    input.amount,
+                )
+            } else {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    ),
+                ));
+            }
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
@@ -1170,7 +1078,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    fn burn<Y>(
+    pub(crate) fn burn<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1242,7 +1150,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn create_bucket<Y>(
+    pub(crate) fn create_bucket<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1283,7 +1191,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    fn create_vault<Y>(
+    pub(crate) fn create_vault<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1324,7 +1232,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
 
-    fn update_vault_auth<Y>(
+    pub(crate) fn update_vault_auth<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1389,7 +1297,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn set_vault_auth_mutability<Y>(
+    pub(crate) fn set_vault_auth_mutability<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1454,7 +1362,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn update_non_fungible_data<Y>(
+    pub(crate) fn update_non_fungible_data<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1508,7 +1416,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn non_fungible_exists<Y>(
+    pub(crate) fn non_fungible_exists<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1547,7 +1455,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&exists))
     }
 
-    fn get_resource_type<Y>(
+    pub(crate) fn get_resource_type<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1576,7 +1484,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&resource_type))
     }
 
-    fn get_total_supply<Y>(
+    pub(crate) fn get_total_supply<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
@@ -1602,7 +1510,7 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&total_supply))
     }
 
-    fn get_non_fungible<Y>(
+    pub(crate) fn get_non_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
