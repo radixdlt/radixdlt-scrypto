@@ -124,7 +124,7 @@ fn test_normal_transaction_flow() {
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::debug();
     let raw_transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: 1_000_000,
+        cost_unit_limit: 5_000_000,
         start_epoch_inclusive: 0,
         end_epoch_exclusive: 100,
     })

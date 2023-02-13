@@ -5,7 +5,7 @@ use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionRuntimeGetHashInvocation {
-    pub receiver: TransactionRuntimeId,
+    pub receiver: TransactionRuntimeId, // Not in use
 }
 
 impl Invocation for TransactionRuntimeGetHashInvocation {
@@ -32,7 +32,7 @@ impl Into<CallTableInvocation> for TransactionRuntimeGetHashInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionRuntimeGenerateUuidInvocation {
-    pub receiver: TransactionRuntimeId,
+    pub receiver: TransactionRuntimeId, // Not in use
 }
 
 impl Invocation for TransactionRuntimeGenerateUuidInvocation {

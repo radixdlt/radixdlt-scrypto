@@ -5,11 +5,10 @@ use crate::{
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccessRulesChainOffset, AccountOffset, AuthZoneStackOffset,
-    BucketOffset, ComponentOffset, FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn,
-    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, RoyaltyOffset,
-    ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn, ValidatorOffset, VaultOffset,
-    WorktopOffset,
+    AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
+    FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset,
+    RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
+    TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -31,22 +30,26 @@ impl VisibilityProperties {
         node_id: RENodeId,
     ) -> bool {
         match mode {
-            ExecutionMode::LoggerModule => match node_id {
-                RENodeId::Logger => return true,
-                _ => return false,
-            },
-            ExecutionMode::Application => match node_id {
-                // TODO: Cleanup and reduce to least privilege
-                RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                    _ => false,
-                },
-                RENodeId::AuthZoneStack => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+            ExecutionMode::KernelModule => match node_id {
+                RENodeId::Logger => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
                     _ => false,
                 },
                 RENodeId::TransactionRuntime => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                RENodeId::AuthZoneStack => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Root) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
+            ExecutionMode::Client => match node_id {
+                RENodeId::Worktop => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(
+                        TransactionProcessorFn::Run,
+                    )) => true,
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
@@ -83,7 +86,7 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, &actor.identifier) {
             (
-                ExecutionMode::Application,
+                ExecutionMode::Client,
                 FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address,
                     blueprint_name,
@@ -148,23 +151,16 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Resolver, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
+                SubstateOffset::Package(PackageOffset::Info) => read_only,
+                SubstateOffset::PackageTypeInfo => read_only,
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                _ => false,
+            },
             (ExecutionMode::Deref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Globalize, offset) => match offset {
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::LoggerModule, ..) => false,
-            (ExecutionMode::NodeMoveModule, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                _ => false,
-            },
-            (ExecutionMode::TransactionModule, _offset) => false,
-            (ExecutionMode::MoveUpstream, offset) => match offset {
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
@@ -174,34 +170,26 @@ impl VisibilityProperties {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
-            (ExecutionMode::EntityModule, _offset) => false,
-            (ExecutionMode::AuthModule, offset) => match offset {
+            (ExecutionMode::KernelModule, offset) => match offset {
+                // TODO: refine based on specific module
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
-                // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
-                SubstateOffset::Vault(VaultOffset::Vault) => read_only,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
-                    read_only
-                }
-                _ => false,
-            },
-            (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::PackageTypeInfo => read_only,
+                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::Vault(VaultOffset::Vault) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::NativeCode) => read_only,
                 SubstateOffset::Package(PackageOffset::WasmCode) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Component(ComponentOffset::State0) => read_only,
+                SubstateOffset::ComponentTypeInfo(_) => read_only,
+                SubstateOffset::AccessRulesChain(_) => read_only,
+                SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
-            (ExecutionMode::Application, offset) => {
+            (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     if matches!(offset, SubstateOffset::PackageTypeInfo) {
                         return true;
@@ -353,7 +341,6 @@ impl SubstateProperties {
             SubstateOffset::Global(..) => true,
             SubstateOffset::PackageTypeInfo => true,
             SubstateOffset::AuthZoneStack(..) => false,
-            SubstateOffset::FeeReserve(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRulesChain(..) => true,

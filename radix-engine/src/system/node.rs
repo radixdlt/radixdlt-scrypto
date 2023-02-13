@@ -7,7 +7,6 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node_modules::auth::*;
-use crate::system::node_modules::fee::FeeReserveSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::TypeInfoSubstate;
@@ -93,7 +92,6 @@ pub enum RENodeInit {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
@@ -229,12 +227,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     current_time_rounded_to_minutes_substate.into(),
-                );
-            }
-            RENodeInit::FeeReserve(fee_reserve) => {
-                substates.insert(
-                    SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
-                    fee_reserve.into(),
                 );
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {

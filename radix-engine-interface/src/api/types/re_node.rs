@@ -66,7 +66,6 @@ pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
     AuthZoneStack,
-    FeeReserve(FeeReserveId),
     Worktop,
     Logger,
     TransactionRuntime,
@@ -110,7 +109,6 @@ impl Into<u32> for RENodeId {
         match self {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
-            RENodeId::FeeReserve(id) => id,
             RENodeId::AuthZoneStack => 0x10000000u32, // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => 0x20000000u32, // TODO: Remove, this here to preserve receiver in invocation for now
             _ => panic!("Not a transient id"),
@@ -314,11 +312,6 @@ pub enum ValidatorOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum FeeReserveOffset {
-    FeeReserve,
-}
-
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
@@ -375,7 +368,6 @@ pub enum SubstateOffset {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
-    FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),

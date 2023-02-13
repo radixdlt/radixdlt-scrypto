@@ -16,7 +16,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientMeteringApi, ClientNativeInvokeApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientEventApi, ClientNativeInvokeApi,
     ClientNodeApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
@@ -248,7 +248,7 @@ impl Executor for ScryptoExecutor {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
-            + ClientMeteringApi<RuntimeError>
+            + ClientEventApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {

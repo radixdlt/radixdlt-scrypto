@@ -3,7 +3,9 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
-use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::kernel_modules::auth::{
+    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
+};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;

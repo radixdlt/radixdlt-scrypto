@@ -1,7 +1,6 @@
 use super::global::GlobalAddressSubstate;
 use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
-use super::node_modules::fee::FeeReserveSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -192,7 +191,6 @@ pub enum RuntimeSubstate {
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
     Logger(LoggerSubstate),
-    FeeReserve(FeeReserveSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
@@ -256,7 +254,6 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
-            | RuntimeSubstate::FeeReserve(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
@@ -310,7 +307,6 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
-            | RuntimeSubstate::FeeReserve(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
@@ -385,7 +381,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
-            RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
@@ -430,7 +425,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
-            RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
@@ -637,12 +631,6 @@ impl Into<RuntimeSubstate> for ComponentRoyaltyConfigSubstate {
 impl Into<RuntimeSubstate> for ComponentRoyaltyAccumulatorSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::ComponentRoyaltyAccumulator(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for FeeReserveSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::FeeReserve(self)
     }
 }
 
@@ -894,11 +882,30 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<AuthZoneStackSubstate> for RuntimeSubstate {
+    fn into(self) -> AuthZoneStackSubstate {
+        if let RuntimeSubstate::AuthZoneStack(substate) = self {
+            substate
+        } else {
+            panic!("Not a auth zone stack");
+        }
+    }
+}
+
+impl Into<TransactionRuntimeSubstate> for RuntimeSubstate {
+    fn into(self) -> TransactionRuntimeSubstate {
+        if let RuntimeSubstate::TransactionRuntime(substate) = self {
+            substate
+        } else {
+            panic!("Not a transaction runtime");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
-    FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
@@ -1037,13 +1044,6 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
-        }
-    }
-
-    pub fn fee_reserve(&self) -> &FeeReserveSubstate {
-        match self {
-            SubstateRef::FeeReserve(value) => *value,
-            _ => panic!("Not a fee reserve"),
         }
     }
 
@@ -1325,7 +1325,6 @@ pub enum SubstateRefMut<'a> {
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     Logger(&'a mut LoggerSubstate),
-    FeeReserve(&'a mut FeeReserveSubstate),
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
@@ -1345,13 +1344,6 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
-        }
-    }
-
-    pub fn fee_reserve(&mut self) -> &mut FeeReserveSubstate {
-        match self {
-            SubstateRefMut::FeeReserve(value) => *value,
-            _ => panic!("Not a fee reserve"),
         }
     }
 

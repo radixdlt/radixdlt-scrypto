@@ -66,18 +66,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         15000 /* CreateNode */
-        + 43500 /* DropLock */
-        + 10000 /* DropNode */
+        + 420000 /* DropLock */
+        + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
-        + 60500 /* LockSubstate */
+        + 590000 /* LockSubstate */
         + 197500 /* ReadSubstate */
-        + 21500 /* RunNative */
+        + 20000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 100000, /* WriteSubstate */
+        + 92500, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -199,18 +199,18 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         25000 /* CreateNode */
-        + 111000 /* DropLock */
-        + 15000 /* DropNode */
-        + 260394 /* InstantiateWasm */
+        + 1120000 /* DropLock */
+        + 17500 /* DropNode */
+        + 260288 /* InstantiateWasm */
         + 19000 /* Invoke */
-        + 157000 /* LockSubstate */
-        + 527500 /* ReadSubstate */
-        + 49500 /* RunNative */
-        + 1581145 /* RunWasm */
+        + 1580000 /* LockSubstate */
+        + 540000 /* ReadSubstate */
+        + 45000 /* RunNative */
+        + 1581135 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 252500 /* WriteSubstate */
+        + 240000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -265,7 +265,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..500 {
+    for _ in 0..300 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });

@@ -1,16 +1,16 @@
 use super::Invokable;
+use super::KernelModuleMixer;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::module::BaseModule;
+use crate::kernel::KernelModule;
 use crate::kernel::{Kernel, KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::invocation::resolve_native::resolve_native;
-use crate::system::kernel_modules::fee::FeeReserve;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -28,7 +28,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientMeteringApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientEventApi,
     ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -38,11 +38,9 @@ use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R, M> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.drop_node(node_id)?;
@@ -50,11 +48,9 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn sys_lock_substate(
         &mut self,
@@ -105,33 +101,27 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
     }
 }
 
-impl<'g, 's, W, R, M> ClientActorApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())
     }
 }
 
-impl<'g, 's, W, R, M> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn call_native_raw(
         &mut self,
@@ -161,11 +151,9 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn new_package(
         &mut self,
@@ -290,11 +278,9 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn lookup_global_component(
         &mut self,
@@ -423,43 +409,25 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ClientMeteringApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
+        KernelModuleMixer::on_consume_cost_units(self, units)
     }
-
-    fn lock_fee(
+    fn credit_cost_units(
         &mut self,
         vault_id: VaultId,
-        fee: Resource,
+        locked_fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        let rtn = self.module.on_lock_fee(
-            &self.current_frame,
-            &mut self.heap,
-            &mut self.track,
-            vault_id,
-            fee,
-            contingent,
-        )?;
+        KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
+    }
 
-        Ok(rtn)
+    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+        KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
 }
 
-impl<'g, 's, W, R, M> ClientApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-}
+impl<'g, 's, W> ClientApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
