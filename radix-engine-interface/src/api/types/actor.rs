@@ -263,9 +263,6 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ValidatorFn {
-    Stake,
-    Unstake,
-    ClaimXrd,
     UpdateKey,
     UpdateAcceptDelegatedStake,
 }
@@ -290,39 +287,6 @@ impl EpochManagerPackage {
                     ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match validator_fn {
-                    ValidatorFn::Stake => {
-                        let args: ValidatorStakeMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::Stake(
-                            ValidatorStakeInvocation {
-                                receiver,
-                                stake: args.stake,
-                            },
-                        ))
-                    }
-
-                    ValidatorFn::Unstake => {
-                        let args: ValidatorUnstakeMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::Unstake(
-                            ValidatorUnstakeInvocation {
-                                receiver,
-                                lp_tokens: args.lp_tokens,
-                            },
-                        ))
-                    }
-
-                    ValidatorFn::ClaimXrd => {
-                        let args: ValidatorClaimXrdMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(
-                            ValidatorClaimXrdInvocation {
-                                receiver,
-                                unstake_nft: args.bucket,
-                            },
-                        ))
-                    }
-
                     ValidatorFn::UpdateKey => {
                         let args: ValidatorUpdateKeyMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;

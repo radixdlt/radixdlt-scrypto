@@ -119,9 +119,6 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ValidatorInvocation {
-    Stake(ValidatorStakeInvocation),
-    Unstake(ValidatorUnstakeInvocation),
-    ClaimXrd(ValidatorClaimXrdInvocation),
     UpdateKey(ValidatorUpdateKeyInvocation),
     UpdateAcceptDelegatedStake(ValidatorUpdateAcceptDelegatedStakeInvocation),
 }
@@ -367,21 +364,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Validator(method) => match method {
-                ValidatorInvocation::Stake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ValidatorInvocation::Unstake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ValidatorInvocation::ClaimXrd(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
                 ValidatorInvocation::UpdateKey(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -460,9 +442,6 @@ impl NativeInvocation {
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Validator(i) => match i {
-                ValidatorInvocation::Stake(i) => (get_native_fn(i), scrypto_encode(i)),
-                ValidatorInvocation::Unstake(i) => (get_native_fn(i), scrypto_encode(i)),
-                ValidatorInvocation::ClaimXrd(i) => (get_native_fn(i), scrypto_encode(i)),
                 ValidatorInvocation::UpdateKey(i) => (get_native_fn(i), scrypto_encode(i)),
                 ValidatorInvocation::UpdateAcceptDelegatedStake(i) => {
                     (get_native_fn(i), scrypto_encode(i))

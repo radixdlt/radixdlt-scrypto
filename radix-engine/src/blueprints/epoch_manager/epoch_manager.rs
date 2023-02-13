@@ -127,6 +127,24 @@ impl EpochManagerNativePackage {
                 ))?;
                 ValidatorBlueprint::unregister(receiver, input, api)
             }
+            VALIDATOR_STAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::stake(receiver, input, api)
+            }
+            VALIDATOR_UNSTAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::unstake(receiver, input, api)
+            }
+            VALIDATOR_CLAIM_XRD_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::claim_xrd(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),

@@ -282,18 +282,6 @@ where
             }
         }
         NativeInvocation::Validator(validator_invocation) => match validator_invocation {
-            ValidatorInvocation::Stake(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ValidatorInvocation::Unstake(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ValidatorInvocation::ClaimXrd(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ValidatorInvocation::UpdateKey(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

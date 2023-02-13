@@ -141,6 +141,9 @@ impl FeeTable {
             (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => match identifier.ident.as_str() {
                 VALIDATOR_REGISTER_IDENT => self.fixed_low,
                 VALIDATOR_UNREGISTER_IDENT => self.fixed_low,
+                VALIDATOR_STAKE_IDENT => self.fixed_low,
+                VALIDATOR_UNSTAKE_IDENT => self.fixed_low,
+                VALIDATOR_CLAIM_XRD_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => {
@@ -205,9 +208,6 @@ impl FeeTable {
                 }
             }
             NativeFn::Validator(validator_fn) => match validator_fn {
-                ValidatorFn::Stake => self.fixed_low,
-                ValidatorFn::Unstake => self.fixed_low,
-                ValidatorFn::ClaimXrd => self.fixed_low,
                 ValidatorFn::UpdateKey => self.fixed_low,
                 ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },

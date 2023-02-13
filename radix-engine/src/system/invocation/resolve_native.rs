@@ -358,21 +358,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Validator(validator_fn) => match validator_fn {
-            ValidatorFn::Stake => {
-                let invocation = scrypto_decode::<ValidatorStakeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ValidatorFn::Unstake => {
-                let invocation = scrypto_decode::<ValidatorUnstakeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ValidatorFn::ClaimXrd => {
-                let invocation = scrypto_decode::<ValidatorClaimXrdInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ValidatorFn::UpdateKey => {
                 let invocation = scrypto_decode::<ValidatorUpdateKeyInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

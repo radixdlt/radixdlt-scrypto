@@ -21,7 +21,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         ScryptoReceiver::Global(component_address) => match component_address {
              ComponentAddress::Validator(..) => {
                  match method_name {
-                     VALIDATOR_REGISTER_IDENT | VALIDATOR_UNREGISTER_IDENT => {
+                     VALIDATOR_REGISTER_IDENT | VALIDATOR_UNREGISTER_IDENT | VALIDATOR_STAKE_IDENT | VALIDATOR_UNSTAKE_IDENT | VALIDATOR_CLAIM_XRD_IDENT => {
                          let component_node_id =
                              RENodeId::Global(GlobalAddress::Component(component_address));
                          let component_info = {

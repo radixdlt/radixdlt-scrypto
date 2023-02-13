@@ -125,130 +125,25 @@ pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnregisterInput {}
 
+pub const VALIDATOR_STAKE_IDENT: &str = "stake";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorStakeMethodArgs {
+pub struct ValidatorStakeInput {
     pub stake: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorStakeInvocation {
-    pub receiver: ComponentAddress,
-    pub stake: Bucket,
-}
-
-impl Clone for ValidatorStakeInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            stake: Bucket(self.stake.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorStakeInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Stake))
-    }
-}
-
-impl SerializableInvocation for ValidatorStakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Stake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorStakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Stake(self)).into()
-    }
-}
+pub const VALIDATOR_UNSTAKE_IDENT: &str = "unstake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnstakeMethodArgs {
+pub struct ValidatorUnstakeInput {
     pub lp_tokens: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnstakeInvocation {
-    pub receiver: ComponentAddress,
-    pub lp_tokens: Bucket,
-}
-
-impl Clone for ValidatorUnstakeInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            lp_tokens: Bucket(self.lp_tokens.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorUnstakeInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unstake))
-    }
-}
-
-impl SerializableInvocation for ValidatorUnstakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Unstake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
-    }
-}
+pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorClaimXrdMethodArgs {
+pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
-}
-
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorClaimXrdInvocation {
-    pub receiver: ComponentAddress,
-    pub unstake_nft: Bucket,
-}
-
-impl Clone for ValidatorClaimXrdInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            unstake_nft: Bucket(self.unstake_nft.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorClaimXrdInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::ClaimXrd))
-    }
-}
-
-impl SerializableInvocation for ValidatorClaimXrdInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::ClaimXrd)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
