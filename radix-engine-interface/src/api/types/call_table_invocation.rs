@@ -58,7 +58,6 @@ pub enum NativeInvocation {
     Component(ComponentInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
-    ResourceManager(ResourceInvocation),
     Bucket(BucketInvocation),
     Vault(VaultInvocation),
     Proof(ProofInvocation),
@@ -125,13 +124,6 @@ pub enum AuthZoneStackInvocation {
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ResourceInvocation {
-    GetResourceType(ResourceManagerGetResourceTypeInvocation),
-    GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
-    GetNonFungible(ResourceManagerGetNonFungibleInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -276,23 +268,6 @@ impl NativeInvocation {
                     refs.insert(invocation.receiver);
                 }
             },
-            NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::GetResourceType(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::GetTotalSupply(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::GetNonFungible(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-            },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {
                     refs.insert(RENodeId::Logger);
@@ -375,11 +350,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::ResourceManager(i) => match i {
-                ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::GetTotalSupply(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::GetNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Bucket(i) => match i {
                 BucketInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),

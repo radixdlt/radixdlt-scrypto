@@ -133,6 +133,9 @@ impl FeeTable {
                     RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT => self.fixed_medium,
                     RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => self.fixed_medium,
                     RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => self.fixed_low,
+                    RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => self.fixed_low,
+                    RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => self.fixed_low,
                     _ => self.fixed_low,
                 }
             }
@@ -238,11 +241,6 @@ impl FeeTable {
                 ProofFn::GetNonFungibleLocalIds => self.fixed_low,
                 ProofFn::GetResourceAddress => self.fixed_low,
                 ProofFn::Clone => self.fixed_low,
-            },
-            NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::GetResourceType => self.fixed_low,
-                ResourceManagerFn::GetTotalSupply => self.fixed_low,
-                ResourceManagerFn::GetNonFungible => self.fixed_medium,
             },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
                 WorktopFn::Put => self.fixed_medium,

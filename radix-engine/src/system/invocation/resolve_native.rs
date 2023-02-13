@@ -271,26 +271,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::ResourceManager(resource_manager_fn) => match resource_manager_fn {
-            ResourceManagerFn::GetResourceType => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerGetResourceTypeInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::GetTotalSupply => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerGetTotalSupplyInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::GetNonFungible => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerGetNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::Logger(logger_fn) => match logger_fn {
             LoggerFn::Log => {
                 let invocation = scrypto_decode::<LoggerLogInvocation>(&invocation)

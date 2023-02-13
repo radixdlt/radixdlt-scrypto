@@ -5,27 +5,23 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor,
-};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
-    ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
+    ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::api::{ClientApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -219,14 +215,12 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::GetResourceType,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -241,7 +235,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -536,6 +530,24 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::non_fungible_exists(receiver, input, api)
+            }
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::get_resource_type(receiver, input, api)
+            }
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::get_total_supply(receiver, input, api)
+            }
+            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::get_non_fungible(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -1534,165 +1546,113 @@ impl ResourceManagerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&exists))
     }
-}
 
-impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
-    type Exec = ResourceManagerGetResourceTypeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::GetResourceType),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerGetResourceTypeExecutable(RENodeId);
-
-impl Executor for ResourceManagerGetResourceTypeExecutable {
-    type Output = ResourceType;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
+    fn get_resource_type<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let _input: ResourceManagerGetResourceTypeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
         let resource_type = substate_ref.resource_manager().resource_type;
 
-        Ok((resource_type, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&resource_type))
     }
-}
 
-impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
-    type Exec = ResourceManagerGetTotalSupplyExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerGetTotalSupplyExecutable(RENodeId);
-
-impl Executor for ResourceManagerGetTotalSupplyExecutable {
-    type Output = Decimal;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn get_total_supply<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let _input: ResourceManagerGetTotalSupplyInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(resman_handle)?;
         let total_supply = substate_ref.resource_manager().total_supply;
-
-        Ok((total_supply, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&total_supply))
     }
-}
 
-impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
-    type Exec = ResourceManagerGetNonFungibleExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleLocalId);
-
-impl Executor for ResourceManagerGetNonFungibleExecutable {
-    type Output = [Vec<u8>; 2];
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+    fn get_non_fungible<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let input: ResourceManagerGetNonFungibleInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
 
         let non_fungible_global_id =
-            NonFungibleGlobalId::new(resource_manager.resource_address, self.1.clone());
+            NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());
 
-        let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
-        let non_fungible_handle = system_api.lock_substate(
-            node_id,
+        let non_fungible_handle = api.lock_substate(
+            RENodeId::NonFungibleStore(nf_store_id),
             NodeModuleId::SELF,
-            offset,
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id)),
             LockFlags::read_only(),
         )?;
-        let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
+        let non_fungible_ref = api.get_ref(non_fungible_handle)?;
         let wrapper = non_fungible_ref.non_fungible();
         if let Some(non_fungible) = wrapper.0.as_ref() {
-            Ok((
-                [non_fungible.immutable_data(), non_fungible.mutable_data()],
-                CallFrameUpdate::empty(),
-            ))
+            Ok(IndexedScryptoValue::from_typed(&[
+                non_fungible.immutable_data(),
+                non_fungible.mutable_data(),
+            ]))
         } else {
-            return Err(RuntimeError::ApplicationError(
+            Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
                     non_fungible_global_id,
                 )),
-            ));
+            ))
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ComponentInvocation,
     LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
-    ResourceInvocation, TransactionRuntimeInvocation, VaultInvocation, WorktopInvocation,
+    TransactionRuntimeInvocation, VaultInvocation, WorktopInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -220,22 +220,6 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::ResourceManager(resource_manager_invocation) => {
-            match resource_manager_invocation {
-                ResourceInvocation::GetResourceType(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::GetTotalSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::GetNonFungible(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            }
-        }
         NativeInvocation::Logger(logger_invocation) => match logger_invocation {
             LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;

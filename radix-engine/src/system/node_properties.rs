@@ -56,7 +56,6 @@ impl VisibilityProperties {
                     })
                     | FnIdentifier::Native(NativeFn::Bucket(..))
                     | FnIdentifier::Native(NativeFn::Worktop(..))
-                    | FnIdentifier::Native(NativeFn::ResourceManager(..))
                     | FnIdentifier::Native(NativeFn::Vault(..)) => true,
                     _ => false,
                 },

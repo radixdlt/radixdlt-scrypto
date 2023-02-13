@@ -203,32 +203,11 @@ pub struct ResourceManagerNonFungibleExistsInput {
     pub id: NonFungibleLocalId,
 }
 
+pub const RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerGetNonFungibleInvocation {
-    pub receiver: ResourceAddress,
+pub struct ResourceManagerGetNonFungibleInput {
     pub id: NonFungibleLocalId,
-}
-
-impl Invocation for ResourceManagerGetNonFungibleInvocation {
-    type Output = [Vec<u8>; 2];
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
-    type ScryptoOutput = [Vec<u8>; 2];
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerGetNonFungibleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::GetNonFungible(self)).into()
-    }
 }
 
 pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE: &str = "mint_non_fungible";
@@ -252,61 +231,15 @@ pub struct ResourceManagerMintFungibleInput {
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerGetResourceTypeInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerGetResourceTypeInvocation {
-    type Output = ResourceType;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::GetResourceType,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerGetResourceTypeInvocation {
-    type ScryptoOutput = ResourceType;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::GetResourceType)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerGetResourceTypeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::GetResourceType(self)).into()
-    }
-}
+pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerGetTotalSupplyInvocation {
-    pub receiver: ResourceAddress,
-}
+pub struct ResourceManagerGetResourceTypeInput {}
 
-impl Invocation for ResourceManagerGetTotalSupplyInvocation {
-    type Output = Decimal;
+pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
-    type ScryptoOutput = Decimal;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerGetTotalSupplyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::GetTotalSupply(self)).into()
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerGetTotalSupplyInput {}
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

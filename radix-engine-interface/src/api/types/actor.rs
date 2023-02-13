@@ -97,7 +97,6 @@ pub enum NativeFn {
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
-    ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
     Vault(VaultFn),
     Proof(ProofFn),
@@ -115,8 +114,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::ResourceManager(..)
-            | NativeFn::Bucket(..)
+            NativeFn::Bucket(..)
             | NativeFn::Vault(..)
             | NativeFn::Proof(..)
             | NativeFn::Worktop(..) => NativePackage::Resource,
@@ -270,32 +268,6 @@ pub enum AuthZoneStackFn {
     Clear,
     Drain,
     AssertAccessRule,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ResourceManagerFn {
-    GetNonFungible,
-    GetResourceType,
-    GetTotalSupply,
 }
 
 #[derive(

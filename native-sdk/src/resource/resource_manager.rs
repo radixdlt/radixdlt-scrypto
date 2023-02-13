@@ -165,13 +165,15 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
-        let output = api.call_native(ResourceManagerGetNonFungibleInvocation {
-            id,
-            receiver: self.0,
-        })?;
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
+        )?;
 
+        let output: [Vec<u8>; 2] = scrypto_decode(&rtn).unwrap();
         let data = scrypto_decode(&output[0]).unwrap();
         Ok(data)
     }
@@ -194,9 +196,14 @@ impl ResourceManager {
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(ResourceManagerGetTotalSupplyInvocation { receiver: self.0 })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
+            scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>

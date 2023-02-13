@@ -17,7 +17,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::scrypto_env_native_fn;
 
 use crate::*;
 
@@ -240,25 +239,38 @@ impl ResourceManager {
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> [Vec<u8>; 2] {
         let mut env = ScryptoEnv;
-        env.call_native(ResourceManagerGetNonFungibleInvocation {
-            id,
-            receiver: self.0,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(self.0),
+                RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
-    scrypto_env_native_fn! {
-        pub fn resource_type(&self) -> ResourceType {
-            ResourceManagerGetResourceTypeInvocation {
-                receiver: self.0,
-            }
-        }
-        pub fn total_supply(&self) -> Decimal {
-            ResourceManagerGetTotalSupplyInvocation {
-                receiver: self.0,
-            }
-        }
+    pub fn resource_type(&self) -> ResourceType {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(self.0),
+                RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
+                scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
+    pub fn total_supply(&self) -> Decimal {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(self.0),
+                RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
