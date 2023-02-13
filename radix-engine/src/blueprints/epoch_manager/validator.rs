@@ -52,6 +52,7 @@ impl ExecutableInvocation for ValidatorRegisterInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::Register),
@@ -101,12 +102,17 @@ impl Executor for ValidatorRegisterExecutable {
             if stake_amount.is_positive() {
                 let substate = api.get_ref(handle)?;
                 let validator = substate.validator();
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver: validator.manager,
-                    validator_address: validator.address,
-                    update: UpdateValidator::Register(validator.key, stake_amount),
-                };
-                api.call_native(invocation)?;
+                let key = validator.key;
+                let validator_address = validator.address;
+                let manager = validator.manager;
+                api.call_method(
+                    ScryptoReceiver::Global(manager),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        update: UpdateValidator::Register(key, stake_amount),
+                        validator_address,
+                    }).unwrap(),
+                )?;
             }
         }
 
@@ -129,6 +135,8 @@ impl ExecutableInvocation for ValidatorUnregisterInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::Unregister),
             resolved_receiver,
@@ -143,7 +151,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(
@@ -167,12 +175,16 @@ impl Executor for ValidatorUnregisterExecutable {
         {
             let mut substate = api.get_ref_mut(handle)?;
             let validator = substate.validator();
-            let invocation = EpochManagerUpdateValidatorInvocation {
-                receiver: validator.manager,
-                validator_address: validator.address,
-                update: UpdateValidator::Unregister,
-            };
-            api.call_native(invocation)?;
+            let manager = validator.manager;
+            let validator_address = validator.address;
+            api.call_method(
+                ScryptoReceiver::Global(manager),
+                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                scrypto_encode(&EpochManagerUpdateValidatorInput {
+                    validator_address,
+                    update: UpdateValidator::Unregister,
+                }).unwrap(),
+            )?;
         }
 
         Ok(((), CallFrameUpdate::empty()))
@@ -197,6 +209,7 @@ impl ExecutableInvocation for ValidatorStakeInvocation {
         call_frame_update
             .nodes_to_move
             .push(RENodeId::Bucket(self.stake.0));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor =
             ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);
@@ -254,12 +267,15 @@ impl Executor for ValidatorStakeExecutable {
                 let validator_address = validator.address;
                 let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver,
-                    validator_address,
-                    update: UpdateValidator::Register(key, xrd_amount),
-                };
-                api.call_native(invocation)?;
+
+                api.call_method(
+                    ScryptoReceiver::Global(receiver),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        validator_address,
+                        update: UpdateValidator::Register(key, xrd_amount),
+                    }).unwrap(),
+                )?;
             }
         }
 
@@ -286,6 +302,8 @@ impl ExecutableInvocation for ValidatorUnstakeInvocation {
         call_frame_update
             .nodes_to_move
             .push(RENodeId::Bucket(self.lp_tokens.0));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor =
             ResolvedActor::method(NativeFn::Validator(ValidatorFn::Unstake), resolved_receiver);
@@ -371,18 +389,22 @@ impl Executor for ValidatorUnstakeExecutable {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 let substate = api.get_ref(handle)?;
                 let validator = substate.validator();
+                let manager = validator.manager;
+                let validator_address = validator.address;
                 let update = if stake_amount.is_zero() {
                     UpdateValidator::Unregister
                 } else {
                     UpdateValidator::Register(validator.key, stake_amount)
                 };
 
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver: validator.manager,
-                    validator_address: validator.address,
-                    update,
-                };
-                api.call_native(invocation)?;
+                api.call_method(
+                    ScryptoReceiver::Global(manager),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        validator_address,
+                        update,
+                    }).unwrap(),
+                )?;
             }
         };
 
@@ -409,6 +431,8 @@ impl ExecutableInvocation for ValidatorClaimXrdInvocation {
         call_frame_update
             .nodes_to_move
             .push(RENodeId::Bucket(self.unstake_nft.0));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::ClaimXrd),
@@ -497,6 +521,8 @@ impl ExecutableInvocation for ValidatorUpdateKeyInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::UpdateKey),
             resolved_receiver,
@@ -532,12 +558,14 @@ impl Executor for ValidatorUpdateKeyExecutable {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
-                    let invocation = EpochManagerUpdateValidatorInvocation {
-                        receiver: manager,
-                        validator_address,
-                        update,
-                    };
-                    api.call_native(invocation)?;
+                    api.call_method(
+                        ScryptoReceiver::Global(manager),
+                        EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                        scrypto_encode(&EpochManagerUpdateValidatorInput {
+                            validator_address,
+                            update,
+                        }).unwrap(),
+                    )?;
                 }
             }
         };

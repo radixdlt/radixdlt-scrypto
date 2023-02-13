@@ -91,40 +91,15 @@ pub struct EpochManagerNextRoundInput {
     pub round: u64,
 }
 
+pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateValidatorMethodArgs {
+pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateValidatorInvocation {
-    pub receiver: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-    pub owner_access_rule: AccessRule,
-}
-
-impl Invocation for EpochManagerCreateValidatorInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator))
-    }
-}
-
-impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::CreateValidator)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum UpdateValidator {
@@ -133,40 +108,11 @@ pub enum UpdateValidator {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUpdateValidatorMethodArgs {
+pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUpdateValidatorInvocation {
-    pub receiver: ComponentAddress,
-    pub validator_address: ComponentAddress,
-    pub update: UpdateValidator,
-}
-
-impl Invocation for EpochManagerUpdateValidatorInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator))
-    }
-}
-
-// TODO: Should we have this or not?
-impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::UpdateValidator)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(self)).into()
-    }
-}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorRegisterMethodArgs {}

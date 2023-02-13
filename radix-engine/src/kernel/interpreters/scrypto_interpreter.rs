@@ -148,18 +148,22 @@ impl ExecutableInvocation for ScryptoInvocation {
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
-                let info = substate_ref.package_info(); // TODO: Remove clone()
-                for dependent_resource in &info.dependent_resources {
-                    node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-                        *dependent_resource,
-                    )));
-                }
 
-                for dependent_component in &info.dependent_components {
-                    node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(
-                        *dependent_component,
-                    )));
+                // TODO Remove this, should be able to get references to these based on addresses in PackageInfo
+                {
+                    let substate_ref = api.get_ref(handle)?;
+                    let info = substate_ref.package_info(); // TODO: Remove clone()
+                    for dependent_resource in &info.dependent_resources {
+                        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+                            *dependent_resource,
+                        )));
+                    }
+
+                    for dependent_component in &info.dependent_components {
+                        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(
+                            *dependent_component,
+                        )));
+                    }
                 }
 
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this

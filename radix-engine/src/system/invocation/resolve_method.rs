@@ -5,7 +5,6 @@ use crate::{
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
-use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::api::{
     types::CallTableInvocation,
     types::{ScryptoInvocation, ScryptoReceiver},
@@ -19,50 +18,21 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
 ) -> Result<CallTableInvocation, RuntimeError> {
     let invocation = match receiver {
         ScryptoReceiver::Global(component_address) => match component_address {
-            ComponentAddress::EpochManager(..) | ComponentAddress::Validator(..) => {
-                match method_name {
-                    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT | EPOCH_MANAGER_SET_EPOCH_IDENT | EPOCH_MANAGER_NEXT_ROUND_IDENT => {
-                        let component_node_id =
-                            RENodeId::Global(GlobalAddress::Component(component_address));
-                        let component_info = {
-                            let handle = api.lock_substate(
-                                component_node_id,
-                                NodeModuleId::ComponentTypeInfo,
-                                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = api.get_ref(handle)?;
-                            let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                            api.drop_lock(handle)?;
-
-                            component_info
-                        };
-
-                        let method_invocation = ScryptoInvocation {
-                            package_address: component_info.package_address,
-                            blueprint_name: component_info.blueprint_name,
-                            receiver: Some(ScryptoReceiver::Global(component_address.clone())),
-                            fn_name: method_name.to_string(),
-                            args: args.to_owned(),
-                        };
-                        CallTableInvocation::Scrypto(method_invocation)
-                    }
-                    _ => {
-                        let invocation = EpochManagerPackage::resolve_method_invocation(
-                            component_address,
-                            method_name,
-                            args,
-                        )
-                            .map_err(|e| {
-                                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::ResolveError(e),
-                                ))
-                            })?;
-                        CallTableInvocation::Native(invocation)
-                    }
-                }
+             ComponentAddress::Validator(..) => {
+                let invocation = EpochManagerPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::ResolveError(e),
+                        ))
+                    })?;
+                CallTableInvocation::Native(invocation)
             }
-            ComponentAddress::Identity(..)
+            ComponentAddress::EpochManager(..)
+            | ComponentAddress::Identity(..)
             | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
             | ComponentAddress::EddsaEd25519VirtualIdentity(..)
             | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)

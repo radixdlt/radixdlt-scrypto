@@ -2,7 +2,7 @@ use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation,
-    ComponentInvocation, EpochManagerInvocation, LoggerInvocation, MetadataInvocation,
+    ComponentInvocation, LoggerInvocation, MetadataInvocation,
     NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
     TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
 };
@@ -276,18 +276,6 @@ where
                     Ok(Box::new(rtn))
                 }
                 ResourceInvocation::GetNonFungible(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            }
-        }
-        NativeInvocation::EpochManager(epoch_manager_invocation) => {
-            match epoch_manager_invocation {
-                EpochManagerInvocation::CreateValidator(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                EpochManagerInvocation::UpdateValidator(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }

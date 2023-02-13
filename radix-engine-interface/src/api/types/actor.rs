@@ -101,7 +101,6 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
-    EpochManager(EpochManagerFn),
     Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
@@ -122,7 +121,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
+            NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -263,31 +262,6 @@ pub enum PackageFn {
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum EpochManagerFn {
-    CreateValidator,
-    UpdateValidator,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
 pub enum ValidatorFn {
     Register,
     Unregister,
@@ -313,35 +287,6 @@ impl EpochManagerPackage {
         args: &[u8],
     ) -> Result<NativeInvocation, ResolveError> {
         let invocation = match receiver {
-            ComponentAddress::EpochManager(..) => {
-                let epoch_manager_fn =
-                    EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
-
-                match epoch_manager_fn {
-                    EpochManagerFn::CreateValidator => {
-                        let args: EpochManagerCreateValidatorMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
-                            EpochManagerCreateValidatorInvocation {
-                                receiver,
-                                key: args.key,
-                                owner_access_rule: args.owner_access_rule,
-                            },
-                        ))
-                    }
-                    EpochManagerFn::UpdateValidator => {
-                        let args: EpochManagerUpdateValidatorMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
-                            EpochManagerUpdateValidatorInvocation {
-                                receiver,
-                                validator_address: args.validator_address,
-                                update: args.update,
-                            },
-                        ))
-                    }
-                }
-            }
             ComponentAddress::Validator(..) => {
                 let validator_fn =
                     ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;

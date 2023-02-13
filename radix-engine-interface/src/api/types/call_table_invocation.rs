@@ -57,7 +57,6 @@ pub enum NativeInvocation {
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
     Component(ComponentInvocation),
-    EpochManager(EpochManagerInvocation),
     Validator(ValidatorInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
@@ -116,12 +115,6 @@ pub enum PackageInvocation {
     PublishNative(PackagePublishNativeInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum EpochManagerInvocation {
-    CreateValidator(EpochManagerCreateValidatorInvocation),
-    UpdateValidator(EpochManagerUpdateValidatorInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -375,18 +368,6 @@ impl NativeInvocation {
                     )));
                 }
             },
-            NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerInvocation::CreateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                EpochManagerInvocation::UpdateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-            },
             NativeInvocation::Validator(method) => match method {
                 ValidatorInvocation::Register(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
@@ -489,10 +470,6 @@ impl NativeInvocation {
                 ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::EpochManager(i) => match i {
-                EpochManagerInvocation::CreateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
-                EpochManagerInvocation::UpdateValidator(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Validator(i) => match i {
                 ValidatorInvocation::Register(i) => (get_native_fn(i), scrypto_encode(i)),

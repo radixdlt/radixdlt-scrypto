@@ -1211,6 +1211,16 @@ impl<'a> SubstateRef<'a> {
                 references.insert(GlobalAddress::Resource(bucket.resource_address()));
                 (references, HashSet::new())
             }
+            SubstateRef::PackageInfo(substate) => {
+                let mut references = HashSet::new();
+                for component_ref in &substate.dependent_components {
+                    references.insert(GlobalAddress::Component(*component_ref));
+                }
+                for resource_ref in &substate.dependent_resources {
+                    references.insert(GlobalAddress::Resource(*resource_ref));
+                }
+                (references, HashSet::new())
+            }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Package(substate.package_address));
@@ -1227,6 +1237,7 @@ impl<'a> SubstateRef<'a> {
                 let mut references = HashSet::new();
                 let mut owned_nodes = HashSet::new();
                 references.insert(GlobalAddress::Component(substate.manager));
+                references.insert(GlobalAddress::Component(substate.address));
                 references.insert(GlobalAddress::Resource(substate.unstake_nft));
                 references.insert(GlobalAddress::Resource(substate.liquidity_token));
                 owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));

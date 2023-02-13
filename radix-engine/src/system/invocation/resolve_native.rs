@@ -357,20 +357,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
-            EpochManagerFn::CreateValidator => {
-                let invocation =
-                    scrypto_decode::<EpochManagerCreateValidatorInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            EpochManagerFn::UpdateValidator => {
-                let invocation =
-                    scrypto_decode::<EpochManagerUpdateValidatorInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::Validator(validator_fn) => match validator_fn {
             ValidatorFn::Register => {
                 let invocation = scrypto_decode::<ValidatorRegisterInvocation>(&invocation)

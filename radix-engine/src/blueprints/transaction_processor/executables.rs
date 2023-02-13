@@ -18,7 +18,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientPackageApi};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientNodeApi};
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
+use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_CREATE_VALIDATOR_IDENT, EpochManagerCreateValidatorInput};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -671,13 +671,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     key,
                     owner_access_rule,
                 }) => {
-                    let rtn = api.call_native(EpochManagerCreateValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        key: key.clone(),
-                        owner_access_rule: owner_access_rule.clone(),
-                    })?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Global(EPOCH_MANAGER),
+                        EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+                        scrypto_encode(&EpochManagerCreateValidatorInput {
+                            key: key.clone(),
+                            owner_access_rule: owner_access_rule.clone(),
+                        }).unwrap(),
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
