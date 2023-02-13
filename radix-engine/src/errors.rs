@@ -8,11 +8,9 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
-use crate::system::kernel_modules::auth::auth_module::AuthError;
-use crate::system::kernel_modules::execution_trace::ExecutionTraceError;
-use crate::system::kernel_modules::fee::CostingError;
+use crate::system::kernel_modules::auth::AuthError;
+use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
-use crate::system::kernel_modules::royalty::RoyaltyError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
@@ -209,8 +207,6 @@ pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
-    RoyaltyError(RoyaltyError),
-    ExecutionTraceError(ExecutionTraceError),
 }
 
 impl CanBeAbortion for ModuleError {
@@ -237,18 +233,6 @@ impl From<AuthError> for ModuleError {
 impl From<CostingError> for ModuleError {
     fn from(error: CostingError) -> Self {
         Self::CostingError(error)
-    }
-}
-
-impl From<RoyaltyError> for ModuleError {
-    fn from(error: RoyaltyError) -> Self {
-        Self::RoyaltyError(error)
-    }
-}
-
-impl From<ExecutionTraceError> for ModuleError {
-    fn from(error: ExecutionTraceError) -> Self {
-        Self::ExecutionTraceError(error)
     }
 }
 

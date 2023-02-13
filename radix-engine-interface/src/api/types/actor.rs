@@ -31,6 +31,7 @@ pub enum NativePackage {
     TransactionProcessor,
     Account,
     AccessController,
+    Root,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -122,6 +123,7 @@ pub enum NativeFn {
     Account(AccountFn),
     AccessController(AccessControllerFn),
     Metadata(MetadataFn),
+    Root,
 }
 
 impl NativeFn {
@@ -143,6 +145,7 @@ impl NativeFn {
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Account(..) => NativePackage::Account,
             NativeFn::AccessController(..) => NativePackage::AccessController,
+            NativeFn::Root => NativePackage::Root,
         }
     }
 }

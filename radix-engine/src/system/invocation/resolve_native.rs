@@ -656,5 +656,8 @@ pub fn resolve_native(
         NativeFn::TransactionProcessor(_) => Err(RuntimeError::InterpreterError(
             InterpreterError::DisallowedInvocation(native_fn),
         )),
+        NativeFn::Root => Err(RuntimeError::InterpreterError(
+            InterpreterError::DisallowedInvocation(native_fn),
+        )),
     }
 }

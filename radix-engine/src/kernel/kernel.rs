@@ -1,18 +1,14 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
+use crate::blueprints::transaction_processor::InstructionOutput;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
-use crate::kernel::module::BaseModule;
+use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::auth::auth_module::AuthModule;
-use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::kernel_modules::logger::LoggerModule;
-use crate::system::kernel_modules::node_move::NodeMoveModule;
-use crate::system::kernel_modules::transaction_runtime::TransactionHashModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::{AccessRulesChainSubstate, AuthZoneStackSubstate};
+use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -26,18 +22,13 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use transaction::model::AuthZoneParams;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
-    R,  // Fee reserve type
-    M,
 > where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     /// Current execution mode, specifies permissions into state/invocations
     pub(super) execution_mode: ExecutionMode,
@@ -50,30 +41,27 @@ pub struct Kernel<
     /// Heap
     pub(super) heap: Heap,
     /// Store
-    pub(super) track: &'g mut Track<'s, R>,
+    pub(super) track: &'g mut Track<'s>,
 
     /// ID allocator
     pub(super) id_allocator: &'g mut IdAllocator,
     /// Interpreter capable of running scrypto programs
     pub(super) scrypto_interpreter: &'g ScryptoInterpreter<W>,
-    /// Kernel module
-    pub(super) module: &'g mut M,
+    /// Kernel module mixer
+    pub(super) module: KernelModuleMixer,
 }
 
-impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     pub fn new(
-        auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s, R>,
+        track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: &'g mut M,
+        module: KernelModuleMixer,
     ) -> Self {
-        let mut kernel = Self {
+        Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             track,
@@ -82,67 +70,38 @@ where
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             module,
+        }
+    }
+
+    pub fn initialize(&mut self) -> Result<(), RuntimeError> {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+            KernelModuleMixer::on_init(api)
+        })
+    }
+
+    // TODO: Josh holds some concern about this interface; will look into this again.
+    pub fn teardown<T>(
+        mut self,
+        previous_result: Result<T, RuntimeError>,
+    ) -> (KernelModuleMixer, Result<T, RuntimeError>) {
+        let new_result = match previous_result {
+            Ok(output) => {
+                // Sanity check call frame
+                assert!(self.prev_frame_stack.is_empty());
+
+                // Tear down kernel modules
+                match self
+                    .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+                        KernelModuleMixer::on_teardown(api)
+                    }) {
+                    Ok(_) => Ok(output),
+                    Err(error) => Err(error),
+                }
+            }
+            Err(error) => Err(error),
         };
 
-        // Initial authzone
-        // TODO: Move into module initialization
-        kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
-                let auth_zone = AuthZoneStackSubstate::new(
-                    vec![],
-                    auth_zone_params.virtualizable_proofs_resource_addresses,
-                    auth_zone_params.initial_proofs.into_iter().collect(),
-                );
-                let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                api.create_node(
-                    node_id,
-                    RENodeInit::AuthZoneStack(auth_zone),
-                    BTreeMap::new(),
-                )?;
-                Ok(())
-            })
-            .expect("AuthModule failed to initialize");
-
-        kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
-                LoggerModule::initialize(api)
-            })
-            .expect("Logger failed to initialize");
-
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(CLOCK)),
-            RENodeVisibilityOrigin::Normal,
-        );
-        kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
-        );
-
-        kernel
+        (self.module, new_result)
     }
 
     fn create_virtual_account(
@@ -202,7 +161,7 @@ where
             node_id
         };
 
-        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: Use api to globalize component when create_node is refactored
         // TODO: to allow for address selection
         let global_substate = GlobalAddressSubstate::Account(component_id.into());
 
@@ -226,7 +185,7 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let underlying_node_id = Identity::create(access_rule, self)?;
 
-        // TODO: Use system_api to globalize component when create_node is refactored
+        // TODO: Use api to globalize component when create_node is refactored
         // TODO: to allow for address selection
         let global_substate = GlobalAddressSubstate::Identity(underlying_node_id.into());
         self.current_frame.create_node(
@@ -294,73 +253,71 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
-            match node_id {
-                RENodeId::AuthZoneStack => {
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-                    auth_zone_stack.clear_all();
-                    system_api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Proof(..) => {
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::Proof),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let proof = substate_ref_mut.proof();
-                    proof.drop();
-                    system_api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Logger => Ok(()),
-                RENodeId::Worktop => {
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Worktop(WorktopOffset::Worktop),
-                        LockFlags::MUTABLE,
-                    )?;
-
-                    let buckets = {
-                        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                        let worktop = substate_ref_mut.worktop();
-                        mem::replace(&mut worktop.resources, BTreeMap::new())
-                    };
-                    for (_, bucket) in buckets {
-                        let bucket = Bucket(bucket.bucket_id());
-                        if !bucket.sys_is_empty(system_api)? {
-                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                                RENodeId::Worktop,
-                            )));
-                        }
-                    }
-
-                    system_api.drop_lock(handle)?;
-                    Ok(())
-                }
-                RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionRuntime => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
+            RENodeId::Logger => Ok(()),
+            RENodeId::TransactionRuntime => Ok(()),
+            RENodeId::AuthZoneStack => {
+                let handle = api.lock_substate(
                     node_id,
-                ))),
+                    NodeModuleId::SELF,
+                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                auth_zone_stack.clear_all();
+                api.drop_lock(handle)?;
+                Ok(())
             }
+            RENodeId::Proof(..) => {
+                let handle = api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                let proof = substate_ref_mut.proof();
+                proof.drop();
+                api.drop_lock(handle)?;
+                Ok(())
+            }
+            RENodeId::Worktop => {
+                let handle = api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    LockFlags::MUTABLE,
+                )?;
+
+                let buckets = {
+                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                    let worktop = substate_ref_mut.worktop();
+                    mem::replace(&mut worktop.resources, BTreeMap::new())
+                };
+                for (_, bucket) in buckets {
+                    let bucket = Bucket(bucket.bucket_id());
+                    if !bucket.sys_is_empty(api)? {
+                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                            RENodeId::Worktop,
+                        )));
+                    }
+                }
+
+                api.drop_lock(handle)?;
+                Ok(())
+            }
+            RENodeId::Bucket(..) => Ok(()),
+            _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            ))),
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
-                // Need to go through system_api so that visibility issues can be caught
+                // Need to go through api so that visibility issues can be caught
                 self.drop_node(child_node)?;
             }
         }
@@ -372,17 +329,17 @@ where
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
 
-        // Need to go through system_api so that visibility issues can be caught
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Application, |system_api| {
+        // Need to go through api so that visibility issues can be caught
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
                 } else {
-                    system_api.drop_node(node_id)?;
+                    api.drop_node(node_id)?;
                 }
             }
             for worktop_id in worktops {
-                system_api.drop_node(worktop_id)?;
+                api.drop_node(worktop_id)?;
             }
 
             Ok(())
@@ -406,53 +363,22 @@ where
         } else {
             None
         };
+        let caller = self.current_frame.actor.clone();
 
-        // Filter
-        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, system_api)
-        })?;
-
-        // New Call Frame pre-processing
+        // Before push call frame
         {
-            // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::TransactionModule, |system_api| {
-                TransactionHashModule::on_call_frame_enter(
-                    &mut call_frame_update,
-                    &actor,
-                    system_api,
-                )
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update)
             })?;
-            self.execute_in_mode(ExecutionMode::LoggerModule, |system_api| {
-                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
-            })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-                AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
-            })?;
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_enter(
-                    &mut call_frame_update,
-                    &actor.identifier,
-                    system_api,
-                )
-            })?;
-
-            self.module
-                .pre_execute_invocation(
-                    &actor,
-                    &call_frame_update,
-                    &mut self.current_frame,
-                    &mut self.heap,
-                    &mut self.track,
-                )
-                .map_err(RuntimeError::ModuleError)?;
-            self.id_allocator.pre_execute_invocation();
         }
 
-        // Call Frame Push
+        // Push call frame
         {
+            self.id_allocator.push();
+
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor,
+                actor.clone(),
                 call_frame_update,
             )?;
             let parent = mem::replace(&mut self.current_frame, frame);
@@ -460,43 +386,37 @@ where
         }
 
         // Execute
-        let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
-            executor.execute(system_api)
-        })?;
+        let (output, update) = {
+            // Handle execution start
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::on_execution_start(api, &caller)
+            })?;
 
-        // Call Frame post-processing
-        {
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
-            self.id_allocator.post_execute_invocation()?;
-            self.module
-                .post_execute_invocation(
-                    &self.prev_frame_stack.last().unwrap().actor,
-                    &update,
-                    &mut self.current_frame,
-                    &mut self.heap,
-                    &mut self.track,
-                )
-                .map_err(RuntimeError::ModuleError)?;
+            // Run
+            let (output, mut update) =
+                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
 
-            // TODO: Abstract these away
-            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_exit(&update, system_api)
-            })?;
-            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-                AuthModule::on_call_frame_exit(system_api)
+            // Handle execution finish
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
             })?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
-        }
 
-        // Call Frame Pop
+            (output, update)
+        };
+
+        // Pop call frame
         {
             let mut parent = self.prev_frame_stack.pop().unwrap();
+
+            // Move resource
             CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
             // drop proofs and check resource leak
@@ -504,6 +424,15 @@ where
 
             // Restore previous frame
             self.current_frame = parent;
+
+            self.id_allocator.pop()?;
+        }
+
+        // After pop call frame
+        {
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                KernelModuleMixer::after_pop_frame(api)
+            })?;
         }
 
         if let Some(derefed_lock) = derefed_lock {
@@ -520,15 +449,11 @@ where
     ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             let derefed =
-                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::empty(),
-                    )?;
-                    let substate_ref = system_api.get_ref(handle)?;
+                    let handle =
+                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
+                    let substate_ref = api.get_ref(handle)?;
                     Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
 
@@ -545,19 +470,17 @@ where
     ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let derefed = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::Deref,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
+                let derefed =
+                    self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |api| {
+                        let handle = api.lock_substate(
                             node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Global(GlobalOffset::Global),
                             LockFlags::empty(),
                         )?;
-                        let substate_ref = system_api.get_ref(handle)?;
+                        let substate_ref = api.get_ref(handle)?;
                         Ok((substate_ref.global_address().node_deref(), handle))
-                    },
-                )?;
+                    })?;
 
                 Ok(Some(derefed))
             } else {
@@ -716,13 +639,6 @@ where
         }
 
         let output = self.run(executor, actor, call_frame_update)?;
-
-        // TODO: Move to higher layer
-        if depth == 0 {
-            self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
-            self.drop_nodes_in_frame()?;
-        }
 
         Ok(output)
     }

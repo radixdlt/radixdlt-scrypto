@@ -10,7 +10,6 @@ use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_runtime::TransactionRuntimeGenerateUuidInvocation;
 use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
@@ -536,8 +535,10 @@ impl NativeInvocation {
                 WorktopInvocation::TakeAmount(..) => {}
             },
             NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::GetHash(..) => {}
-                TransactionRuntimeInvocation::GenerateUuid(..) => {}
+                TransactionRuntimeInvocation::GetHash(..)
+                | TransactionRuntimeInvocation::GenerateUuid(..) => {
+                    refs.insert(RENodeId::TransactionRuntime);
+                }
             },
             NativeInvocation::Account(account_method) => match account_method {
                 AccountInvocation::LockFee(AccountLockFeeInvocation { receiver, .. })

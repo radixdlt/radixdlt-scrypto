@@ -1,9 +1,7 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -15,9 +13,11 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientPackageApi;
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
-use radix_engine_interface::api::{ClientDerefApi, ClientNodeApi};
+use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::{
+    ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
+    ClientSubstateApi,
+};
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -267,7 +267,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
-    ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
@@ -276,28 +276,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientEventApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        let _worktop_id = api.create_node(
-            node_id,
-            RENodeInit::Worktop(WorktopSubstate::new()),
-            BTreeMap::new(),
-        )?;
-
-        let runtime_substate = TransactionRuntimeSubstate {
-            hash: self.transaction_hash,
-            next_id: 0u32,
-            instruction_index: 0u32,
-        };
-        let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
+        let worktop_node_id = api.allocate_node_id(RENodeType::Worktop)?;
         api.create_node(
-            runtime_node_id,
-            RENodeInit::TransactionRuntime(runtime_substate),
+            worktop_node_id,
+            RENodeInit::Worktop(WorktopSubstate::new()),
             BTreeMap::new(),
         )?;
 
@@ -309,7 +298,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
-        for inst in self.instructions.into_iter() {
+        for (index, inst) in self.instructions.into_iter().enumerate() {
+            api.update_instruction_index(index)?;
+
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
                     let bucket = Worktop::sys_take_all(*resource_address, api)?;
@@ -697,24 +688,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
             };
             outputs.push(result);
-
-            {
-                let handle = api.lock_substate(
-                    runtime_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                    LockFlags::MUTABLE,
-                )?;
-                let mut substate_mut = api.get_ref_mut(handle)?;
-                let runtime = substate_mut.transaction_runtime();
-                runtime.instruction_index = runtime.instruction_index + 1;
-                api.drop_lock(handle)?;
-            }
         }
 
-        api.drop_node(runtime_node_id)?;
+        api.drop_node(worktop_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

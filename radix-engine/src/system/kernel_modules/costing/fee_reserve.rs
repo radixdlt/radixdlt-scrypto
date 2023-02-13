@@ -3,13 +3,13 @@ use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::Resource;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FeeReserveError {
     InsufficientBalance,
     Overflow,
@@ -86,8 +86,8 @@ pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingF
     ScryptoDecode,
 )]
 pub enum RoyaltyReceiver {
-    Package(PackageAddress, RENodeId),
-    Component(ComponentAddress, RENodeId),
+    Package(PackageAddress, PackageId),
+    Component(ComponentAddress, ComponentId),
 }
 
 #[repr(usize)]
@@ -124,7 +124,7 @@ pub enum CostingReason {
     RunNative,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: u128,
@@ -266,7 +266,7 @@ impl SystemLoanFeeReserve {
     }
 
     /// Repays loan and deferred costs in full.
-    fn repay_all(&mut self) -> Result<(), FeeReserveError> {
+    pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution costs
         let mut sum = 0;
         for v in self.execution_deferred.iter() {
@@ -294,10 +294,6 @@ impl SystemLoanFeeReserve {
         }
 
         Ok(())
-    }
-
-    fn attempt_to_repay_all(&mut self) {
-        self.repay_all().ok();
     }
 
     #[inline]
@@ -417,10 +413,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(mut self) -> FeeSummary {
-        // In case the transaction finishes before check point.
-        self.attempt_to_repay_all();
-
+    fn finalize(self) -> FeeSummary {
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
@@ -478,6 +471,7 @@ mod tests {
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_cost_units_consumed, 2);
@@ -556,14 +550,12 @@ mod tests {
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve
-            .consume_royalty(
-                RoyaltyReceiver::Package(FAUCET_PACKAGE, RENodeId::Package([0u8; 36])),
-                2,
-            )
+            .consume_royalty(RoyaltyReceiver::Package(FAUCET_PACKAGE, [0u8; 36]), 2)
             .unwrap();
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_cost_units_consumed, 4);

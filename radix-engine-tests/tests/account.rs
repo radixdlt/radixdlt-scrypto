@@ -29,7 +29,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     let other_account_balance: Decimal = test_runner
         .account_balance(other_account, RADIX_TOKEN)
         .unwrap();
-    let transfer_amount = other_account_balance - 1000 /* initial balance */;
+    let transfer_amount = other_account_balance - 10000 /* initial balance */;
     let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
 
     assert_resource_changes_for_transfer(

@@ -1,27 +1,31 @@
 use crate::{
-    blueprints::logger::LoggerSubstate, errors::RuntimeError,
-    kernel::kernel_api::KernelSubstateApi, kernel::*, system::node::RENodeInit,
+    blueprints::logger::LoggerSubstate, errors::RuntimeError, kernel::*, system::node::RENodeInit,
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
-pub struct LoggerModule;
+#[derive(Debug, Clone)]
+pub struct LoggerModule {}
 
-impl LoggerModule {
-    pub fn initialize<Y: KernelNodeApi + KernelSubstateApi>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+impl KernelModule for LoggerModule {
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let logger = LoggerSubstate { logs: Vec::new() };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
         api.create_node(node_id, RENodeInit::Logger(logger), BTreeMap::new())?;
         Ok(())
     }
 
-    pub fn on_call_frame_enter<Y: KernelNodeApi + KernelSubstateApi>(
-        call_frame_update: &mut CallFrameUpdate,
-        _actor: &ResolvedActor,
+    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        api.drop_node(RENodeId::Logger)?;
+
+        Ok(())
+    }
+
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
+        _actor: &ResolvedActor,
+        call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if api.get_visible_node_data(RENodeId::Logger).is_ok() {
             call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);

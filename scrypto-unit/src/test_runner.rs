@@ -660,7 +660,7 @@ impl TestRunner {
 
         let fee_reserve_config = FeeReserveConfig::default();
         let mut execution_config = ExecutionConfig::default();
-        execution_config.trace = self.trace;
+        execution_config.debug = self.trace;
 
         self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
     }
@@ -668,7 +668,7 @@ impl TestRunner {
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
         let mut execution_config = ExecutionConfig::default();
-        execution_config.trace = self.trace;
+        execution_config.debug = self.trace;
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }

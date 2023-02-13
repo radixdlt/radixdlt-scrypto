@@ -2,11 +2,10 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{
     Invokable, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
-use crate::kernel::module::BaseModule;
-use crate::kernel::module::KernelApiCallOutput;
+use crate::kernel::KernelModule;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::fee::FeeReserve;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -16,33 +15,19 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::Resource;
 
-impl<'g, 's, W, R, M> KernelNodeApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
-    fn lock_fee(
-        &mut self,
-        vault_id: VaultId,
-        mut fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
-        fee = self
-            .module
-            .on_lock_fee(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                vault_id,
-                fee,
-                contingent,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(fee)
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
     }
+}
 
+impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
@@ -52,14 +37,7 @@ where
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::DropNode { node_id: &node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -84,14 +62,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::DropNode { node: &node },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::after_drop_node(self)?;
 
         Ok(node)
     }
@@ -109,14 +80,7 @@ where
         re_node: RENodeInit,
         mut module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::CreateNode { node: &re_node },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -202,7 +166,7 @@ where
         // TODO: For Scrypto components, check state against blueprint schema
 
         let push_to_store = match re_node {
-            RENodeInit::Global(..) | RENodeInit::Logger(..) => true,
+            RENodeInit::Global(..) => true,
             _ => false,
         };
 
@@ -219,24 +183,54 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::CreateNode { node_id: &node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::after_create_node(self, &node_id)?;
 
         Ok(())
     }
 }
 
-impl<'g, 's, W, R, M> KernelSubstateApi for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+{
+    fn get_module_state(&mut self) -> &mut KernelModuleMixer {
+        &mut self.module
+    }
+
+    fn get_current_depth(&self) -> usize {
+        self.current_frame.depth
+    }
+
+    fn get_current_actor(&self) -> ResolvedActor {
+        self.current_frame.actor.clone()
+    }
+
+    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
+        self.heap
+            .get_substate(
+                RENodeId::Bucket(bucket_id),
+                NodeModuleId::SELF,
+                &SubstateOffset::Bucket(BucketOffset::Bucket),
+            )
+            .and_then(|substate| Ok(substate.bucket().peek_resource()))
+            .ok()
+    }
+
+    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+        self.heap
+            .get_substate(
+                RENodeId::Proof(proof_id),
+                NodeModuleId::SELF,
+                &SubstateOffset::Proof(ProofOffset::Proof),
+            )
+            .and_then(|substate| Ok(substate.proof().snapshot()))
+            .ok()
+    }
+}
+
+impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
 {
     fn lock_substate(
         &mut self,
@@ -245,18 +239,7 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::LockSubstate {
-                    node_id: &node_id,
-                    offset: &offset,
-                    flags: &flags,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -362,14 +345,8 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::LockSubstate { lock_handle },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        // TODO: pass the right size
+        KernelModuleMixer::after_lock_substate(self, lock_handle, 0)?;
 
         Ok(lock_handle)
     }
@@ -379,58 +356,27 @@ where
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::DropLock {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
-
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::DropLock,
-            )
-            .map_err(RuntimeError::ModuleError)?;
 
         Ok(())
     }
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::GetRef {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::GetRef { lock_handle },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+
+        KernelModuleMixer::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
 
         let substate_ref =
             self.current_frame
@@ -440,31 +386,18 @@ where
     }
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::GetRefMut {
-                    lock_handle: &lock_handle,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::GetRefMut,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+
+        KernelModuleMixer::on_write_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
 
         let substate_ref_mut =
             self.current_frame
@@ -474,45 +407,33 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> KernelWasmApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
 {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
 
     fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::on_wasm_instantiation(self, code)?;
 
         Ok(())
     }
 }
 
-impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
+
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        self.module
-            .pre_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallInput::Invoke {
-                    fn_identifier: invocation.fn_identifier(),
-                    input_size: 0, // TODO: Fix this
-                    depth: self.current_frame.depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::before_invoke(
+            self,
+            &invocation.fn_identifier(),
+            0, // TODO: Pass the right size
+        )?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
@@ -526,31 +447,16 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        self.module
-            .post_kernel_api_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                KernelApiCallOutput::Invoke { rtn: &rtn },
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        KernelModuleMixer::after_invoke(
+            self, 0, // TODO: Pass the right size
+        )?;
 
         Ok(rtn)
     }
 }
 
-impl<'g, 's, W, R, M> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-}
+impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 
-impl<'g, 's, W, R, M> KernelApi<W, RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-}
+impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+
+impl<'g, 's, W> KernelModuleApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}

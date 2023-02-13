@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::kernel_modules::auth::*;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -147,10 +147,7 @@ impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
 impl Executor for ClockSetCurrentTimeExecutable {
     type Output = ();
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
@@ -161,9 +158,8 @@ impl Executor for ClockSetCurrentTimeExecutable {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_ref = system_api.get_ref_mut(handle)?;
+        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = api.get_ref_mut(handle)?;
         substate_ref
             .current_time_rounded_to_minutes()
             .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
@@ -201,7 +197,7 @@ impl Executor for ClockGetCurrentTimeExecutable {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
@@ -212,13 +208,9 @@ impl Executor for ClockGetCurrentTimeExecutable {
         match precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = system_api.lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+                let substate_ref = api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
@@ -268,23 +260,20 @@ impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
 impl Executor for ClockCompareCurrentTimeExecutable {
     type Output = bool;
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match self.precision {
             TimePrecision::Minute => {
                 let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-                let handle = system_api.lock_substate(
+                let handle = api.lock_substate(
                     self.node_id,
                     NodeModuleId::SELF,
                     offset,
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,

@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;

@@ -7,55 +7,22 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum CostingEntry {
-    /*
-     * Invocation
-     */
-    Invoke {
-        input_size: u32,
-    },
+    /* invoke */
+    Invoke { input_size: u32 },
 
-    /*
-     * RENode
-     */
-    /// Creates a RENode.
-    CreateNode {
-        size: u32,
-    },
-    /// Drops a RENode
-    DropNode {
-        size: u32,
-    },
+    /* node */
+    CreateNode { size: u32 },
+    DropNode { size: u32 },
 
-    /*
-     * Substate
-     */
-    /// Borrows a substate
-    BorrowSubstate {
-        loaded: bool,
-        size: u32,
-    },
-    LockSubstate {
-        size: u32,
-    },
-    /// Reads the data of a Substate
-    ReadSubstate {
-        size: u32,
-    },
-    /// Updates the data of a Substate
-    WriteSubstate {
-        size: u32,
-    },
+    /* substate */
+    LockSubstate,
+    ReadSubstate { size: u32 },
+    WriteSubstate { size: u32 },
     DropLock,
-
-    /*
-     * Misc
-     */
-    /// Reads blob in transaction
-    ReadBlob {
-        size: u32,
-    },
+    // TODO: more costing after API becomes stable.
 }
 
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeTable {
     tx_base_fee: u32,
     tx_payload_cost_per_byte: u32,
@@ -315,29 +282,21 @@ impl FeeTable {
 
                 AccessControllerFn::StopTimedRecovery => self.fixed_low,
             },
+            NativeFn::Root => 0,
         }
     }
 
-    pub fn system_api_cost(&self, entry: CostingEntry) -> u32 {
+    pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
         match entry {
-            CostingEntry::Invoke { input_size, .. } => self.fixed_low + (5 * input_size) as u32,
+            CostingEntry::Invoke { input_size } => self.fixed_low + (10 * input_size) as u32,
 
-            CostingEntry::CreateNode { .. } => self.fixed_medium,
-            CostingEntry::DropNode { .. } => self.fixed_medium,
+            CostingEntry::CreateNode { size } => self.fixed_medium + (100 * size) as u32,
+            CostingEntry::DropNode { size } => self.fixed_medium + (100 * size) as u32,
 
-            CostingEntry::BorrowSubstate { loaded, size } => {
-                if loaded {
-                    self.fixed_high
-                } else {
-                    self.fixed_low + 100 * size
-                }
-            }
-            CostingEntry::LockSubstate { .. } => self.fixed_low,
-            CostingEntry::ReadSubstate { .. } => self.fixed_medium,
-            CostingEntry::WriteSubstate { .. } => self.fixed_medium,
-            CostingEntry::DropLock => self.fixed_low,
-
-            CostingEntry::ReadBlob { size } => self.fixed_low + size,
+            CostingEntry::LockSubstate => self.fixed_high,
+            CostingEntry::ReadSubstate { size } => self.fixed_medium + 100 * size,
+            CostingEntry::WriteSubstate { size } => self.fixed_medium + 1000 * size,
+            CostingEntry::DropLock => self.fixed_high,
         }
     }
 }

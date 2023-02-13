@@ -1,5 +1,6 @@
 use crate::errors::*;
 use crate::kernel::*;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -18,7 +19,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::logger::*;
-use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 
@@ -47,14 +47,11 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
-pub trait KernelNodeApi {
-    fn lock_fee(
-        &mut self,
-        vault_id: VaultId,
-        fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, RuntimeError>; // TODO: move
+pub trait KernelActorApi<E> {
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+}
 
+pub trait KernelNodeApi {
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
@@ -74,6 +71,29 @@ pub trait KernelNodeApi {
         init: RENodeInit,
         node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError>;
+}
+
+/// Internal API for kernel modules.
+/// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
+pub trait KernelInternalApi {
+    fn get_module_state(&mut self) -> &mut KernelModuleMixer;
+    fn get_current_depth(&self) -> usize;
+    fn get_current_actor(&self) -> ResolvedActor;
+
+    /* Temporary interface, specifically for `ExecutionTrace` kernel module */
+    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
+}
+
+#[repr(u8)]
+pub enum KernelModuleId {
+    KernelDebug,
+    Costing,
+    NodeMove,
+    Auth,
+    Logger,
+    TransactionRuntime,
+    ExecutionTrace,
 }
 
 pub trait KernelSubstateApi {
@@ -245,6 +265,8 @@ pub trait KernelInvokeApi<E>:
 
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
+    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
 {
 }
+
+pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}

@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::BufferId;
 
 use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
-use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
@@ -134,7 +134,7 @@ pub enum WasmRuntimeError {
     /// Invalid component address
     InvalidComponentAddress(DecodeError),
     /// Costing error
-    CostingError(FeeReserveError),
+    FeeReserveError(FeeReserveError),
 }
 
 impl SelfError for WasmRuntimeError {
@@ -146,7 +146,7 @@ impl SelfError for WasmRuntimeError {
 impl CanBeAbortion for WasmRuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            WasmRuntimeError::CostingError(err) => err.abortion(),
+            WasmRuntimeError::FeeReserveError(err) => err.abortion(),
             _ => None,
         }
     }

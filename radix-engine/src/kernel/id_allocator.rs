@@ -2,9 +2,8 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
-    NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId,
-    VaultId,
+    AccessControllerId, BucketId, ComponentId, GlobalAddress, KeyValueStoreId, NonFungibleStoreId,
+    PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -33,11 +32,11 @@ impl IdAllocator {
         }
     }
 
-    pub fn pre_execute_invocation(&mut self) {
+    pub fn push(&mut self) {
         self.frame_allocated_ids.push(BTreeSet::new());
     }
 
-    pub fn post_execute_invocation(&mut self) -> Result<(), RuntimeError> {
+    pub fn pop(&mut self) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.pop().expect("No frame found");
         if !ids.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
@@ -229,10 +228,6 @@ impl IdAllocator {
         let next_id = self.next_entity_id(EntityType::Resource)?;
         data.extend(next_id.to_le_bytes());
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
-    }
-
-    pub fn new_fee_reserve_id(&mut self) -> Result<FeeReserveId, IdAllocationError> {
-        Ok(self.next()?)
     }
 
     /// Creates a new bucket ID.
