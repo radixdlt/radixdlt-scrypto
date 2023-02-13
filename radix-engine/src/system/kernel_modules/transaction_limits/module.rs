@@ -27,7 +27,7 @@ impl TransactionLimitsModule {
         TransactionLimitsModule {
             max_wasm_memory,
             max_wasm_instance_memory,
-            wasm_memory: Vec::new(),
+            wasm_memory: Vec::with_capacity(8),
         }
     }
 
@@ -85,6 +85,7 @@ impl<R: FeeReserve> BaseModule<R> for TransactionLimitsModule {
     ) -> Result<(), ModuleError> {
         // pop from stack
         self.wasm_memory.pop();
+
         Ok(())
     }
 
@@ -95,16 +96,14 @@ impl<R: FeeReserve> BaseModule<R> for TransactionLimitsModule {
         _track: &mut Track<R>,
         consumed_memory: usize,
     ) -> Result<(), ModuleError> {
-        // update current frame consumed memory value
-        if self.wasm_memory.len() == call_frame.depth {
-            // this is executed when no nested calls occured during WASM execution
-            self.wasm_memory.push(consumed_memory)
-        } else if call_frame.depth < self.wasm_memory.len() {
-            // this is executed when there was nested call during WASM execution
-            // new stack memory vale was pushed in pre_execute_invocation()
-            self.wasm_memory[call_frame.depth] = consumed_memory;
+        // update current frame consumed memory value after WASM invokation is done
+        if let Some(val) = self.wasm_memory.get_mut(call_frame.depth) {
+            *val = consumed_memory;
         } else {
-            panic!("Wrong WASM memory stack size.")
+            // When kernel pops the call frame there are some nested calls which
+            // are not aligned with pre_execute_invocation() which requires pushing
+            // new value on a stack instead of updating it.
+            self.wasm_memory.push(consumed_memory)
         }
 
         self.validate()
