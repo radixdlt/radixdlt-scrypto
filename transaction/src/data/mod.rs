@@ -40,12 +40,22 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_interface::{
+        api::types::{ComponentAddress, PackageAddress},
+        blueprints::resource::{NonFungibleLocalId, ResourceAddress},
+        constants::RADIX_TOKEN,
+        math::{Decimal, PreciseDecimal},
+    };
+
     use super::model::*;
+    use crate::data::{manifest_decode, manifest_encode};
     use crate::*;
 
-    #[derive(ManifestCategorize, ManifestEncode, ManifestDecode)]
+    #[derive(ManifestCategorize, ManifestEncode, ManifestDecode, PartialEq, Eq, Debug)]
     struct TestStruct {
         a: ManifestAddress,
+        b: ManifestAddress,
+        c: ManifestAddress,
         d: ManifestBucket,
         e: ManifestProof,
         f: ManifestExpression,
@@ -57,5 +67,64 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_and_decode() {}
+    fn test_encode_and_decode() {
+        let t = TestStruct {
+            a: ManifestAddress(
+                PackageAddress::Normal([1u8; 26])
+                    .to_vec()
+                    .try_into()
+                    .unwrap(),
+            ),
+            b: ManifestAddress(
+                ComponentAddress::Normal([2u8; 26])
+                    .to_vec()
+                    .try_into()
+                    .unwrap(),
+            ),
+            c: ManifestAddress(
+                ResourceAddress::Normal([3u8; 26])
+                    .to_vec()
+                    .try_into()
+                    .unwrap(),
+            ),
+            d: ManifestBucket(4),
+            e: ManifestProof(5),
+            f: ManifestExpression::EntireAuthZone,
+            g: ManifestBlobRef([6u8; 32]),
+            h: ManifestDecimal(Decimal::from(7u32)),
+            i: ManifestPreciseDecimal(PreciseDecimal::from(8u32)),
+            j: ManifestNonFungibleLocalId(NonFungibleLocalId::String("abc".to_owned())),
+            k: ManifestNonFungibleGlobalId(RADIX_TOKEN, NonFungibleLocalId::Integer(9)),
+        };
+
+        let bytes = manifest_encode(&t).unwrap();
+        assert_eq!(
+            bytes,
+            vec![
+                77, // prefix
+                33, // struct
+                11, // field length
+                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, // address
+                128, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, // address
+                128, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, // address
+                129, 4, 0, 0, 0, // bucket
+                130, 5, 0, 0, 0, // proof
+                131, 1, // expression
+                132, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, // blob
+                133, 0, 0, 188, 147, 233, 254, 36, 97, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, // decimal
+                134, 0, 0, 0, 0, 0, 0, 0, 0, 8, 248, 80, 251, 37, 107, 199, 113, 107, 191, 60, 213,
+                166, 207, 255, 73, 31, 120, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // global id
+                135, 0, 3, 97, 98, 99, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 9 // local id
+            ]
+        );
+        let decoded: TestStruct = manifest_decode(&bytes).unwrap();
+        assert_eq!(decoded, t);
+    }
 }

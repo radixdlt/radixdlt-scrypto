@@ -10,7 +10,7 @@ use crate::data::*;
 use crate::manifest_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestDecimal(Decimal);
+pub struct ManifestDecimal(pub Decimal);
 
 //========
 // error

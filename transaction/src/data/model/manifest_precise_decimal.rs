@@ -10,7 +10,7 @@ use crate::data::*;
 use crate::manifest_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestPreciseDecimal(PreciseDecimal);
+pub struct ManifestPreciseDecimal(pub PreciseDecimal);
 
 //========
 // error
@@ -55,5 +55,5 @@ impl ManifestPreciseDecimal {
 manifest_type!(
     ManifestPreciseDecimal,
     ManifestCustomValueKind::PreciseDecimal,
-    32
+    64
 );

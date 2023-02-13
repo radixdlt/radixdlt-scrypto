@@ -9,7 +9,7 @@ use sbor::*;
 use crate::data::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestNonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
+pub struct ManifestNonFungibleGlobalId(pub ResourceAddress, pub NonFungibleLocalId);
 
 //========
 // error
@@ -68,7 +68,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
         value_kind: ValueKind<ManifestCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let resource_address = ResourceAddress::try_from(decoder.read_slice(26)?)
+        let resource_address = ResourceAddress::try_from(decoder.read_slice(27)?)
             .map_err(|_| DecodeError::InvalidCustomValue)?;
         let local_id = NonFungibleLocalId::decode_body_common(decoder)?;
         Ok(Self(resource_address, local_id))

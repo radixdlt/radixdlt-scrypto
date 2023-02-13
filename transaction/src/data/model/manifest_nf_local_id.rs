@@ -6,7 +6,7 @@ use sbor::*;
 use crate::data::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestNonFungibleLocalId(NonFungibleLocalId);
+pub struct ManifestNonFungibleLocalId(pub NonFungibleLocalId);
 
 //========
 // error

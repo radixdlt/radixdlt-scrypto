@@ -9,7 +9,7 @@ use crate::data::*;
 use crate::manifest_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestBlobRef([u8; 32]);
+pub struct ManifestBlobRef(pub [u8; 32]);
 
 //========
 // error

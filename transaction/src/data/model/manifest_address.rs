@@ -10,7 +10,7 @@ use crate::data::*;
 use crate::manifest_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestAddress([u8; 26]);
+pub struct ManifestAddress(pub [u8; 27]);
 
 //========
 // error
@@ -41,7 +41,7 @@ impl TryFrom<&[u8]> for ManifestAddress {
     type Error = ParseManifestAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 26 {
+        if slice.len() != 27 {
             return Err(Self::Error::InvalidLength);
         }
         EntityType::try_from(slice[0]).map_err(|_| Self::Error::InvalidEntityTypeId)?;
@@ -55,4 +55,4 @@ impl ManifestAddress {
     }
 }
 
-manifest_type!(ManifestAddress, ManifestCustomValueKind::Address, 32);
+manifest_type!(ManifestAddress, ManifestCustomValueKind::Address, 27);
