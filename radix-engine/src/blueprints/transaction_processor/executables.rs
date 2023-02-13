@@ -546,8 +546,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
-                    let rtn = api.call_native(ResourceManagerBurnBucketInvocation { bucket })?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = api.call_function(
+                        RESOURCE_MANAGER_PACKAGE,
+                        RESOURCE_MANAGER_BLUEPRINT,
+                        RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                        scrypto_encode(&ResourceManagerBurnBucketInput {
+                            bucket
+                        }).unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintFungible {
                     resource_address,

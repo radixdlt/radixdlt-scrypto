@@ -48,33 +48,6 @@ pub enum ResourceManagerError {
     InvalidNonFungibleIdType,
 }
 
-impl ExecutableInvocation for ResourceManagerBurnBucketInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
-        let actor =
-            ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::BurnBucket));
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for ResourceManagerBurnBucketInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
-    {
-        let bucket = Bucket(self.bucket.0);
-        bucket.sys_burn(env)?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
@@ -232,7 +205,7 @@ fn build_substates(
     );
 
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
         burn_access_rule,
         burn_mutability,
     );
@@ -244,7 +217,7 @@ fn build_substates(
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateBucket)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -261,7 +234,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateVault)),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -505,6 +478,14 @@ impl ResourceManagerNativePackage {
                 }
                 Self::create_fungible_with_initial_supply_and_address(input, api)
             }
+            RESOURCE_MANAGER_BURN_BUCKET_IDENT => {
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                Self::burn_bucket(input, api)
+            }
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -522,6 +503,24 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::mint_fungible(receiver, input, api)
+            }
+            RESOURCE_MANAGER_BURN_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::burn(receiver, input, api)
+            }
+            RESOURCE_MANAGER_CREATE_BUCKET_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::create_bucket(receiver, input, api)
+            }
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::create_vault(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -875,6 +874,26 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
+    fn burn_bucket<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerBurnBucketInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        input.bucket.sys_burn(api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
     fn mint_non_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
@@ -1130,101 +1149,37 @@ impl ResourceManagerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
-}
 
-fn create_fungible_resource_manager<Y>(
-    global_node_id: RENodeId,
-    divisibility: u8,
-    metadata: BTreeMap<String, String>,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    api: &mut Y,
-) -> Result<ResourceAddress, RuntimeError>
-where
-    Y: KernelNodeApi + KernelSubstateApi,
-{
-    let resource_address: ResourceAddress = global_node_id.into();
-
-    let resource_manager_substate = ResourceManagerSubstate::new(
-        ResourceType::Fungible { divisibility },
-        None,
-        resource_address,
-    );
-    let (access_rules_substate, vault_substate) = build_substates(access_rules);
-    let metadata_substate = MetadataSubstate { metadata };
-
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
-        NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules,
-        RENodeModuleInit::AccessRulesChain(access_rules_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules1,
-        RENodeModuleInit::AccessRulesChain(vault_substate),
-    );
-
-    let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-    api.create_node(
-        underlying_node_id,
-        RENodeInit::ResourceManager(resource_manager_substate),
-        node_modules,
-    )?;
-    api.create_node(
-        global_node_id,
-        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
-        BTreeMap::new(),
-    )?;
-
-    Ok(resource_address)
-}
-
-pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
-
-impl ExecutableInvocation for ResourceManagerBurnInvocation {
-    type Exec = ResourceManagerBurnExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::Burn),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ResourceManagerBurnExecutable {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    fn burn<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let input: ResourceManagerBurnInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket: BucketSubstate = system_api.drop_node(RENodeId::Bucket(self.1 .0))?.into();
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let bucket: BucketSubstate = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
 
         // Check if resource matches
         // TODO: Move this check into actor check
         {
-            let substate_ref = system_api.get_ref(resman_handle)?;
+            let substate_ref = api.get_ref(resman_handle)?;
             let resource_manager = substate_ref.resource_manager();
             if bucket.resource_address() != resource_manager.resource_address {
                 return Err(RuntimeError::ApplicationError(
@@ -1240,13 +1195,13 @@ impl Executor for ResourceManagerBurnExecutable {
 
         // Update total supply
         {
-            let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             resource_manager.total_supply -= bucket.total_amount();
         }
 
         // Burn non-fungible
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         if let Some(nf_store_id) = resource_manager.nf_store_id {
             let node_id = RENodeId::NonFungibleStore(nf_store_id);
@@ -1256,21 +1211,105 @@ impl Executor for ResourceManagerBurnExecutable {
                 .expect("Failed to list non-fungible IDs on non-fungible Bucket")
             {
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                let non_fungible_handle = system_api.lock_substate(
+                let non_fungible_handle = api.lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     offset,
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
                 *non_fungible_mut = NonFungibleSubstate(None);
-                system_api.drop_lock(non_fungible_handle)?;
+                api.drop_lock(non_fungible_handle)?;
             }
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn create_bucket<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let _input: ResourceManagerCreateBucketInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let container = Resource::new_empty(
+            resource_manager.resource_address,
+            resource_manager.resource_type,
+        );
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+    fn create_vault<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let _input: ResourceManagerCreateVaultInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle =
+            api.lock_substate(
+                RENodeId::ResourceManager(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                LockFlags::MUTABLE,
+            )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let resource = Resource::new_empty(
+            resource_manager.resource_address,
+            resource_manager.resource_type,
+        );
+
+        let node_id = api.allocate_node_id(RENodeType::Vault)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
+            BTreeMap::new(),
+        )?;
+        let vault_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
 }
 
@@ -1450,127 +1489,6 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
         Ok(((), CallFrameUpdate::empty()))
     }
 }
-
-impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
-    type Exec = ResourceManagerCreateVaultExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::CreateVault),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerCreateVaultExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerCreateVaultExecutable(RENodeId);
-
-impl Executor for ResourceManagerCreateVaultExecutable {
-    type Output = Own;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Own, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let substate_ref = api.get_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
-        let resource = Resource::new_empty(
-            resource_manager.resource_address,
-            resource_manager.resource_type,
-        );
-
-        let node_id = api.allocate_node_id(RENodeType::Vault)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
-            BTreeMap::new(),
-        )?;
-        let vault_id = node_id.into();
-
-        Ok((
-            Own::Vault(vault_id),
-            CallFrameUpdate::move_node(RENodeId::Vault(vault_id)),
-        ))
-    }
-}
-
-impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
-    type Exec = ResourceManagerCreateBucketExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::CreateBucket),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerCreateBucketExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerCreateBucketExecutable(RENodeId);
-
-impl Executor for ResourceManagerCreateBucketExecutable {
-    type Output = Bucket;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let substate_ref = api.get_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
-        let container = Resource::new_empty(
-            resource_manager.resource_address,
-            resource_manager.resource_type,
-        );
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
-    }
-}
-
 
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = ResourceManagerGetResourceTypeExecutable;
@@ -1865,4 +1783,53 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
             ));
         }
     }
+}
+
+fn create_fungible_resource_manager<Y>(
+    global_node_id: RENodeId,
+    divisibility: u8,
+    metadata: BTreeMap<String, String>,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    api: &mut Y,
+) -> Result<ResourceAddress, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+{
+    let resource_address: ResourceAddress = global_node_id.into();
+
+    let resource_manager_substate = ResourceManagerSubstate::new(
+        ResourceType::Fungible { divisibility },
+        None,
+        resource_address,
+    );
+    let (access_rules_substate, vault_substate) = build_substates(access_rules);
+    let metadata_substate = MetadataSubstate { metadata };
+
+    let mut node_modules = BTreeMap::new();
+    node_modules.insert(
+        NodeModuleId::Metadata,
+        RENodeModuleInit::Metadata(metadata_substate),
+    );
+    node_modules.insert(
+        NodeModuleId::AccessRules,
+        RENodeModuleInit::AccessRulesChain(access_rules_substate),
+    );
+    node_modules.insert(
+        NodeModuleId::AccessRules1,
+        RENodeModuleInit::AccessRulesChain(vault_substate),
+    );
+
+    let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+    api.create_node(
+        underlying_node_id,
+        RENodeInit::ResourceManager(resource_manager_substate),
+        node_modules,
+    )?;
+    api.create_node(
+        global_node_id,
+        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        BTreeMap::new(),
+    )?;
+
+    Ok(resource_address)
 }

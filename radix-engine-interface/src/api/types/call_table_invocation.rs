@@ -129,11 +129,7 @@ pub enum AuthZoneStackInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceInvocation {
-    BurnBucket(ResourceManagerBurnBucketInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
-    Burn(ResourceManagerBurnInvocation),
-    CreateBucket(ResourceManagerCreateBucketInvocation),
-    CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
     SetVaultAuthMutability(ResourceManagerSetVaultAuthMutabilityInvocation),
     GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
@@ -285,28 +281,12 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::BurnBucket(..) => {}
-                ResourceInvocation::Burn(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
                 ResourceInvocation::UpdateVaultAuth(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
                 }
                 ResourceInvocation::SetVaultAuthMutability(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::CreateVault(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::CreateBucket(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
@@ -421,11 +401,7 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::ResourceManager(i) => match i {
-                ResourceInvocation::BurnBucket(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::Burn(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::CreateBucket(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::CreateVault(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::UpdateVaultAuth(i) => (get_native_fn(i), scrypto_encode(i)),
                 ResourceInvocation::SetVaultAuthMutability(i) => {
                     (get_native_fn(i), scrypto_encode(i))

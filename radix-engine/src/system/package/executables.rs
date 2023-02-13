@@ -9,13 +9,14 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{
-    Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
+    Bucket, VaultGetAmountInvocation, VaultTakeInvocation,
 };
 
 pub struct Package;
@@ -140,13 +141,9 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError> + ClientComponentApi<RuntimeError>,
     {
-        let royalty_vault_id = api
-            .call_native(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
         let blueprint_abis =
             scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {

@@ -22,7 +22,7 @@ fn dangling_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Application,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
@@ -51,7 +51,7 @@ fn dangling_bucket_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Application,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
@@ -80,7 +80,7 @@ fn dangling_vault_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Application,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
@@ -131,7 +131,7 @@ fn dangling_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Application,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
@@ -165,7 +165,7 @@ fn dangling_bucket_with_proof_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Application,
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),

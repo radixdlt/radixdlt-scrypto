@@ -1,7 +1,6 @@
 use crate::address::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::scrypto_type;
@@ -141,12 +140,14 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
 }
 
+pub const RESOURCE_MANAGER_BURN_BUCKET_IDENT: &str = "burn_bucket";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerBurnBucketInvocation {
+pub struct ResourceManagerBurnBucketInput {
     pub bucket: Bucket,
 }
 
-impl Clone for ResourceManagerBurnBucketInvocation {
+impl Clone for ResourceManagerBurnBucketInput {
     fn clone(&self) -> Self {
         Self {
             bucket: Bucket(self.bucket.0),
@@ -154,63 +155,23 @@ impl Clone for ResourceManagerBurnBucketInvocation {
     }
 }
 
-impl Invocation for ResourceManagerBurnBucketInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::BurnBucket))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerBurnBucketInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::BurnBucket)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerBurnBucketInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::BurnBucket(self)).into()
-    }
-}
+pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerBurnInvocation {
-    pub receiver: ResourceAddress,
+pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
-impl Clone for ResourceManagerBurnInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            bucket: Bucket(self.bucket.0),
-        }
-    }
+pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateVaultInput {
 }
 
-impl Invocation for ResourceManagerBurnInvocation {
-    type Output = ();
+pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerBurnInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::Burn)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerBurnInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::Burn(self)).into()
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateBucketInput {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -275,59 +236,6 @@ impl Into<CallTableInvocation> for ResourceManagerSetVaultAuthMutabilityInvocati
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateVaultInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerCreateVaultInvocation {
-    type Output = Own;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateVault))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
-    type ScryptoOutput = Own;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateVault)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateVaultInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateVault(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateBucketInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerCreateBucketInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateBucket))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerCreateBucketInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::CreateBucket)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerCreateBucketInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateBucket(self)).into()
-    }
-}
 
 pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE: &str = "mint_non_fungible";
 

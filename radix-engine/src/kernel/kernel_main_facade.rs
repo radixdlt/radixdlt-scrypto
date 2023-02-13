@@ -79,7 +79,7 @@ where
             node_id,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeVisibility {
+                KernelError::InvalidDropNodeAccess {
                     mode: current_mode,
                     actor: self.current_frame.actor.clone(),
                     node_id,
@@ -130,14 +130,14 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_create_node_visibility(
+        if !VisibilityProperties::check_create_node_access(
             current_mode,
             &self.current_frame.actor,
             &re_node,
             &module_init,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidCreateNodeVisibility {
+                KernelError::InvalidCreateNodeAccess {
                     mode: current_mode,
                     actor: self.current_frame.actor.clone(),
                 },

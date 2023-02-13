@@ -4,6 +4,7 @@ use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
@@ -187,12 +188,16 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(ResourceManagerBurnInvocation {
-            receiver: self.0,
-            bucket,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_BURN_IDENT,
+            scrypto_encode(&ResourceManagerBurnInput {
+                bucket,
+            }).unwrap()
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
@@ -204,8 +209,25 @@ impl ResourceManager {
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E>,
+        Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(ResourceManagerCreateBucketInvocation { receiver: self.0 })
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap()
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
+        where
+            Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+    {
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
+            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap()
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }

@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
-use radix_engine_interface::data::ScryptoCustomValueKind;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;
 use sbor::rust::collections::BTreeSet;
@@ -104,13 +104,13 @@ impl ScryptoVault for Vault {
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        Self(
-            env.call_native(ResourceManagerCreateVaultInvocation {
-                receiver: resource_address,
-            })
-            .unwrap()
-            .vault_id(),
-        )
+        let rtn = env.call_method(
+            ScryptoReceiver::Resource(resource_address),
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
+            scrypto_encode(&ResourceManagerCreateVaultInput {
+            }).unwrap(),
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     scrypto_env_native_fn! {

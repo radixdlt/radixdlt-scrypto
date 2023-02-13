@@ -222,27 +222,11 @@ where
         },
         NativeInvocation::ResourceManager(resource_manager_invocation) => {
             match resource_manager_invocation {
-                ResourceInvocation::BurnBucket(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::Burn(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 ResourceInvocation::UpdateVaultAuth(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
                 ResourceInvocation::SetVaultAuthMutability(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateVault(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::CreateBucket(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }

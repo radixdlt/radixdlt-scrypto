@@ -122,10 +122,13 @@ impl FeeTable {
                     RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
                         self.fixed_high
                     }
-
                     RESOURCE_MANAGER_MINT_NON_FUNGIBLE => self.fixed_high,
                     RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE => self.fixed_high,
                     RESOURCE_MANAGER_MINT_FUNGIBLE => self.fixed_high,
+                    RESOURCE_MANAGER_BURN_BUCKET_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_BURN_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_CREATE_VAULT_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_CREATE_BUCKET_IDENT => self.fixed_medium,
                     _ => self.fixed_low,
                 }
             }
@@ -233,17 +236,13 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::SetVaultAuthMutability => self.fixed_medium,
-                ResourceManagerFn::CreateVault => self.fixed_medium,
-                ResourceManagerFn::CreateBucket => self.fixed_medium,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
                 ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,
                 ResourceManagerFn::NonFungibleExists => self.fixed_low,
                 ResourceManagerFn::GetNonFungible => self.fixed_medium,
-                ResourceManagerFn::Burn => self.fixed_medium,
             },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
                 WorktopFn::Put => self.fixed_medium,

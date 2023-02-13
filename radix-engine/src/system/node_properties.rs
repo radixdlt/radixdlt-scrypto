@@ -50,7 +50,10 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Bucket(..))
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address: RESOURCE_MANAGER_PACKAGE, ..
+                    })
+                    | FnIdentifier::Native(NativeFn::Bucket(..))
                     | FnIdentifier::Native(NativeFn::Worktop(..))
                     | FnIdentifier::Native(NativeFn::ResourceManager(..))
                     | FnIdentifier::Native(NativeFn::Vault(..)) => true,
@@ -71,7 +74,7 @@ impl VisibilityProperties {
         }
     }
 
-    pub fn check_create_node_visibility(
+    pub fn check_create_node_access(
         mode: ExecutionMode,
         actor: &ResolvedActor,
         node: &RENodeInit,
@@ -98,6 +101,7 @@ impl VisibilityProperties {
                     }
                 }
                 RENodeInit::ResourceManager(..)
+                | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
                 | RENodeInit::NonFungibleStore(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE)

@@ -1,7 +1,8 @@
-use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::types::{ScryptoReceiver, VaultId};
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -14,15 +15,17 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        let vault_id = api
-            .call_native(ResourceManagerCreateVaultInvocation {
-                receiver: resource_address,
-            })?
-            .vault_id();
+        let rtn = api.call_method(
+            ScryptoReceiver::Resource(resource_address),
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
+            scrypto_encode(&ResourceManagerCreateVaultInput {
+            }).unwrap()
+        )?;
 
-        Ok(Self(vault_id))
+        let own: Own = scrypto_decode(&rtn).unwrap();
+        Ok(Self(own.vault_id()))
     }
 
     pub fn sys_put<Y, E: Debug + ScryptoDecode>(

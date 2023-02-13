@@ -1,3 +1,4 @@
+use native_sdk::resource::ResourceManager;
 use super::Invokable;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
@@ -192,11 +193,7 @@ where
         let node_id = self.allocate_node_id(RENodeType::Package)?;
 
         // Create a royalty vault
-        let royalty_vault_id = self
-            .invoke(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
 
         // Create royalty substates
         let royalty_config_substate = PackageRoyaltyConfigSubstate { royalty_config };
@@ -326,11 +323,7 @@ where
         let node_id = self.allocate_node_id(RENodeType::Component)?;
 
         // Create a royalty vault
-        let royalty_vault_id = self
-            .invoke(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
 
         // Create royalty substates
         let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };

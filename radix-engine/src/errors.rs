@@ -153,12 +153,12 @@ pub enum KernelError {
     InvalidId(RENodeId),
 
     // Actor Constraints
-    InvalidDropNodeVisibility {
+    InvalidDropNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,
     },
-    InvalidCreateNodeVisibility {
+    InvalidCreateNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
     },

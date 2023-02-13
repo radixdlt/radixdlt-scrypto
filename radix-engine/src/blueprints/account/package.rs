@@ -11,7 +11,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
@@ -406,6 +406,7 @@ impl AccountNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
@@ -482,6 +483,7 @@ impl AccountNativePackage {
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess

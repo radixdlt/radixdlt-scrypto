@@ -272,16 +272,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::ResourceManager(resource_manager_fn) => match resource_manager_fn {
-            ResourceManagerFn::BurnBucket => {
-                let invocation = scrypto_decode::<ResourceManagerBurnBucketInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::Burn => {
-                let invocation = scrypto_decode::<ResourceManagerBurnInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ResourceManagerFn::UpdateVaultAuth => {
                 let invocation =
                     scrypto_decode::<ResourceManagerUpdateVaultAuthInvocation>(&invocation)
@@ -291,18 +281,6 @@ pub fn resolve_native(
             ResourceManagerFn::SetVaultAuthMutability => {
                 let invocation =
                     scrypto_decode::<ResourceManagerSetVaultAuthMutabilityInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateVault => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerCreateVaultInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ResourceManagerFn::CreateBucket => {
-                let invocation =
-                    scrypto_decode::<ResourceManagerCreateBucketInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

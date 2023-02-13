@@ -59,7 +59,7 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
+            key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
             rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
@@ -135,7 +135,7 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
+            key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -231,12 +231,20 @@ impl ResourceManager {
                 id: id.clone()
             }
         }
-        pub fn burn(&mut self, bucket: Bucket) -> () {
-            ResourceManagerBurnInvocation {
-                receiver: self.0,
+    }
+
+    pub fn burn(&mut self, bucket: Bucket) -> () {
+        let mut env = ScryptoEnv;
+
+        let rtn = env.call_method(
+            ScryptoReceiver::Resource(self.0),
+            RESOURCE_MANAGER_BURN_IDENT,
+            scrypto_encode(&ResourceManagerBurnInput {
                 bucket: Bucket(bucket.0),
-            }
-        }
+            }).unwrap()
+        ).unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Mints fungible resources
