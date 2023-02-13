@@ -20,10 +20,16 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
 
-use super::AccountSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::data::ScryptoValue;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccountSubstate {
+    /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault
+    /// containing that resource.
+    pub vaults: Own,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccountError {

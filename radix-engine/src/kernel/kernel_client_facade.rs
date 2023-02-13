@@ -398,8 +398,7 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        self
-            .invoke(invocation)
+        self.invoke(invocation)
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 

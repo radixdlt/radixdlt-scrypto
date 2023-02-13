@@ -4,9 +4,7 @@ use crate::{
     kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
-use radix_engine_interface::api::{
-    types::{ScryptoInvocation, ScryptoReceiver},
-};
+use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     receiver: ScryptoReceiver,
@@ -15,12 +13,14 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     api: &mut Y,
 ) -> Result<ScryptoInvocation, RuntimeError> {
     let node_id = match receiver {
-        ScryptoReceiver::Global(component_address) => RENodeId::Global(GlobalAddress::Component(component_address)),
+        ScryptoReceiver::Global(component_address) => {
+            RENodeId::Global(GlobalAddress::Component(component_address))
+        }
         ScryptoReceiver::Component(component_id) => {
             // TODO: Fix this as this is wrong id for native components
             // TODO: Will be easier to fix this when local handles are implemented
             RENodeId::Component(component_id)
-        },
+        }
     };
 
     let component_info = {

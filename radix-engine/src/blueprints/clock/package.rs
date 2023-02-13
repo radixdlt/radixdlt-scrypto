@@ -23,7 +23,10 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
-use super::CurrentTimeRoundedToMinutesSubstate;
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+pub struct CurrentTimeRoundedToMinutesSubstate {
+    pub current_time_rounded_to_minutes_ms: i64,
+}
 
 const SECONDS_TO_MS_FACTOR: i64 = 1000;
 const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
