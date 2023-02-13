@@ -71,7 +71,7 @@ fn test_basic_transfer() {
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
         + 60500 /* LockSubstate */
-        + 205000 /* ReadSubstate */
+        + 197500 /* ReadSubstate */
         + 21500 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -199,12 +199,12 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         25000 /* CreateNode */
-        + 104500 /* DropLock */
+        + 105000 /* DropLock */
         + 15000 /* DropNode */
         + 261382 /* InstantiateWasm */
         + 19000 /* Invoke */
-        + 144000 /* LockSubstate */
-        + 477500 /* ReadSubstate */
+        + 145000 /* LockSubstate */
+        + 472500 /* ReadSubstate */
         + 49500 /* RunNative */
         + 1583005 /* RunWasm */
         + 50000 /* TxBaseCost */

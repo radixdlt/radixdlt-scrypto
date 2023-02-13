@@ -125,36 +125,8 @@ impl ExecutableInvocation for ScryptoInvocation {
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
-                let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
-                let handle = api.lock_substate(
-                    package_global,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
-                    LockFlags::read_only(),
-                )?;
-
-                // TODO Remove this, should be able to get references to these based on addresses in PackageInfo
-                {
-                    let substate_ref = api.get_ref(handle)?;
-                    let info = substate_ref.package_info(); // TODO: Remove clone()
-                    for dependent_resource in &info.dependent_resources {
-                        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-                            *dependent_resource,
-                        )));
-                    }
-
-                    for dependent_component in &info.dependent_components {
-                        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(
-                            *dependent_component,
-                        )));
-                    }
-                }
-
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
-
-                api.drop_lock(handle)?;
-
                 self.fn_name.to_string() // TODO: Clean this up
             }
             TypeInfoSubstate::WasmPackage => {
@@ -277,6 +249,17 @@ impl Executor for ScryptoExecutor {
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
+        // Make dependent resources/components visible
+        {
+            let handle = api.lock_substate(
+                RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            api.drop_lock(handle)?;
+        }
+
         let handle = api.lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
             NodeModuleId::PackageTypeInfo,
