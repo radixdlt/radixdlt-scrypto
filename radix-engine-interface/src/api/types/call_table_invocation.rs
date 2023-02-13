@@ -130,12 +130,8 @@ pub enum AuthZoneStackInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceInvocation {
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
-    UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
-    SetVaultAuthMutability(ResourceManagerSetVaultAuthMutabilityInvocation),
     GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
-    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
-    NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -281,32 +277,12 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::UpdateVaultAuth(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::SetVaultAuthMutability(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
                 ResourceInvocation::GetResourceType(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
                 }
                 ResourceInvocation::GetTotalSupply(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::UpdateNonFungibleData(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                        invocation.receiver,
-                    )));
-                }
-                ResourceInvocation::NonFungibleExists(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
@@ -402,16 +378,8 @@ impl NativeInvocation {
             },
             NativeInvocation::ResourceManager(i) => match i {
                 ResourceInvocation::GetResourceType(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::UpdateVaultAuth(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::SetVaultAuthMutability(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 ResourceInvocation::GetTotalSupply(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::UpdateNonFungibleData(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 ResourceInvocation::GetNonFungible(i) => (get_native_fn(i), scrypto_encode(i)),
-                ResourceInvocation::NonFungibleExists(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Bucket(i) => match i {
                 BucketInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),

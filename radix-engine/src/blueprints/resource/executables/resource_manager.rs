@@ -23,9 +23,9 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi};
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -47,7 +47,6 @@ pub enum ResourceManagerError {
     ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
 }
-
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
@@ -210,9 +209,7 @@ fn build_substates(
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::UpdateNonFungibleData,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string()),
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
@@ -239,9 +236,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::NonFungibleExists,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -251,16 +246,12 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::UpdateVaultAuth,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string()),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::SetVaultAuthMutability,
-        )),
+        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string()),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
@@ -414,8 +405,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -429,7 +420,7 @@ impl ResourceManagerNativePackage {
                     ));
                 }
                 Self::create_non_fungible(input, api)
-            },
+            }
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -461,7 +452,7 @@ impl ResourceManagerNativePackage {
                     ));
                 }
                 Self::create_fungible(input, api)
-            },
+            }
             RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -522,6 +513,30 @@ impl ResourceManagerNativePackage {
                 ))?;
                 Self::create_vault(receiver, input, api)
             }
+            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::update_vault_auth(receiver, input, api)
+            }
+            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::set_vault_auth_mutability(receiver, input, api)
+            }
+            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::update_non_fungible_data(receiver, input, api)
+            }
+            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::non_fungible_exists(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -532,8 +547,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -559,8 +574,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -591,8 +606,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -661,8 +676,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -728,8 +743,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -755,8 +770,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
@@ -815,8 +830,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -874,12 +889,9 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    fn burn_bucket<Y>(
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    fn burn_bucket<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -899,8 +911,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -910,13 +922,12 @@ impl ResourceManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let (resource, non_fungibles) = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1016,14 +1027,13 @@ impl ResourceManagerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-
     fn mint_uuid_non_fungible<Y>(
         receiver: ResourceManagerId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -1033,13 +1043,12 @@ impl ResourceManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let bucket_id = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1112,8 +1121,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -1123,13 +1132,12 @@ impl ResourceManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let resource = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
@@ -1155,24 +1163,22 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let input: ResourceManagerBurnInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: ResourceManagerBurnInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let bucket: BucketSubstate = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
 
@@ -1211,12 +1217,8 @@ impl ResourceManagerNativePackage {
                 .expect("Failed to list non-fungible IDs on non-fungible Bucket")
             {
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                let non_fungible_handle = api.lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::MUTABLE,
-                )?;
+                let non_fungible_handle =
+                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
                 let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
@@ -1233,8 +1235,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -1244,13 +1246,12 @@ impl ResourceManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1275,8 +1276,8 @@ impl ResourceManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -1286,13 +1287,12 @@ impl ResourceManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle =
-            api.lock_substate(
-                RENodeId::ResourceManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                LockFlags::MUTABLE,
-            )?;
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -1311,49 +1311,25 @@ impl ResourceManagerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
-}
 
-pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
-
-impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
-    type Exec = ResourceManagerUpdateVaultAuthExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::UpdateVaultAuth),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerUpdateVaultAuthExecutable(
-            resolved_receiver.receiver,
-            self.method,
-            self.access_rule,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-// TODO: Figure out better place to do vault auth (or child node authorization)
-impl Executor for ResourceManagerUpdateVaultAuthExecutable {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
+    fn update_vault_auth<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
+        let input: ResourceManagerUpdateVaultAuthInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let handle = api.lock_substate(
-            self.0,
+            RENodeId::ResourceManager(receiver),
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
@@ -1364,7 +1340,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
             let substate_ref = api.get_ref(handle)?;
             let substate = substate_ref.access_rules_chain();
 
-            let access_rule = match self.1 {
+            let access_rule = match input.method {
                 Deposit => {
                     let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
                     substate.access_rules_chain[0].get_mutability(&key)
@@ -1383,110 +1359,180 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
         let mut substate_mut = api.get_ref_mut(handle)?;
         let substate = substate_mut.access_rules_chain();
 
-        match self.1 {
-            VaultMethodAuthKey::Deposit => {
-                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
-                substate.access_rules_chain[0].set_method_access_rule(key, self.2);
-            }
-            VaultMethodAuthKey::Withdraw => {
-                let group_key = "withdraw".to_string();
-                substate.access_rules_chain[0].set_group_access_rule(group_key, self.2);
-            }
-            VaultMethodAuthKey::Recall => {
-                let group_key = "recall".to_string();
-                substate.access_rules_chain[0].set_group_access_rule(group_key, self.2);
-            }
-        }
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
-    type Exec = ResourceManagerLockVaultAuthExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::SetVaultAuthMutability),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerLockVaultAuthExecutable(
-            resolved_receiver.receiver,
-            self.method,
-            self.mutability,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerLockVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
-
-impl Executor for ResourceManagerLockVaultAuthExecutable {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
-    {
-        let handle = api.lock_substate(
-            self.0,
-            NodeModuleId::AccessRules1,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-            LockFlags::MUTABLE,
-        )?;
-
-        // TODO: Figure out how to move this access check into more appropriate place
-        {
-            let substate_ref = api.get_ref(handle)?;
-            let substate = substate_ref.access_rules_chain();
-
-            let access_rule = match self.1 {
-                Deposit => {
-                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
-                    substate.access_rules_chain[0].get_mutability(&key)
-                }
-                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
-                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
-            }
-            .clone();
-
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
-        }
-
-        let mut substate_mut = api.get_ref_mut(handle)?;
-        let substate = substate_mut.access_rules_chain();
-
-        match self.1 {
+        match input.method {
             Deposit => {
                 let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
-                substate.access_rules_chain[0].set_mutability(key, self.2);
+                substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
             }
             Withdraw => {
                 let group_key = "withdraw".to_string();
-                substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
+                substate.access_rules_chain[0].set_group_access_rule(group_key, input.access_rule);
             }
             Recall => {
                 let group_key = "recall".to_string();
-                substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
+                substate.access_rules_chain[0].set_group_access_rule(group_key, input.access_rule);
             }
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn set_vault_auth_mutability<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerSetVaultAuthMutabilityInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::AccessRules1,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            LockFlags::MUTABLE,
+        )?;
+
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let substate_ref = api.get_ref(handle)?;
+            let substate = substate_ref.access_rules_chain();
+
+            let access_rule = match input.method {
+                Deposit => {
+                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                    substate.access_rules_chain[0].get_mutability(&key)
+                }
+                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
+                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
+            }
+            .clone();
+
+            api.call_native(AuthZoneAssertAccessRuleInvocation {
+                receiver: RENodeId::AuthZoneStack.into(),
+                access_rule,
+            })?;
+        }
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let substate = substate_mut.access_rules_chain();
+
+        match input.method {
+            Deposit => {
+                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                substate.access_rules_chain[0].set_mutability(key, input.mutability);
+            }
+            Withdraw => {
+                let group_key = "withdraw".to_string();
+                substate.access_rules_chain[0].set_group_mutability(group_key, input.mutability);
+            }
+            Recall => {
+                let group_key = "recall".to_string();
+                substate.access_rules_chain[0].set_group_mutability(group_key, input.mutability);
+            }
+        }
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn update_non_fungible_data<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerUpdateNonFungibleDataInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let nf_store_id = resource_manager
+            .nf_store_id
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
+        let resource_address = resource_manager.resource_address;
+
+        let node_id = RENodeId::NonFungibleStore(nf_store_id);
+        let offset =
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone()));
+
+        let non_fungible_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+        let non_fungible_mut = substate_mut.non_fungible();
+        if let Some(ref mut non_fungible) = non_fungible_mut.0 {
+            non_fungible.set_mutable_data(input.data);
+        } else {
+            let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, input.id);
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
+                    non_fungible_global_id,
+                )),
+            ));
+        }
+
+        api.drop_lock(non_fungible_handle)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn non_fungible_exists<Y>(
+        receiver: ResourceManagerId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: ResourceManagerNonFungibleExistsInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let resman_handle = api.lock_substate(
+            RENodeId::ResourceManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+
+        let substate_ref = api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let nf_store_id = resource_manager
+            .nf_store_id
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
+
+        let node_id = RENodeId::NonFungibleStore(nf_store_id);
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let non_fungible_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate = api.get_ref(non_fungible_handle)?;
+        let exists = substate.non_fungible().0.is_some();
+
+        Ok(IndexedScryptoValue::from_typed(&exists))
     }
 }
 
@@ -1579,140 +1625,6 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
-    type Exec = ResourceManagerUpdateNonFungibleDataExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::UpdateNonFungibleData),
-            resolved_receiver,
-        );
-        let executor = ResourceManagerUpdateNonFungibleDataExecutable(
-            resolved_receiver.receiver,
-            self.id,
-            self.data,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleLocalId, Vec<u8>);
-
-impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let substate_ref = system_api.get_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
-        let nf_store_id = resource_manager
-            .nf_store_id
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
-        let resource_address = resource_manager.resource_address;
-
-        let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset =
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1.clone()));
-
-        let non_fungible_handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-        let non_fungible_mut = substate_mut.non_fungible();
-        if let Some(ref mut non_fungible) = non_fungible_mut.0 {
-            non_fungible.set_mutable_data(self.2);
-        } else {
-            let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, self.1);
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
-                    non_fungible_global_id,
-                )),
-            ));
-        }
-
-        system_api.drop_lock(non_fungible_handle)?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
-    type Exec = ResourceManagerNonFungibleExistsExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            api,
-        )?;
-        let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::NonFungibleExists),
-            resolved_receiver,
-        );
-        let executor =
-            ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleLocalId);
-
-impl Executor for ResourceManagerNonFungibleExistsExecutable {
-    type Output = bool;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-
-        let substate_ref = system_api.get_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
-        let nf_store_id = resource_manager
-            .nf_store_id
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
-
-        let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
-        let non_fungible_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
-        let substate = system_api.get_ref(non_fungible_handle)?;
-        let exists = substate.non_fungible().0.is_some();
-
-        Ok((exists, CallFrameUpdate::empty()))
-    }
-}
-
 impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     type Exec = ResourceManagerGetNonFungibleExecutable;
 
@@ -1792,8 +1704,8 @@ fn create_fungible_resource_manager<Y>(
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+where
+    Y: KernelNodeApi + KernelSubstateApi,
 {
     let resource_address: ResourceAddress = global_node_id.into();
 

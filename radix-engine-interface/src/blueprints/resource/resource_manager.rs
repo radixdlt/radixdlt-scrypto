@@ -165,77 +165,71 @@ pub struct ResourceManagerBurnInput {
 pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateVaultInput {
-}
+pub struct ResourceManagerCreateVaultInput {}
 
 pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerCreateBucketInput {
-}
+pub struct ResourceManagerCreateBucketInput {}
+
+pub const RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT: &str = "update_vault_auth";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerUpdateVaultAuthInvocation {
-    pub receiver: ResourceAddress,
+pub struct ResourceManagerUpdateVaultAuthInput {
     pub method: VaultMethodAuthKey,
     pub access_rule: AccessRule,
 }
 
-impl Invocation for ResourceManagerUpdateVaultAuthInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::UpdateVaultAuth,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerUpdateVaultAuthInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::UpdateVaultAuth)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerUpdateVaultAuthInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::UpdateVaultAuth(self)).into()
-    }
-}
+pub const RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT: &str = "set_vault_auth_mutability";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
-    pub receiver: ResourceAddress,
+pub struct ResourceManagerSetVaultAuthMutabilityInput {
     pub method: VaultMethodAuthKey,
     pub mutability: AccessRule,
 }
 
-impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
-    type Output = ();
+pub const RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT: &str = "update_non_fungible_data";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerUpdateNonFungibleDataInput {
+    pub id: NonFungibleLocalId,
+    pub data: Vec<u8>,
+}
+
+pub const RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT: &str = "non_fungible_exists";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerNonFungibleExistsInput {
+    pub id: NonFungibleLocalId,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerGetNonFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub id: NonFungibleLocalId,
+}
+
+impl Invocation for ResourceManagerGetNonFungibleInvocation {
+    type Output = [Vec<u8>; 2];
 
     fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::SetVaultAuthMutability,
-        ))
+        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible))
     }
 }
 
-impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
-    type ScryptoOutput = ();
+impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
+    type ScryptoOutput = [Vec<u8>; 2];
 
     fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::SetVaultAuthMutability)
+        NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)
     }
 }
 
-impl Into<CallTableInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
+impl Into<CallTableInvocation> for ResourceManagerGetNonFungibleInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::SetVaultAuthMutability(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::GetNonFungible(self)).into()
     }
 }
-
 
 pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE: &str = "mint_non_fungible";
 
@@ -311,95 +305,6 @@ impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
 impl Into<CallTableInvocation> for ResourceManagerGetTotalSupplyInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::ResourceManager(ResourceInvocation::GetTotalSupply(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerUpdateNonFungibleDataInvocation {
-    pub receiver: ResourceAddress,
-    pub id: NonFungibleLocalId,
-    pub data: Vec<u8>,
-}
-
-impl Invocation for ResourceManagerUpdateNonFungibleDataInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::UpdateNonFungibleData,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::UpdateNonFungibleData)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::UpdateNonFungibleData(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerNonFungibleExistsInvocation {
-    pub receiver: ResourceAddress,
-    pub id: NonFungibleLocalId,
-}
-
-impl Invocation for ResourceManagerNonFungibleExistsInvocation {
-    type Output = bool;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(
-            ResourceManagerFn::NonFungibleExists,
-        ))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerNonFungibleExistsInvocation {
-    type ScryptoOutput = bool;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::NonFungibleExists)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerNonFungibleExistsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::NonFungibleExists(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ResourceManagerGetNonFungibleInvocation {
-    pub receiver: ResourceAddress,
-    pub id: NonFungibleLocalId,
-}
-
-impl Invocation for ResourceManagerGetNonFungibleInvocation {
-    type Output = [Vec<u8>; 2];
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible))
-    }
-}
-
-impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
-    type ScryptoOutput = [Vec<u8>; 2];
-
-    fn native_fn() -> NativeFn {
-        NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)
-    }
-}
-
-impl Into<CallTableInvocation> for ResourceManagerGetNonFungibleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::GetNonFungible(self)).into()
     }
 }
 

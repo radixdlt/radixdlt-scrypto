@@ -104,12 +104,13 @@ impl ScryptoVault for Vault {
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        let rtn = env.call_method(
-            ScryptoReceiver::Resource(resource_address),
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
-            scrypto_encode(&ResourceManagerCreateVaultInput {
-            }).unwrap(),
-        ).unwrap();
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(resource_address),
+                RESOURCE_MANAGER_CREATE_VAULT_IDENT,
+                scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 

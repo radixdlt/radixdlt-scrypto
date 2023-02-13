@@ -550,9 +550,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         RESOURCE_MANAGER_PACKAGE,
                         RESOURCE_MANAGER_BLUEPRINT,
                         RESOURCE_MANAGER_BURN_BUCKET_IDENT,
-                        scrypto_encode(&ResourceManagerBurnBucketInput {
-                            bucket
-                        }).unwrap(),
+                        scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -572,7 +570,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintFungibleInput {
                             amount: amount.clone(),
-                        }).unwrap()
+                        })
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -592,7 +591,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput {
                             entries: entries.clone(),
-                        }).unwrap()
+                        })
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -612,7 +612,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries.clone(),
-                        }).unwrap()
+                        })
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

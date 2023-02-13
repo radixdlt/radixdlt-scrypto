@@ -1,6 +1,6 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi};
 use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -35,25 +35,29 @@ pub trait ScryptoBucket {
 impl ScryptoBucket for Bucket {
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        let rtn = env.call_method(
-            ScryptoReceiver::Resource(resource_address),
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {
-            }).unwrap()
-        ).unwrap();
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(resource_address),
+                RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
     fn burn(self) {
         let mut env = ScryptoEnv;
-        let rtn = env.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            RESOURCE_MANAGER_BURN_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerBurnInput {
-                bucket: Bucket(self.0),
-            }).unwrap()
-        ).unwrap();
+        let rtn = env
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerBurnInput {
+                    bucket: Bucket(self.0),
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let _: () = scrypto_decode(&rtn).unwrap();
     }
 

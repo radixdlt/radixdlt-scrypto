@@ -1,4 +1,3 @@
-use native_sdk::resource::ResourceManager;
 use super::Invokable;
 use crate::errors::ApplicationError;
 use crate::errors::KernelError;
@@ -21,6 +20,7 @@ use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use crate::wasm::WasmValidator;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,

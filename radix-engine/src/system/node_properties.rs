@@ -51,7 +51,8 @@ impl VisibilityProperties {
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
                     FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE, ..
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        ..
                     })
                     | FnIdentifier::Native(NativeFn::Bucket(..))
                     | FnIdentifier::Native(NativeFn::Worktop(..))

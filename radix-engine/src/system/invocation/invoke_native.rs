@@ -222,27 +222,11 @@ where
         },
         NativeInvocation::ResourceManager(resource_manager_invocation) => {
             match resource_manager_invocation {
-                ResourceInvocation::UpdateVaultAuth(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::SetVaultAuthMutability(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 ResourceInvocation::GetResourceType(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
                 ResourceInvocation::GetTotalSupply(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::UpdateNonFungibleData(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceInvocation::NonFungibleExists(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }

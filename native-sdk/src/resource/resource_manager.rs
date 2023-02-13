@@ -1,10 +1,10 @@
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
-use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{ClientApi, ClientNodeApi};
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
@@ -113,9 +113,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
-            scrypto_encode(&ResourceManagerMintNonFungibleInput {
-                entries
-            }).unwrap()
+            scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -137,9 +135,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
-            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
-                entries
-            }).unwrap()
+            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -157,9 +153,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_MINT_FUNGIBLE,
-            scrypto_encode(&ResourceManagerMintFungibleInput {
-                amount
-            }).unwrap()
+            scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -193,9 +187,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_BURN_IDENT,
-            scrypto_encode(&ResourceManagerBurnInput {
-                bucket,
-            }).unwrap()
+            scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -214,19 +206,19 @@ impl ResourceManager {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap()
+            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
-        where
-            Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+    where
+        Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
-            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap()
+            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

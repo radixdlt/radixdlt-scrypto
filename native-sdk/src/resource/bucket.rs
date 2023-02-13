@@ -1,7 +1,9 @@
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
+};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -90,8 +92,7 @@ impl SysBucket for Bucket {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(receiver),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {
-            }).unwrap()
+            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -167,8 +168,9 @@ impl SysBucket for Bucket {
             ScryptoReceiver::Resource(receiver),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput {
-                bucket: Bucket(self.0)
-            }).unwrap()
+                bucket: Bucket(self.0),
+            })
+            .unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

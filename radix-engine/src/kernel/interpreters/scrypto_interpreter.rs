@@ -63,7 +63,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 }
                 ScryptoReceiver::Resource(resource_address) => {
                     RENodeId::Global(GlobalAddress::Resource(resource_address))
-                },
+                }
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
             };
 

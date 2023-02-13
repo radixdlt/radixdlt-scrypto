@@ -129,6 +129,10 @@ impl FeeTable {
                     RESOURCE_MANAGER_BURN_IDENT => self.fixed_medium,
                     RESOURCE_MANAGER_CREATE_VAULT_IDENT => self.fixed_medium,
                     RESOURCE_MANAGER_CREATE_BUCKET_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => self.fixed_medium,
+                    RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT => self.fixed_medium,
                     _ => self.fixed_low,
                 }
             }
@@ -236,12 +240,8 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
-                ResourceManagerFn::SetVaultAuthMutability => self.fixed_medium,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
-                ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,
-                ResourceManagerFn::NonFungibleExists => self.fixed_low,
                 ResourceManagerFn::GetNonFungible => self.fixed_medium,
             },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {

@@ -293,10 +293,6 @@ pub enum AuthZoneStackFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
-    UpdateVaultAuth,
-    SetVaultAuthMutability,
-    UpdateNonFungibleData,
-    NonFungibleExists,
     GetNonFungible,
     GetResourceType,
     GetTotalSupply,
