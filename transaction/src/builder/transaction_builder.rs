@@ -1,7 +1,5 @@
-use radix_engine_interface::crypto::{Signature, SignatureWithPublicKey};
-use radix_engine_interface::data::scrypto_encode;
-
 use crate::{model::*, signing::Signer};
+use radix_engine_interface::data::scrypto_encode;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
