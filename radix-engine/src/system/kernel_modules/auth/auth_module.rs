@@ -99,7 +99,6 @@ impl AuthModule {
                     }
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
-                            || matches!(method, NativeFn::Validator(..))
                             || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Component(..)) =>
@@ -246,11 +245,7 @@ impl AuthModule {
             }
             ResolvedActor {
                 identifier,
-                receiver:
-                Some(ResolvedReceiver {
-                         receiver,
-                         ..
-                     }),
+                receiver: Some(ResolvedReceiver { receiver, .. }),
             } => {
                 let handle = system_api.lock_substate(
                     *receiver,

@@ -144,27 +144,33 @@ impl FeeTable {
                 VALIDATOR_STAKE_IDENT => self.fixed_low,
                 VALIDATOR_UNSTAKE_IDENT => self.fixed_low,
                 VALIDATOR_CLAIM_XRD_IDENT => self.fixed_low,
+                VALIDATOR_UPDATE_KEY_IDENT => self.fixed_low,
+                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
-            (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => {
-                match identifier.ident.as_str() {
-                    CLOCK_GET_CURRENT_TIME_IDENT => self.fixed_low,
-                    CLOCK_SET_CURRENT_TIME_IDENT => self.fixed_high,
-                    CLOCK_COMPARE_CURRENT_TIME_IDENT => self.fixed_high,
-                    _ => self.fixed_low,
-                }
-            }
+            (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => match identifier.ident.as_str() {
+                CLOCK_GET_CURRENT_TIME_IDENT => self.fixed_low,
+                CLOCK_SET_CURRENT_TIME_IDENT => self.fixed_high,
+                CLOCK_COMPARE_CURRENT_TIME_IDENT => self.fixed_high,
+                _ => self.fixed_low,
+            },
             (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_CREATE_PROOF_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => self.fixed_low,
-                    ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
-                    ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                        self.fixed_low
+                    }
+                    ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                        self.fixed_low
+                    }
                     ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => self.fixed_low,
                     ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
-                    ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => self.fixed_low,
+                    ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                        self.fixed_low
+                    }
                     ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => self.fixed_low,
                     ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => self.fixed_low,
                     _ => self.fixed_low,
@@ -207,10 +213,6 @@ impl FeeTable {
                     AuthZoneStackFn::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeFn::Validator(validator_fn) => match validator_fn {
-                ValidatorFn::UpdateKey => self.fixed_low,
-                ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
-            },
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
                 BucketFn::Take => self.fixed_medium,
                 BucketFn::TakeNonFungibles => self.fixed_medium,

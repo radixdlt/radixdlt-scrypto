@@ -1,4 +1,5 @@
 use super::ValidatorCreator;
+use crate::blueprints::epoch_manager::ValidatorBlueprint;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -20,7 +21,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
-use crate::blueprints::epoch_manager::ValidatorBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSubstate {
@@ -69,8 +69,8 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -84,37 +84,37 @@ impl EpochManagerNativePackage {
                     ));
                 }
                 Self::create(input, api)
-            },
+            }
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::get_current_epoch(receiver, input, api)
-            },
+            }
             EPOCH_MANAGER_SET_EPOCH_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::set_epoch(receiver, input, api)
-            },
+            }
             EPOCH_MANAGER_NEXT_ROUND_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::next_round(receiver, input, api)
-            },
+            }
             EPOCH_MANAGER_CREATE_VALIDATOR_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_validator(receiver, input, api)
-            },
+            }
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::update_validator(receiver, input, api)
-            },
+            }
             VALIDATOR_REGISTER_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -145,6 +145,18 @@ impl EpochManagerNativePackage {
                 ))?;
                 ValidatorBlueprint::claim_xrd(receiver, input, api)
             }
+            VALIDATOR_UPDATE_KEY_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::update_key(receiver, input, api)
+            }
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::update_accept_delegated_stake(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -152,8 +164,8 @@ impl EpochManagerNativePackage {
     }
 
     fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -201,7 +213,7 @@ impl EpochManagerNativePackage {
                     access_rules,
                     resource_address: input.olympia_validator_token_address,
                 })
-                    .unwrap(),
+                .unwrap(),
             )?;
             let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)
@@ -221,7 +233,7 @@ impl EpochManagerNativePackage {
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
                 })
-                    .unwrap(),
+                .unwrap(),
             )?;
 
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -267,19 +279,13 @@ impl EpochManagerNativePackage {
             rule!(allow_all),
         );
 
-
-        // TODO: Remove
-        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string()),
-            rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)),
+            rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_SET_EPOCH_IDENT.to_string()),
@@ -321,8 +327,8 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -332,13 +338,12 @@ impl EpochManagerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::EpochManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::EpochManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            LockFlags::read_only(),
+        )?;
 
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
@@ -351,16 +356,15 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let input: EpochManagerNextRoundInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: EpochManagerNextRoundInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let mgr_handle = api.lock_substate(
@@ -423,24 +427,22 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let input: EpochManagerSetEpochInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: EpochManagerSetEpochInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::EpochManager(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                LockFlags::MUTABLE,
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::EpochManager(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.epoch_manager().epoch = input.epoch;
@@ -453,8 +455,8 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -473,7 +475,8 @@ impl EpochManagerNativePackage {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = ValidatorCreator::create(manager, input.key, input.owner_access_rule, false, api)?;
+        let validator_address =
+            ValidatorCreator::create(manager, input.key, input.owner_access_rule, false, api)?;
 
         Ok(IndexedScryptoValue::from_typed(&validator_address))
     }
@@ -483,8 +486,8 @@ impl EpochManagerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>

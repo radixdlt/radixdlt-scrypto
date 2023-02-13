@@ -46,14 +46,14 @@ impl Clone for AccessControllerCreateGlobalInput {
 pub const ACCESS_CONTROLLER_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCreateProofInput {
-}
+pub struct AccessControllerCreateProofInput {}
 
 //================================================
 // Access Controller Initiate Recovery As Primary
 //================================================
 
-pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT: &str = "initiate_recovery_as_primary";
+pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT: &str =
+    "initiate_recovery_as_primary";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
@@ -65,7 +65,8 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
 // Access Controller Initiate Recovery As Recovery
 //=================================================
 
-pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT: &str = "initiate_recovery_as_recovery";
+pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT: &str =
+    "initiate_recovery_as_recovery";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
@@ -77,7 +78,8 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
 // Access Controller Quick Confirm Primary Role Recovery
 //=======================================================
 
-pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "quick_confirm_primary_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
+    "quick_confirm_primary_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
@@ -89,7 +91,8 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
 // Access Controller Quick Confirm Recovery Role Recovery
 //========================================================
 
-pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "quick_confirm_recovery_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
+    "quick_confirm_recovery_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
@@ -113,7 +116,8 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
 // Access Controller Cancel Primary Role Recovery Proposal
 //=========================================================
 
-pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "cancel_primary_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
+    "cancel_primary_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
@@ -122,7 +126,8 @@ pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
 // Access Controller Cancel Recovery Role Recovery Proposal
 //==========================================================
 
-pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str = "cancel_recovery_role_recovery_proposal";
+pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
+    "cancel_recovery_role_recovery_proposal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;

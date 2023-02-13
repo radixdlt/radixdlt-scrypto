@@ -4,9 +4,7 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
-use radix_engine_interface::blueprints::{
-    epoch_manager::*, logger::*, resource::*, transaction_runtime::*,
-};
+use radix_engine_interface::blueprints::{logger::*, resource::*, transaction_runtime::*};
 
 pub fn resolve_native(
     native_fn: NativeFn,
@@ -353,19 +351,6 @@ pub fn resolve_native(
             ResourceManagerFn::GetNonFungible => {
                 let invocation =
                     scrypto_decode::<ResourceManagerGetNonFungibleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Validator(validator_fn) => match validator_fn {
-            ValidatorFn::UpdateKey => {
-                let invocation = scrypto_decode::<ValidatorUpdateKeyInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ValidatorFn::UpdateAcceptDelegatedStake => {
-                let invocation =
-                    scrypto_decode::<ValidatorUpdateAcceptDelegatedStakeInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

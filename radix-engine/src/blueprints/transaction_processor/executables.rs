@@ -15,10 +15,12 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientPackageApi};
+use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientDerefApi, ClientNodeApi};
-use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_CREATE_VALIDATOR_IDENT, EpochManagerCreateValidatorInput};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -677,7 +679,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         scrypto_encode(&EpochManagerCreateValidatorInput {
                             key: key.clone(),
                             owner_access_rule: owner_access_rule.clone(),
-                        }).unwrap(),
+                        })
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

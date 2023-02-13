@@ -1,10 +1,14 @@
 use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::{
+    ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
+};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
 
@@ -34,9 +38,7 @@ impl Runtime {
         let rtn = api.call_method(
             ScryptoReceiver::Global(CLOCK),
             CLOCK_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&ClockGetCurrentTimeInput {
-                precision
-            }).unwrap()
+            scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -59,7 +61,8 @@ impl Runtime {
                 precision,
                 instant,
                 operator,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

@@ -1,10 +1,9 @@
 use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation,
-    ComponentInvocation, LoggerInvocation, MetadataInvocation,
-    NativeInvocation, PackageInvocation, ProofInvocation, ResourceInvocation,
-    TransactionRuntimeInvocation, ValidatorInvocation, VaultInvocation, WorktopInvocation,
+    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ComponentInvocation,
+    LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
+    ResourceInvocation, TransactionRuntimeInvocation, VaultInvocation, WorktopInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -281,16 +280,6 @@ where
                 }
             }
         }
-        NativeInvocation::Validator(validator_invocation) => match validator_invocation {
-            ValidatorInvocation::UpdateKey(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
         NativeInvocation::Logger(logger_invocation) => match logger_invocation {
             LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;

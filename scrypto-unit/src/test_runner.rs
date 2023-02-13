@@ -19,22 +19,29 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::types::{RENodeId, VaultOffset,
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
+use radix_engine_interface::blueprints::clock::{
+    ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
+    CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
+    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
-use radix_engine_interface::blueprints::clock::{CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT, ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision};
 use radix_engine_stores::hash_tree::put_at_next_version;
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{BasicInstruction, Executable, Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::{
+    BasicInstruction, Executable, Instruction, SystemTransaction, TransactionManifest,
+};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -1009,9 +1016,7 @@ impl TestRunner {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerSetEpochInput {
-                epoch
-            }).unwrap()
+            args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
         })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1032,7 +1037,7 @@ impl TestRunner {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap()
+            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         })];
 
         let blobs = vec![];
@@ -1061,9 +1066,7 @@ impl TestRunner {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockSetCurrentTimeInput {
-                current_time_ms
-            }).unwrap()
+            args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
         })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1084,7 +1087,7 @@ impl TestRunner {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap()
+            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

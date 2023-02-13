@@ -1,5 +1,5 @@
-use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
@@ -7,13 +7,11 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -52,8 +50,8 @@ impl ValidatorBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -101,7 +99,8 @@ impl ValidatorBlueprint {
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateValidator::Register(key, stake_amount),
                         validator_address,
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )?;
             }
         }
@@ -114,8 +113,8 @@ impl ValidatorBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -155,7 +154,8 @@ impl ValidatorBlueprint {
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     validator_address,
                     update: UpdateValidator::Unregister,
-                }).unwrap(),
+                })
+                .unwrap(),
             )?;
         }
 
@@ -167,8 +167,8 @@ impl ValidatorBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -178,13 +178,12 @@ impl ValidatorBlueprint {
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::Validator(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::Validator(ValidatorOffset::Validator),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
 
         // Stake
         let lp_token_bucket = {
@@ -225,7 +224,8 @@ impl ValidatorBlueprint {
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
                         update: UpdateValidator::Register(key, xrd_amount),
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )?;
             }
         }
@@ -238,8 +238,8 @@ impl ValidatorBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -249,13 +249,12 @@ impl ValidatorBlueprint {
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::Validator(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::Validator(ValidatorOffset::Validator),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
 
         // Unstake
         let unstake_bucket = {
@@ -325,7 +324,8 @@ impl ValidatorBlueprint {
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
                         update,
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )?;
             }
         };
@@ -338,8 +338,8 @@ impl ValidatorBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -349,13 +349,12 @@ impl ValidatorBlueprint {
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::Validator(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::Validator(ValidatorOffset::Validator),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
         let substate = api.get_ref(handle)?;
         let validator = substate.validator();
         let mut nft_resman = ResourceManager(validator.unstake_nft);
@@ -401,49 +400,32 @@ impl ValidatorBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
-}
 
-pub struct ValidatorUpdateKeyExecutable(RENodeId, EcdsaSecp256k1PublicKey);
-
-impl ExecutableInvocation for ValidatorUpdateKeyInvocation {
-    type Exec = ValidatorUpdateKeyExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::UpdateKey),
-            resolved_receiver,
-        );
-        let executor = ValidatorUpdateKeyExecutable(resolved_receiver.receiver, self.key);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorUpdateKeyExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub fn update_key<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        // TODO: Remove decode/encode mess
+        let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate = api.get_ref_mut(handle)?;
         let mut validator = substate.validator();
-        validator.key = self.1;
+        validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;
         let validator_address = validator.address;
@@ -461,69 +443,47 @@ impl Executor for ValidatorUpdateKeyExecutable {
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
                             validator_address,
                             update,
-                        }).unwrap(),
+                        })
+                        .unwrap(),
                     )?;
                 }
             }
-        };
+        }
 
-        let update = CallFrameUpdate::empty();
-        Ok(((), update))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-pub struct ValidatorUpdateAcceptDelegatedStakeExecutable(RENodeId, bool);
-
-impl ExecutableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type Exec = ValidatorUpdateAcceptDelegatedStakeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake),
-            resolved_receiver,
-        );
-        let executor = ValidatorUpdateAcceptDelegatedStakeExecutable(
-            resolved_receiver.receiver,
-            self.accept_delegated_stake,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorUpdateAcceptDelegatedStakeExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub fn update_accept_delegated_stake<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let rule = if self.1 {
+        // TODO: Remove decode/encode mess
+        let input: ValidatorUpdateAcceptDelegatedStakeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)
         } else {
             AccessRuleEntry::Group("owner".to_string())
         };
 
         api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: self.0,
+            receiver: RENodeId::Validator(receiver),
             index: 0u32,
             key: AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
             rule,
         })?;
 
-        let update = CallFrameUpdate::empty();
-        Ok(((), update))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -541,10 +501,6 @@ impl ValidatorCreator {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let old_non_fungible_id = NonFungibleLocalId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_id);
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
@@ -553,13 +509,13 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(old_non_fungible_global_id.clone()) || require(non_fungible_global_id.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -584,10 +540,6 @@ impl ValidatorCreator {
     {
         let mut liquidity_token_auth = BTreeMap::new();
 
-        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
@@ -596,13 +548,13 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(old_non_fungible_global_id.clone()) || require(non_fungible_global_id.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -621,10 +573,6 @@ impl ValidatorCreator {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
@@ -633,13 +581,13 @@ impl ValidatorCreator {
         unstake_token_auth.insert(
             Mint,
             (
-                rule!(require(old_non_fungible_global_id.clone()) || require(non_fungible_global_id.clone())),
+                rule!(require(non_fungible_global_id.clone())),
                 rule!(deny_all),
             ),
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -674,18 +622,14 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateKey)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
             "owner".to_string(),
         );
 
-        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
         let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
@@ -693,7 +637,7 @@ impl ValidatorCreator {
         access_rules.set_group_and_mutability(
             AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
             "owner".to_string(),
-            rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)),
+            rule!(require(non_fungible_global_id)),
         );
 
         access_rules.set_method_access_rule(

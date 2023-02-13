@@ -1,10 +1,10 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::{
-    time::UtcDateTime,
-};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{CLOCK_SET_CURRENT_TIME_IDENT, ClockSetCurrentTimeInput};
+use radix_engine_interface::blueprints::clock::{
+    ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
+};
+use radix_engine_interface::time::UtcDateTime;
 use transaction::model::BasicInstruction;
 
 use crate::resim::*;
@@ -27,7 +27,8 @@ impl SetCurrentTime {
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
-            }).unwrap()
+            })
+            .unwrap(),
         })];
 
         let blobs = vec![];

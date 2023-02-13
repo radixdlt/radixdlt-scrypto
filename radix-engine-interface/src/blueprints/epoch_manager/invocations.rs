@@ -114,7 +114,6 @@ pub struct EpochManagerUpdateValidatorInput {
     pub update: UpdateValidator,
 }
 
-
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -146,68 +145,16 @@ pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
 }
 
+pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateKeyMethodArgs {
+pub struct ValidatorUpdateKeyInput {
     pub key: EcdsaSecp256k1PublicKey,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateKeyInvocation {
-    pub receiver: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-}
-
-impl Invocation for ValidatorUpdateKeyInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateKey))
-    }
-}
-
-impl SerializableInvocation for ValidatorUpdateKeyInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::UpdateKey)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(self)).into()
-    }
-}
+pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateAcceptDelegatedStakeMethodArgs {
+pub struct ValidatorUpdateAcceptDelegatedStakeInput {
     pub accept_delegated_stake: bool,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateAcceptDelegatedStakeInvocation {
-    pub receiver: ComponentAddress,
-    pub accept_delegated_stake: bool,
-}
-
-impl Invocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake))
-    }
-}
-
-impl SerializableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(self)).into()
-    }
 }

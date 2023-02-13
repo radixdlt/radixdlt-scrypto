@@ -101,9 +101,7 @@ impl ShowLedger {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockGetCurrentTimeInput {
-                precision
-            }).unwrap(),
+            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         })];
         let blobs = vec![];
         let initial_proofs = vec![];

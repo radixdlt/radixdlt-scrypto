@@ -18,7 +18,9 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
+};
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::Resource;
 

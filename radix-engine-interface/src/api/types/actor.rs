@@ -1,10 +1,6 @@
-use crate::api::component::ComponentAddress;
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
-use crate::blueprints::epoch_manager::*;
-use crate::data::scrypto_decode;
 use crate::*;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -19,7 +15,6 @@ pub enum NativePackage {
     Component,
     Package,
     Metadata,
-    EpochManager,
     Resource,
     KeyValueStore,
     Logger,
@@ -101,7 +96,6 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
-    Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
@@ -121,7 +115,6 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -242,81 +235,10 @@ pub enum PackageFn {
     ClaimRoyalty,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ValidatorFn {
-    UpdateKey,
-    UpdateAcceptDelegatedStake,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResolveError {
     DecodeError(DecodeError),
     NotAMethod,
-}
-
-pub struct EpochManagerPackage;
-
-impl EpochManagerPackage {
-    pub fn resolve_method_invocation(
-        receiver: ComponentAddress,
-        method_name: &str,
-        args: &[u8],
-    ) -> Result<NativeInvocation, ResolveError> {
-        let invocation = match receiver {
-            ComponentAddress::Validator(..) => {
-                let validator_fn =
-                    ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
-
-                match validator_fn {
-                    ValidatorFn::UpdateKey => {
-                        let args: ValidatorUpdateKeyMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(
-                            ValidatorUpdateKeyInvocation {
-                                receiver,
-                                key: args.key,
-                            },
-                        ))
-                    }
-
-                    ValidatorFn::UpdateAcceptDelegatedStake => {
-                        let args: ValidatorUpdateAcceptDelegatedStakeMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(
-                            ValidatorInvocation::UpdateAcceptDelegatedStake(
-                                ValidatorUpdateAcceptDelegatedStakeInvocation {
-                                    receiver,
-                                    accept_delegated_stake: args.accept_delegated_stake,
-                                },
-                            ),
-                        )
-                    }
-                }
-            }
-            _ => return Err(ResolveError::NotAMethod),
-        };
-
-        Ok(invocation)
-    }
 }
 
 #[derive(

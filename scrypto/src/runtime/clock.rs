@@ -1,6 +1,9 @@
-use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::blueprints::clock::{CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT, ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision};
+use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::blueprints::clock::{
+    ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
+    CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT,
+};
 use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
@@ -20,13 +23,13 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoEnv;
-        let rtn = env.call_method(
-            ScryptoReceiver::Global(CLOCK),
-            CLOCK_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&ClockGetCurrentTimeInput {
-                precision
-            }).unwrap()
-        ).unwrap();
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Global(CLOCK),
+                CLOCK_GET_CURRENT_TIME_IDENT,
+                scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -63,13 +66,18 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoEnv;
-        let rtn = env.call_method(
-            ScryptoReceiver::Global(CLOCK),
-            CLOCK_COMPARE_CURRENT_TIME_IDENT,
-            scrypto_encode(&ClockCompareCurrentTimeInput {
-                instant, precision, operator,
-            }).unwrap()
-        ).unwrap();
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Global(CLOCK),
+                CLOCK_COMPARE_CURRENT_TIME_IDENT,
+                scrypto_encode(&ClockCompareCurrentTimeInput {
+                    instant,
+                    precision,
+                    operator,
+                })
+                .unwrap(),
+            )
+            .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }

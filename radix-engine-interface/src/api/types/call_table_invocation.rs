@@ -4,7 +4,6 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeGenerateUuidInvocation;
@@ -57,7 +56,6 @@ pub enum NativeInvocation {
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
     Component(ComponentInvocation),
-    Validator(ValidatorInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
@@ -115,12 +113,6 @@ pub enum PackageInvocation {
     PublishNative(PackagePublishNativeInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ValidatorInvocation {
-    UpdateKey(ValidatorUpdateKeyInvocation),
-    UpdateAcceptDelegatedStake(ValidatorUpdateAcceptDelegatedStakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -363,18 +355,6 @@ impl NativeInvocation {
                     )));
                 }
             },
-            NativeInvocation::Validator(method) => match method {
-                ValidatorInvocation::UpdateKey(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ValidatorInvocation::UpdateAcceptDelegatedStake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-            },
             NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {
                     refs.insert(RENodeId::Logger);
@@ -440,12 +420,6 @@ impl NativeInvocation {
                 ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Validator(i) => match i {
-                ValidatorInvocation::UpdateKey(i) => (get_native_fn(i), scrypto_encode(i)),
-                ValidatorInvocation::UpdateAcceptDelegatedStake(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
             },
             NativeInvocation::Logger(i) => match i {
                 LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),

@@ -1,9 +1,7 @@
 use super::state_machine::*;
 use super::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
-use crate::kernel::{
-    KernelNodeApi, KernelSubstateApi, LockFlags,
-};
+use crate::kernel::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -69,8 +67,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -84,7 +82,7 @@ impl AccessControllerNativePackage {
                     ));
                 }
                 Self::create_global(input, api)
-            },
+            }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -161,8 +159,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -219,8 +217,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -245,8 +243,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -267,7 +265,6 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -276,8 +273,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -306,8 +303,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -324,7 +321,7 @@ impl AccessControllerNativePackage {
                 proposal_to_confirm: RecoveryProposal {
                     rule_set: input.rule_set,
                     timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
-                }
+                },
             },
         )?;
 
@@ -342,8 +339,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -360,7 +357,7 @@ impl AccessControllerNativePackage {
                 proposal_to_confirm: RecoveryProposal {
                     rule_set: input.rule_set,
                     timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
-                }
+                },
             },
         )?;
 
@@ -378,8 +375,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -396,7 +393,7 @@ impl AccessControllerNativePackage {
                 proposal_to_confirm: RecoveryProposal {
                     rule_set: input.rule_set,
                     timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
-                }
+                },
             },
         )?;
 
@@ -415,8 +412,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -440,8 +437,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -460,14 +457,13 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-
     fn lock_primary_role<Y>(
         receiver: ComponentId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -491,8 +487,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -516,8 +512,8 @@ impl AccessControllerNativePackage {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -569,11 +565,15 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
+        ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+        ),
         primary_group.into(),
     );
 
@@ -581,7 +581,9 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let recovery_group = "recovery";
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
+        ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
@@ -589,7 +591,9 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+        ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
@@ -621,11 +625,15 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         ),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+        ),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::ScryptoMethod(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+        ),
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 

@@ -1,7 +1,9 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_SET_EPOCH_IDENT, EpochManagerSetEpochInput};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
+};
 use transaction::model::BasicInstruction;
 
 use crate::resim::*;
@@ -22,9 +24,7 @@ impl SetCurrentEpoch {
         let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerSetEpochInput {
-                epoch: self.epoch,
-            }).unwrap(),
+            args: scrypto_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
         })];
 
         let blobs = vec![];

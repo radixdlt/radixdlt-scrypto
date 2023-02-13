@@ -13,7 +13,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::blueprints::resource::*;
@@ -124,9 +123,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<ValidatorUpdateKeyInvocation, E>
-    + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
-    + Invokable<MetadataSetInvocation, E>
+    Invokable<MetadataSetInvocation, E>
     + Invokable<MetadataGetInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
     + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>

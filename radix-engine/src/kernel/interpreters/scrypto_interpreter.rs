@@ -58,7 +58,9 @@ impl ExecutableInvocation for ScryptoInvocation {
 
         let (receiver, actor) = if let Some(receiver) = self.receiver {
             let original_node_id = match receiver {
-                ScryptoReceiver::Global(component_address) => RENodeId::Global(GlobalAddress::Component(component_address)),
+                ScryptoReceiver::Global(component_address) => {
+                    RENodeId::Global(GlobalAddress::Component(component_address))
+                }
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
             };
 
@@ -426,7 +428,7 @@ impl NativeVm {
             }
             CLOCK_PACKAGE_CODE_ID => {
                 ClockNativePackage::invoke_export(&export_name, receiver, input, api)
-            },
+            }
             ACCOUNT_PACKAGE_CODE_ID => {
                 AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
