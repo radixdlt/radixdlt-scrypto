@@ -5,7 +5,6 @@ use crate::{
     types::*,
 };
 use radix_engine_interface::api::{
-    types::CallTableInvocation,
     types::{ScryptoInvocation, ScryptoReceiver},
 };
 
@@ -14,70 +13,36 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     method_name: &str,
     args: &[u8],
     api: &mut Y,
-) -> Result<CallTableInvocation, RuntimeError> {
-    let invocation = match receiver {
-        ScryptoReceiver::Global(component_address) => match component_address {
-            ComponentAddress::EpochManager(..)
-            | ComponentAddress::Validator(..)
-            | ComponentAddress::Identity(..)
-            | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-            | ComponentAddress::EddsaEd25519VirtualIdentity(..)
-            | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-            | ComponentAddress::EddsaEd25519VirtualAccount(..)
-            | ComponentAddress::Account(..)
-            | ComponentAddress::AccessController(..)
-            | ComponentAddress::Clock(..)
-            | ComponentAddress::Normal(..) => {
-                let component_node_id =
-                    RENodeId::Global(GlobalAddress::Component(component_address));
-                let component_info = {
-                    let handle = api.lock_substate(
-                        component_node_id,
-                        NodeModuleId::ComponentTypeInfo,
-                        SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.get_ref(handle)?;
-                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                    api.drop_lock(handle)?;
-
-                    component_info
-                };
-
-                let method_invocation = ScryptoInvocation {
-                    package_address: component_info.package_address,
-                    blueprint_name: component_info.blueprint_name,
-                    receiver: Some(ScryptoReceiver::Global(component_address.clone())),
-                    fn_name: method_name.to_string(),
-                    args: args.to_owned(),
-                };
-                CallTableInvocation::Scrypto(method_invocation)
-            }
-        },
+) -> Result<ScryptoInvocation, RuntimeError> {
+    let node_id = match receiver {
+        ScryptoReceiver::Global(component_address) => RENodeId::Global(GlobalAddress::Component(component_address)),
         ScryptoReceiver::Component(component_id) => {
-            let component_node_id = RENodeId::Component(component_id);
-            let component_info = {
-                let handle = api.lock_substate(
-                    component_node_id,
-                    NodeModuleId::ComponentTypeInfo,
-                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.get_ref(handle)?;
-                let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                api.drop_lock(handle)?;
+            // TODO: Fix this as this is wrong id for native components
+            // TODO: Will be easier to fix this when local handles are implemented
+            RENodeId::Component(component_id)
+        },
+    };
 
-                component_info
-            };
+    let component_info = {
+        let handle = api.lock_substate(
+            node_id,
+            NodeModuleId::ComponentTypeInfo,
+            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(handle)?;
+        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+        api.drop_lock(handle)?;
 
-            CallTableInvocation::Scrypto(ScryptoInvocation {
-                package_address: component_info.package_address,
-                blueprint_name: component_info.blueprint_name,
-                receiver: Some(ScryptoReceiver::Component(component_id)),
-                fn_name: method_name.to_string(),
-                args: args.to_owned(),
-            })
-        }
+        component_info
+    };
+
+    let invocation = ScryptoInvocation {
+        package_address: component_info.package_address,
+        blueprint_name: component_info.blueprint_name,
+        receiver: Some(receiver),
+        fn_name: method_name.to_string(),
+        args: args.to_owned(),
     };
 
     Ok(invocation)

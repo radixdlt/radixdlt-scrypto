@@ -398,15 +398,9 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        match invocation {
-            CallTableInvocation::Native(native_invocation) => Ok(scrypto_encode(
-                invoke_native_fn(native_invocation, self)?.as_ref(),
-            )
-            .expect("Failed to encode native fn return")),
-            CallTableInvocation::Scrypto(scrypto_invocation) => self
-                .invoke(scrypto_invocation)
-                .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
-        }
+        self
+            .invoke(invocation)
+            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 
     fn get_component_type_info(
