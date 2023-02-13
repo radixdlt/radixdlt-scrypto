@@ -78,6 +78,7 @@ where
         })
     }
 
+    // TODO: Josh holds some concern about this interface; will look into this again.
     pub fn teardown(mut self) -> (KernelModuleMixer, Option<RuntimeError>) {
         // Rewind call stack
         loop {
@@ -388,6 +389,10 @@ where
                 KernelModuleMixer::on_execution_start(api, &caller)
             })?;
 
+            // Auto drop locks
+            self.current_frame
+                .drop_all_locks(&mut self.heap, &mut self.track)?;
+
             // Run
             let (output, mut update) =
                 self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
@@ -396,10 +401,6 @@ where
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
             })?;
-
-            // Auto drop locks
-            self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
