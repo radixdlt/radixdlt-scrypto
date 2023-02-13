@@ -205,6 +205,10 @@ where
         self.current_frame.actor.clone()
     }
 
+    fn get_current_wasm_memory_consumption(&self) -> usize {
+        self.current_frame.consumed_wasm_memory
+    }
+
     fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
         self.heap
             .get_substate(
@@ -415,10 +419,15 @@ where
         self.scrypto_interpreter
     }
 
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_wasm_instantiation(self, code)?;
+    fn emit_wasm_pre_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+        KernelModuleMixer::before_wasm_instantiation(self, code)
+    }
 
-        Ok(())
+    fn emit_wasm_post_instantiation_event(
+        &mut self,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        KernelModuleMixer::after_wasm_instantiation(self, consumed_memory)
     }
 }
 

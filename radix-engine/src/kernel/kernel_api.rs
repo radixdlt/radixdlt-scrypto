@@ -79,6 +79,7 @@ pub trait KernelInternalApi {
     fn get_module_state(&mut self) -> &mut KernelModuleMixer;
     fn get_current_depth(&self) -> usize;
     fn get_current_actor(&self) -> ResolvedActor;
+    fn get_current_wasm_memory_consumption(&self) -> usize;
 
     /* Temporary interface, specifically for `ExecutionTrace` kernel module */
     fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
@@ -121,7 +122,12 @@ pub trait KernelSubstateApi {
 pub trait KernelWasmApi<W: WasmEngine> {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn emit_wasm_pre_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+
+    fn emit_wasm_post_instantiation_event(
+        &mut self,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait Invokable<I: Invocation, E> {

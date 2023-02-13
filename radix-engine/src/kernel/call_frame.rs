@@ -100,6 +100,9 @@ pub struct CallFrame {
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
+
+    /// WASM instance consumed memory for this call frame
+    pub consumed_wasm_memory: usize,
 }
 
 impl CallFrame {
@@ -290,6 +293,7 @@ impl CallFrame {
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            consumed_wasm_memory: 0,
         };
 
         // Add well-known global refs to current frame
@@ -355,6 +359,7 @@ impl CallFrame {
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            consumed_wasm_memory: 0,
         };
 
         Ok(frame)

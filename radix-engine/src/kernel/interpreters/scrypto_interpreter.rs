@@ -324,7 +324,7 @@ impl Executor for ScryptoExecutor {
                 let rtn_type = fn_abi.output.clone();
 
                 // Emit event
-                api.emit_wasm_instantiation_event(package.code())?;
+                api.emit_wasm_pre_instantiation_event(package.code())?;
                 let mut instance = api
                     .scrypto_interpreter()
                     .create_instance(self.package_address, &package.code);
@@ -362,6 +362,8 @@ impl Executor for ScryptoExecutor {
                         KernelError::InvalidScryptoFnOutput,
                     ));
                 }
+
+                api.emit_wasm_post_instantiation_event(instance.consumed_memory()?)?;
 
                 output
             }

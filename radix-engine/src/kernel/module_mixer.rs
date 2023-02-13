@@ -9,6 +9,7 @@ use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::kernel_debug::KernelDebugModule;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
+use crate::system::kernel_modules::transaction_limits::TransactionLimitsModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -33,6 +34,7 @@ pub struct KernelModuleMixer {
     pub logger_enabled: bool,
     pub transaction_runtime_enabled: bool,
     pub execution_trace_enabled: bool,
+    pub transaction_limits_enabled: bool,
 
     /* states */
     pub kernel_debug: KernelDebugModule,
@@ -42,6 +44,7 @@ pub struct KernelModuleMixer {
     pub logger: LoggerModule,
     pub transaction_runtime: TransactionRuntimeModule,
     pub execution_trace: ExecutionTraceModule,
+    pub transaction_limits: TransactionLimitsModule,
 }
 
 impl KernelModuleMixer {
@@ -53,6 +56,8 @@ impl KernelModuleMixer {
         fee_table: FeeTable,
         max_call_depth: usize,
         max_kernel_call_depth_traced: Option<usize>,
+        max_wasm_memory: usize,
+        max_wasm_instance_memory: usize,
     ) -> Self {
         Self {
             kernel_debug_enabled: debug,
@@ -62,6 +67,7 @@ impl KernelModuleMixer {
             logger_enabled: true,
             transaction_runtime_enabled: true,
             execution_trace_enabled: max_kernel_call_depth_traced.is_some(),
+            transaction_limits_enabled: true,
             kernel_debug: KernelDebugModule {},
             costing: CostingModule {
                 fee_reserve,
@@ -74,6 +80,10 @@ impl KernelModuleMixer {
             },
             logger: LoggerModule {},
             transaction_runtime: TransactionRuntimeModule { tx_hash },
+            transaction_limits: TransactionLimitsModule::new(
+                max_wasm_memory,
+                max_wasm_instance_memory,
+            ),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
         }
     }
@@ -606,30 +616,58 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+    fn before_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         code: &[u8],
     ) -> Result<(), RuntimeError> {
         if api.get_module_state().kernel_debug_enabled {
-            KernelDebugModule::on_wasm_instantiation(api, code)?;
+            KernelDebugModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().costing_enabled {
-            CostingModule::on_wasm_instantiation(api, code)?;
+            CostingModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().node_move_enabled {
-            NodeMoveModule::on_wasm_instantiation(api, code)?;
+            NodeMoveModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().auth_enabled {
-            AuthModule::on_wasm_instantiation(api, code)?;
+            AuthModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().logger_enabled {
-            LoggerModule::on_wasm_instantiation(api, code)?;
+            LoggerModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().transaction_runtime_enabled {
-            TransactionRuntimeModule::on_wasm_instantiation(api, code)?;
+            TransactionRuntimeModule::before_wasm_instantiation(api, code)?;
         }
         if api.get_module_state().execution_trace_enabled {
-            ExecutionTraceModule::on_wasm_instantiation(api, code)?;
+            ExecutionTraceModule::before_wasm_instantiation(api, code)?;
+        }
+        Ok(())
+    }
+
+    fn after_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        if api.get_module_state().kernel_debug_enabled {
+            KernelDebugModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().costing_enabled {
+            CostingModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().node_move_enabled {
+            NodeMoveModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().auth_enabled {
+            AuthModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().logger_enabled {
+            LoggerModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().transaction_runtime_enabled {
+            TransactionRuntimeModule::after_wasm_instantiation(api, consumed_memory)?;
+        }
+        if api.get_module_state().execution_trace_enabled {
+            ExecutionTraceModule::after_wasm_instantiation(api, consumed_memory)?;
         }
         Ok(())
     }

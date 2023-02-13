@@ -158,9 +158,16 @@ pub trait KernelModule {
     // WASM interpreter events
     //======================
 
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+    fn before_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _code: &[u8],
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn after_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _consumed_memory: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

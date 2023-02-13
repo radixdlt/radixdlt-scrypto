@@ -438,6 +438,10 @@ where
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
+
+    fn wasm_memory_consumption(&mut self, size: usize) {
+        self.current_frame.consumed_wasm_memory = size;
+    }
 }
 
 impl<'g, 's, W> ClientApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}

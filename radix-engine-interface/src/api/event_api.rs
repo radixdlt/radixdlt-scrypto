@@ -13,4 +13,6 @@ pub trait ClientEventApi<E> {
     ) -> Result<Resource, E>;
 
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
+
+    fn wasm_memory_consumption(&mut self, size: usize);
 }

@@ -8,7 +8,8 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
+    DEFAULT_MAX_WASM_MEM_PER_TRANSACTION, DEFAULT_SYSTEM_LOAN,
 };
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
@@ -38,6 +39,8 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
+    pub max_wasm_mem_per_transaction: usize,
+    pub max_wasm_mem_per_instance: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -53,6 +56,8 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
+            max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
+            max_wasm_mem_per_instance: DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
         }
     }
 
@@ -230,6 +235,8 @@ where
                 fee_table,
                 execution_config.max_call_depth,
                 execution_config.max_kernel_call_depth_traced,
+                execution_config.max_wasm_mem_per_transaction,
+                execution_config.max_wasm_mem_per_instance,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,

@@ -158,6 +158,13 @@ fn call_function(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
+    // get current memory consumption and set it in current call frame throuhg api
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
+    runtime.set_wasm_memory_consumption(mem)?;
+
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
         .map(|buffer| buffer.0)
@@ -862,6 +869,13 @@ impl WasmInstance for WasmiInstance {
                 WasmRuntimeError::InvalidExportReturn,
             )),
         }
+    }
+
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
+        self.memory
+            .current_pages(self.store.as_context())
+            .to_bytes()
+            .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))
     }
 }
 

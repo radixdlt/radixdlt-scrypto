@@ -96,6 +96,11 @@ pub trait WasmRuntime {
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn set_wasm_memory_consumption(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
@@ -113,6 +118,9 @@ pub trait WasmInstance {
         args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
+
+    /// Retruns memory consumed by this instance during invoke_export() call
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.

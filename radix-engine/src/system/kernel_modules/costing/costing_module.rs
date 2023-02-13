@@ -353,7 +353,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+    fn before_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         code: &[u8],
     ) -> Result<(), RuntimeError> {
