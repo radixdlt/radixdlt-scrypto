@@ -12,7 +12,6 @@ pub enum ManifestCustomValue {
     Blob(ManifestBlobRef),
     Decimal(ManifestDecimal),
     PreciseDecimal(ManifestPreciseDecimal),
-    NonFungibleGlobalId(ManifestNonFungibleGlobalId),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
     PublicKey(ManifestPublicKey),
 }
@@ -46,9 +45,6 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
                 ValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId),
             ),
-            ManifestCustomValue::NonFungibleGlobalId(_) => encoder.write_value_kind(
-                ValueKind::Custom(ManifestCustomValueKind::NonFungibleGlobalId),
-            ),
             ManifestCustomValue::PublicKey(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::PublicKey))
             }
@@ -66,7 +62,6 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Decimal(v) => v.encode_body(encoder),
             ManifestCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
-            ManifestCustomValue::NonFungibleGlobalId(v) => v.encode_body(encoder),
             ManifestCustomValue::PublicKey(v) => v.encode_body(encoder),
         }
     }
@@ -111,10 +106,6 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                 ManifestCustomValueKind::NonFungibleLocalId => {
                     ManifestNonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
-                }
-                ManifestCustomValueKind::NonFungibleGlobalId => {
-                    ManifestNonFungibleGlobalId::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::NonFungibleGlobalId)
                 }
                 ManifestCustomValueKind::PublicKey => {
                     ManifestPublicKey::decode_body_with_value_kind(decoder, value_kind)

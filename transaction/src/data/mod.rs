@@ -43,7 +43,6 @@ mod tests {
     use radix_engine_interface::{
         api::types::{ComponentAddress, PackageAddress},
         blueprints::resource::{NonFungibleLocalId, ResourceAddress},
-        constants::RADIX_TOKEN,
         crypto::{EcdsaSecp256k1PublicKey, PublicKey},
         math::{Decimal, PreciseDecimal},
     };
@@ -64,8 +63,7 @@ mod tests {
         h: ManifestDecimal,
         i: ManifestPreciseDecimal,
         j: ManifestNonFungibleLocalId,
-        k: ManifestNonFungibleGlobalId,
-        l: ManifestPublicKey,
+        k: ManifestPublicKey,
     }
 
     #[test]
@@ -96,8 +94,7 @@ mod tests {
             h: ManifestDecimal(Decimal::from(7u32)),
             i: ManifestPreciseDecimal(PreciseDecimal::from(8u32)),
             j: ManifestNonFungibleLocalId(NonFungibleLocalId::String("abc".to_owned())),
-            k: ManifestNonFungibleGlobalId(RADIX_TOKEN, NonFungibleLocalId::Integer(9)),
-            l: ManifestPublicKey(PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
+            k: ManifestPublicKey(PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
                 [10u8; 33],
             ))),
         };
@@ -108,7 +105,7 @@ mod tests {
             vec![
                 77, // prefix
                 33, // struct
-                12, // field length
+                11, // field length
                 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, // address
                 128, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -125,10 +122,8 @@ mod tests {
                 134, 0, 0, 0, 0, 0, 0, 0, 0, 8, 248, 80, 251, 37, 107, 199, 113, 107, 191, 60, 213,
                 166, 207, 255, 73, 31, 120, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // precise decimal
-                135, 0, 3, 97, 98, 99, // non-fungible global id
-                136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, 0, 0, 0, 0, 0, 9, // non-fungible global id
-                137, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                135, 0, 3, 97, 98, 99, // non-fungible local id
+                136, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
                 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 // public key
             ]
         );
