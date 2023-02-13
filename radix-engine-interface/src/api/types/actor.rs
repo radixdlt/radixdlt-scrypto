@@ -263,8 +263,6 @@ pub enum PackageFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ValidatorFn {
-    Register,
-    Unregister,
     Stake,
     Unstake,
     ClaimXrd,
@@ -292,21 +290,6 @@ impl EpochManagerPackage {
                     ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
                 match validator_fn {
-                    ValidatorFn::Register => {
-                        let _args: ValidatorRegisterMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::Register(
-                            ValidatorRegisterInvocation { receiver },
-                        ))
-                    }
-                    ValidatorFn::Unregister => {
-                        let _args: ValidatorUnregisterValidatorMethodArgs =
-                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                        NativeInvocation::Validator(ValidatorInvocation::Unregister(
-                            ValidatorUnregisterInvocation { receiver },
-                        ))
-                    }
-
                     ValidatorFn::Stake => {
                         let args: ValidatorStakeMethodArgs =
                             scrypto_decode(args).map_err(ResolveError::DecodeError)?;

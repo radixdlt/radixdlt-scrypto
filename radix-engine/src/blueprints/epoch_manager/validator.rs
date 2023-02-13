@@ -1,4 +1,4 @@
-use crate::errors::ApplicationError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
@@ -11,11 +11,12 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -37,45 +38,28 @@ pub enum ValidatorError {
     EpochUnlockHasNotOccurredYet,
 }
 
-pub struct ValidatorRegisterExecutable(RENodeId);
+pub struct ValidatorBlueprint;
 
-impl ExecutableInvocation for ValidatorRegisterInvocation {
-    type Exec = ValidatorRegisterExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::Register),
-            resolved_receiver,
-        );
-        let executor = ValidatorRegisterExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorRegisterExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
+impl ValidatorBlueprint {
+    pub fn register<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(
-            self.0,
+            RENodeId::Validator(receiver),
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -87,7 +71,7 @@ impl Executor for ValidatorRegisterExecutable {
             let validator = substate.validator();
 
             if validator.is_registered {
-                return Ok(((), CallFrameUpdate::empty()));
+                return Ok(IndexedScryptoValue::from_typed(&()));
             }
 
             validator.is_registered = true;
@@ -116,46 +100,28 @@ impl Executor for ValidatorRegisterExecutable {
             }
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        return Ok(IndexedScryptoValue::from_typed(&()));
     }
-}
 
-pub struct ValidatorUnregisterExecutable(RENodeId);
-
-impl ExecutableInvocation for ValidatorUnregisterInvocation {
-    type Exec = ValidatorUnregisterExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
+    pub fn unregister<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update.node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::Unregister),
-            resolved_receiver,
-        );
-        let executor = ValidatorUnregisterExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
+        // TODO: Remove decode/encode mess
+        let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-impl Executor for ValidatorUnregisterExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.lock_substate(
-            self.0,
+            RENodeId::Validator(receiver),
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -166,7 +132,7 @@ impl Executor for ValidatorUnregisterExecutable {
             let mut substate = api.get_ref_mut(handle)?;
             let validator = substate.validator();
             if !validator.is_registered {
-                return Ok(((), CallFrameUpdate::empty()));
+                return Ok(IndexedScryptoValue::from_typed(&()));
             }
             validator.is_registered = false;
         }
@@ -187,7 +153,7 @@ impl Executor for ValidatorUnregisterExecutable {
             )?;
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        return Ok(IndexedScryptoValue::from_typed(&()));
     }
 }
 
@@ -753,11 +719,11 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_REGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
@@ -769,14 +735,18 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
 
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+        );
+        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
             "owner".to_string(),
-            rule!(require(non_fungible_global_id)),
+            rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)),
         );
 
         access_rules.set_method_access_rule(

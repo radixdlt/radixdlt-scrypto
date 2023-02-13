@@ -119,8 +119,6 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ValidatorInvocation {
-    Register(ValidatorRegisterInvocation),
-    Unregister(ValidatorUnregisterInvocation),
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
     ClaimXrd(ValidatorClaimXrdInvocation),
@@ -369,16 +367,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Validator(method) => match method {
-                ValidatorInvocation::Register(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
-                ValidatorInvocation::Unregister(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Component(
-                        invocation.receiver,
-                    )));
-                }
                 ValidatorInvocation::Stake(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
@@ -472,8 +460,6 @@ impl NativeInvocation {
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Validator(i) => match i {
-                ValidatorInvocation::Register(i) => (get_native_fn(i), scrypto_encode(i)),
-                ValidatorInvocation::Unregister(i) => (get_native_fn(i), scrypto_encode(i)),
                 ValidatorInvocation::Stake(i) => (get_native_fn(i), scrypto_encode(i)),
                 ValidatorInvocation::Unstake(i) => (get_native_fn(i), scrypto_encode(i)),
                 ValidatorInvocation::ClaimXrd(i) => (get_native_fn(i), scrypto_encode(i)),

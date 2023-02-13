@@ -18,6 +18,7 @@ impl EpochManagerAbi {
 }
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 
 // TODO: Remove this and replace with a macro/function making it easy
 // TODO: to use manifest buckets for any input struct
@@ -114,65 +115,15 @@ pub struct EpochManagerUpdateValidatorInput {
 }
 
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorRegisterMethodArgs {}
+pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorRegisterInvocation {
-    pub receiver: ComponentAddress,
-}
+pub struct ValidatorRegisterInput {}
 
-impl Invocation for ValidatorRegisterInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Register))
-    }
-}
-
-impl SerializableInvocation for ValidatorRegisterInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Register)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Register(self)).into()
-    }
-}
+pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnregisterValidatorMethodArgs {}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnregisterInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for ValidatorUnregisterInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unregister))
-    }
-}
-
-impl SerializableInvocation for ValidatorUnregisterInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Unregister)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
-    }
-}
+pub struct ValidatorUnregisterInput {}
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorStakeMethodArgs {

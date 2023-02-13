@@ -358,16 +358,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Validator(validator_fn) => match validator_fn {
-            ValidatorFn::Register => {
-                let invocation = scrypto_decode::<ValidatorRegisterInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ValidatorFn::Unregister => {
-                let invocation = scrypto_decode::<ValidatorUnregisterInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ValidatorFn::Stake => {
                 let invocation = scrypto_decode::<ValidatorStakeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

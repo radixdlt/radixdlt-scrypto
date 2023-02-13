@@ -58,25 +58,7 @@ impl ExecutableInvocation for ScryptoInvocation {
 
         let (receiver, actor) = if let Some(receiver) = self.receiver {
             let original_node_id = match receiver {
-                ScryptoReceiver::Global(component_address) => match component_address {
-                    ComponentAddress::Normal(..)
-                    | ComponentAddress::AccessController(..)
-                    | ComponentAddress::EpochManager(..)
-                    | ComponentAddress::Clock(..)
-                    | ComponentAddress::Account(..)
-                    | ComponentAddress::Identity(..)
-                    | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                    | ComponentAddress::EddsaEd25519VirtualIdentity(..)
-                    | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                    | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
-                        RENodeId::Global(GlobalAddress::Component(component_address))
-                    }
-                    ComponentAddress::Validator(..) => {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidInvocation,
-                        ));
-                    }
-                },
+                ScryptoReceiver::Global(component_address) => RENodeId::Global(GlobalAddress::Component(component_address)),
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
             };
 

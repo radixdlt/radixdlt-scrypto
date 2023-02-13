@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
+use crate::blueprints::epoch_manager::ValidatorBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSubstate {
@@ -114,6 +115,18 @@ impl EpochManagerNativePackage {
                 ))?;
                 Self::update_validator(receiver, input, api)
             },
+            VALIDATOR_REGISTER_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::register(receiver, input, api)
+            }
+            VALIDATOR_UNREGISTER_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ValidatorBlueprint::unregister(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             )),
@@ -235,13 +248,20 @@ impl EpochManagerNativePackage {
             AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string()),
             rule!(allow_all),
         );
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+
+
+        // TODO: Remove
+        let old_non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+        );
+        let old_non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, old_non_fungible_local_id);
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         );
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string()),
-            rule!(require(non_fungible_global_id)),
+            rule!(require(old_non_fungible_global_id) || require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_SET_EPOCH_IDENT.to_string()),

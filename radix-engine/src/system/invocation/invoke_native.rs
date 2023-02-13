@@ -282,14 +282,6 @@ where
             }
         }
         NativeInvocation::Validator(validator_invocation) => match validator_invocation {
-            ValidatorInvocation::Register(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ValidatorInvocation::Unregister(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ValidatorInvocation::Stake(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

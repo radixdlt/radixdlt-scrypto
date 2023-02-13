@@ -124,9 +124,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<ValidatorRegisterInvocation, E>
-    + Invokable<ValidatorUnregisterInvocation, E>
-    + Invokable<ValidatorStakeInvocation, E>
+    Invokable<ValidatorStakeInvocation, E>
     + Invokable<ValidatorUnstakeInvocation, E>
     + Invokable<ValidatorClaimXrdInvocation, E>
     + Invokable<ValidatorUpdateKeyInvocation, E>
