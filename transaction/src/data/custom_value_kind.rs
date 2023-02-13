@@ -9,6 +9,7 @@ pub const VALUE_KIND_DECIMAL: u8 = 0x85;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0x86;
 pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 pub const VALUE_KIND_NON_FUNGIBLE_GLOBAL_ID: u8 = 0x88;
+pub const VALUE_KIND_PUBLIC_KEY: u8 = 0x89;
 
 #[cfg_attr(
     feature = "serde",
@@ -26,6 +27,7 @@ pub enum ManifestCustomValueKind {
     PreciseDecimal,
     NonFungibleLocalId,
     NonFungibleGlobalId,
+    PublicKey,
 }
 
 impl From<ManifestCustomValueKind> for ValueKind<ManifestCustomValueKind> {
@@ -46,6 +48,7 @@ impl CustomValueKind for ManifestCustomValueKind {
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
             Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
             Self::NonFungibleGlobalId => VALUE_KIND_NON_FUNGIBLE_GLOBAL_ID,
+            Self::PublicKey => VALUE_KIND_PUBLIC_KEY,
         }
     }
 
@@ -60,6 +63,7 @@ impl CustomValueKind for ManifestCustomValueKind {
             VALUE_KIND_PRECISE_DECIMAL => Some(ManifestCustomValueKind::PreciseDecimal),
             VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => Some(ManifestCustomValueKind::NonFungibleLocalId),
             VALUE_KIND_NON_FUNGIBLE_GLOBAL_ID => Some(ManifestCustomValueKind::NonFungibleGlobalId),
+            VALUE_KIND_PUBLIC_KEY => Some(ManifestCustomValueKind::PublicKey),
             _ => None,
         }
     }

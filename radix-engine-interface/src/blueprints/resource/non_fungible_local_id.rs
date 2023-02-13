@@ -152,21 +152,21 @@ impl NonFungibleLocalId {
     ) -> Result<(), EncodeError> {
         match self {
             NonFungibleLocalId::String(v) => {
-                encoder.write_byte(0)?;
+                encoder.write_discriminator(0)?;
                 encoder.write_size(v.len())?;
                 encoder.write_slice(v.as_bytes())?;
             }
             NonFungibleLocalId::Integer(v) => {
-                encoder.write_byte(1)?;
+                encoder.write_discriminator(1)?;
                 encoder.write_slice(&v.to_be_bytes())?; // TODO: variable length encoding?
             }
             NonFungibleLocalId::Bytes(v) => {
-                encoder.write_byte(2)?;
+                encoder.write_discriminator(2)?;
                 encoder.write_size(v.len())?;
                 encoder.write_slice(v.as_slice())?;
             }
             NonFungibleLocalId::UUID(v) => {
-                encoder.write_byte(3)?;
+                encoder.write_discriminator(3)?;
                 encoder.write_slice(&v.to_be_bytes())?;
             }
         }
@@ -176,7 +176,7 @@ impl NonFungibleLocalId {
     pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        let local_id = match decoder.read_byte()? {
+        let local_id = match decoder.read_discriminator()? {
             0 => {
                 let size = decoder.read_size()?;
                 Self::String(

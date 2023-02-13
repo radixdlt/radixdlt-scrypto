@@ -44,6 +44,7 @@ mod tests {
         api::types::{ComponentAddress, PackageAddress},
         blueprints::resource::{NonFungibleLocalId, ResourceAddress},
         constants::RADIX_TOKEN,
+        crypto::{EcdsaSecp256k1PublicKey, PublicKey},
         math::{Decimal, PreciseDecimal},
     };
 
@@ -64,6 +65,7 @@ mod tests {
         i: ManifestPreciseDecimal,
         j: ManifestNonFungibleLocalId,
         k: ManifestNonFungibleGlobalId,
+        l: ManifestPublicKey,
     }
 
     #[test]
@@ -95,6 +97,9 @@ mod tests {
             i: ManifestPreciseDecimal(PreciseDecimal::from(8u32)),
             j: ManifestNonFungibleLocalId(NonFungibleLocalId::String("abc".to_owned())),
             k: ManifestNonFungibleGlobalId(RADIX_TOKEN, NonFungibleLocalId::Integer(9)),
+            l: ManifestPublicKey(PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
+                [10u8; 33],
+            ))),
         };
 
         let bytes = manifest_encode(&t).unwrap();
@@ -103,7 +108,7 @@ mod tests {
             vec![
                 77, // prefix
                 33, // struct
-                11, // field length
+                12, // field length
                 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, // address
                 128, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -119,9 +124,12 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, // decimal
                 134, 0, 0, 0, 0, 0, 0, 0, 0, 8, 248, 80, 251, 37, 107, 199, 113, 107, 191, 60, 213,
                 166, 207, 255, 73, 31, 120, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // global id
-                135, 0, 3, 97, 98, 99, 135, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 9 // local id
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // precise decimal
+                135, 0, 3, 97, 98, 99, // non-fungible global id
+                136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 0, 0, 0, 0, 0, 0, 0, 9, // non-fungible global id
+                137, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 // public key
             ]
         );
         let decoded: TestStruct = manifest_decode(&bytes).unwrap();

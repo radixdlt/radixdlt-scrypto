@@ -40,7 +40,7 @@ impl fmt::Display for ParseManifestNonFungibleGlobalIdError {
 impl Categorize<ManifestCustomValueKind> for ManifestNonFungibleGlobalId {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
-        ValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
+        ValueKind::Custom(ManifestCustomValueKind::NonFungibleGlobalId)
     }
 }
 
