@@ -1,5 +1,7 @@
-use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::blueprints::logger::{Level, LoggerLogInvocation};
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::blueprints::logger::{Level, LoggerLogInput, LOGGER_LOG_IDENT};
+use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::string::String;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -11,7 +13,11 @@ impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
         ScryptoEnv
-            .call_native(LoggerLogInvocation { level, message })
+            .call_method(
+                ScryptoReceiver::Logger,
+                LOGGER_LOG_IDENT,
+                scrypto_encode(&LoggerLogInput { level, message }).unwrap(),
+            )
             .unwrap();
     }
 

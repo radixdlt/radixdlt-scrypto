@@ -14,9 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{
-    ClientComponentApi, ClientDerefApi,
-};
+use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -803,9 +801,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value

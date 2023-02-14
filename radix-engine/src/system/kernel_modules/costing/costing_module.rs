@@ -153,6 +153,7 @@ impl KernelModule for CostingModule {
             || package_address == CLOCK_PACKAGE
             || package_address == ACCOUNT_PACKAGE
             || package_address == ACCESS_CONTROLLER_PACKAGE
+            || package_address == LOGGER_PACKAGE
         {
             return Ok(());
         }

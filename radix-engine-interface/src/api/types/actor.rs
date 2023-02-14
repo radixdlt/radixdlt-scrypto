@@ -16,7 +16,6 @@ pub enum NativePackage {
     Package,
     Metadata,
     KeyValueStore,
-    Logger,
     TransactionRuntime,
     TransactionProcessor,
     Root,
@@ -89,7 +88,6 @@ pub enum NativeFn {
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
-    Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
     Metadata(MetadataFn),
@@ -103,7 +101,6 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
@@ -254,55 +251,6 @@ pub enum AuthZoneStackFn {
     Clear,
     Drain,
     AssertAccessRule,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum KeyValueStoreFn {
-    Create,
-    Insert,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum LoggerFn {
-    Log,
 }
 
 #[derive(

@@ -10,4 +10,5 @@ pub enum ScryptoReceiver {
     Proof(ProofId),
     Bucket(BucketId),
     Worktop,
+    Logger,
 }

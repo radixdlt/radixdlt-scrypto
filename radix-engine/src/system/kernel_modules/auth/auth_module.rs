@@ -150,10 +150,19 @@ impl KernelModule for AuthModule {
 
             ResolvedActor {
                 receiver:
-                Some(ResolvedReceiver {
-                         receiver: RENodeId::Worktop,
-                         ..
-                     }),
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Worktop,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Logger,
+                        ..
+                    }),
                 ..
             } => vec![],
 

@@ -5,6 +5,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum CostingEntry {
@@ -74,6 +75,10 @@ impl FeeTable {
             identifier.package_address,
             identifier.blueprint_name.as_str(),
         ) {
+            (LOGGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => match identifier.ident.as_str() {
+                LOGGER_LOG_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
             (RESOURCE_MANAGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => self.fixed_high,
@@ -238,9 +243,6 @@ impl FeeTable {
                     AuthZoneStackFn::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeFn::Logger(logger_method) => match logger_method {
-                LoggerFn::Log => self.fixed_low,
-            },
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,

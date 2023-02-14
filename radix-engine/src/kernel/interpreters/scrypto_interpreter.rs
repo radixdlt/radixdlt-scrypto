@@ -3,6 +3,7 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
@@ -69,6 +70,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
                 ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
                 ScryptoReceiver::Worktop => RENodeId::Worktop,
+                ScryptoReceiver::Logger => RENodeId::Logger,
             };
 
             // Type Check
@@ -424,6 +426,9 @@ impl NativeVm {
             }
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            LOGGER_CODE_ID => {
+                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,

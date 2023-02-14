@@ -14,7 +14,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 
@@ -170,7 +169,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<PackagePublishNativeInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
-    + Invokable<LoggerLogInvocation, E>
 {
 }
 

@@ -1,8 +1,8 @@
 use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, AuthZoneStackInvocation, ComponentInvocation, LoggerInvocation,
-    MetadataInvocation, NativeInvocation, PackageInvocation, TransactionRuntimeInvocation,
+    AccessRulesChainInvocation, AuthZoneStackInvocation, ComponentInvocation, MetadataInvocation,
+    NativeInvocation, PackageInvocation, TransactionRuntimeInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -117,12 +117,6 @@ where
                 Ok(Box::new(rtn))
             }
             MetadataInvocation::Get(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Logger(logger_invocation) => match logger_invocation {
-            LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

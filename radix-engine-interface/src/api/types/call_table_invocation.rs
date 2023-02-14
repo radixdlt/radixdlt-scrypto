@@ -4,7 +4,6 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::logger::*;
 use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
@@ -54,7 +53,6 @@ pub enum NativeInvocation {
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
     Component(ComponentInvocation),
-    Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
 }
@@ -85,11 +83,6 @@ pub enum AccessRulesChainInvocation {
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum LoggerInvocation {
-    Log(LoggerLogInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -186,11 +179,6 @@ impl NativeInvocation {
                     refs.insert(invocation.receiver);
                 }
             },
-            NativeInvocation::Logger(method) => match method {
-                LoggerInvocation::Log(..) => {
-                    refs.insert(RENodeId::Logger);
-                }
-            },
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::GetHash(..)
                 | TransactionRuntimeInvocation::GenerateUuid(..) => {
@@ -243,9 +231,6 @@ impl NativeInvocation {
                 ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Logger(i) => match i {
-                LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::AuthZoneStack(i) => match i {
                 AuthZoneStackInvocation::Pop(i) => (get_native_fn(i), scrypto_encode(i)),

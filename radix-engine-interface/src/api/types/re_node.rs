@@ -102,6 +102,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id"),
         }
     }

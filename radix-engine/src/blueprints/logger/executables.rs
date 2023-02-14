@@ -1,50 +1,60 @@
-use crate::errors::RuntimeError;
+use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::logger::*;
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
+};
 
-impl ExecutableInvocation for LoggerLogInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::method(
-            NativeFn::Logger(LoggerFn::Log),
-            ResolvedReceiver::new(RENodeId::Logger),
-        );
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for LoggerLogInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+pub struct LoggerNativePackage;
+impl LoggerNativePackage {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        receiver: Option<ComponentId>,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Logger(LoggerOffset::Logger);
-        let node_id = RENodeId::Logger;
-        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        match export_name {
+            LOGGER_LOG_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                Self::log(receiver, input, api)
+            }
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
+    }
+
+    pub(crate) fn log<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: LoggerLogInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Logger,
+            NodeModuleId::SELF,
+            SubstateOffset::Logger(LoggerOffset::Logger),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate = api.get_ref_mut(handle)?;
         let logger = substate.logger();
-        logger.logs.push((self.level, self.message));
+        logger.logs.push((input.level, input.message));
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

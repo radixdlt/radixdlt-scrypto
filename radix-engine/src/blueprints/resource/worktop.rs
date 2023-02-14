@@ -1,14 +1,12 @@
-use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    RENodeId, SubstateOffset, WorktopOffset,
-};
+use radix_engine_interface::api::types::{RENodeId, SubstateOffset, WorktopOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -39,21 +37,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::MUTABLE,
+        )?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
 
@@ -77,21 +72,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
@@ -121,21 +113,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
@@ -157,21 +146,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
@@ -202,21 +188,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::read_only(),
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::read_only(),
+        )?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -241,21 +224,19 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopAssertContainsAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: WorktopAssertContainsAmountInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::read_only(),
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::read_only(),
+        )?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -279,21 +260,19 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: WorktopAssertContainsNonFungiblesInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::read_only(),
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::read_only(),
+        )?;
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
@@ -318,21 +297,18 @@ impl WorktopBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: WorktopDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle =
-            api.lock_substate(
-                RENodeId::Worktop,
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+        let worktop_handle = api.lock_substate(
+            RENodeId::Worktop,
+            NodeModuleId::SELF,
+            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            LockFlags::MUTABLE,
+        )?;
         let mut buckets = Vec::new();
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();

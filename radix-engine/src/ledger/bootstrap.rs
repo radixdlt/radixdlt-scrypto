@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerAbi, ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::IdentityAbi;
+use radix_engine_interface::blueprints::logger::LoggerAbi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -206,6 +207,23 @@ pub fn create_genesis(
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
+            }),
+        )));
+    }
+
+    // Logger Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(LOGGER_PACKAGE)));
+        let package_address = LOGGER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: LOGGER_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
             }),
         )));
     }

@@ -58,7 +58,8 @@ pub struct WorktopAssertContainsAmountInput {
     pub amount: Decimal,
 }
 
-pub const WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT: &str = "Worktop_assert_contains_non_fungibles";
+pub const WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT: &str =
+    "Worktop_assert_contains_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsNonFungiblesInput {
@@ -70,4 +71,3 @@ pub const WORKTOP_DRAIN_IDENT: &str = "Worktop_drain";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopDrainInput {}
-

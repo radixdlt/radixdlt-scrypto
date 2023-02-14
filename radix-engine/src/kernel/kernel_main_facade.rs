@@ -21,7 +21,11 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{Resource, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT};
+use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::{
+    Resource, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
+    WORKTOP_BLUEPRINT,
+};
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -142,9 +146,17 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: LOGGER_PACKAGE,
+                        blueprint_name: LOGGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
