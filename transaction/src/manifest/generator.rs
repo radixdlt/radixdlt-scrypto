@@ -7,6 +7,9 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::{
     AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
 };
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
@@ -20,7 +23,8 @@ use radix_engine_interface::blueprints::resource::{
     RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -501,14 +505,19 @@ pub fn generate_instruction(
         ast::Instruction::CreateValidator {
             key,
             owner_access_rule,
-        } => BasicInstruction::CreateValidator {
-            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            owner_access_rule: generate_typed_value(
-                owner_access_rule,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+        } => BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+                owner_access_rule: generate_typed_value(
+                    owner_access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
         },
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -1888,11 +1897,16 @@ mod tests {
             r#"
             CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
-            BasicInstruction::CreateValidator {
-                key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
-                    .unwrap()
-                    .public_key(),
-                owner_access_rule: AccessRule::AllowAll,
+            BasicInstruction::CallMethod {
+                component_address: EPOCH_MANAGER,
+                method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                    key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
+                        .unwrap()
+                        .public_key(),
+                    owner_access_rule: AccessRule::AllowAll,
+                })
+                .unwrap(),
             },
         );
     }

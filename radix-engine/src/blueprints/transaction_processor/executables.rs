@@ -18,9 +18,6 @@ use radix_engine_interface::api::{
     ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -133,9 +130,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 }
             }
 
-            BasicInstruction::CreateValidator { .. } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-            }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
                 update.add_ref(RENodeId::Global(*entity_address));
@@ -705,28 +699,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::CreateValidator {
-                    key,
-                    owner_access_rule,
-                }) => {
-                    let result = api.call_method(
-                        ScryptoReceiver::Global(EPOCH_MANAGER),
-                        EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-                        scrypto_encode(&EpochManagerCreateValidatorInput {
-                            key: key.clone(),
-                            owner_access_rule: owner_access_rule.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
-                    )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;

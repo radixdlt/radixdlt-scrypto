@@ -5,13 +5,19 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+    VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
+    VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
+};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -376,9 +382,14 @@ impl ManifestBuilder {
         key: EcdsaSecp256k1PublicKey,
         owner_access_rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateValidator {
-            key,
-            owner_access_rule,
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                key,
+                owner_access_rule,
+            })
+            .unwrap(),
         });
         self
     }
@@ -386,7 +397,7 @@ impl ManifestBuilder {
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "register".to_string(),
+            method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: args!(),
         });
         self
@@ -395,7 +406,7 @@ impl ManifestBuilder {
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "unregister".to_string(),
+            method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: args!(),
         });
         self
@@ -408,7 +419,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "stake".to_string(),
+            method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: args!(bucket),
         });
         self
@@ -421,7 +432,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "unstake".to_string(),
+            method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: args!(bucket),
         });
         self
@@ -434,7 +445,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "claim_xrd".to_string(),
+            method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: args!(bucket),
         });
         self
