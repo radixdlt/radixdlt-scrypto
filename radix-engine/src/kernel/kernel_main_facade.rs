@@ -193,6 +193,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[inline(always)]
     fn get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
