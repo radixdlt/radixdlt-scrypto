@@ -67,10 +67,9 @@ impl TransactionLimitsModule {
 }
 
 impl KernelModule for TransactionLimitsModule {
-    /// If there is a nested call of WASM instance, call_frame argument
-    /// contains currently alocated memory by WASM instance which invokes
+    /// If there is a nested call of WASM instance, api.get_current_wasm_memory_consumption()
+    /// returns currently alocated memory by WASM instance which invokes
     /// nested call (call frame references that instance).
-
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _actor: &ResolvedActor,
@@ -97,24 +96,18 @@ impl KernelModule for TransactionLimitsModule {
         consumed_memory: usize,
     ) -> Result<(), RuntimeError> {
         let depth = api.get_current_depth();
+        let tlimit = &mut api.get_module_state().transaction_limits;
+
         // update current frame consumed memory value after WASM invokation is done
-        if let Some(val) = api
-            .get_module_state()
-            .transaction_limits
-            .wasm_memory
-            .get_mut(depth)
-        {
+        if let Some(val) = tlimit.wasm_memory.get_mut(depth) {
             *val = consumed_memory;
         } else {
             // When kernel pops the call frame there are some nested calls which
-            // are not aligned with pre_execute_invocation() which requires pushing
+            // are not aligned with before_push_frame() which requires pushing
             // new value on a stack instead of updating it.
-            api.get_module_state()
-                .transaction_limits
-                .wasm_memory
-                .push(consumed_memory)
+            tlimit.wasm_memory.push(consumed_memory)
         }
 
-        api.get_module_state().transaction_limits.validate()
+        tlimit.validate()
     }
 }
