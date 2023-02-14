@@ -58,7 +58,6 @@ pub enum NativeInvocation {
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     Bucket(BucketInvocation),
-    Vault(VaultInvocation),
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
@@ -137,13 +136,6 @@ pub enum BucketInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum VaultInvocation {
-    CreateProof(VaultCreateProofInvocation),
-    CreateProofByAmount(VaultCreateProofByAmountInvocation),
-    CreateProofByIds(VaultCreateProofByIdsInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofInvocation {
     Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
@@ -215,11 +207,6 @@ impl NativeInvocation {
                 ProofInvocation::GetNonFungibleLocalIds(..) => {}
                 ProofInvocation::GetResourceAddress(..) => {}
                 ProofInvocation::Clone(..) => {}
-            },
-            NativeInvocation::Vault(vault_method) => match vault_method {
-                VaultInvocation::CreateProof(..) => {}
-                VaultInvocation::CreateProofByAmount(..) => {}
-                VaultInvocation::CreateProofByIds(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -344,11 +331,6 @@ impl NativeInvocation {
                 BucketInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Vault(i) => match i {
-                VaultInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Proof(i) => match i {
                 ProofInvocation::Clone(i) => (get_native_fn(i), scrypto_encode(i)),

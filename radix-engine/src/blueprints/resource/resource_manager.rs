@@ -354,17 +354,17 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProof)),
+        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProofByAmount)),
+        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProofByIds)),
+        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );

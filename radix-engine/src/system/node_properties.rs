@@ -57,8 +57,7 @@ impl VisibilityProperties {
                         ..
                     })
                     | FnIdentifier::Native(NativeFn::Bucket(..))
-                    | FnIdentifier::Native(NativeFn::Worktop(..))
-                    | FnIdentifier::Native(NativeFn::Vault(..)) => true,
+                    | FnIdentifier::Native(NativeFn::Worktop(..)) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
@@ -105,7 +104,8 @@ impl VisibilityProperties {
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
-                | RENodeInit::NonFungibleStore(..) => package_address.eq(&RESOURCE_MANAGER_PACKAGE),
+                | RENodeInit::NonFungibleStore(..)
+                | RENodeInit::Proof(..) => package_address.eq(&RESOURCE_MANAGER_PACKAGE),
                 RENodeInit::Identity() => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }

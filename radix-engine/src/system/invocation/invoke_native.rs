@@ -3,7 +3,7 @@ use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ComponentInvocation,
     LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
-    TransactionRuntimeInvocation, VaultInvocation, WorktopInvocation,
+    TransactionRuntimeInvocation, WorktopInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -128,20 +128,6 @@ where
                 Ok(Box::new(rtn))
             }
             ProofInvocation::Clone(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Vault(vault_invocation) => match vault_invocation {
-            VaultInvocation::CreateProof(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::CreateProofByAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::CreateProofByIds(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

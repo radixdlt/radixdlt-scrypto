@@ -99,7 +99,6 @@ pub enum NativeFn {
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
     Bucket(BucketFn),
-    Vault(VaultFn),
     Proof(ProofFn),
     Worktop(WorktopFn),
     Logger(LoggerFn),
@@ -117,7 +116,6 @@ impl NativeFn {
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::Bucket(..)
-            | NativeFn::Vault(..)
             | NativeFn::Proof(..)
             | NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Logger(..) => NativePackage::Logger,
@@ -326,32 +324,6 @@ pub enum BucketFn {
     GetAmount,
     GetResourceAddress,
     CreateProof,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum VaultFn {
-    CreateProof,
-    CreateProofByAmount,
-    CreateProofByIds,
 }
 
 #[derive(

@@ -116,6 +116,9 @@ impl FeeTable {
                 VAULT_GET_AMOUNT_IDENT => self.fixed_low,
                 VAULT_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
                 VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
+                VAULT_CREATE_PROOF_IDENT => self.fixed_low,
+                VAULT_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_low,
+                VAULT_CREATE_PROOF_BY_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
@@ -258,11 +261,6 @@ impl FeeTable {
                 PackageFn::PublishNative => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
-            },
-            NativeFn::Vault(vault_ident) => match vault_ident {
-                VaultFn::CreateProof => self.fixed_high,
-                VaultFn::CreateProofByAmount => self.fixed_high,
-                VaultFn::CreateProofByIds => self.fixed_high,
             },
             NativeFn::TransactionRuntime(ident) => match ident {
                 TransactionRuntimeFn::GetHash => self.fixed_low,

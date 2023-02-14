@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
@@ -8,7 +8,6 @@ use radix_engine_interface::Categorize;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::scrypto_env_native_fn;
 use scrypto_abi::Type;
 
 use crate::resource::*;
@@ -223,20 +222,48 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    scrypto_env_native_fn! {
-        fn create_proof(&self) -> Proof {
-            VaultCreateProofInvocation {
-                receiver: self.0,
-            }
-        }
+    fn create_proof(&self) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_IDENT,
+                scrypto_encode(&VaultCreateProofInput {
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-            VaultCreateProofByAmountInvocation {  receiver: self.0,amount }
-        }
+    fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
+                scrypto_encode(&VaultCreateProofByAmountInput {
+                    amount,
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
-            VaultCreateProofByIdsInvocation {  receiver: self.0, ids: ids.clone(), }
-        }
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&VaultCreateProofByIdsInput {
+                    ids: ids.clone(),
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Locks the specified amount as transaction fee.

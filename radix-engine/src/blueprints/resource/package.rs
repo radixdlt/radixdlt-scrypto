@@ -226,6 +226,24 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::get_non_fungible_local_ids(receiver, input, api)
             }
+            VAULT_CREATE_PROOF_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::create_proof(receiver, input, api)
+            }
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::create_proof_by_amount(receiver, input, api)
+            }
+            VAULT_CREATE_PROOF_BY_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::create_proof_by_ids(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

@@ -4,19 +4,15 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
-};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
+    RENodeId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -41,8 +37,8 @@ impl VaultBlueprint {
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -76,8 +72,8 @@ impl VaultBlueprint {
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -112,8 +108,8 @@ impl VaultBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -132,8 +128,8 @@ impl VaultBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -284,8 +280,8 @@ impl VaultBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -343,8 +339,8 @@ impl VaultBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -363,8 +359,8 @@ impl VaultBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
+        where
+            Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
@@ -378,45 +374,35 @@ impl VaultBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
-}
 
-impl ExecutableInvocation for VaultCreateProofInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::CreateProof),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultCreateProofInvocation {
-    type Output = Proof;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let _input: VaultCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::MUTABLE,
+            )?;
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof(ResourceContainerId::Vault(self.receiver))
+                .create_proof(ResourceContainerId::Vault(receiver))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),
@@ -428,50 +414,37 @@ impl Executor for VaultCreateProofInvocation {
         api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::CreateProofByAmount),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof_by_amount<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let input: VaultCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::MUTABLE,
+            )?;
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof_by_amount(self.amount, ResourceContainerId::Vault(self.receiver))
+                .create_proof_by_amount(input.amount, ResourceContainerId::Vault(receiver))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),
@@ -483,50 +456,37 @@ impl Executor for VaultCreateProofByAmountInvocation {
         api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::CreateProofByIds),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof_by_ids<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let input: VaultCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::MUTABLE,
+            )?;
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof_by_ids(&self.ids, ResourceContainerId::Vault(self.receiver))
+                .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(receiver))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),
@@ -538,9 +498,6 @@ impl Executor for VaultCreateProofByIdsInvocation {
         api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 }

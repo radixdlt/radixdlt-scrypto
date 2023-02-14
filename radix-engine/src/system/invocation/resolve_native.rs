@@ -160,23 +160,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::Vault(vault_fn) => match vault_fn {
-            VaultFn::CreateProof => {
-                let invocation = scrypto_decode::<VaultCreateProofInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            VaultFn::CreateProofByAmount => {
-                let invocation = scrypto_decode::<VaultCreateProofByAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            VaultFn::CreateProofByIds => {
-                let invocation = scrypto_decode::<VaultCreateProofByIdsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
             AccessRulesChainFn::AddAccessCheck => {
                 let invocation = scrypto_decode::<AccessRulesAddAccessCheckInvocation>(&invocation)

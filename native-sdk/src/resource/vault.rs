@@ -1,7 +1,5 @@
 use radix_engine_interface::api::types::{ScryptoReceiver, VaultId};
-use radix_engine_interface::api::{
-    ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::{ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -130,11 +128,15 @@ impl Vault {
         E: Debug + ScryptoDecode,
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        let amount = self.sys_amount(api)?;
-        api.call_native(VaultCreateProofByAmountInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_CREATE_PROOF_IDENT,
+            scrypto_encode(&VaultCreateProofInput {
+            })
+                .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoDecode>(
@@ -143,12 +145,18 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(VaultCreateProofByAmountInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
+            scrypto_encode(&VaultCreateProofByAmountInput {
+                amount,
+            })
+                .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoDecode>(
@@ -157,12 +165,18 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(VaultCreateProofByIdsInvocation {
-            receiver: self.0,
-            ids,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_CREATE_PROOF_BY_IDS_IDENT,
+            scrypto_encode(&VaultCreateProofByIdsInput {
+                ids,
+            })
+                .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_lock_fee<Y, E: Debug + ScryptoDecode>(

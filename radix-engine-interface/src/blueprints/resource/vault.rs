@@ -1,4 +1,3 @@
-use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
@@ -76,85 +75,22 @@ pub const VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local
 pub struct VaultGetNonFungibleLocalIdsInput {
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultCreateProofInvocation {
-    pub receiver: VaultId,
-}
-
-impl Invocation for VaultCreateProofInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProof))
-    }
-}
-
-impl SerializableInvocation for VaultCreateProofInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::CreateProof)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultCreateProofInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::CreateProof(self)).into()
-    }
-}
+pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultCreateProofByAmountInvocation {
-    pub receiver: VaultId,
+pub struct VaultCreateProofInput {
+}
+
+pub const VAULT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultCreateProofByAmountInput {
     pub amount: Decimal,
 }
 
-impl Invocation for VaultCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByAmount))
-    }
-}
-
-impl SerializableInvocation for VaultCreateProofByAmountInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::CreateProofByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultCreateProofByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::CreateProofByAmount(self)).into()
-    }
-}
+pub const VAULT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultCreateProofByIdsInvocation {
-    pub receiver: VaultId,
+pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for VaultCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::CreateProofByIds))
-    }
-}
-
-impl SerializableInvocation for VaultCreateProofByIdsInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::CreateProofByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::CreateProofByIds(self)).into()
-    }
 }
