@@ -3,7 +3,7 @@
 //==========================
 
 /// The default cost unit limit.
-pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
+pub const DEFAULT_COST_UNIT_LIMIT: u32 = 150_000_000;
 
 //==========================
 // Transaction validation
@@ -16,7 +16,7 @@ pub const MAX_NUMBER_OF_INTENT_SIGNATURES: usize = 16;
 pub const DEFAULT_MIN_COST_UNIT_LIMIT: u32 = 1_000_000;
 
 /// The maximum value of cost unit limit
-pub const DEFAULT_MAX_COST_UNIT_LIMIT: u32 = 100_000_000;
+pub const DEFAULT_MAX_COST_UNIT_LIMIT: u32 = 150_000_000;
 
 /// The minimum value of tip percentage
 pub const DEFAULT_MIN_TIP_PERCENTAGE: u16 = 0;

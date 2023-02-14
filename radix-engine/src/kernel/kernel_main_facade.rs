@@ -21,9 +21,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{
-    Resource, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{Resource, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, BUCKET_BLUEPRINT};
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -141,8 +139,22 @@ where
             ) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
-            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
@@ -152,7 +164,6 @@ where
                     }),
                 );
             }
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
@@ -162,9 +173,6 @@ where
                     }),
                 );
             }
-            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
@@ -177,8 +185,6 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
                 );
             }
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,

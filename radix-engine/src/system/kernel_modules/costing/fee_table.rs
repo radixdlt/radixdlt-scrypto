@@ -121,6 +121,12 @@ impl FeeTable {
                 VAULT_CREATE_PROOF_BY_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
+            (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match identifier.ident.as_str() {
+                BUCKET_PUT_IDENT => self.fixed_low,
+                BUCKET_TAKE_IDENT => self.fixed_low,
+                BUCKET_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match identifier.ident.as_str() {
                 PROOF_CLONE_IDENT => self.fixed_low,
                 PROOF_GET_AMOUNT_IDENT => self.fixed_low,
@@ -218,10 +224,7 @@ impl FeeTable {
                 }
             }
             NativeFn::Bucket(bucket_ident) => match bucket_ident {
-                BucketFn::Take => self.fixed_medium,
-                BucketFn::TakeNonFungibles => self.fixed_medium,
                 BucketFn::GetNonFungibleLocalIds => self.fixed_medium,
-                BucketFn::Put => self.fixed_medium,
                 BucketFn::GetAmount => self.fixed_low,
                 BucketFn::GetResourceAddress => self.fixed_low,
                 BucketFn::CreateProof => self.fixed_low,

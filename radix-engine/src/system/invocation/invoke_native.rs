@@ -51,15 +51,7 @@ where
             }
         },
         NativeInvocation::Bucket(bucket_invocation) => match bucket_invocation {
-            BucketInvocation::Take(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             BucketInvocation::CreateProof(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            BucketInvocation::TakeNonFungibles(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -68,10 +60,6 @@ where
                 Ok(Box::new(rtn))
             }
             BucketInvocation::GetAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            BucketInvocation::Put(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

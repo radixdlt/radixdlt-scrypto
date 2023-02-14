@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::{ClientApi, ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
@@ -36,7 +36,7 @@ pub trait SysBucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNativeInvokeApi<E>;
+        Y: ClientApi<E>;
 
     fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -44,7 +44,7 @@ pub trait SysBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E>;
+        Y: ClientApi<E>;
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &mut self,
@@ -52,7 +52,7 @@ pub trait SysBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E>;
+        Y: ClientApi<E>;
 
     fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
@@ -123,12 +123,15 @@ impl SysBucket for Bucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(BucketPutInvocation {
-            receiver: self.0,
-            bucket: other,
-        })
+        let _rtn = api.call_method(
+            ScryptoReceiver::Bucket(self.0),
+            BUCKET_PUT_IDENT,
+            scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
+        )?;
+
+        Ok(())
     }
 
     fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -137,12 +140,15 @@ impl SysBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(BucketTakeInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Bucket(self.0),
+            BUCKET_TAKE_IDENT,
+            scrypto_encode(&BucketTakeInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -151,12 +157,15 @@ impl SysBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(BucketTakeNonFungiblesInvocation {
-            receiver: self.0,
-            ids,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Bucket(self.0),
+            BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>

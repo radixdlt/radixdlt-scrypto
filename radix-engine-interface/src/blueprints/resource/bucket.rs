@@ -8,97 +8,35 @@ use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
+pub const BUCKET_BLUEPRINT: &str = "Bucket";
+
+pub const BUCKET_TAKE_IDENT: &str = "Bucket_take";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct BucketTakeInvocation {
-    pub receiver: BucketId,
+pub struct BucketTakeInput {
     pub amount: Decimal,
 }
 
-impl Invocation for BucketTakeInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Bucket(BucketFn::Take))
-    }
-}
-
-impl SerializableInvocation for BucketTakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Bucket(BucketFn::Take)
-    }
-}
-
-impl Into<CallTableInvocation> for BucketTakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Bucket(BucketInvocation::Take(self)).into()
-    }
-}
+pub const BUCKET_PUT_IDENT: &str = "Bucket_put";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct BucketPutInvocation {
-    pub receiver: BucketId,
+pub struct BucketPutInput {
     pub bucket: Bucket,
 }
 
-impl Clone for BucketPutInvocation {
+impl Clone for BucketPutInput {
     fn clone(&self) -> Self {
         Self {
-            receiver: self.receiver,
             bucket: Bucket(self.bucket.0),
         }
     }
 }
 
-impl Invocation for BucketPutInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Bucket(BucketFn::Put))
-    }
-}
-
-impl SerializableInvocation for BucketPutInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Bucket(BucketFn::Put)
-    }
-}
-
-impl Into<CallTableInvocation> for BucketPutInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Bucket(BucketInvocation::Put(self)).into()
-    }
-}
+pub const BUCKET_TAKE_NON_FUNGIBLES_IDENT: &str = "Bucket_take_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct BucketTakeNonFungiblesInvocation {
-    pub receiver: BucketId,
+pub struct BucketTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for BucketTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Bucket(BucketFn::TakeNonFungibles))
-    }
-}
-
-impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Bucket(BucketFn::TakeNonFungibles)
-    }
-}
-
-impl Into<CallTableInvocation> for BucketTakeNonFungiblesInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Bucket(BucketInvocation::TakeNonFungibles(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

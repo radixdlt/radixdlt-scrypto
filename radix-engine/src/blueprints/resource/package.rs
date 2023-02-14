@@ -268,6 +268,24 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ProofBlueprint::get_resource_address(receiver, input, api)
             }
+            BUCKET_PUT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::put(receiver, input, api)
+            }
+            BUCKET_TAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::take(receiver, input, api)
+            }
+            BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::take_non_fungibles(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

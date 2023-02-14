@@ -306,9 +306,6 @@ pub enum KeyValueStoreFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketFn {
-    Take,
-    TakeNonFungibles,
-    Put,
     GetNonFungibleLocalIds,
     GetAmount,
     GetResourceAddress,

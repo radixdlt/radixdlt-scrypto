@@ -125,9 +125,6 @@ pub enum AuthZoneStackInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketInvocation {
-    Take(BucketTakeInvocation),
-    TakeNonFungibles(BucketTakeNonFungiblesInvocation),
-    Put(BucketPutInvocation),
     GetNonFungibleLocalIds(BucketGetNonFungibleLocalIdsInvocation),
     GetAmount(BucketGetAmountInvocation),
     GetResourceAddress(BucketGetResourceAddressInvocation),
@@ -175,12 +172,9 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Bucket(bucket_method) => match bucket_method {
-                BucketInvocation::Take(..) => {}
                 BucketInvocation::CreateProof(..) => {}
-                BucketInvocation::TakeNonFungibles(..) => {}
                 BucketInvocation::GetNonFungibleLocalIds(..) => {}
                 BucketInvocation::GetAmount(..) => {}
-                BucketInvocation::Put(..) => {}
                 BucketInvocation::GetResourceAddress(..) => {}
             },
             NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
@@ -307,9 +301,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Bucket(i) => match i {
-                BucketInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::GetNonFungibleLocalIds(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

@@ -168,9 +168,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
     + Invokable<PackagePublishNativeInvocation, E>
-    + Invokable<BucketTakeInvocation, E>
-    + Invokable<BucketPutInvocation, E>
-    + Invokable<BucketTakeNonFungiblesInvocation, E>
     + Invokable<BucketGetNonFungibleLocalIdsInvocation, E>
     + Invokable<BucketGetAmountInvocation, E>
     + Invokable<BucketGetResourceAddressInvocation, E>

@@ -25,6 +25,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             RENodeId::Component(component_id)
         }
         ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
+        ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
         ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
     };
 

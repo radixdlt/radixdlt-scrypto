@@ -57,18 +57,8 @@ pub fn resolve_native(
             }
         },
         NativeFn::Bucket(bucket_fn) => match bucket_fn {
-            BucketFn::Take => {
-                let invocation = scrypto_decode::<BucketTakeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             BucketFn::CreateProof => {
                 let invocation = scrypto_decode::<BucketCreateProofInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            BucketFn::TakeNonFungibles => {
-                let invocation = scrypto_decode::<BucketTakeNonFungiblesInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
@@ -80,11 +70,6 @@ pub fn resolve_native(
             }
             BucketFn::GetAmount => {
                 let invocation = scrypto_decode::<BucketGetAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            BucketFn::Put => {
-                let invocation = scrypto_decode::<BucketPutInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

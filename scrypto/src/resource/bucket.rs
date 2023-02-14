@@ -73,28 +73,49 @@ impl ScryptoBucket for Bucket {
             .unwrap()
     }
 
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_TAKE_IDENT,
+                scrypto_encode(&BucketTakeInput { amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&BucketTakeNonFungiblesInput {
+                    ids: non_fungible_local_ids.clone(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn put(&mut self, other: Self) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_PUT_IDENT,
+                scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
     scrypto_env_native_fn! {
-        fn take_internal(&mut self, amount: Decimal) -> Bucket {
-            BucketTakeInvocation {
-                receiver: self.0,
-                amount,
-            }
-        }
-
-        fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
-            BucketTakeNonFungiblesInvocation {
-                receiver: self.0,
-                ids: non_fungible_local_ids.clone()
-            }
-        }
-
-        fn put(&mut self, other: Self) -> () {
-            BucketPutInvocation {
-                receiver: self.0,
-                bucket: Bucket(other.0),
-            }
-        }
-
         fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
             BucketGetNonFungibleLocalIdsInvocation {
                 receiver: self.0,

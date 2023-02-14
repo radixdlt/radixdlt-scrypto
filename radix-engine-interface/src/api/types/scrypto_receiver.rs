@@ -8,4 +8,5 @@ pub enum ScryptoReceiver {
     Vault(VaultId),
     Component(ComponentId),
     Proof(ProofId),
+    Bucket(BucketId),
 }

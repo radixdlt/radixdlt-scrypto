@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
@@ -11,8 +11,9 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketError {
@@ -26,41 +27,31 @@ pub enum BucketError {
     MethodNotFound(BucketFn),
 }
 
-impl ExecutableInvocation for BucketTakeInvocation {
-    type Exec = Self;
+pub struct BucketBlueprint;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Bucket(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Bucket(BucketFn::Take),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for BucketTakeInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+impl BucketBlueprint {
+    pub(crate) fn take<Y>(
+        receiver: BucketId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let node_id = RENodeId::Bucket(self.receiver);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        // TODO: Remove decode/encode mess
+        let input: BucketTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let bucket_handle = api.lock_substate(
+            RENodeId::Bucket(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Bucket(BucketOffset::Bucket),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate_mut = api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let container = bucket.take(self.amount).map_err(|e| {
+        let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
             ))
@@ -73,10 +64,78 @@ impl Executor for BucketTakeInvocation {
             BTreeMap::new(),
         )?;
         let bucket_id = node_id.into();
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+    pub(crate) fn take_non_fungibles<Y>(
+        receiver: BucketId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: BucketTakeNonFungiblesInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let bucket_handle = api.lock_substate(
+            RENodeId::Bucket(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Bucket(BucketOffset::Bucket),
+            LockFlags::MUTABLE,
+        )?;
+
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let bucket = substate_mut.bucket();
+        let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceOperationError(e),
+            ))
+        })?;
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+    pub(crate) fn put<Y>(
+        receiver: BucketId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: BucketPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let bucket_handle = api.lock_substate(
+            RENodeId::Bucket(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Bucket(BucketOffset::Bucket),
+            LockFlags::MUTABLE,
+        )?;
+
+        let other_bucket = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let bucket = substate_mut.bucket();
+        bucket.put(other_bucket).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceOperationError(e),
+            ))
+        })?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -127,60 +186,6 @@ impl Executor for BucketCreateProofInvocation {
         Ok((
             Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
-    }
-}
-
-impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Bucket(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Bucket(BucketFn::TakeNonFungibles),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for BucketTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Bucket(self.receiver);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let container = bucket.take_non_fungibles(&self.ids).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
 }
@@ -263,51 +268,6 @@ impl Executor for BucketGetAmountInvocation {
         let substate = api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok((bucket.total_amount(), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for BucketPutInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Bucket(self.receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.bucket.0));
-        let actor = ResolvedActor::method(
-            NativeFn::Bucket(BucketFn::Put),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for BucketPutInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Bucket(self.receiver);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let other_bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        bucket.put(other_bucket).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
-
-        Ok(((), CallFrameUpdate::empty()))
     }
 }
 
