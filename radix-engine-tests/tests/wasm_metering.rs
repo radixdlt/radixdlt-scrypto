@@ -234,7 +234,7 @@ fn test_max_transaction_memory_exceeded() {
 
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
+    let package_address = test_runner.compile_and_publish("tests/blueprints/recursion");
 
     // Act
     let manifest = ManifestBuilder::new()
