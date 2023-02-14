@@ -20,7 +20,7 @@ mod proofs {
             let token = ResourceBuilder::new_fungible()
                 .mintable(organizational_access_rule.clone(), LOCKED)
                 .restrict_withdraw(organizational_access_rule.clone(), LOCKED)
-                .initial_supply(100);
+                .mint_initial_supply(100);
 
             // Creating the access rules for the component and instantiating an new component
             let access_rules: AccessRules = AccessRules::new()
@@ -44,7 +44,7 @@ mod proofs {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
                 .metadata("name", name)
-                .initial_supply(1)
+                .mint_initial_supply(1)
         }
 
         pub fn organizational_authenticated_method(&self) {

@@ -12,7 +12,7 @@ mod component_test {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(amount)
+                .mint_initial_supply(amount)
         }
 
         pub fn create_component() -> ComponentAddress {
