@@ -442,10 +442,6 @@ where
     fn wasm_memory_consumption(&mut self, size: usize) {
         self.current_frame.consumed_wasm_memory = size;
     }
-
-    fn wasm_memory_consumption(&mut self, size: usize) {
-        self.current_frame.consumed_wasm_memory = size;
-    }
 }
 
 impl<'g, 's, W> ClientApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}

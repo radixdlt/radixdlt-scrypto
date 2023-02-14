@@ -451,11 +451,4 @@ impl WasmRuntime for NopWasmRuntime {
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
-
-    fn set_wasm_memory_consumption(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
 }
