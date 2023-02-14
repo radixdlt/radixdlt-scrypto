@@ -621,9 +621,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         amount: amount.clone(),
                     })?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result_indexed =
+                        IndexedScryptoValue::from_vec(scrypto_encode(&rtn).unwrap()).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::SetMetadata {
                     entity_address,

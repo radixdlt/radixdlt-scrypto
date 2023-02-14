@@ -24,6 +24,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             // TODO: Will be easier to fix this when local handles are implemented
             RENodeId::Component(component_id)
         }
+        ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
     };
 
     let component_info = {

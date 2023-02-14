@@ -349,8 +349,6 @@ pub enum BucketFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultFn {
-    Take,
-    LockFee,
     Put,
     TakeNonFungibles,
     GetAmount,

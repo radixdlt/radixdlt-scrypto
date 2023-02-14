@@ -345,13 +345,23 @@ impl ExecutionTraceModule {
                     }),
             } => self.handle_vault_put_input(&resource_summary, &current_actor, vault_id),
             ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_lock_fee_input(&current_actor, vault_id),
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(VAULT_BLUEPRINT)
+                && ident.eq(VAULT_LOCK_FEE_IDENT) =>
+            {
+                self.handle_vault_lock_fee_input(&current_actor, vault_id)
+            }
             _ => {}
         }
     }
@@ -365,13 +375,23 @@ impl ExecutionTraceModule {
     ) {
         match &current_actor {
             ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Take)),
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
                         ..
                     }),
-            } => self.handle_vault_take_output(&resource_summary, caller, vault_id),
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(VAULT_BLUEPRINT)
+                && ident.eq(VAULT_TAKE_IDENT) =>
+            {
+                self.handle_vault_take_output(&resource_summary, caller, vault_id)
+            }
             _ => {}
         }
 

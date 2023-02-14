@@ -52,23 +52,36 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
-        api.call_native(VaultTakeInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_TAKE_IDENT,
+            scrypto_encode(&VaultTakeInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
+        // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
-        api.call_native(VaultTakeInvocation {
-            receiver: self.0,
-            amount,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_TAKE_IDENT,
+            scrypto_encode(&VaultTakeInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoDecode>(
@@ -138,13 +151,21 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
-        api.call_native(VaultLockFeeInvocation {
-            receiver: self.0,
-            amount,
-            contingent: false,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&VaultLockFeeInput {
+                amount,
+                contingent: false,
+            })
+            .unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
@@ -153,13 +174,21 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
-        api.call_native(VaultLockFeeInvocation {
-            receiver: self.0,
-            amount,
-            contingent: true,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&VaultLockFeeInput {
+                amount,
+                contingent: true,
+            })
+            .unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_resource_address<Y, E: Debug + ScryptoDecode>(

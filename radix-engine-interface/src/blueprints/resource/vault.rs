@@ -2,8 +2,11 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
+
+pub const VAULT_BLUEPRINT: &str = "Vault";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultPutInvocation {
@@ -42,32 +45,19 @@ impl Into<CallTableInvocation> for VaultPutInvocation {
     }
 }
 
+pub const VAULT_TAKE_IDENT: &str = "take";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultTakeInvocation {
-    pub receiver: VaultId,
+pub struct VaultTakeInput {
     pub amount: Decimal,
 }
 
-impl Invocation for VaultTakeInvocation {
-    type Output = Bucket;
+pub const VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::Take))
-    }
-}
-
-impl SerializableInvocation for VaultTakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::Take)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultTakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::Take(self)).into()
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultLockFeeInput {
+    pub amount: Decimal,
+    pub contingent: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -132,7 +122,7 @@ pub struct VaultRecallInvocation {
 }
 
 impl Invocation for VaultRecallInvocation {
-    type Output = Bucket;
+    type Output = ScryptoValue;
 
     fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall))
@@ -140,7 +130,7 @@ impl Invocation for VaultRecallInvocation {
 }
 
 impl SerializableInvocation for VaultRecallInvocation {
-    type ScryptoOutput = Bucket;
+    type ScryptoOutput = ScryptoValue;
 
     fn native_fn() -> NativeFn {
         NativeFn::Vault(VaultFn::Recall)
@@ -315,34 +305,5 @@ impl SerializableInvocation for VaultCreateProofByIdsInvocation {
 impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProofByIds(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultLockFeeInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-    pub contingent: bool,
-}
-
-impl Invocation for VaultLockFeeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee))
-    }
-}
-
-impl SerializableInvocation for VaultLockFeeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::LockFee)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultLockFeeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::LockFee(self)).into()
     }
 }

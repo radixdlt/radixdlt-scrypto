@@ -21,7 +21,9 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{Resource, RESOURCE_MANAGER_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    Resource, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
+};
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -143,7 +145,15 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
+            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: VAULT_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}

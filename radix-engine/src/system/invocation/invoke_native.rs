@@ -133,15 +133,7 @@ where
             }
         },
         NativeInvocation::Vault(vault_invocation) => match vault_invocation {
-            VaultInvocation::Take(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             VaultInvocation::Put(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::LockFee(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

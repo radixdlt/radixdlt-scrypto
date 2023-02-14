@@ -65,6 +65,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                     RENodeId::Global(GlobalAddress::Resource(resource_address))
                 }
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
+                ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
             };
 
             // Type Check

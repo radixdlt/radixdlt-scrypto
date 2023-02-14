@@ -318,7 +318,7 @@ fn build_substates(
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::Take)),
+        AccessRuleKey::ScryptoMethod(VAULT_TAKE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
@@ -328,7 +328,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::LockFee)),
+        AccessRuleKey::ScryptoMethod(VAULT_LOCK_FEE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );

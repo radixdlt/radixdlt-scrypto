@@ -138,8 +138,6 @@ pub enum BucketInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultInvocation {
-    Take(VaultTakeInvocation),
-    LockFee(VaultLockFeeInvocation),
     Put(VaultPutInvocation),
     TakeNonFungibles(VaultTakeNonFungiblesInvocation),
     GetAmount(VaultGetAmountInvocation),
@@ -226,9 +224,7 @@ impl NativeInvocation {
                 ProofInvocation::Clone(..) => {}
             },
             NativeInvocation::Vault(vault_method) => match vault_method {
-                VaultInvocation::Take(..) => {}
                 VaultInvocation::Put(..) => {}
-                VaultInvocation::LockFee(..) => {}
                 VaultInvocation::TakeNonFungibles(..) => {}
                 VaultInvocation::GetAmount(..) => {}
                 VaultInvocation::GetResourceAddress(..) => {}
@@ -364,8 +360,6 @@ impl NativeInvocation {
                 BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Vault(i) => match i {
-                VaultInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::LockFee(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),

@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::constants::*;
 use sbor::rust::collections::BTreeMap;
 
@@ -106,10 +105,7 @@ impl VisibilityProperties {
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
-                | RENodeInit::NonFungibleStore(..) => {
-                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
-                }
+                | RENodeInit::NonFungibleStore(..) => package_address.eq(&RESOURCE_MANAGER_PACKAGE),
                 RENodeInit::Identity() => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }

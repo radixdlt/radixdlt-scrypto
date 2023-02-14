@@ -161,18 +161,8 @@ pub fn resolve_native(
             }
         },
         NativeFn::Vault(vault_fn) => match vault_fn {
-            VaultFn::Take => {
-                let invocation = scrypto_decode::<VaultTakeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             VaultFn::Put => {
                 let invocation = scrypto_decode::<VaultPutInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            VaultFn::LockFee => {
-                let invocation = scrypto_decode::<VaultLockFeeInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

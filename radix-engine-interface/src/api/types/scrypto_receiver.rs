@@ -5,5 +5,6 @@ use crate::*;
 pub enum ScryptoReceiver {
     Global(ComponentAddress),
     Resource(ResourceAddress),
+    Vault(VaultId),
     Component(ComponentId),
 }

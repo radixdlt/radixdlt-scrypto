@@ -1,12 +1,12 @@
 use crate::blueprints::resource::*;
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
+use crate::kernel::{KernelNodeApi, ScryptoExecutor};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -15,10 +15,10 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultError {
@@ -33,8 +33,110 @@ pub enum VaultError {
     LockFeeRepayFailure(CostingError),
 }
 
+pub struct VaultBlueprint;
+
+impl VaultBlueprint {
+    pub(crate) fn take<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle = api.lock_substate(
+            RENodeId::Vault(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Vault),
+            LockFlags::MUTABLE,
+        )?;
+
+        let container = {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.take(input.amount)?
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+    }
+
+    pub(crate) fn lock_fee<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle = api.lock_substate(
+            RENodeId::Vault(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Vault),
+            LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
+        )?;
+
+        // Take by amount
+        let fee = {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+
+            // Check resource and take amount
+            if vault.resource_address() != RADIX_TOKEN {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
+                ));
+            }
+
+            // Take fee from the vault
+            vault.take(input.amount).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::LockFeeInsufficientBalance,
+                ))
+            })?
+        };
+
+        // Credit cost units
+        let changes: Resource = api.credit_cost_units(receiver, fee, input.contingent)?;
+
+        // Keep changes
+        {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.put(BucketSubstate::new(changes)).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::ResourceOperationError(e),
+                ))
+            })?;
+        }
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+}
+
 impl ExecutableInvocation for VaultRecallInvocation {
-    type Exec = VaultTakeInvocation;
+    type Exec = ScryptoExecutor;
 
     fn resolve<D: ClientDerefApi<RuntimeError>>(
         self,
@@ -46,67 +148,16 @@ impl ExecutableInvocation for VaultRecallInvocation {
             NativeFn::Vault(VaultFn::Recall),
             ResolvedReceiver::new(receiver),
         );
-        let executor = VaultTakeInvocation {
-            receiver: self.receiver,
-            amount: self.amount,
+        let executor = ScryptoExecutor {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            export_name: VAULT_TAKE_IDENT.to_string(),
+            component_id: Some(self.receiver),
+            args: IndexedScryptoValue::from_typed(&VaultTakeInput {
+                amount: self.amount,
+            })
+            .into(),
         };
         Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl ExecutableInvocation for VaultTakeInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::Take),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultTakeInvocation {
-    type Output = Bucket;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = api.lock_substate(
-            RENodeId::Vault(self.receiver),
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::MUTABLE,
-        )?;
-
-        let container = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-            vault.take(self.amount)?
-        };
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
     }
 }
 
@@ -154,83 +205,6 @@ impl Executor for VaultPutInvocation {
                 VaultError::ResourceOperationError(e),
             ))
         })?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for VaultLockFeeInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::LockFee),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultLockFeeInvocation {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
-        )?;
-
-        // Take by amount
-        let fee = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-
-            // Check resource and take amount
-            if vault.resource_address() != RADIX_TOKEN {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
-                ));
-            }
-
-            // Take fee from the vault
-            vault.take(self.amount).map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::LockFeeInsufficientBalance,
-                ))
-            })?
-        };
-
-        // Credit cost units
-        let changes: Resource = api.credit_cost_units(self.receiver, fee, self.contingent)?;
-
-        // Keep changes
-        {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-            vault.put(BucketSubstate::new(changes)).map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceOperationError(e),
-                ))
-            })?;
-        }
 
         Ok(((), CallFrameUpdate::empty()))
     }

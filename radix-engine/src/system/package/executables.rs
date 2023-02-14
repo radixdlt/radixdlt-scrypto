@@ -9,15 +9,13 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use native_sdk::resource::ResourceManager;
+use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi};
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
-use radix_engine_interface::blueprints::resource::{
-    Bucket, VaultGetAmountInvocation, VaultTakeInvocation,
-};
+use radix_engine_interface::blueprints::resource::{Bucket, VaultGetAmountInvocation};
 
 pub struct Package;
 
@@ -307,7 +305,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -325,10 +323,8 @@ impl Executor for PackageClaimRoyaltyExecutable {
             receiver: royalty_vault.vault_id(),
         })?;
 
-        let bucket = api.call_native(VaultTakeInvocation {
-            receiver: royalty_vault.vault_id(),
-            amount,
-        })?;
+        let mut vault = Vault(royalty_vault.vault_id());
+        let bucket = vault.sys_take(amount, api)?;
         let bucket_id = bucket.0;
 
         api.drop_lock(handle)?;

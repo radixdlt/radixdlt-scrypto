@@ -106,6 +106,11 @@ impl FeeTable {
                     _ => self.fixed_low,
                 }
             }
+            (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => match identifier.ident.as_str() {
+                VAULT_TAKE_IDENT => self.fixed_medium,
+                VAULT_LOCK_FEE_IDENT => self.fixed_medium,
+                _ => self.fixed_low,
+            },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
                 IDENTITY_CREATE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
@@ -247,22 +252,18 @@ impl FeeTable {
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },
-            NativeFn::Vault(vault_ident) => {
-                match vault_ident {
-                    VaultFn::Put => self.fixed_medium,
-                    VaultFn::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                    VaultFn::TakeNonFungibles => self.fixed_medium,
-                    VaultFn::GetAmount => self.fixed_low,
-                    VaultFn::GetResourceAddress => self.fixed_low,
-                    VaultFn::GetNonFungibleLocalIds => self.fixed_medium,
-                    VaultFn::CreateProof => self.fixed_high,
-                    VaultFn::CreateProofByAmount => self.fixed_high,
-                    VaultFn::CreateProofByIds => self.fixed_high,
-                    VaultFn::LockFee => self.fixed_medium,
-                    VaultFn::Recall => self.fixed_low,
-                    VaultFn::RecallNonFungibles => self.fixed_low,
-                }
-            }
+            NativeFn::Vault(vault_ident) => match vault_ident {
+                VaultFn::Put => self.fixed_medium,
+                VaultFn::TakeNonFungibles => self.fixed_medium,
+                VaultFn::GetAmount => self.fixed_low,
+                VaultFn::GetResourceAddress => self.fixed_low,
+                VaultFn::GetNonFungibleLocalIds => self.fixed_medium,
+                VaultFn::CreateProof => self.fixed_high,
+                VaultFn::CreateProofByAmount => self.fixed_high,
+                VaultFn::CreateProofByIds => self.fixed_high,
+                VaultFn::Recall => self.fixed_low,
+                VaultFn::RecallNonFungibles => self.fixed_low,
+            },
             NativeFn::TransactionRuntime(ident) => match ident {
                 TransactionRuntimeFn::GetHash => self.fixed_low,
                 TransactionRuntimeFn::GenerateUuid => self.fixed_low,

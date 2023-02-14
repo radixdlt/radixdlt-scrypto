@@ -180,9 +180,7 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ProofGetAmountInvocation, E>
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
-    + Invokable<VaultTakeInvocation, E>
     + Invokable<VaultPutInvocation, E>
-    + Invokable<VaultLockFeeInvocation, E>
     + Invokable<VaultTakeNonFungiblesInvocation, E>
     + Invokable<VaultGetAmountInvocation, E>
     + Invokable<VaultGetResourceAddressInvocation, E>

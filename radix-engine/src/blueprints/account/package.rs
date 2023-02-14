@@ -294,11 +294,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -360,11 +356,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -381,11 +373,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -627,11 +615,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -653,11 +637,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -706,11 +686,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawInput =
@@ -735,11 +711,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawAllInput =
@@ -764,11 +736,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawNonFungiblesInput =
@@ -793,11 +761,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -819,11 +783,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByAmountInput =
@@ -846,11 +806,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())

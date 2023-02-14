@@ -114,32 +114,51 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_TAKE_IDENT,
+                scrypto_encode(&VaultTakeInput { amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn lock_fee_internal(&mut self, amount: Decimal) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&VaultLockFeeInput {
+                    amount,
+                    contingent: false,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&VaultLockFeeInput {
+                    amount,
+                    contingent: true,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
     scrypto_env_native_fn! {
-
-        fn take_internal(&mut self, amount: Decimal) -> Bucket {
-            VaultTakeInvocation {
-                receiver: self.0,
-                amount,
-            }
-        }
-
-        fn lock_fee_internal(&mut self, amount: Decimal) -> () {
-            VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: false,
-            }
-        }
-
-        fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
-            VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: true,
-            }
-        }
-
-
         fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
                 receiver: self.0,
