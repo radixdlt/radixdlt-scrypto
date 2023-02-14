@@ -334,6 +334,30 @@ impl ResourceManagerNativePackage {
                 ))?;
                 WorktopBlueprint::take_all(receiver, input, api)
             }
+            WORKTOP_ASSERT_CONTAINS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains(receiver, input, api)
+            }
+            WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains_amount(receiver, input, api)
+            }
+            WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains_non_fungibles(receiver, input, api)
+            }
+            WORKTOP_DRAIN_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::drain(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

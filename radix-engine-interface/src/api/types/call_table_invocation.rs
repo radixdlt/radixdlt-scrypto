@@ -5,7 +5,6 @@ use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::blueprints::logger::*;
-use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
@@ -57,7 +56,6 @@ pub enum NativeInvocation {
     Component(ComponentInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
-    Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
 }
 
@@ -120,14 +118,6 @@ pub enum AuthZoneStackInvocation {
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum WorktopInvocation {
-    AssertContains(WorktopAssertContainsInvocation),
-    AssertContainsAmount(WorktopAssertContainsAmountInvocation),
-    AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
-    Drain(WorktopDrainInvocation),
 }
 
 impl NativeInvocation {
@@ -201,12 +191,6 @@ impl NativeInvocation {
                     refs.insert(RENodeId::Logger);
                 }
             },
-            NativeInvocation::Worktop(worktop_method) => match worktop_method {
-                WorktopInvocation::Drain(..) => {}
-                WorktopInvocation::AssertContainsNonFungibles(..) => {}
-                WorktopInvocation::AssertContains(..) => {}
-                WorktopInvocation::AssertContainsAmount(..) => {}
-            },
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::GetHash(..)
                 | TransactionRuntimeInvocation::GenerateUuid(..) => {
@@ -276,14 +260,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Worktop(i) => match i {
-                WorktopInvocation::AssertContains(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::AssertContainsAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::AssertContainsNonFungibles(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                WorktopInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::TransactionRuntime(i) => match i {
                 TransactionRuntimeInvocation::GetHash(i) => (get_native_fn(i), scrypto_encode(i)),

@@ -337,7 +337,11 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_DRAIN_IDENT.to_string(),
+            }),
             take_trace.origin
         );
 

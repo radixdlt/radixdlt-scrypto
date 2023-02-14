@@ -3,8 +3,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::blueprints::resource::WorktopAssertContainsInvocation;
-use radix_engine_interface::blueprints::{logger::*, resource::*, transaction_runtime::*};
+use radix_engine_interface::blueprints::{logger::*, transaction_runtime::*};
 
 pub fn resolve_native(
     native_fn: NativeFn,
@@ -151,30 +150,6 @@ pub fn resolve_native(
             LoggerFn::Log => {
                 let invocation = scrypto_decode::<LoggerLogInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Worktop(worktop_fn) => match worktop_fn {
-            WorktopFn::Drain => {
-                let invocation = scrypto_decode::<WorktopDrainInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::AssertContainsNonFungibles => {
-                let invocation =
-                    scrypto_decode::<WorktopAssertContainsNonFungiblesInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::AssertContains => {
-                let invocation = scrypto_decode::<WorktopAssertContainsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::AssertContainsAmount => {
-                let invocation =
-                    scrypto_decode::<WorktopAssertContainsAmountInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

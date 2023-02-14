@@ -15,7 +15,6 @@ pub enum NativePackage {
     Component,
     Package,
     Metadata,
-    Resource,
     KeyValueStore,
     Logger,
     TransactionRuntime,
@@ -90,7 +89,6 @@ pub enum NativeFn {
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
-    Worktop(WorktopFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
@@ -105,7 +103,6 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
@@ -282,33 +279,6 @@ pub enum AuthZoneStackFn {
 pub enum KeyValueStoreFn {
     Create,
     Insert,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum WorktopFn {
-    AssertContains,
-    AssertContainsAmount,
-    AssertContainsNonFungibles,
-    Drain,
 }
 
 #[derive(

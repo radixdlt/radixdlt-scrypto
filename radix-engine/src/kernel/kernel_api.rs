@@ -168,10 +168,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
     + Invokable<PackagePublishNativeInvocation, E>
-    + Invokable<WorktopAssertContainsInvocation, E>
-    + Invokable<WorktopAssertContainsAmountInvocation, E>
-    + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
-    + Invokable<WorktopDrainInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>

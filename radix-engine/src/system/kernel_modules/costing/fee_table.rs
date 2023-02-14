@@ -143,6 +143,10 @@ impl FeeTable {
                 WORKTOP_TAKE_IDENT => self.fixed_low,
                 WORKTOP_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
                 WORKTOP_TAKE_ALL_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => self.fixed_low,
+                WORKTOP_DRAIN_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
@@ -234,12 +238,6 @@ impl FeeTable {
                     AuthZoneStackFn::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeFn::Worktop(worktop_ident) => match worktop_ident {
-                WorktopFn::AssertContains => self.fixed_low,
-                WorktopFn::AssertContainsAmount => self.fixed_low,
-                WorktopFn::AssertContainsNonFungibles => self.fixed_low,
-                WorktopFn::Drain => self.fixed_low,
-            },
             NativeFn::Logger(logger_method) => match logger_method {
                 LoggerFn::Log => self.fixed_low,
             },

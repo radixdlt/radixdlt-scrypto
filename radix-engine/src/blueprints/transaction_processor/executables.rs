@@ -15,7 +15,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{
-    ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+    ClientComponentApi, ClientDerefApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -833,9 +833,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {

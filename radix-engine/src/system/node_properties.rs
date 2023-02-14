@@ -55,8 +55,7 @@ impl VisibilityProperties {
                     FnIdentifier::Scrypto(ScryptoFnIdentifier {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         ..
-                    })
-                    | FnIdentifier::Native(NativeFn::Worktop(..)) => true,
+                    }) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
