@@ -1,11 +1,12 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
         pub fn new(access_rules: Vec<AccessRules>) -> ComponentAddress {
-            let mut component = Self {}.instantiate();
+            let component = Self {}.instantiate();
             for access_rule in access_rules {
                 component.add_access_check(access_rule);
             }

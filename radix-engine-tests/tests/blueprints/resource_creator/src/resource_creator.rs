@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod resource_creator {
     struct ResourceCreator {}
 
     impl ResourceCreator {

@@ -17,136 +17,145 @@ pub fn handle_decode(
 ) -> Result<TokenStream> {
     trace!("handle_decode() starts");
 
+    let parsed: DeriveInput = parse2(input)?;
+    let is_transparent = is_transparent(&parsed.attrs);
+
+    let output = if is_transparent {
+        handle_transparent_decode(parsed, context_custom_value_kind)?
+    } else {
+        handle_normal_decode(parsed, context_custom_value_kind)?
+    };
+
+    #[cfg(feature = "trace")]
+    crate::utils::print_generated_code("Decode", &output);
+
+    trace!("handle_decode() finishes");
+    Ok(output)
+}
+
+pub fn handle_transparent_decode(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     let DeriveInput {
         attrs,
         ident,
         data,
         generics,
         ..
-    } = parse2(input)?;
+    } = parsed;
     let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, decoder_generic) =
         build_decode_generics(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
-        Data::Struct(s) => match s.fields {
-            syn::Fields::Named(FieldsNamed { named, .. }) => {
-                // ns: not skipped, s: skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_decoding_skipped(f)).collect();
-                let ns_len = Index::from(ns.len());
-                let ns_ids = ns.iter().map(|f| &f.ident);
-                let ns_types = ns.iter().map(|f| &f.ty);
-                let s: Vec<&Field> = named.iter().filter(|f| is_decoding_skipped(f)).collect();
-                let s_ids = s.iter().map(|f| &f.ident);
-                let s_types = s.iter().map(|f| &f.ty);
-                quote! {
-                    impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                            use ::sbor::{self, Decode};
-                            decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
-                            decoder.read_and_check_size(#ns_len)?;
-                            Ok(Self {
-                                #(#ns_ids: decoder.decode::<#ns_types>()?,)*
-                                #(#s_ids: <#s_types>::default()),*
-                            })
+        Data::Struct(s) => {
+            let FieldsData {
+                unskipped_self_field_names,
+                unskipped_field_types,
+                skipped_self_field_names,
+                skipped_field_types,
+                ..
+            } = process_fields_for_decode(&s.fields);
+            if unskipped_self_field_names.len() != 1 {
+                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+            }
+            let field_name = &unskipped_self_field_names[0];
+            let field_type = &unskipped_field_types[0];
+
+            let decode_content = match &s.fields {
+                syn::Fields::Named(_) => {
+                    quote! {
+                        Ok(Self {
+                            #field_name: inner,
+                            #(#skipped_self_field_names: <#skipped_field_types>::default(),)*
+                        })
+                    }
+                }
+                syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+                    let mut fields = Vec::<Expr>::new();
+                    for f in unnamed {
+                        let ty = &f.ty;
+                        if is_decoding_skipped(f) {
+                            fields.push(parse_quote! {<#ty>::default()})
+                        } else {
+                            fields.push(parse_quote! {inner})
                         }
+                    }
+                    quote! {
+                        Ok(Self
+                        (
+                            #(#fields,)*
+                        ))
+                    }
+                }
+                syn::Fields::Unit => {
+                    quote! {
+                        Ok(Self {})
+                    }
+                }
+            };
+
+            quote! {
+                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        let inner = <#field_type as ::sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, value_kind)?;
+                        #decode_content
                     }
                 }
             }
-            syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let mut fields = Vec::<Expr>::new();
-                for f in &unnamed {
-                    let ty = &f.ty;
-                    if is_decoding_skipped(f) {
-                        fields.push(parse_quote! {<#ty>::default()})
-                    } else {
-                        fields.push(parse_quote! {decoder.decode::<#ty>()?})
-                    }
-                }
-                let ns_len =
-                    Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
-                quote! {
-                    impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                            use ::sbor::{self, Decode};
-                            decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
-                            decoder.read_and_check_size(#ns_len)?;
-                            Ok(Self (
-                                #(#fields,)*
-                            ))
-                        }
+        }
+        Data::Enum(_) => {
+            return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+        }
+        Data::Union(_) => {
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+        }
+    };
+
+    Ok(output)
+}
+
+pub fn handle_normal_decode(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        data,
+        generics,
+        ..
+    } = parsed;
+    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, decoder_generic) =
+        build_decode_generics(&generics, &attrs, context_custom_value_kind)?;
+
+    let output = match data {
+        Data::Struct(s) => {
+            let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields);
+
+            quote! {
+                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                        #decode_fields_content
                     }
                 }
             }
-            syn::Fields::Unit => {
-                quote! {
-                    impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
-                            decoder.read_and_check_size(0)?;
-                            Ok(Self {})
-                        }
-                    }
-                }
-            }
-        },
+        }
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().enumerate().map(|(i, v)| {
                 let v_id = &v.ident;
                 let i: u8 = i.try_into().expect("Too many variants found in enum");
                 let discriminator: Expr = parse_quote! { #i };
-
-                match &v.fields {
-                    syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> =
-                            named.iter().filter(|f| !is_decoding_skipped(f)).collect();
-                        let ns_len = Index::from(ns.len());
-                        let ns_ids = ns.iter().map(|f| &f.ident);
-                        let ns_types = ns.iter().map(|f| &f.ty);
-                        let s: Vec<&Field> =
-                            named.iter().filter(|f| is_decoding_skipped(f)).collect();
-                        let s_ids = s.iter().map(|f| &f.ident);
-                        let s_types = s.iter().map(|f| &f.ty);
-                        quote! {
-                            #discriminator => {
-                                decoder.read_and_check_size(#ns_len)?;
-                                Ok(Self::#v_id {
-                                    #(#ns_ids: decoder.decode::<#ns_types>()?,)*
-                                    #(#s_ids: <#s_types>::default(),)*
-                                })
-                            }
-                        }
-                    }
-                    syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let mut fields = Vec::<Expr>::new();
-                        for f in unnamed {
-                            let ty = &f.ty;
-                            if is_decoding_skipped(f) {
-                                fields.push(parse_quote! {<#ty>::default()})
-                            } else {
-                                fields.push(parse_quote! {decoder.decode::<#ty>()?})
-                            }
-                        }
-                        let ns_len =
-                            Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
-                        quote! {
-                            #discriminator => {
-                                decoder.read_and_check_size(#ns_len)?;
-                                Ok(Self::#v_id (
-                                    #(#fields),*
-                                ))
-                            }
-                        }
-                    }
-                    syn::Fields::Unit => {
-                        quote! {
-                            #discriminator => {
-                                decoder.read_and_check_size(0)?;
-                                Ok(Self::#v_id)
-                            }
-                        }
+                let decode_fields_content =
+                    decode_fields_content(quote! { Self::#v_id }, &v.fields);
+                quote! {
+                    #discriminator => {
+                        #decode_fields_content
                     }
                 }
             });
@@ -171,11 +180,54 @@ pub fn handle_decode(
         }
     };
 
-    #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("Decode", &output);
-
-    trace!("handle_decode() finishes");
     Ok(output)
+}
+
+pub fn decode_fields_content(self_constructor: TokenStream, fields: &syn::Fields) -> TokenStream {
+    let FieldsData {
+        unskipped_self_field_names,
+        unskipped_field_types,
+        skipped_self_field_names,
+        skipped_field_types,
+        unskipped_field_count,
+        ..
+    } = process_fields_for_decode(fields);
+
+    match fields {
+        syn::Fields::Named(_) => {
+            quote! {
+                decoder.read_and_check_size(#unskipped_field_count)?;
+                Ok(#self_constructor {
+                    #(#unskipped_self_field_names: decoder.decode::<#unskipped_field_types>()?,)*
+                    #(#skipped_self_field_names: <#skipped_field_types>::default(),)*
+                })
+            }
+        }
+        syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+            let mut fields = Vec::<Expr>::new();
+            for f in unnamed {
+                let ty = &f.ty;
+                if is_decoding_skipped(f) {
+                    fields.push(parse_quote! {<#ty>::default()})
+                } else {
+                    fields.push(parse_quote! {decoder.decode::<#ty>()?})
+                }
+            }
+            quote! {
+                decoder.read_and_check_size(#unskipped_field_count)?;
+                Ok(#self_constructor
+                (
+                    #(#fields,)*
+                ))
+            }
+        }
+        syn::Fields::Unit => {
+            quote! {
+                decoder.read_and_check_size(#unskipped_field_count)?;
+                Ok(#self_constructor)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -309,7 +361,7 @@ mod tests {
                             },
                             1u8 => {
                                 decoder.read_and_check_size(1)?;
-                                Ok(Self::B(decoder.decode::<u32>()?))
+                                Ok(Self::B(decoder.decode::<u32>()?,))
                             },
                             2u8 => {
                                 decoder.read_and_check_size(1)?;
@@ -340,7 +392,7 @@ mod tests {
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(0)?;
                         Ok(Self {
-                            a: <u32>::default()
+                            a: <u32>::default(),
                         })
                     }
                 }

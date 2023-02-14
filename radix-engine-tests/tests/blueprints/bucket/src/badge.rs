@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod badge_test {
     struct BadgeTest;
 
     impl BadgeTest {

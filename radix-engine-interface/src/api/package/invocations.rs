@@ -1,7 +1,6 @@
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -19,18 +18,53 @@ pub struct PackagePublishInvocation {
 impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn fn_identifier(&self) -> String {
-        "Package(Publish)".to_owned()
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::Publish))
     }
 }
 
 impl SerializableInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::Publish)
+    }
 }
 
 impl Into<CallTableInvocation> for PackagePublishInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Package(PackageInvocation::Publish(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PackagePublishNativeInvocation {
+    pub package_address: Option<[u8; 26]>, // TODO: Clean this up
+    pub native_package_code_id: u8,
+    pub dependent_resources: Vec<ResourceAddress>,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: AccessRules,
+}
+
+impl Invocation for PackagePublishNativeInvocation {
+    type Output = PackageAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::PublishNative))
+    }
+}
+
+impl SerializableInvocation for PackagePublishNativeInvocation {
+    type ScryptoOutput = PackageAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::PublishNative)
+    }
+}
+
+impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Package(PackageInvocation::PublishNative(self)).into()
     }
 }
 
@@ -42,10 +76,18 @@ pub struct PackageSetRoyaltyConfigInvocation {
 
 impl Invocation for PackageSetRoyaltyConfigInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig))
+    }
 }
 
 impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::SetRoyaltyConfig)
+    }
 }
 
 impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
@@ -67,10 +109,18 @@ pub struct PackageClaimRoyaltyInvocation {
 
 impl Invocation for PackageClaimRoyaltyInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Package(PackageFn::ClaimRoyalty))
+    }
 }
 
 impl SerializableInvocation for PackageClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Package(PackageFn::ClaimRoyalty)
+    }
 }
 
 impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {

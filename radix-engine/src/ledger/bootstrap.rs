@@ -5,12 +5,17 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::api::package::PackagePublishInvocation;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::package::{
+    PackagePublishInvocation, PackagePublishNativeInvocation,
+};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::clock::ClockCreateInvocation;
+use radix_engine_interface::blueprints::clock::{
+    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateInvocation, ValidatorInit,
+    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
@@ -42,7 +47,24 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-    // XRD
+    // Resource Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            RESOURCE_MANAGER_PACKAGE,
+        )));
+        let package_address = RESOURCE_MANAGER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // XRD Token
     {
         let mut metadata = BTreeMap::new();
         metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
@@ -55,16 +77,121 @@ pub fn create_genesis(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateFungibleWithInitialSupply(
-                ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                    resource_address: Some(resource_address),
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
+                .to_string(),
+            args: scrypto_encode(
+                &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
                     initial_supply,
+                    resource_address,
                 },
-            ),
+            )
+            .unwrap(),
+        }));
+    }
+
+    // Package Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = PACKAGE_TOKEN.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                resource_address,
+            })
+            .unwrap(),
+        }));
+    }
+
+    // Identity Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
+        let package_address = IDENTITY_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // EpochManager Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            EPOCH_MANAGER_PACKAGE,
+        )));
+        let package_address = EPOCH_MANAGER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
+                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
+            }),
+        )));
+    }
+
+    // Clock Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
+        let package_address = CLOCK_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // Account Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        let package_address = ACCOUNT_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
+        )));
+    }
+
+    // AccessRules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            ACCESS_CONTROLLER_PACKAGE,
+        )));
+        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
+                dependent_resources: vec![],
+            }),
         )));
     }
 
@@ -77,14 +204,18 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,
         )));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
-            }),
-        )));
+                resource_address,
+            })
+            .unwrap(),
+        }));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -97,14 +228,18 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
             EDDSA_ED25519_TOKEN,
         )));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
-            }),
-        )));
+                resource_address,
+            })
+            .unwrap(),
+        }));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -115,31 +250,18 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
-            }),
-        )));
-    }
-
-    // Package Token
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
-            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
-                resource_address: Some(resource_address),
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-            }),
-        )));
+                resource_address,
+            })
+            .unwrap(),
+        }));
     }
 
     {
@@ -162,15 +284,18 @@ pub fn create_genesis(
     {
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        instructions.push(Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::Create(ClockCreateInvocation { component_address }),
-        )));
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: CLOCK_PACKAGE,
+            blueprint_name: CLOCK_BLUEPRINT.to_string(),
+            function_name: CLOCK_CREATE_IDENT.to_string(),
+            args: scrypto_encode(&ClockCreateInput { component_address }).unwrap(),
+        }));
     }
 
     {
         let mut validators = BTreeMap::new();
         for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
-            let bucket = Bucket(id_allocator.new_bucket_id().unwrap().0);
+            let initial_stake = id_allocator.new_bucket_id().unwrap();
             instructions.push(
                 BasicInstruction::TakeFromWorktopByAmount {
                     resource_address: RADIX_TOKEN,
@@ -181,9 +306,9 @@ pub fn create_genesis(
             let validator_account_address = ComponentAddress::virtual_account_from_public_key(&key);
             validators.insert(
                 key,
-                ValidatorInit {
+                ManifestValidatorInit {
                     validator_account_address,
-                    initial_stake: bucket,
+                    initial_stake,
                     stake_account_address,
                 },
             );
@@ -195,16 +320,19 @@ pub fn create_genesis(
             OLYMPIA_VALIDATOR_TOKEN,
         )));
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        instructions.push(Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: args!(
                 olympia_validator_token_address,
                 component_address,
-                validator_set: validators,
+                validators,
                 initial_epoch,
                 rounds_per_epoch,
-                num_unstake_epochs,
-            }),
-        )));
+                num_unstake_epochs
+            ),
+        }));
     }
 
     for (public_key, amount) in account_xrd_allocations.into_iter() {
@@ -351,7 +479,7 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
         #[cfg(not(feature = "alloc"))]

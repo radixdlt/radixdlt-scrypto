@@ -5,8 +5,9 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
+    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
+use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
@@ -206,20 +207,16 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = system_api.get_ref(bucket_handle)?;
+        let bucket_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -253,21 +250,17 @@ impl Executor for BucketGetAmountInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let bucket_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate = system_api.get_ref(bucket_handle)?;
+        let substate = api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok((bucket.total_amount(), CallFrameUpdate::empty()))
     }
@@ -296,22 +289,17 @@ impl ExecutableInvocation for BucketPutInvocation {
 impl Executor for BucketPutInvocation {
     type Output = ();
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let other_bucket = system_api
-            .drop_node(RENodeId::Bucket(self.bucket.0))?
-            .into();
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let other_bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -345,21 +333,17 @@ impl Executor for BucketGetResourceAddressInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let bucket_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate = system_api.get_ref(bucket_handle)?;
+        let substate = api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok((
             bucket.resource_address(),

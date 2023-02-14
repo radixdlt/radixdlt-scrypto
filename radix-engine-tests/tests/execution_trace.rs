@@ -1,5 +1,5 @@
 use radix_engine::kernel::TrackedEvent;
-use radix_engine::system::kernel_modules::execution_trace::{SysCallTrace, SysCallTraceOrigin};
+use radix_engine::system::kernel_modules::execution_trace::{KernelCallOrigin, KernelCallTrace};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -169,12 +169,12 @@ fn test_instruction_traces() {
 
     receipt.expect_commit_success();
 
-    let mut traces: Vec<SysCallTrace> = receipt
+    let mut traces: Vec<KernelCallTrace> = receipt
         .execution
         .events
         .into_iter()
         .filter_map(|e| match e {
-            TrackedEvent::SysCallTrace(trace) => Some(trace),
+            TrackedEvent::KernelCallTrace(trace) => Some(trace),
         })
         .collect();
 
@@ -198,7 +198,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let SysCallTraceOrigin::ScryptoMethod(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -214,11 +214,11 @@ fn test_instruction_traces() {
         assert_eq!(1, free_trace.output.buckets.len());
         let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_resource.resource_address());
-        assert_eq!(dec!("1000"), output_resource.amount());
+        assert_eq!(dec!("10000"), output_resource.amount());
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -226,7 +226,7 @@ fn test_instruction_traces() {
         assert_eq!(1, worktop_put_trace.input.buckets.len());
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
 
         // We're tracking up to depth "1" (default), so no more child traces
         assert!(free_trace.children.is_empty());
@@ -241,7 +241,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
             trace.origin
         );
 
@@ -251,7 +251,7 @@ fn test_instruction_traces() {
 
         let output_resource = trace.output.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_resource.resource_address());
-        assert_eq!(dec!("1000"), output_resource.amount());
+        assert_eq!(dec!("10000"), output_resource.amount());
     }
 
     {
@@ -260,7 +260,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
+            KernelCallOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
             trace.origin
         );
 
@@ -271,7 +271,7 @@ fn test_instruction_traces() {
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_proof.resource_address);
         assert_eq!(
-            LockedAmountOrIds::Amount(dec!("1000")),
+            LockedAmountOrIds::Amount(dec!("10000")),
             output_proof.total_locked
         );
     }
@@ -281,7 +281,7 @@ fn test_instruction_traces() {
         let traces = traces_for_instruction(&child_traces, 4);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
-        assert_eq!(SysCallTraceOrigin::DropNode, trace.origin);
+        assert_eq!(KernelCallOrigin::DropNode, trace.origin);
 
         assert!(trace.output.is_empty());
         assert!(trace.input.buckets.is_empty());
@@ -290,7 +290,7 @@ fn test_instruction_traces() {
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_proof.resource_address);
         assert_eq!(
-            LockedAmountOrIds::Amount(dec!("1000")),
+            LockedAmountOrIds::Amount(dec!("10000")),
             input_proof.total_locked
         );
     }
@@ -301,7 +301,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -310,7 +310,7 @@ fn test_instruction_traces() {
 
         let input_resource = trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
     }
 
     {
@@ -321,12 +321,12 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
+            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
             take_trace.origin
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let SysCallTraceOrigin::ScryptoFunction(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoFunction(ScryptoFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin
@@ -340,16 +340,16 @@ fn test_instruction_traces() {
         assert_eq!(1, call_trace.input.buckets.len());
         let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
-        assert_eq!(dec!("1000"), input_resource.amount());
+        assert_eq!(dec!("10000"), input_resource.amount());
     }
 }
 
 fn traces_for_instruction(
-    traces: &Vec<SysCallTrace>,
-    instruction_index: u32,
-) -> Vec<&SysCallTrace> {
+    traces: &Vec<KernelCallTrace>,
+    instruction_index: usize,
+) -> Vec<&KernelCallTrace> {
     traces
         .iter()
-        .filter(|t| t.instruction_index == Some(instruction_index))
+        .filter(|t| t.instruction_index == instruction_index)
         .collect()
 }

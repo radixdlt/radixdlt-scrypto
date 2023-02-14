@@ -5,23 +5,13 @@ use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 use sbor::rust::fmt::Debug;
 
+pub const CLOCK_BLUEPRINT: &str = "Clock";
+
+pub const CLOCK_CREATE_IDENT: &str = "Create";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ClockCreateInvocation {
+pub struct ClockCreateInput {
     pub component_address: [u8; 26], // TODO: Clean this up
-}
-
-impl Invocation for ClockCreateInvocation {
-    type Output = ComponentAddress;
-}
-
-impl SerializableInvocation for ClockCreateInvocation {
-    type ScryptoOutput = ComponentAddress;
-}
-
-impl Into<CallTableInvocation> for ClockCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Clock(ClockInvocation::Create(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -37,10 +27,18 @@ pub struct ClockGetCurrentTimeInvocation {
 
 impl Invocation for ClockGetCurrentTimeInvocation {
     type Output = Instant;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::GetCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockGetCurrentTimeInvocation {
     type ScryptoOutput = Instant;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::GetCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockGetCurrentTimeInvocation {
@@ -66,10 +64,18 @@ pub struct ClockCompareCurrentTimeInvocation {
 
 impl Invocation for ClockCompareCurrentTimeInvocation {
     type Output = bool;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::CompareCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
     type ScryptoOutput = bool;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::CompareCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockCompareCurrentTimeInvocation {
@@ -91,10 +97,18 @@ pub struct ClockSetCurrentTimeInvocation {
 
 impl Invocation for ClockSetCurrentTimeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Clock(ClockFn::SetCurrentTime))
+    }
 }
 
 impl SerializableInvocation for ClockSetCurrentTimeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Clock(ClockFn::SetCurrentTime)
+    }
 }
 
 impl Into<CallTableInvocation> for ClockSetCurrentTimeInvocation {

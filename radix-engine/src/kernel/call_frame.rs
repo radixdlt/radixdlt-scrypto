@@ -1,12 +1,12 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::kernel_api::{LockFlags, LockInfo};
 use crate::kernel::*;
-use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{SubstateRef, SubstateRefMut};
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_properties::SubstateProperties;
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
-    TransactionProcessorFn,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,10 +106,10 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    pub fn acquire_lock<'s, R: FeeReserve>(
+    pub fn acquire_lock<'s>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
+        track: &mut Track<'s>,
         node_id: RENodeId,
         module_id: NodeModuleId,
         offset: SubstateOffset,
@@ -178,10 +178,10 @@ impl CallFrame {
         Ok(lock_handle)
     }
 
-    pub fn drop_lock<'s, R: FeeReserve>(
+    pub fn drop_lock<'s>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
+        track: &mut Track<'s>,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
         let substate_lock = self
@@ -286,17 +286,51 @@ impl CallFrame {
     }
 
     pub fn new_root() -> Self {
-        Self {
+        let mut frame = Self {
             depth: 0,
-            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::TransactionProcessor(
-                TransactionProcessorFn::Run,
-            ))),
+            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::Root)),
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
             consumed_wasm_memory: 0,
-        }
+        };
+
+        // Add well-known global refs to current frame
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Component(CLOCK)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
+            RENodeVisibilityOrigin::Normal,
+        );
+
+        frame
     }
 
     pub fn new_child_from_parent(
@@ -362,10 +396,10 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_all_locks<'s, R: FeeReserve>(
+    pub fn drop_all_locks<'s>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
+        track: &mut Track<'s>,
     ) -> Result<(), RuntimeError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
@@ -389,13 +423,13 @@ impl CallFrame {
         }
     }
 
-    pub fn create_node<'f, 's, R: FeeReserve>(
+    pub fn create_node<'f, 's>(
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
         node_modules: BTreeMap<NodeModuleId, RENodeModuleInit>,
         heap: &mut Heap,
-        track: &'f mut Track<'s, R>,
+        track: &'f mut Track<'s>,
         push_to_store: bool,
     ) -> Result<(), RuntimeError> {
         let mut substates = BTreeMap::new();
@@ -469,10 +503,10 @@ impl CallFrame {
         Ok(node)
     }
 
-    fn get_substate<'f, 'p, 's, R: FeeReserve>(
+    fn get_substate<'f, 'p, 's>(
         &self,
         heap: &'f mut Heap,
-        track: &'f mut Track<'s, R>,
+        track: &'f mut Track<'s>,
         location: RENodeLocation,
         node_id: RENodeId,
         module_id: NodeModuleId,
@@ -486,11 +520,11 @@ impl CallFrame {
         Ok(substate_ref)
     }
 
-    pub fn get_ref<'f, 's, R: FeeReserve>(
+    pub fn get_ref<'f, 's>(
         &mut self,
         lock_handle: LockHandle,
         heap: &'f mut Heap,
-        track: &'f mut Track<'s, R>,
+        track: &'f mut Track<'s>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let SubstateLock {
             substate_pointer: (node_location, node_id, module_id, offset),
@@ -503,11 +537,11 @@ impl CallFrame {
         self.get_substate(heap, track, node_location, node_id, module_id, &offset)
     }
 
-    pub fn get_ref_mut<'f, 's, R: FeeReserve>(
+    pub fn get_ref_mut<'f, 's>(
         &'f mut self,
         lock_handle: LockHandle,
         heap: &'f mut Heap,
-        track: &'f mut Track<'s, R>,
+        track: &'f mut Track<'s>,
     ) -> Result<SubstateRefMut<'f>, RuntimeError> {
         let SubstateLock {
             substate_pointer: (node_location, node_id, module_id, offset),

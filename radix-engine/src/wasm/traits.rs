@@ -30,9 +30,46 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn call_native(
+        &mut self,
+        native_fn_identifier: Vec<u8>,
+        invocation: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn new_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: Vec<u8>,
+        access_rules_chain: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn new_component(
+        &mut self,
+        blueprint_ident: Vec<u8>,
+        app_states: Vec<u8>,
+        access_rules_chain: Vec<u8>,
+        royalty_config: Vec<u8>,
+        metadata: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn globalize_component(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn lookup_global_component(
+        &mut self,
+        component_address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn get_component_type_info(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
@@ -54,7 +91,7 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

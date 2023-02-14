@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::BufferId;
 
 use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
-use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 
@@ -109,8 +109,8 @@ pub enum WasmRuntimeError {
     InvalidPackageAddress(DecodeError),
     /// Invalid method ident
     InvalidIdent,
-    /// Invalid invocation
-    InvalidInvocation(DecodeError),
+    /// Invalid native fn identifier
+    InvalidNativeFnIdentifier(DecodeError),
     /// Invalid RE node data
     InvalidNode(DecodeError),
     /// Invalid RE node ID
@@ -119,8 +119,22 @@ pub enum WasmRuntimeError {
     InvalidModuleId(DecodeError),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
+    /// Invalid package abi
+    InvalidPackageAbi(DecodeError),
+    /// Invalid initial app states
+    InvalidAppStates(DecodeError),
+    /// Invalid access rules
+    InvalidAccessRulesChain(DecodeError),
+    /// Invalid royalty config
+    InvalidRoyaltyConfig(DecodeError),
+    /// Invalid metadata
+    InvalidMetadata(DecodeError),
+    /// Invalid component id
+    InvalidComponentId(DecodeError),
+    /// Invalid component address
+    InvalidComponentAddress(DecodeError),
     /// Costing error
-    CostingError(FeeReserveError),
+    FeeReserveError(FeeReserveError),
 }
 
 impl SelfError for WasmRuntimeError {
@@ -132,7 +146,7 @@ impl SelfError for WasmRuntimeError {
 impl CanBeAbortion for WasmRuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            WasmRuntimeError::CostingError(err) => err.abortion(),
+            WasmRuntimeError::FeeReserveError(err) => err.abortion(),
             _ => None,
         }
     }

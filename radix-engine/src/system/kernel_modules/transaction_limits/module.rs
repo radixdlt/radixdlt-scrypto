@@ -1,4 +1,9 @@
-use crate::{errors::ModuleError, kernel::*, system::kernel_modules::fee::FeeReserve};
+use crate::{
+    errors::ModuleError,
+    errors::RuntimeError,
+    kernel::*,
+    kernel::{KernelModule, KernelModuleApi},
+};
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -33,12 +38,14 @@ impl TransactionLimitsModule {
 
     /// Checks if maximum WASM memory limit for one instance was exceeded and then
     /// checks if memory limit for all instances was exceeded.
-    fn validate(&self) -> Result<(), ModuleError> {
+    fn validate(&self) -> Result<(), RuntimeError> {
         // check last (current) call frame
         let current_instance_memory = *self.wasm_memory.last().unwrap();
         if current_instance_memory > self.max_wasm_instance_memory {
-            return Err(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxWasmInstanceMemoryExceeded(current_instance_memory),
+            return Err(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxWasmInstanceMemoryExceeded(current_instance_memory),
+                ),
             ));
         };
 
@@ -48,8 +55,10 @@ impl TransactionLimitsModule {
 
         // validate if limit was exceeded
         if max_value > self.max_wasm_memory {
-            Err(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxWasmMemoryExceeded(max_value),
+            Err(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(TransactionLimitsError::MaxWasmMemoryExceeded(
+                    max_value,
+                )),
             ))
         } else {
             Ok(())
@@ -57,55 +66,55 @@ impl TransactionLimitsModule {
     }
 }
 
-impl<R: FeeReserve> BaseModule<R> for TransactionLimitsModule {
+impl KernelModule for TransactionLimitsModule {
     /// If there is a nested call of WASM instance, call_frame argument
     /// contains currently alocated memory by WASM instance which invokes
     /// nested call (call frame references that instance).
-    fn pre_execute_invocation(
-        &mut self,
-        _actor: &ResolvedActor,
-        _call_frame_update: &CallFrameUpdate,
-        call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        // push current call frame WASM memory on stack
-        self.wasm_memory.push(call_frame.consumed_wasm_memory);
 
-        self.validate()
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _actor: &ResolvedActor,
+        _down_movement: &mut CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        let memory = api.get_current_wasm_memory_consumption();
+        api.get_module_state()
+            .transaction_limits
+            .wasm_memory
+            .push(memory);
+
+        api.get_module_state().transaction_limits.validate()
     }
 
-    fn post_execute_invocation(
-        &mut self,
-        _caller: &ResolvedActor,
-        _update: &CallFrameUpdate,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
+    fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from stack
-        self.wasm_memory.pop();
+        api.get_module_state().transaction_limits.wasm_memory.pop();
 
         Ok(())
     }
 
-    fn post_wasm_instantiation(
-        &mut self,
-        call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
+    fn after_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
         consumed_memory: usize,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
+        let depth = api.get_current_depth();
         // update current frame consumed memory value after WASM invokation is done
-        if let Some(val) = self.wasm_memory.get_mut(call_frame.depth) {
+        if let Some(val) = api
+            .get_module_state()
+            .transaction_limits
+            .wasm_memory
+            .get_mut(depth)
+        {
             *val = consumed_memory;
         } else {
             // When kernel pops the call frame there are some nested calls which
             // are not aligned with pre_execute_invocation() which requires pushing
             // new value on a stack instead of updating it.
-            self.wasm_memory.push(consumed_memory)
+            api.get_module_state()
+                .transaction_limits
+                .wasm_memory
+                .push(consumed_memory)
         }
 
-        self.validate()
+        api.get_module_state().transaction_limits.validate()
     }
 }

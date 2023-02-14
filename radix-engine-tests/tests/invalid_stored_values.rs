@@ -27,7 +27,7 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State),
+                SubstateOffset::Component(ComponentOffset::State0),
                 RENodeId::Bucket(..)
             ))
         )
@@ -57,7 +57,7 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State),
+                SubstateOffset::Component(ComponentOffset::State0),
                 RENodeId::Bucket(..)
             ))
         )

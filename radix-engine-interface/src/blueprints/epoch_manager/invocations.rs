@@ -3,9 +3,21 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+
+// TODO: Remove this and replace with a macro/function making it easy
+// TODO: to use manifest buckets for any input struct
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ManifestValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: ManifestBucket,
+    pub stake_account_address: ComponentAddress,
+}
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorInit {
@@ -14,8 +26,10 @@ pub struct ValidatorInit {
     pub stake_account_address: ComponentAddress,
 }
 
+pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateInvocation {
+pub struct EpochManagerCreateInput {
     pub olympia_validator_token_address: [u8; 26], // TODO: Clean this up
     pub component_address: [u8; 26],               // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
@@ -24,7 +38,7 @@ pub struct EpochManagerCreateInvocation {
     pub num_unstake_epochs: u64,
 }
 
-impl Clone for EpochManagerCreateInvocation {
+impl Clone for EpochManagerCreateInput {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
         for (key, validator_init) in &self.validator_set {
@@ -49,20 +63,6 @@ impl Clone for EpochManagerCreateInvocation {
     }
 }
 
-impl Invocation for EpochManagerCreateInvocation {
-    type Output = ComponentAddress;
-}
-
-impl SerializableInvocation for EpochManagerCreateInvocation {
-    type ScryptoOutput = ComponentAddress;
-}
-
-impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerGetCurrentEpochMethodArgs {}
 
@@ -73,10 +73,18 @@ pub struct EpochManagerGetCurrentEpochInvocation {
 
 impl Invocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch))
+    }
 }
 
 impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
     type ScryptoOutput = u64;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
@@ -98,10 +106,18 @@ pub struct EpochManagerSetEpochInvocation {
 
 impl Invocation for EpochManagerSetEpochInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch))
+    }
 }
 
 impl SerializableInvocation for EpochManagerSetEpochInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::SetEpoch)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
@@ -123,10 +139,18 @@ pub struct EpochManagerNextRoundInvocation {
 
 impl Invocation for EpochManagerNextRoundInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::NextRound))
+    }
 }
 
 impl SerializableInvocation for EpochManagerNextRoundInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::NextRound)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
@@ -150,10 +174,18 @@ pub struct EpochManagerCreateValidatorInvocation {
 
 impl Invocation for EpochManagerCreateValidatorInvocation {
     type Output = ComponentAddress;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator))
+    }
 }
 
 impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
     type ScryptoOutput = ComponentAddress;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::CreateValidator)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
@@ -183,11 +215,19 @@ pub struct EpochManagerUpdateValidatorInvocation {
 
 impl Invocation for EpochManagerUpdateValidatorInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator))
+    }
 }
 
 // TODO: Should we have this or not?
 impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::EpochManager(EpochManagerFn::UpdateValidator)
+    }
 }
 
 impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
@@ -206,10 +246,18 @@ pub struct ValidatorRegisterInvocation {
 
 impl Invocation for ValidatorRegisterInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Register))
+    }
 }
 
 impl SerializableInvocation for ValidatorRegisterInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Register)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
@@ -228,10 +276,18 @@ pub struct ValidatorUnregisterInvocation {
 
 impl Invocation for ValidatorUnregisterInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unregister))
+    }
 }
 
 impl SerializableInvocation for ValidatorUnregisterInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Unregister)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
@@ -262,10 +318,18 @@ impl Clone for ValidatorStakeInvocation {
 
 impl Invocation for ValidatorStakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Stake))
+    }
 }
 
 impl SerializableInvocation for ValidatorStakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Stake)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorStakeInvocation {
@@ -296,10 +360,18 @@ impl Clone for ValidatorUnstakeInvocation {
 
 impl Invocation for ValidatorUnstakeInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unstake))
+    }
 }
 
 impl SerializableInvocation for ValidatorUnstakeInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::Unstake)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
@@ -330,10 +402,18 @@ impl Clone for ValidatorClaimXrdInvocation {
 
 impl Invocation for ValidatorClaimXrdInvocation {
     type Output = Bucket;
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::ClaimXrd))
+    }
 }
 
 impl SerializableInvocation for ValidatorClaimXrdInvocation {
     type ScryptoOutput = Bucket;
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::ClaimXrd)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
@@ -355,10 +435,18 @@ pub struct ValidatorUpdateKeyInvocation {
 
 impl Invocation for ValidatorUpdateKeyInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateKey))
+    }
 }
 
 impl SerializableInvocation for ValidatorUpdateKeyInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::UpdateKey)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
@@ -380,10 +468,18 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInvocation {
 
 impl Invocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
     type Output = ();
+
+    fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake))
+    }
 }
 
 impl SerializableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
     type ScryptoOutput = ();
+
+    fn native_fn() -> NativeFn {
+        NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)
+    }
 }
 
 impl Into<CallTableInvocation> for ValidatorUpdateAcceptDelegatedStakeInvocation {

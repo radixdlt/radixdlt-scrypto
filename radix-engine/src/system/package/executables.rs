@@ -1,19 +1,19 @@
-use super::PackageInfoSubstate;
-use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
-
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::ClientStaticInvokeApi;
-use radix_engine_interface::api::{package::*, ClientDerefApi};
+use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{
     Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
 };
@@ -44,6 +44,73 @@ impl Package {
     }
 }
 
+impl ExecutableInvocation for PackagePublishNativeInvocation {
+    type Exec = Self;
+
+    fn resolve<D: ClientDerefApi<RuntimeError>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let actor = ResolvedActor::function(NativeFn::Package(PackageFn::PublishNative));
+        Ok((actor, CallFrameUpdate::empty(), self))
+    }
+}
+
+impl Executor for PackagePublishNativeInvocation {
+    type Output = PackageAddress;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+        let access_rules = AccessRulesChainSubstate {
+            access_rules_chain: vec![self.access_rules],
+        };
+
+        let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(metadata_substate),
+        );
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::AccessRulesChain(access_rules),
+        );
+
+        let package = NativePackageInfoSubstate {
+            native_package_code_id: self.native_package_code_id,
+            dependent_resources: self.dependent_resources.into_iter().collect(),
+        };
+
+        // Create package node
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
+        let package_id: PackageId = node_id.into();
+
+        // Globalize
+        let global_node_id = if let Some(address) = self.package_address {
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+        } else {
+            api.allocate_node_id(RENodeType::GlobalPackage)?
+        };
+
+        api.create_node(
+            global_node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            BTreeMap::new(),
+        )?;
+
+        let package_address: PackageAddress = global_node_id.into();
+        Ok((package_address, CallFrameUpdate::empty()))
+    }
+}
+
 impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
@@ -66,10 +133,10 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let royalty_vault_id = api
-            .invoke(ResourceManagerCreateVaultInvocation {
+            .call_native(ResourceManagerCreateVaultInvocation {
                 receiver: RADIX_TOKEN,
             })?
             .vault_id();
@@ -223,7 +290,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -237,11 +304,11 @@ impl Executor for PackageClaimRoyaltyExecutable {
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
 
-        let amount = api.invoke(VaultGetAmountInvocation {
+        let amount = api.call_native(VaultGetAmountInvocation {
             receiver: royalty_vault.vault_id(),
         })?;
 
-        let bucket = api.invoke(VaultTakeInvocation {
+        let bucket = api.call_native(VaultTakeInvocation {
             receiver: royalty_vault.vault_id(),
             amount,
         })?;

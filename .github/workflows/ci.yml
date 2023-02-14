@@ -42,18 +42,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-release-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang -y
-      if: matrix.os == 'k8s-linux-runner'
-    - name: Install Scrypto toolchain
-      run: cargo install --path ./simulator
     - name: Check format
       run: bash ./check.sh
   sbor-unit-tests:
@@ -150,10 +138,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -161,6 +145,9 @@ jobs:
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet
+    - name: Build radiswap
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/blueprints/radiswap
     - name: Build no-std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std
@@ -180,10 +167,6 @@ jobs:
         toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -206,10 +189,6 @@ jobs:
         toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -231,10 +210,6 @@ jobs:
         toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -254,10 +229,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -294,10 +265,6 @@ jobs:
         shared-key: simulator-debug-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
@@ -332,10 +299,6 @@ jobs:
         shared-key: simulator-debug-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
-    - run: |
-        sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797

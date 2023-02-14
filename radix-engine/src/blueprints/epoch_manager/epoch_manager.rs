@@ -1,23 +1,25 @@
 use super::ValidatorCreator;
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::auth::method_authorization::*;
+use crate::system::kernel_modules::auth::*;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientStaticInvokeApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::account::AccountDepositInvocation;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -50,73 +52,60 @@ pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
 
-pub struct EpochManager;
+pub struct EpochManagerNativePackage;
 
-impl ExecutableInvocation for EpochManagerCreateInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::EpochManager(EpochManagerFn::Create));
-
-        let mut call_frame_update =
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-
-        // TODO: Clean this up, this is currently required in order to be able to call the scrypto account component
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-
-        for (_key, validator_init) in &self.validator_set {
-            call_frame_update
-                .nodes_to_move
-                .push(RENodeId::Bucket(validator_init.initial_stake.0));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                validator_init.stake_account_address,
-            )));
-            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                validator_init.validator_account_address,
-            )));
-        }
-
-        Ok((actor, call_frame_update, self))
+impl EpochManagerNativePackage {
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
     }
-}
 
-impl Executor for EpochManagerCreateInvocation {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
+        match export_name {
+            EPOCH_MANAGER_CREATE_IDENT => Self::create(input, api),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
+    }
+
+    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = RENodeId::Global(GlobalAddress::Component(
-            ComponentAddress::EpochManager(self.component_address),
+            ComponentAddress::EpochManager(input.component_address),
         ));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
-            epoch: self.initial_epoch,
+            epoch: input.initial_epoch,
             round: 0,
-            rounds_per_epoch: self.rounds_per_epoch,
-            num_unstake_epochs: self.num_unstake_epochs,
+            rounds_per_epoch: input.rounds_per_epoch,
+            num_unstake_epochs: input.num_unstake_epochs,
         };
 
         let mut olympia_validator_token_resman: ResourceManager = {
@@ -126,33 +115,39 @@ impl Executor for EpochManagerCreateInvocation {
             // TODO: remove mint and premint all tokens
             {
                 let non_fungible_local_id = NonFungibleLocalId::Bytes(
-                    scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager))
-                        .unwrap(),
+                    scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
                 );
                 let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-            let resource_address: ResourceAddress =
-                api.invoke(ResourceManagerCreateNonFungibleInvocation {
-                    resource_address: Some(self.olympia_validator_token_address),
+
+            let result = api.call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT,
+                scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
                     metadata,
                     access_rules,
-                })?;
+                    resource_address: input.olympia_validator_token_address,
+                })
+                .unwrap(),
+            )?;
+            let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
             ResourceManager(resource_address)
         };
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, validator_init) in self.validator_set {
+        for (key, validator_init) in input.validator_set {
             let local_id = NonFungibleLocalId::Bytes(key.to_vec());
             let global_id =
                 NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.validator_account_address,
                 bucket: owner_token_bucket.0,
             })?;
@@ -168,19 +163,19 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
-            api.invoke(AccountDepositInvocation {
+            api.call_native(AccountDepositInvocation {
                 receiver: validator_init.stake_account_address,
                 bucket: lp_bucket.0,
             })?;
         }
 
         let current_validator_set = ValidatorSetSubstate {
-            epoch: self.initial_epoch,
+            epoch: input.initial_epoch,
             validator_set: validator_set.clone(),
         };
 
         let preparing_validator_set = ValidatorSetSubstate {
-            epoch: self.initial_epoch + 1,
+            epoch: input.initial_epoch + 1,
             validator_set,
         };
 
@@ -237,15 +232,7 @@ impl Executor for EpochManagerCreateInvocation {
         )?;
 
         let component_address: ComponentAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((component_address, update))
+        Ok(IndexedScryptoValue::from_typed(&component_address))
     }
 }
 
@@ -278,17 +265,14 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
 impl Executor for EpochManagerGetCurrentEpochExecutable {
     type Output = u64;
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(handle)?;
+            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
     }
@@ -329,21 +313,14 @@ impl ExecutableInvocation for EpochManagerNextRoundInvocation {
 impl Executor for EpochManagerNextRoundExecutable {
     type Output = ();
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = system_api.lock_substate(
-            self.node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::MUTABLE,
-        )?;
-        let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
+        let mgr_handle =
+            api.lock_substate(self.node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.get_ref_mut(mgr_handle)?;
         let epoch_manager = substate_mut.epoch_manager();
 
         if self.round <= epoch_manager.round {
@@ -357,31 +334,23 @@ impl Executor for EpochManagerNextRoundExecutable {
 
         if self.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = system_api.lock_substate(
-                self.node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::MUTABLE,
-            )?;
-            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let handle =
+                api.lock_substate(self.node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            let mut substate_mut = api.get_ref_mut(handle)?;
             let preparing_validator_set = substate_mut.validator_set();
             let prepared_epoch = preparing_validator_set.epoch;
             let next_validator_set = preparing_validator_set.validator_set.clone();
             preparing_validator_set.epoch = prepared_epoch + 1;
 
-            let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
+            let mut substate_mut = api.get_ref_mut(mgr_handle)?;
             let epoch_manager = substate_mut.epoch_manager();
             epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
 
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-            let handle = system_api.lock_substate(
-                self.node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::MUTABLE,
-            )?;
-            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let handle =
+                api.lock_substate(self.node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            let mut substate_mut = api.get_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set;
@@ -422,17 +391,13 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
 impl Executor for EpochManagerSetEpochExecutable {
     type Output = ();
 
-    fn execute<Y, W: WasmEngine>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelSubstateApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle =
-            system_api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.epoch_manager().epoch = self.1;
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -454,6 +419,7 @@ impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
         let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
 
         let actor = ResolvedActor::method(
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),
@@ -480,7 +446,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -536,7 +502,7 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientStaticInvokeApi<RuntimeError>,
+        Y: KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
@@ -554,15 +520,5 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
         }
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl EpochManager {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
     }
 }

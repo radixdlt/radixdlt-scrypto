@@ -108,6 +108,7 @@ mod schema {
 
     impl CustomTypeValidation for NoCustomTypeValidation {}
 
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum NoCustomTypeExtension {}
 
     impl CustomTypeExtension for NoCustomTypeExtension {

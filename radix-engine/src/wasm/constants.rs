@@ -1,27 +1,42 @@
-pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0;
+pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0x10;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-pub const CALL_METHOD_FUNCTION_ID: usize = 1;
-pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
-pub const CALL_FUNCTION_FUNCTION_ID: usize = 2;
-pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const INVOKE_FUNCTION_ID: usize = 3;
-pub const INVOKE_FUNCTION_NAME: &str = "invoke";
-pub const CREATE_NODE_FUNCTION_ID: usize = 4;
-pub const CREATE_NODE_FUNCTION_NAME: &str = "create_node";
-pub const DROP_NODE_FUNCTION_ID: usize = 5;
-pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
-pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 6;
-pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
-pub const READ_SUBSTATE_FUNCTION_ID: usize = 7;
-pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
-pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 8;
-pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
-pub const UNLOCK_SUBSTATE_FUNCTION_ID: usize = 9;
-pub const UNLOCK_SUBSTATE_FUNCTION_NAME: &str = "unlock_substate";
-pub const GET_ACTOR_FUNCTION_ID: usize = 10;
-pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 11;
+pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
+
+pub const NEW_PACKAGE_FUNCTION_ID: usize = 0x20;
+pub const NEW_PACKAGE_FUNCTION_NAME: &str = "new_package";
+pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x21;
+pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
+
+pub const NEW_COMPONENT_FUNCTION_ID: usize = 0x30;
+pub const NEW_COMPONENT_FUNCTION_NAME: &str = "new_component";
+pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x31;
+pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
+pub const GLOBALIZE_COMPONENT_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_COMPONENT_FUNCTION_NAME: &str = "globalize_component";
+pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
+pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
+pub const LOOKUP_GLOBAL_COMPONENT_FUNCTION_ID: usize = 0x34;
+pub const LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME: &str = "lookup_global_component";
+pub const GET_COMPONENT_TYPE_INFO_FUNCTION_ID: usize = 0x35;
+pub const GET_COMPONENT_TYPE_INFO_FUNCTION_NAME: &str = "get_component_type_info";
+
+pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
+pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
+pub const READ_SUBSTATE_FUNCTION_ID: usize = 0x41;
+pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
+pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 0x42;
+pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
+pub const DROP_LOCK_FUNCTION_ID: usize = 0x43;
+pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
+
+// Under active refactoring
+pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
+pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
+pub const CALL_NATIVE_FUNCTION_ID: usize = 0xf1;
+pub const CALL_NATIVE_FUNCTION_NAME: &str = "call_native";
+pub const DROP_NODE_FUNCTION_ID: usize = 0xf2;
+pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

@@ -3,9 +3,7 @@ use crate::errors::*;
 use crate::kernel::Track;
 use crate::kernel::*;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::kernel_modules::fee::{
-    CostingError, FeeReserve, FeeTable, SystemLoanFeeReserve,
-};
+use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -13,7 +11,6 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
     DEFAULT_MAX_WASM_MEM_PER_TRANSACTION, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -38,9 +35,9 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
+    pub debug: bool,
     pub max_call_depth: usize,
-    pub trace: bool,
-    pub max_sys_call_trace_depth: usize,
+    pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
     pub max_wasm_mem_per_transaction: usize,
     pub max_wasm_mem_per_instance: usize,
@@ -55,9 +52,9 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
+            debug: false,
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            trace: false,
-            max_sys_call_trace_depth: 1,
+            max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
             max_wasm_mem_per_instance: DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
@@ -66,7 +63,7 @@ impl ExecutionConfig {
 
     pub fn debug() -> Self {
         Self {
-            trace: true,
+            debug: true,
             ..Self::default()
         }
     }
@@ -89,7 +86,7 @@ impl ExecutionConfig {
     pub fn up_to_loan_repayment_with_debug() -> Self {
         Self {
             abort_when_loan_repaid: true,
-            trace: true,
+            debug: true,
             ..Self::default()
         }
     }
@@ -139,14 +136,46 @@ where
             FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
         };
 
-        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
+        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
     }
 
-    fn execute_with_fee_reserve<R: FeeReserve>(
+    fn apply_pre_execution_costs(
+        mut fee_reserve: SystemLoanFeeReserve,
+        fee_table: &FeeTable,
+        executable: &Executable,
+    ) -> Result<SystemLoanFeeReserve, PreExecutionError> {
+        let result = fee_reserve
+            .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_payload_cost_per_byte(),
+                    executable.payload_size(),
+                    CostingReason::TxPayloadCost,
+                )
+            })
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_signature_verification_per_sig(),
+                    executable.auth_zone_params().initial_proofs.len(),
+                    CostingReason::TxSignatureVerification,
+                )
+            });
+
+        match result {
+            Ok(_) => Ok(fee_reserve),
+            Err(e) => Err(PreExecutionError {
+                fee_summary: fee_reserve.finalize(),
+                error: e,
+            }),
+        }
+    }
+
+    fn execute_with_fee_reserve(
         &mut self,
         transaction: &Executable,
         execution_config: &ExecutionConfig,
-        fee_reserve: R,
+        fee_reserve: SystemLoanFeeReserve,
+        fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
@@ -155,7 +184,7 @@ where
         let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.trace {
+        if execution_config.debug {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction auth zone params: {:?}", auth_zone_params);
@@ -168,13 +197,11 @@ where
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker = ResourcesTracker::start_measurement();
 
-        // Prepare state track and execution trace
-        let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
-
         // Apply pre execution costing
-        let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut track = match pre_execution_result {
-            Ok(track) => track,
+        let pre_execution_result =
+            Self::apply_pre_execution_costs(fee_reserve, &fee_table, transaction);
+        let fee_reserve = match pre_execution_result {
+            Ok(fee_reserve) => fee_reserve,
             Err(err) => {
                 return TransactionReceipt {
                     execution: TransactionExecution {
@@ -191,20 +218,37 @@ where
             }
         };
 
+        // Prepare state track and execution trace
+        let mut track = Track::new(self.substate_store);
+
         // Invoke the function/method
         let track_receipt = {
-            let mut module = KernelModule::new(execution_config);
             let mut id_allocator =
                 IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
+            // Create kernel
+            let modules = KernelModuleMixer::standard(
+                execution_config.debug,
+                transaction.transaction_hash().clone(),
+                transaction.auth_zone_params().clone(),
+                fee_reserve,
+                fee_table,
+                execution_config.max_call_depth,
+                execution_config.max_kernel_call_depth_traced,
+                execution_config.max_wasm_mem_per_transaction,
+                execution_config.max_wasm_mem_per_instance,
+            );
             let mut kernel = Kernel::new(
-                auth_zone_params.clone(),
                 &mut id_allocator,
                 &mut track,
                 self.scrypto_interpreter,
-                &mut module,
+                modules,
             );
 
+            // Initialize
+            kernel.initialize().expect("Failed to initialize kernel");
+
+            // Invoke transaction processor
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
@@ -218,8 +262,13 @@ where
                 blobs: Cow::Borrowed(blobs),
             });
 
-            let events = module.collect_events();
-            track.finalize(invoke_result, events)
+            // Teardown
+            let (modules, invoke_result) = kernel.teardown(invoke_result);
+            let fee_reserve = modules.costing.take_fee_reserve();
+            let (vault_ops, events) = modules.execution_trace.collect_events();
+
+            // Finalize track
+            track.finalize(invoke_result, fee_reserve, vault_ops, events)
         };
 
         // Finish resources usage measurement and get results
@@ -239,7 +288,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if execution_config.trace {
+        if execution_config.debug {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution
@@ -291,6 +340,10 @@ where
                     if commit.application_logs.is_empty() {
                         println!("None");
                     }
+                }
+                TransactionResult::Reject(e) => {
+                    println!("{:-^80}", "Transaction Rejected");
+                    println!("{:?}", e.error);
                 }
                 _ => {}
             }

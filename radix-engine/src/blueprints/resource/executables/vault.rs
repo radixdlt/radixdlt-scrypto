@@ -5,9 +5,10 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
+    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
-use crate::system::kernel_modules::fee::FeeReserveError;
+use crate::system::kernel_modules::costing::CostingError;
+use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
@@ -15,6 +16,8 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -27,7 +30,7 @@ pub enum VaultError {
     CouldNotCreateProof,
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
-    LockFeeRepayFailure(FeeReserveError),
+    LockFeeRepayFailure(CostingError),
 }
 
 impl ExecutableInvocation for VaultRecallInvocation {
@@ -132,7 +135,7 @@ impl Executor for VaultPutInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
@@ -140,13 +143,11 @@ impl Executor for VaultPutInvocation {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            system_api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let bucket = system_api
-            .drop_node(RENodeId::Bucket(self.bucket.0))?
-            .into();
+        let bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
 
-        let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+        let mut substate_mut = api.get_ref_mut(vault_handle)?;
         let vault = substate_mut.vault();
         vault.put(bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
@@ -180,22 +181,26 @@ impl Executor for VaultLockFeeInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientEventApi<RuntimeError>,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
+        let vault_handle = api.lock_substate(
             node_id,
             NodeModuleId::SELF,
             offset,
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
+        // Take by amount
         let fee = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
 
             // Check resource and take amount
@@ -213,17 +218,18 @@ impl Executor for VaultLockFeeInvocation {
             })?
         };
 
-        // Refill fee reserve
-        let changes = system_api.lock_fee(self.receiver, fee, self.contingent)?;
+        // Credit cost units
+        let changes: Resource = api.credit_cost_units(self.receiver, fee, self.contingent)?;
 
-        // Return changes
+        // Keep changes
         {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
-            vault
-                .borrow_resource_mut()
-                .put(changes)
-                .expect("Failed to return fee changes to a locking-fee vault");
+            vault.put(BucketSubstate::new(changes)).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::ResourceOperationError(e),
+                ))
+            })?;
         }
 
         Ok(((), CallFrameUpdate::empty()))
@@ -326,21 +332,17 @@ impl Executor for VaultGetAmountInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let amount = vault.total_amount();
 
@@ -370,21 +372,17 @@ impl Executor for VaultGetResourceAddressInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let resource_address = vault.resource_address();
 
@@ -417,21 +415,17 @@ impl Executor for VaultGetNonFungibleLocalIdsInvocation {
 
     fn execute<'a, Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
+        let vault_handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = system_api.get_ref(vault_handle)?;
+        let substate_ref = api.get_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let ids = vault.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(

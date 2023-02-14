@@ -19,9 +19,11 @@
         "Secp",
         "Substate",
         "substates",
+        "Unstake",
         "Untimed",
         "virtualizable",
         "Wasmer",
-        "Wasmi"
+        "Wasmi",
+        "radiswap"
     ]
 }

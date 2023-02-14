@@ -226,24 +226,17 @@ impl WasmModule {
                                 }
                             }
                         }
-                        INVOKE_FUNCTION_NAME => {
+                        CALL_NATIVE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-                            }
-                        }
-                        CREATE_NODE_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
@@ -304,7 +297,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        UNLOCK_SUBSTATE_FUNCTION_NAME => {
+                        DROP_LOCK_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -322,6 +315,100 @@ impl WasmModule {
                                     &self.module,
                                     *type_index as usize,
                                     vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        NEW_PACKAGE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        NEW_COMPONENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GLOBALIZE_COMPONENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;

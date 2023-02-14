@@ -15,6 +15,7 @@ pub enum Own {
     Proof(ProofId),
     Vault(VaultId),
     Component(ComponentId),
+    Account(AccountId), // TODO: Clean this out but required for now to be able to convert to the typed RENodeId
     KeyValueStore(KeyValueStoreId),
 }
 
@@ -41,6 +42,12 @@ impl Own {
         match self {
             Own::Proof(v) => *v,
             _ => panic!("Not a proof ownership"),
+        }
+    }
+    pub fn kv_store_id(&self) -> KeyValueStoreId {
+        match self {
+            Own::KeyValueStore(v) => v.clone(),
+            _ => panic!("Not a key-value store ownership"),
         }
     }
 }
@@ -117,6 +124,10 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
                 encoder.write_byte(4)?;
                 encoder.write_slice(v)?;
             }
+            Own::Account(v) => {
+                encoder.write_byte(5)?;
+                encoder.write_slice(v)?;
+            }
         }
         Ok(())
     }
@@ -138,6 +149,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
             3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
             4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
+            5 => Ok(Self::Account(copy_u8_array(decoder.read_slice(36)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

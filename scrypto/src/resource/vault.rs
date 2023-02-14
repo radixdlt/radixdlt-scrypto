@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::ScryptoCustomValueKind;
@@ -98,14 +98,14 @@ impl ScryptoVault for Vault {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
-        env.invoke(VaultGetAmountInvocation { receiver: self.0 })
+        env.call_native(VaultGetAmountInvocation { receiver: self.0 })
             .unwrap()
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
         Self(
-            env.invoke(ResourceManagerCreateVaultInvocation {
+            env.call_native(ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
             })
             .unwrap()

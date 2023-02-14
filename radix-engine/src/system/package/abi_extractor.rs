@@ -1,12 +1,10 @@
+use crate::ledger::*;
+use crate::system::node_substates::RuntimeSubstate;
+use crate::types::*;
 use radix_engine_interface::abi;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
-
-use crate::ledger::*;
-use crate::system::substates::RuntimeSubstate;
-use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ExportError {
@@ -68,8 +66,8 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
-            NodeModuleId::SELF,
-            SubstateOffset::Component(ComponentOffset::Info),
+            NodeModuleId::ComponentTypeInfo,
+            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
         ))
         .map(|s| s.substate.to_runtime())
         .ok_or(ExportError::ComponentNotFound(component_address))?;

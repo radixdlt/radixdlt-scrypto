@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod auth_list_component {
     struct AuthListComponent {
         count: u8,
         auth: Vec<NonFungibleGlobalId>,
@@ -12,7 +13,7 @@ blueprint! {
             auth: Vec<NonFungibleGlobalId>,
             access_rules: AccessRules,
         ) -> ComponentAddress {
-            let mut component = Self { count, auth }.instantiate();
+            let component = Self { count, auth }.instantiate();
             component.add_access_check(access_rules);
             component.globalize()
         }

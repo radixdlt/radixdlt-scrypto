@@ -1,13 +1,14 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod auth_component {
     struct AuthComponent {
         some_non_fungible: NonFungibleGlobalId,
     }
 
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleGlobalId) -> ComponentAddress {
-            let mut component = Self { some_non_fungible }.instantiate();
+            let component = Self { some_non_fungible }.instantiate();
             component.add_access_check(
                 AccessRules::new()
                     .method(

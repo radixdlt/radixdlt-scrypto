@@ -86,22 +86,6 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     });
 }
 
-/// An example manifest for creating a new fungible resource with no initial supply with an owner
-#[test]
-fn creating_a_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!(
-                "../../transaction/examples/resources/creation/fungible/no_initial_supply_with_owner.rtm"
-            ),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
-        );
-        (manifest, Vec::new())
-    });
-}
-
 /// An example manifest for creating a new fungible resource with an initial supply
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
@@ -114,25 +98,6 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
             ),
             initial_supply = initial_supply,
             account_component_address = account_component_address.display(bech32_encoder)
-        );
-        (manifest, Vec::new())
-    });
-}
-
-/// An example manifest for creating a new fungible resource with an initial supply with an owner
-#[test]
-fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let initial_supply = Decimal::from("10000000");
-
-        let manifest = replace_variables!(
-            include_str!(
-                "../../transaction/examples/resources/creation/fungible/with_initial_supply_with_owner.rtm"
-            ),
-            initial_supply = initial_supply,
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -161,37 +126,6 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
             account_component_address =
                 account_component_address.display(bech32_encoder),
                 non_fungible_local_id = "#1#"
-        );
-        (manifest, Vec::new())
-    });
-}
-
-/// An example manifest for creating a new non-fungible resource with no supply with owner
-#[test]
-fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!(
-                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
-            ),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
-        );
-        (manifest, Vec::new())
-    });
-}
-
-/// An example manifest for creating a new non-fungible resource with an initial supply with owner
-#[test]
-fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#",
-            non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -361,10 +295,9 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
     };
-    let mintable_resource_address = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![])
-        .new_resource_addresses()[0]
-        .clone();
+    let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    result.expect_commit_success();
+    let mintable_resource_address = result.new_resource_addresses()[0].clone();
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(

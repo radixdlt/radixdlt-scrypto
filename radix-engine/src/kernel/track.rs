@@ -1,4 +1,3 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
@@ -7,24 +6,26 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
+use crate::system::kernel_modules::costing::FinalizingFeeReserve;
+use crate::system::kernel_modules::costing::RoyaltyReceiver;
+use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
+use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
-use crate::system::kernel_modules::fee::FeeTable;
-use crate::system::kernel_modules::fee::{CostingReason, FeeSummary};
-use crate::system::kernel_modules::fee::{ExecutionFeeReserve, FeeReserveError};
-use crate::system::kernel_modules::fee::{FeeReserve, RoyaltyReceiver};
-use crate::system::substates::{PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{
+    PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
+};
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-use transaction::model::Executable;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {
@@ -61,14 +62,11 @@ pub struct LoadedSubstate {
 }
 
 /// Transaction-wide states and side effects
-pub struct Track<'s, R: FeeReserve> {
+pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    fee_reserve: R,
-    pub fee_table: FeeTable,
-    pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -91,20 +89,13 @@ pub struct PreExecutionError {
     pub error: FeeReserveError,
 }
 
-impl<'s, R: FeeReserve> Track<'s, R> {
-    pub fn new(
-        substate_store: &'s dyn ReadableSubstateStore,
-        fee_reserve: R,
-        fee_table: FeeTable,
-    ) -> Self {
+impl<'s> Track<'s> {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             application_logs: Vec::new(),
             substate_store,
             loaded_substates: BTreeMap::new(),
             new_global_addresses: Vec::new(),
-            fee_reserve,
-            fee_table,
-            vault_ops: Vec::new(),
         }
     }
 
@@ -116,12 +107,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     /// Returns a copy of the substate associated with the given address, if exists
     fn load_substate(&mut self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substate_store.get_substate(substate_id)
-    }
-
-    #[inline]
-    /// During execution, we only allow access to the Execution subset of the FeeReserve
-    pub fn fee_reserve(&mut self) -> &mut impl ExecutionFeeReserve {
-        &mut self.fee_reserve
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -368,7 +353,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 
@@ -437,7 +422,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                             0,
                         ));
 
@@ -464,50 +449,29 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    pub fn apply_pre_execution_costs(
-        mut self,
-        transaction: &Executable,
-    ) -> Result<Self, PreExecutionError> {
-        let result = self.attempt_apply_pre_execution_costs(transaction);
-
-        match result {
-            Ok(()) => Ok(self),
-            Err(error) => Err(PreExecutionError {
-                fee_summary: self.fee_reserve.finalize(),
-                error,
-            }),
-        }
-    }
-
-    fn attempt_apply_pre_execution_costs(
-        &mut self,
-        executable: &Executable,
-    ) -> Result<(), FeeReserveError> {
-        self.fee_reserve
-            .consume_deferred(self.fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
-            .and_then(|()| {
-                self.fee_reserve.consume_deferred(
-                    self.fee_table.tx_payload_cost_per_byte(),
-                    executable.payload_size(),
-                    CostingReason::TxPayloadCost,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_deferred(
-                    self.fee_table.tx_signature_verification_per_sig(),
-                    executable.auth_zone_params().initial_proofs.len(),
-                    CostingReason::TxSignatureVerification,
-                )
-            })
-    }
-
     pub fn finalize(
         self,
-        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        mut fee_reserve: SystemLoanFeeReserve,
+        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
+        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
+        // and despite enough fee has been locked.
+        //
+        // This is because the cost unit limit check fails the system loan repayment.
+        //
+        // Thus, we propagate the real error to receipt.
+        if let Err(err) = fee_reserve.repay_all() {
+            if invoke_result.is_ok() {
+                invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(
+                    CostingError::FeeReserveError(err),
+                )));
+            }
+        }
+
         // Close fee reserve
-        let mut fee_summary = self.fee_reserve.finalize();
+        let mut fee_summary = fee_reserve.finalize();
 
         let result = match determine_result_type(invoke_result, &fee_summary) {
             TransactionResultType::Commit(invoke_result) => {
@@ -515,9 +479,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates,
-                    vault_ops: self.vault_ops,
                 };
-                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary)
+                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary, vault_ops)
             }
             TransactionResultType::Reject(rejection_error) => {
                 TransactionResult::Reject(RejectResult {
@@ -602,7 +565,6 @@ struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     new_global_addresses: Vec<GlobalAddress>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
-    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 impl<'s> FinalizingTrack<'s> {
@@ -610,6 +572,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
+        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
@@ -726,9 +689,9 @@ impl<'s> FinalizingTrack<'s> {
 
         for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
             match receiver {
-                RoyaltyReceiver::Package(_, node_id) => {
+                RoyaltyReceiver::Package(_, package_id) => {
                     let substate_id = SubstateId(
-                        node_id.clone(),
+                        RENodeId::Package(*package_id),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
@@ -755,9 +718,9 @@ impl<'s> FinalizingTrack<'s> {
                         )
                         .unwrap();
                 }
-                RoyaltyReceiver::Component(_, node_id) => {
+                RoyaltyReceiver::Component(_, component_id) => {
                     let substate_id = SubstateId(
-                        node_id.clone(),
+                        RENodeId::Component(*component_id),
                         NodeModuleId::ComponentRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
@@ -789,7 +752,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Generate commit result
         let execution_trace_receipt = ExecutionTraceReceipt::new(
-            self.vault_ops,
+            vault_ops,
             fee_summary.vault_payments_xrd.as_ref().unwrap(),
             &mut to_persist,
             invoke_result.is_ok(),
@@ -818,7 +781,7 @@ impl<'s> FinalizingTrack<'s> {
                 Self::get_substate_output_id(substate_store, &substate_id)
             {
                 let next_version = existing_output_id.version + 1;
-                diff.down_substates.push(existing_output_id);
+                diff.down_substates.insert(existing_output_id);
                 next_version
             } else {
                 0

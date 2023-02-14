@@ -1,15 +1,15 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
-use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{EpochManagerInvocation, NativeInvocation};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
@@ -440,7 +440,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, rule!(allow_all));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account_address, Decimal::one(), RADIX_TOKEN)
+        .withdraw_from_account(account_address, RADIX_TOKEN, Decimal::one())
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
@@ -649,7 +649,7 @@ fn cannot_claim_unstake_immediately() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .withdraw_all_from_account(account_with_lp, validator_substate.liquidity_token)
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
@@ -704,7 +704,7 @@ fn can_claim_unstake_after_epochs() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .withdraw_all_from_account(account_with_lp, validator_substate.liquidity_token)
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
@@ -724,7 +724,7 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft)
+        .withdraw_all_from_account(account_with_lp, validator_substate.unstake_nft)
         .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
@@ -770,10 +770,10 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(
+        .withdraw_from_account(
             account_with_lp,
-            Decimal::one(),
             validator_substate.liquidity_token,
+            Decimal::one(),
         )
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
@@ -832,16 +832,20 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
         OLYMPIA_VALIDATOR_TOKEN,
     )));
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
-            component_address: EPOCH_MANAGER.raw(),
-            validator_set: BTreeMap::new(),
-            initial_epoch: 1u64,
-            rounds_per_epoch: 1u64,
-            num_unstake_epochs: 1u64,
-        }),
-    ))];
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: EPOCH_MANAGER_PACKAGE,
+        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+        args: args!(
+            OLYMPIA_VALIDATOR_TOKEN.raw(),
+            EPOCH_MANAGER.raw(),
+            validator_set,
+            1u64,
+            1u64,
+            1u64
+        ),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -870,16 +874,21 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
         OLYMPIA_VALIDATOR_TOKEN,
     )));
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            olympia_validator_token_address: OLYMPIA_VALIDATOR_TOKEN.raw(),
-            component_address: EPOCH_MANAGER.raw(),
-            validator_set: BTreeMap::new(),
-            initial_epoch: 1u64,
-            rounds_per_epoch: 1u64,
-            num_unstake_epochs: 1u64,
-        }),
-    ))];
+
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+        package_address: EPOCH_MANAGER_PACKAGE,
+        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+        function_name: "create".to_string(),
+        args: args!(
+            OLYMPIA_VALIDATOR_TOKEN.raw(),
+            EPOCH_MANAGER.raw(),
+            validator_set,
+            1u64,
+            1u64,
+            1u64
+        ),
+    })];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

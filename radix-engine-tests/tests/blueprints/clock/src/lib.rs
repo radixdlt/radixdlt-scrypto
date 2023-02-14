@@ -1,9 +1,10 @@
 use crate::radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod clock_test {
     struct ClockTest;
 
     impl ClockTest {
@@ -115,7 +116,7 @@ blueprint! {
 
         pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
             ScryptoEnv
-                .invoke(ClockSetCurrentTimeInvocation {
+                .call_native(ClockSetCurrentTimeInvocation {
                     receiver: clock,
                     current_time_ms,
                 })

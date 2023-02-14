@@ -1,6 +1,7 @@
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
@@ -20,14 +21,23 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateFungibleInvocation {
-            metadata,
-            access_rules,
-            divisibility,
-        })
-        .map(|address| ResourceManager(address))
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    metadata,
+                    access_rules,
+                    divisibility,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
@@ -38,17 +48,25 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientNodeApi<E>
-            + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-            resource_address: None,
-            metadata,
-            access_rules,
-            divisibility,
-            initial_supply: amount,
-        })
-        .map(|(address, bucket)| (ResourceManager(address), bucket))
+        let result = api
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    metadata,
+                    access_rules,
+                    divisibility,
+                    initial_supply: amount,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let (resource_address, bucket): (ResourceAddress, Bucket) =
+            scrypto_decode(result.as_slice()).unwrap();
+        Ok((ResourceManager(resource_address), bucket))
     }
 
     pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
@@ -58,15 +76,21 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerCreateNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientApi<E>,
     {
-        api.invoke(ResourceManagerCreateNonFungibleInvocation {
-            resource_address: None,
-            id_type,
-            metadata,
-            access_rules,
-        })
-        .map(|address| ResourceManager(address))
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                id_type,
+                metadata,
+                access_rules,
+            })
+            .unwrap(),
+        )?;
+        let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     /// Mints non-fungible resources
@@ -76,7 +100,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerMintNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
         let mut entries = BTreeMap::new();
         entries.insert(
@@ -84,7 +108,7 @@ impl ResourceManager {
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
-        api.invoke(ResourceManagerMintNonFungibleInvocation {
+        api.call_native(ResourceManagerMintNonFungibleInvocation {
             entries,
             receiver: self.0,
         })
@@ -97,13 +121,13 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
         entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
 
-        api.invoke(ResourceManagerMintUuidNonFungibleInvocation {
+        api.call_native(ResourceManagerMintUuidNonFungibleInvocation {
             entries,
             receiver: self.0,
         })
@@ -116,9 +140,9 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerMintFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(ResourceManagerMintFungibleInvocation {
+        api.call_native(ResourceManagerMintFungibleInvocation {
             receiver: self.0,
             amount,
         })
@@ -130,9 +154,9 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerGetNonFungibleInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
-        let output = api.invoke(ResourceManagerGetNonFungibleInvocation {
+        let output = api.call_native(ResourceManagerGetNonFungibleInvocation {
             id,
             receiver: self.0,
         })?;
@@ -147,9 +171,9 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerBurnInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(ResourceManagerBurnInvocation {
+        api.call_native(ResourceManagerBurnInvocation {
             receiver: self.0,
             bucket,
         })
@@ -157,15 +181,15 @@ impl ResourceManager {
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + Invokable<ResourceManagerGetTotalSupplyInvocation, E>,
+        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
     {
-        api.invoke(ResourceManagerGetTotalSupplyInvocation { receiver: self.0 })
+        api.call_native(ResourceManagerGetTotalSupplyInvocation { receiver: self.0 })
     }
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: Invokable<ResourceManagerCreateBucketInvocation, E>,
+        Y: ClientNativeInvokeApi<E>,
     {
-        api.invoke(ResourceManagerCreateBucketInvocation { receiver: self.0 })
+        api.call_native(ResourceManagerCreateBucketInvocation { receiver: self.0 })
     }
 }

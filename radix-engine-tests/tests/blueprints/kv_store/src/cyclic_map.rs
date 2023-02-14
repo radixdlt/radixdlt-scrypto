@@ -1,9 +1,11 @@
+use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::ClientSubstateApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod cyclic_map {
     struct CyclicMap {
         store: KeyValueStore<u32, KeyValueStore<u32, u32>>,
     }
@@ -25,18 +27,22 @@ blueprint! {
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
-            let substate = KeyValueStoreEntrySubstate(Some(
-                scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: kv_store0_id,
-                    key: PhantomData,
-                    value: PhantomData,
-                })
+            let substate = KeyValueStoreEntrySubstate::Some(
+                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
+                scrypto_decode(
+                    &scrypto_encode(&KeyValueStore::<(), ()> {
+                        id: kv_store0_id,
+                        key: PhantomData,
+                        value: PhantomData,
+                    })
+                    .unwrap(),
+                )
                 .unwrap(),
-            ));
+            );
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv
-                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -50,18 +56,22 @@ blueprint! {
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
-            let substate = KeyValueStoreEntrySubstate(Some(
-                scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: kv_store_id,
-                    key: PhantomData,
-                    value: PhantomData,
-                })
+            let substate = KeyValueStoreEntrySubstate::Some(
+                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
+                scrypto_decode(
+                    &scrypto_encode(&KeyValueStore::<(), ()> {
+                        id: kv_store_id,
+                        key: PhantomData,
+                        value: PhantomData,
+                    })
+                    .unwrap(),
+                )
                 .unwrap(),
-            ));
+            );
 
             let handle = ScryptoEnv.sys_lock_substate(node_id, offset, true).unwrap();
             ScryptoEnv
-                .sys_write(handle, scrypto_encode(&substate).unwrap())
+                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store }.instantiate().globalize()

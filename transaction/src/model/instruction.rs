@@ -1,7 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleKey, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleKey, AccessRules};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
@@ -169,57 +167,13 @@ pub enum BasicInstruction {
         entries: Vec<(Vec<u8>, Vec<u8>)>,
     },
 
-    CreateFungibleResource {
-        divisibility: u8,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<Decimal>,
-    },
-
-    CreateFungibleResourceWithOwner {
-        divisibility: u8,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleGlobalId,
-        initial_supply: Option<Decimal>,
-    },
-
-    CreateNonFungibleResource {
-        id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
-    },
-
-    CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleGlobalId,
-        initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>,
-    },
-
     CreateValidator {
         key: EcdsaSecp256k1PublicKey,
         owner_access_rule: AccessRule,
     },
 
-    CreateAccessController {
-        controlled_asset: ManifestBucket,
-        primary_role: AccessRule,
-        recovery_role: AccessRule,
-        confirmation_role: AccessRule,
-        timed_recovery_delay_in_minutes: Option<u32>,
-    },
-
-    CreateIdentity {
-        access_rule: AccessRule,
-    },
-
     AssertAccessRule {
         access_rule: AccessRule,
-    },
-
-    CreateAccount {
-        withdraw_rule: AccessRule,
     },
 
     ///
@@ -250,11 +204,5 @@ pub enum Instruction {
 impl From<BasicInstruction> for Instruction {
     fn from(i: BasicInstruction) -> Self {
         Instruction::Basic(i)
-    }
-}
-
-impl From<NativeInvocation> for Instruction {
-    fn from(i: NativeInvocation) -> Self {
-        Instruction::System(i)
     }
 }

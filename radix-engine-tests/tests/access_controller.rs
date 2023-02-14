@@ -2,7 +2,7 @@ use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::ModuleError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -1453,7 +1453,7 @@ impl AccessControllerTestRunner {
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
             .lock_fee(account_component, 10.into())
-            .withdraw_from_account(account_component, controlled_asset)
+            .withdraw_all_from_account(account_component, controlled_asset)
             .take_from_worktop(controlled_asset, |builder, bucket| {
                 builder.create_access_controller(
                     bucket,

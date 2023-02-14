@@ -3,8 +3,9 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
 use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, RENodeInit, ResolvedActor, ResolvedReceiver,
+    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
+use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
@@ -52,20 +53,16 @@ impl Executor for ProofGetAmountInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = system_api.get_ref(handle)?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
 
         Ok((proof.total_amount(), CallFrameUpdate::empty()))
@@ -94,20 +91,16 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = system_api.get_ref(handle)?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids()?;
 
@@ -137,20 +130,16 @@ impl Executor for ProofGetResourceAddressInvocation {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(
-            node_id,
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = system_api.get_ref(handle)?;
+        let handle =
+            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
 
         Ok((

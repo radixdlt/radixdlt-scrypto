@@ -1,11 +1,12 @@
 use super::state_machine::*;
 use super::*;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, KernelNodeApi,
-    KernelSubstateApi, LockFlags, RENodeInit, RENodeModuleInit, ResolvedActor,
+    KernelSubstateApi, LockFlags, ResolvedActor,
 };
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, Vault};
@@ -14,7 +15,9 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{CLOCK, PACKAGE_TOKEN};
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
+};
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::collections::BTreeMap;
@@ -55,50 +58,56 @@ impl From<AccessControllerError> for RuntimeError {
     }
 }
 
+pub struct AccessControllerNativePackage;
+
 //=================================
 // Access Controller Create Global
 //=================================
 
-impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor =
-            ResolvedActor::function(NativeFn::AccessController(AccessControllerFn::CreateGlobal));
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.controlled_asset));
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AccessControllerCreateGlobalInvocation {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+impl AccessControllerNativePackage {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
+        match export_name {
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            )),
+        }
+    }
+
+    fn create_global<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let input: AccessControllerCreateGlobalInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         // Creating a new vault and putting in it the controlled asset
         let vault = {
-            let controlled_asset = Bucket(self.controlled_asset);
-
-            let mut vault = controlled_asset
+            let mut vault = input
+                .controlled_asset
                 .sys_resource_address(api)
                 .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
-            vault.sys_put(controlled_asset, api)?;
+            vault.sys_put(input.controlled_asset, api)?;
 
             vault
         };
@@ -107,14 +116,14 @@ impl Executor for AccessControllerCreateGlobalInvocation {
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
-                access_rules_chain: [access_rules_from_rule_set(self.rule_set)].into(),
+                access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
             }),
         );
 
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
             vault.0,
-            self.timed_recovery_delay_in_minutes,
+            input.timed_recovery_delay_in_minutes,
         ));
 
         // Allocating an RENodeId and creating the access controller RENode
@@ -129,7 +138,8 @@ impl Executor for AccessControllerCreateGlobalInvocation {
             BTreeMap::new(),
         )?;
 
-        Ok((global_node_id.into(), CallFrameUpdate::empty()))
+        let address: ComponentAddress = global_node_id.into();
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
 
@@ -180,7 +190,7 @@ impl Executor for AccessControllerCreateProofExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let proof = transition(
             self.receiver,
@@ -244,7 +254,7 @@ impl Executor for AccessControllerInitiateRecoveryAsPrimaryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -305,7 +315,7 @@ impl Executor for AccessControllerInitiateRecoveryAsRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -368,7 +378,7 @@ impl Executor for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalExecuta
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -435,7 +445,7 @@ impl Executor for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalExecut
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -505,7 +515,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         let recovery_proposal = transition_mut(
             self.receiver,
@@ -573,7 +583,7 @@ impl Executor for AccessControllerCancelPrimaryRoleRecoveryProposalExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -628,7 +638,7 @@ impl Executor for AccessControllerCancelRecoveryRoleRecoveryProposalExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -687,7 +697,7 @@ impl Executor for AccessControllerLockPrimaryRoleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -746,7 +756,7 @@ impl Executor for AccessControllerUnlockPrimaryRoleExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -807,7 +817,7 @@ impl Executor for AccessControllerStopTimedRecoveryExecutable {
             + KernelSubstateApi
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
-            + ClientStaticInvokeApi<RuntimeError>,
+            + ClientNativeInvokeApi<RuntimeError>,
     {
         transition_mut(
             self.receiver,
@@ -946,7 +956,7 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -975,7 +985,7 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
@@ -1010,10 +1020,10 @@ where
         + KernelSubstateApi
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
-        + ClientStaticInvokeApi<RuntimeError>,
+        + ClientNativeInvokeApi<RuntimeError>,
 {
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        api.invoke(AccessRulesSetGroupAccessRuleInvocation {
+        api.call_native(AccessRulesSetGroupAccessRuleInvocation {
             receiver: receiver,
             index: 0,
             name: group_name.into(),
@@ -1023,7 +1033,7 @@ where
     for (method_key, entry) in access_rules.get_all_method_auth().iter() {
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
-                api.invoke(AccessRulesSetMethodAccessRuleInvocation {
+                api.call_native(AccessRulesSetMethodAccessRuleInvocation {
                     receiver: receiver,
                     index: 0,
                     key: method_key.clone(),

@@ -1,7 +1,8 @@
 use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod abi_component {
     struct AbiComponent {}
 
     impl AbiComponent {
@@ -11,7 +12,7 @@ blueprint! {
         }
 
         pub fn create_invalid_abi_component() -> ComponentAddress {
-            let mut component = Self {}.instantiate();
+            let component = Self {}.instantiate();
             component.add_access_check(
                 AccessRules::new()
                     .method("no_method", rule!(require("something")), rule!(deny_all))
@@ -211,7 +212,8 @@ pub extern "C" fn AbiComponent2_abi() -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
 
-blueprint! {
+#[blueprint]
+mod simple {
     struct Simple {
         state: u32,
     }

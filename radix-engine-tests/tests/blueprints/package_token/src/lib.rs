@@ -1,13 +1,14 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod factory {
     struct Factory {
         my_address: Option<ComponentAddress>,
     }
 
     impl Factory {
         pub fn create_raw() -> ComponentAddress {
-            let mut component = Self {
+            let component = Self {
                 my_address: Option::None,
             }
             .instantiate();
@@ -25,7 +26,7 @@ blueprint! {
         }
 
         pub fn create() -> ComponentAddress {
-            let mut component = Self {
+            let component = Self {
                 my_address: Option::None,
             }
             .instantiate();

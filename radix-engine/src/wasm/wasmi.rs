@@ -170,13 +170,21 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn invoke(
+fn call_native(
     mut caller: Caller<'_, HostState>,
+    native_fn_ptr: u32,
+    native_fn_len: u32,
     invocation_ptr: u32,
     invocation_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
+    let native_fn = read_memory(
+        caller.as_context_mut(),
+        memory,
+        native_fn_ptr,
+        native_fn_len,
+    )?;
     let invocation = read_memory(
         caller.as_context_mut(),
         memory,
@@ -184,19 +192,150 @@ fn invoke(
         invocation_len,
     )?;
 
-    runtime.invoke(invocation).map(|buffer| buffer.0)
+    runtime
+        .call_native(native_fn, invocation)
+        .map(|buffer| buffer.0)
 }
 
-fn create_node(
+fn new_package(
     mut caller: Caller<'_, HostState>,
-    node_ptr: u32,
-    node_len: u32,
+    code_ptr: u32,
+    code_len: u32,
+    abi_ptr: u32,
+    abi_len: u32,
+    access_rules_ptr: u32,
+    access_rules_len: u32,
+    royalty_config_ptr: u32,
+    royalty_config_len: u32,
+    metadata_ptr: u32,
+    metadata_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let node = read_memory(caller.as_context_mut(), memory, node_ptr, node_len)?;
+    runtime
+        .new_package(
+            read_memory(caller.as_context_mut(), memory, code_ptr, code_len)?,
+            read_memory(caller.as_context_mut(), memory, abi_ptr, abi_len)?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                access_rules_ptr,
+                access_rules_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                royalty_config_ptr,
+                royalty_config_len,
+            )?,
+            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
+        )
+        .map(|buffer| buffer.0)
+}
 
-    runtime.create_node(node).map(|buffer| buffer.0)
+fn new_component(
+    mut caller: Caller<'_, HostState>,
+    blueprint_ident_ptr: u32,
+    blueprint_ident_len: u32,
+    app_states_ptr: u32,
+    app_states_len: u32,
+    access_rules_ptr: u32,
+    access_rules_len: u32,
+    royalty_config_ptr: u32,
+    royalty_config_len: u32,
+    metadata_ptr: u32,
+    metadata_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .new_component(
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                blueprint_ident_ptr,
+                blueprint_ident_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                app_states_ptr,
+                app_states_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                access_rules_ptr,
+                access_rules_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                royalty_config_ptr,
+                royalty_config_len,
+            )?,
+            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
+        )
+        .map(|buffer| buffer.0)
+}
+
+fn new_key_value_store(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.new_key_value_store().map(|buffer| buffer.0)
+}
+
+fn globalize_component(
+    mut caller: Caller<'_, HostState>,
+    component_id_ptr: u32,
+    component_id_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .globalize_component(read_memory(
+            caller.as_context_mut(),
+            memory,
+            component_id_ptr,
+            component_id_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
+fn lookup_global_component(
+    mut caller: Caller<'_, HostState>,
+    component_address_ptr: u32,
+    component_address_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .lookup_global_component(read_memory(
+            caller.as_context_mut(),
+            memory,
+            component_address_ptr,
+            component_address_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
+fn get_component_type_info(
+    mut caller: Caller<'_, HostState>,
+    component_id_ptr: u32,
+    component_id_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .get_component_type_info(read_memory(
+            caller.as_context_mut(),
+            memory,
+            component_id_ptr,
+            component_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
 fn drop_node(
@@ -249,13 +388,13 @@ fn write_substate(
     runtime.write_substate(handle, data)
 }
 
-fn unlock_substate(
+fn drop_lock(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.unlock_substate(handle)
+    runtime.drop_lock(handle)
 }
 
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -284,13 +423,13 @@ macro_rules! linker_define {
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, PrepareError> {
         let engine = Engine::default();
-        let module = Module::new(&engine, code).expect("Failed to parse WASM module");
+        let module = Module::new(&engine, code).expect("WASM undecodable, prepare step missed?");
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
             .map_err(|_| PrepareError::NotInstantiatable)?
             .ensure_no_start(store.as_context_mut())
-            .map_err(|_| PrepareError::NotInstantiatable)?;
+            .expect("WASM contains start function, prepare step missed?");
 
         Ok(Self {
             template_store: unsafe { transmute(store) },
@@ -363,20 +502,124 @@ impl WasmiModule {
             },
         );
 
-        let host_invoke = Func::wrap(
+        let host_call_native = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
+             native_fn_ptr: u32,
+             native_fn_len: u32,
              invocation_ptr: u32,
              invocation_len: u32|
              -> Result<u64, Trap> {
-                invoke(caller, invocation_ptr, invocation_len).map_err(|e| e.into())
+                call_native(
+                    caller,
+                    native_fn_ptr,
+                    native_fn_len,
+                    invocation_ptr,
+                    invocation_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
-        let host_create_node = Func::wrap(
+        let host_new_package = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>, node_ptr: u32, node_len: u32| -> Result<u64, Trap> {
-                create_node(caller, node_ptr, node_len).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             code_ptr: u32,
+             code_len: u32,
+             abi_ptr: u32,
+             abi_len: u32,
+             access_rules_ptr: u32,
+             access_rules_len: u32,
+             royalty_config_ptr: u32,
+             royalty_config_len: u32,
+             metadata_ptr: u32,
+             metadata_len: u32|
+             -> Result<u64, Trap> {
+                new_package(
+                    caller,
+                    code_ptr,
+                    code_len,
+                    abi_ptr,
+                    abi_len,
+                    access_rules_ptr,
+                    access_rules_len,
+                    royalty_config_ptr,
+                    royalty_config_len,
+                    metadata_ptr,
+                    metadata_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_new_component = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             blueprint_ident_ptr: u32,
+             blueprint_ident_len: u32,
+             app_states_ptr: u32,
+             app_states_len: u32,
+             access_rules_ptr: u32,
+             access_rules_len: u32,
+             royalty_config_ptr: u32,
+             royalty_config_len: u32,
+             metadata_ptr: u32,
+             metadata_len: u32|
+             -> Result<u64, Trap> {
+                new_component(
+                    caller,
+                    blueprint_ident_ptr,
+                    blueprint_ident_len,
+                    app_states_ptr,
+                    app_states_len,
+                    access_rules_ptr,
+                    access_rules_len,
+                    royalty_config_ptr,
+                    royalty_config_len,
+                    metadata_ptr,
+                    metadata_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_new_key_value_store = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                new_key_value_store(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_globalize_component = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             component_id_ptr: u32,
+             component_id_len: u32|
+             -> Result<u64, Trap> {
+                globalize_component(caller, component_id_ptr, component_id_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
+        let host_lookup_global_component = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             component_address_ptr: u32,
+             component_address_len: u32|
+             -> Result<u64, Trap> {
+                lookup_global_component(caller, component_address_ptr, component_address_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
+        let host_get_component_type_info = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             component_id_ptr: u32,
+             component_id_len: u32|
+             -> Result<u64, Trap> {
+                get_component_type_info(caller, component_id_ptr, component_id_len)
+                    .map_err(|e| e.into())
             },
         );
 
@@ -429,10 +672,10 @@ impl WasmiModule {
             },
         );
 
-        let host_unlock_substate = Func::wrap(
+        let host_drop_lock = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                unlock_substate(caller, handle).map_err(|e| e.into())
+                drop_lock(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -454,13 +697,34 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, INVOKE_FUNCTION_NAME, host_invoke);
-        linker_define!(linker, CREATE_NODE_FUNCTION_NAME, host_create_node);
+        linker_define!(linker, CALL_NATIVE_FUNCTION_NAME, host_call_native);
+        linker_define!(linker, NEW_PACKAGE_FUNCTION_NAME, host_new_package);
+        linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
+        linker_define!(
+            linker,
+            NEW_KEY_VALUE_STORE_FUNCTION_NAME,
+            host_new_key_value_store
+        );
+        linker_define!(
+            linker,
+            GLOBALIZE_COMPONENT_FUNCTION_NAME,
+            host_globalize_component
+        );
+        linker_define!(
+            linker,
+            LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME,
+            host_lookup_global_component
+        );
+        linker_define!(
+            linker,
+            GET_COMPONENT_TYPE_INFO_FUNCTION_NAME,
+            host_get_component_type_info
+        );
         linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, UNLOCK_SUBSTATE_FUNCTION_NAME, host_unlock_substate);
+        linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
         linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
         linker_define!(
             linker,
