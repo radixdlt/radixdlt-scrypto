@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod execution_trace_test {
     struct ExecutionTraceTest {
         vault: Vault,
     }
@@ -11,7 +12,7 @@ blueprint! {
         ) -> (ResourceAddress, ComponentAddress, ComponentAddress) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .initial_supply(1000000);
+                .mint_initial_supply(1000000);
 
             let resource_address = bucket.resource_address();
 

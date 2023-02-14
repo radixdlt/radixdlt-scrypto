@@ -9,23 +9,23 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct Run {
     /// The path to a transaction manifest file
-    path: PathBuf,
+    pub path: PathBuf,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// The paths to blobs
     #[clap(short, long, multiple = true)]
-    blobs: Option<Vec<String>>,
+    pub blobs: Option<Vec<String>>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signing_keys: Option<String>,
+    pub signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl Run {
@@ -60,7 +60,6 @@ impl Run {
             &None,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

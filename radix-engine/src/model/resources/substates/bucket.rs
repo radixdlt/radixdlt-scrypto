@@ -29,7 +29,7 @@ impl BucketSubstate {
 
     pub fn take_non_fungibles(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<Resource, ResourceOperationError> {
         self.borrow_resource_mut().take_by_ids(ids)
     }
@@ -76,7 +76,7 @@ impl BucketSubstate {
 
     pub fn create_proof_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         container_id: ResourceContainerId,
     ) -> Result<ProofSubstate, ProofError> {
         // lock the specified id set
@@ -111,7 +111,7 @@ impl BucketSubstate {
         self.borrow_resource().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         self.borrow_resource().total_ids()
     }
 

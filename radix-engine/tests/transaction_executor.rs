@@ -5,9 +5,9 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
+use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -32,18 +32,17 @@ fn low_cost_unit_limit_should_result_in_rejection() {
 
     // Assert
     assert_eq!(
-        result,
-        Err(TransactionValidationError::HeaderValidationError(
+        result.expect_err("Should be an error"),
+        TransactionValidationError::HeaderValidationError(
             HeaderValidationError::InvalidCostUnitLimit
-        ))
+        )
     );
 }
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::builder().build();
 
     const CURRENT_EPOCH: u64 = 150;
     const VALID_FROM_EPOCH: u64 = 151;
@@ -58,7 +57,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
+    let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -79,8 +78,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::builder().build();
 
     const CURRENT_EPOCH: u64 = 157;
     const VALID_FROM_EPOCH: u64 = 151;
@@ -95,7 +93,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
+    let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -116,16 +114,12 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::new(
-            InstructionCostRules::tiered(1, 5, 10, 5000),
-            1024,
-        ),
+        wasm_metering_config: WasmMeteringConfig::V0,
     };
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();
@@ -144,7 +138,7 @@ fn test_normal_transaction_flow() {
         .expect("Invalid transaction");
 
     let executable = validator
-        .validate(&transaction, &intent_hash_manager)
+        .validate(&transaction, raw_transaction.len(), &intent_hash_manager)
         .expect("Invalid transaction");
 
     // Act
@@ -165,7 +159,7 @@ fn get_executable<'a>(
 ) -> Result<Executable<'a>, TransactionValidationError> {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    validator.validate(&transaction, &TestIntentHashManager::new())
+    validator.validate(&transaction, 0, &TestIntentHashManager::new())
 }
 
 struct TransactionParams {
@@ -193,7 +187,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::simulator())
+            ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10.into())
                 .clear_auth_zone()
                 .build(),

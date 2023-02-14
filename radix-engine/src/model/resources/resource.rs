@@ -2,8 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::{BucketId, VaultId};
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
@@ -22,8 +21,7 @@ pub enum ResourceOperationError {
 }
 
 /// A raw record of resource persisted in the substate store
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Resource {
     Fungible {
         /// The resource address.
@@ -37,7 +35,7 @@ pub enum Resource {
         /// The resource address.
         resource_address: ResourceAddress,
         /// The total non-fungible ids.
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         /// NonFungible Id type
         id_type: NonFungibleIdType,
     },
@@ -58,7 +56,7 @@ impl Resource {
 
     pub fn new_non_fungible(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleLocalId>,
         id_type: NonFungibleIdType,
     ) -> Self {
         Self::NonFungible {
@@ -78,7 +76,7 @@ impl Resource {
         }
     }
 
-    pub fn ids(&self) -> &BTreeSet<NonFungibleId> {
+    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
         match self {
             Resource::Fungible { .. } => {
                 panic!("Attempted to list non-fungible IDs on fungible resource")
@@ -175,7 +173,7 @@ impl Resource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let ids: BTreeSet<NonFungibleId> = ids.iter().take(n).cloned().collect();
+                let ids: BTreeSet<NonFungibleLocalId> = ids.iter().take(n).cloned().collect();
                 self.take_by_ids(&ids)
             }
         }
@@ -183,7 +181,7 @@ impl Resource {
 
     pub fn take_by_ids(
         &mut self,
-        ids_to_take: &BTreeSet<NonFungibleId>,
+        ids_to_take: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<Resource, ResourceOperationError> {
         let resource_address = self.resource_address();
         match self {
@@ -208,9 +206,10 @@ impl Resource {
             .expect("Take all from `Resource` should not fail")
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
-            || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
+            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+                != BnumI256::from(0)
         {
             Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {
@@ -263,9 +262,9 @@ pub enum LockableResource {
         /// The resource address.
         resource_address: ResourceAddress,
         /// The locked non-fungible ids and the corresponding times of being locked.
-        locked_ids: BTreeMap<NonFungibleId, usize>,
+        locked_ids: BTreeMap<NonFungibleLocalId, usize>,
         /// The liquid non-fungible ids.
-        liquid_ids: BTreeSet<NonFungibleId>,
+        liquid_ids: BTreeSet<NonFungibleLocalId>,
         /// The non-fungible ID type.
         id_type: NonFungibleIdType,
     },
@@ -274,11 +273,10 @@ pub enum LockableResource {
 /// The locked amount or non-fungible IDs.
 ///
 /// Invariant: always consistent with resource fungibility.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LockedAmountOrIds {
     Amount(Decimal),
-    Ids(BTreeSet<NonFungibleId>),
+    Ids(BTreeSet<NonFungibleLocalId>),
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -300,7 +298,7 @@ impl LockedAmountOrIds {
         }
     }
 
-    pub fn ids(&self) -> Result<BTreeSet<NonFungibleId>, ()> {
+    pub fn ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ()> {
         match self {
             Self::Amount(_) => Err(()),
             Self::Ids(ids) => Ok(ids.clone()),
@@ -353,7 +351,8 @@ impl LockableResource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let ids: BTreeSet<NonFungibleId> = liquid_ids.iter().take(n).cloned().collect();
+                let ids: BTreeSet<NonFungibleLocalId> =
+                    liquid_ids.iter().take(n).cloned().collect();
                 self.take_by_ids(&ids)
             }
         }
@@ -361,7 +360,7 @@ impl LockableResource {
 
     pub fn take_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<Resource, ResourceOperationError> {
         match self {
             Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
@@ -433,7 +432,8 @@ impl LockableResource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let mut ids: BTreeSet<NonFungibleId> = locked_ids.keys().take(n).cloned().collect();
+                let mut ids: BTreeSet<NonFungibleLocalId> =
+                    locked_ids.keys().take(n).cloned().collect();
                 if ids.len() < n {
                     ids.extend(liquid_ids.iter().take(n - ids.len()).cloned());
                 }
@@ -445,7 +445,7 @@ impl LockableResource {
 
     pub fn lock_by_ids(
         &mut self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<LockedAmountOrIds, ResourceOperationError> {
         match self {
             Self::NonFungible {
@@ -534,7 +534,7 @@ impl LockableResource {
         }
     }
 
-    pub fn max_locked_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn max_locked_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         match self {
             LockableResource::Fungible { .. } => {
                 Err(ResourceOperationError::NonFungibleOperationNotAllowed)
@@ -552,7 +552,7 @@ impl LockableResource {
         }
     }
 
-    pub fn liquid_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn liquid_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         match self {
             Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
             Self::NonFungible { liquid_ids, .. } => Ok(liquid_ids.clone()),
@@ -563,7 +563,7 @@ impl LockableResource {
         self.max_locked_amount() + self.liquid_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         let mut total = BTreeSet::new();
         total.extend(self.max_locked_ids()?);
         total.extend(self.liquid_ids()?);
@@ -603,7 +603,8 @@ impl LockableResource {
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
-            || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
+            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+                != BnumI256::from(0)
         {
             Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {

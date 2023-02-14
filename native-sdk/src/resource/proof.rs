@@ -1,17 +1,17 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
+use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 pub trait SysProof {
-    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: EngineApi<E> + Invokable<ProofCloneInvocation, E>;
-    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<(), E>
@@ -20,7 +20,7 @@ pub trait SysProof {
 }
 
 impl SysProof for Proof {
-    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
@@ -30,7 +30,7 @@ impl SysProof for Proof {
         sys_calls.invoke(ProofCloneInvocation { receiver: self.0 })
     }
 
-    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<(), E>

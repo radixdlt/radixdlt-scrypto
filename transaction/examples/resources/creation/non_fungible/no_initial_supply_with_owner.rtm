@@ -1,0 +1,24 @@
+# This transaction manifest creates a new non-fungible resource with no initial supply and with an 
+# owner badge
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
+# Locking 10 XRD in fees from the account component. 
+CALL_METHOD 
+    ComponentAddress("${account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Creating a new resource 
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
+    Enum("NonFungibleIdType::Integer")
+    Map<String, String>(
+        "name", "MyResource",                                        # Resource Name
+        "description", "A very innovative and important resource"    # Resource Description
+    )
+    NonFungibleGlobalId("${owner_badge_resource_address}:${owner_badge_non_fungible_local_id}")
+    None;

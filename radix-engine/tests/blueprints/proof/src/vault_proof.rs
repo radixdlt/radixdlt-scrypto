@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod vault_proof {
     struct VaultProof {
         vault: Vault,
     }
@@ -46,16 +47,16 @@ blueprint! {
 
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
-            total_ids: BTreeSet<NonFungibleId>,
-            proof_ids: BTreeSet<NonFungibleId>,
+            total_ids: BTreeSet<NonFungibleLocalId>,
+            proof_ids: BTreeSet<NonFungibleLocalId>,
         ) {
             let proof = self.vault.create_proof_by_ids(&proof_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.non_fungible_ids(), total_ids);
-            assert_eq!(proof.non_fungible_ids(), proof_ids);
-            assert_eq!(clone.non_fungible_ids(), proof_ids);
+            assert_eq!(self.vault.non_fungible_local_ids(), total_ids);
+            assert_eq!(proof.non_fungible_local_ids(), proof_ids);
+            assert_eq!(clone.non_fungible_local_ids(), proof_ids);
 
             clone.drop();
             proof.drop();
@@ -68,6 +69,10 @@ blueprint! {
         }
 
         pub fn receive_proof(_proof: Proof) {
+            // auto dropped here
+        }
+
+        pub fn receive_proofs(_proofs: Vec<Proof>) {
             // auto dropped here
         }
 
@@ -109,14 +114,14 @@ blueprint! {
         pub fn compose_vault_and_bucket_proof_by_ids(
             &mut self,
             bucket: Bucket,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof =
                         ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
-                    assert_eq!(proof.non_fungible_ids(), ids);
+                    assert_eq!(proof.non_fungible_local_ids(), ids);
                     proof.drop();
                 })
             });

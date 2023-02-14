@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-derive"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [lib]
@@ -10,10 +10,8 @@ proc-macro = true
 proc-macro2 = { version = "1.0.38" }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
-uuid = { version = "1.0.0", features = ["v4"] }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
-sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
 
 [features]
@@ -30,12 +28,10 @@ scrypto-abi = { path = "../scrypto-abi", default-features = false }
 default = ["std"]
 std = [
     "serde/std", "serde_json/std", 
-    "sbor/std", "sbor/serde", 
     "scrypto-abi/std", "scrypto-abi/serde"
 ]
 alloc = [
     "serde/alloc", "serde_json/alloc", 
-    "sbor/alloc", "sbor/serde", 
     "scrypto-abi/alloc", "scrypto-abi/serde"
 ]
 

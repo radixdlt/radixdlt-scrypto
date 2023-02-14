@@ -4,8 +4,8 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
+use radix_engine_interface::node::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 
@@ -114,7 +114,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             writeln!(output, "{}", "Access Rules".green().bold());
             for (_, auth) in substate.access_rules_chain.iter().identify_last() {
-                for (last, (k, v)) in auth.iter().identify_last() {
+                for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
                     writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }
                 writeln!(output, "Default: {:?}", auth.get_default());
@@ -140,9 +140,26 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             );
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
-            let mut queue: VecDeque<KeyValueStoreId> =
-                state_data.kv_store_ids.iter().cloned().collect();
+            let mut vaults_found: HashSet<VaultId> = state_data
+                .owned_node_ids()
+                .unwrap()
+                .iter()
+                .cloned()
+                .filter_map(|node_id| match node_id {
+                    RENodeId::Vault(vault_id) => Some(vault_id),
+                    _ => None,
+                })
+                .collect();
+            let mut queue: VecDeque<KeyValueStoreId> = state_data
+                .owned_node_ids()
+                .unwrap()
+                .iter()
+                .cloned()
+                .filter_map(|node_id| match node_id {
+                    RENodeId::KeyValueStore(kv_store_id) => Some(kv_store_id),
+                    _ => None,
+                })
+                .collect();
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -165,8 +182,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     output: &mut O,
 ) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let mut referenced_maps = Vec::new();
-    let mut referenced_vaults = Vec::new();
+    let mut owned_kv_stores = Vec::new();
+    let mut owned_vaults = Vec::new();
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
@@ -189,11 +206,20 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            referenced_maps.extend(value.kv_store_ids);
-            referenced_vaults.extend(value.vault_ids);
+            for owned_node in value.owned_node_ids().unwrap() {
+                match owned_node {
+                    RENodeId::Vault(vault_id) => {
+                        owned_vaults.push(vault_id);
+                    }
+                    RENodeId::KeyValueStore(kv_store_id) => {
+                        owned_kv_stores.push(kv_store_id);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
-    Ok((referenced_maps, referenced_vaults))
+    Ok((owned_kv_stores, owned_vaults))
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(

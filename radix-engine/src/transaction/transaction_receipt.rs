@@ -3,35 +3,27 @@ use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::{GlobalAddress, Level};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
 use radix_engine_interface::model::*;
-use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
-use transaction::model::*;
+use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
-use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
+use crate::engine::{RejectionError, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;
+use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionContents {
-    pub instructions: Vec<Instruction>,
-}
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
-    pub application_logs: Vec<(Level, String)>,
     pub events: Vec<TrackedEvent>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
+    Abort(AbortResult),
 }
 
 impl TransactionResult {
@@ -39,29 +31,30 @@ impl TransactionResult {
         match self {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
+    pub application_logs: Vec<(Level, String)>,
+    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionOutcome {
-    Success(Vec<Vec<u8>>),
+    Success(Vec<InstructionOutput>),
     Failure(RuntimeError),
 }
 
 impl TransactionOutcome {
-    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
+    pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
             TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
@@ -71,7 +64,7 @@ impl TransactionOutcome {
     pub fn success_or_else<E, F: FnOnce(&RuntimeError) -> E>(
         &self,
         f: F,
-    ) -> Result<&Vec<Vec<u8>>, E> {
+    ) -> Result<&Vec<InstructionOutput>, E> {
         match self {
             TransactionOutcome::Success(results) => Ok(results),
             TransactionOutcome::Failure(error) => Err(f(error)),
@@ -79,13 +72,11 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
-    pub new_system_addresses: Vec<SystemAddress>,
 }
 
 impl EntityChanges {
@@ -94,7 +85,6 @@ impl EntityChanges {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
             new_resource_addresses: Vec::new(),
-            new_system_addresses: Vec::new(),
         };
 
         for new_global_address in new_global_addresses {
@@ -108,9 +98,6 @@ impl EntityChanges {
                 GlobalAddress::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
                 }
-                GlobalAddress::System(system_address) => {
-                    entity_changes.new_system_addresses.push(system_address)
-                }
             }
         }
 
@@ -118,17 +105,24 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AbortResult {
+    pub reason: AbortReason,
+}
+
+#[derive(Debug, Clone, Display, PartialEq, Eq, Encode, Decode, Categorize)]
+pub enum AbortReason {
+    ConfiguredAbortTriggeredOnFeeLoanRepayment,
+}
+
 /// Represents a transaction receipt.
 #[derive(Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
-    pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
 }
@@ -136,6 +130,26 @@ pub struct TransactionReceipt {
 impl TransactionReceipt {
     pub fn is_commit(&self) -> bool {
         matches!(self.result, TransactionResult::Commit(_))
+    }
+
+    pub fn is_commit_success(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Success(_),
+                ..
+            })
+        )
+    }
+
+    pub fn is_commit_failure(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Failure(_),
+                ..
+            })
+        )
     }
 
     pub fn is_rejection(&self) -> bool {
@@ -146,6 +160,7 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
 
@@ -153,6 +168,15 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
+            TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
+        }
+    }
+
+    pub fn expect_abortion(&self) -> &AbortReason {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
+            TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
+            TransactionResult::Abort(ref r) => &r.reason,
         }
     }
 
@@ -170,10 +194,11 @@ impl TransactionReceipt {
                     );
                 }
             }
+            TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
         }
     }
 
-    pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
+    pub fn expect_commit_success(&self) -> &Vec<InstructionOutput> {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(x) => x,
@@ -182,6 +207,7 @@ impl TransactionReceipt {
                 }
             },
             TransactionResult::Reject(err) => panic!("Transaction was rejected:\n{:?}", err),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
@@ -194,6 +220,7 @@ impl TransactionReceipt {
                 TransactionOutcome::Failure(err) => err,
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
@@ -214,12 +241,22 @@ impl TransactionReceipt {
                 }
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
-        scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
-            .expect("Wrong instruction output type!")
+        match &self.expect_commit_success()[nth] {
+            InstructionOutput::Native(native) => {
+                // TODO: Use downcast
+                IndexedScryptoValue::from_typed(&native.as_ref())
+                    .as_typed()
+                    .expect("Wrong native instruction output type!")
+            }
+            InstructionOutput::Scrypto(value) => value
+                .as_typed()
+                .expect("Wrong scrypto instruction output type!"),
+        }
     }
 
     pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
@@ -235,11 +272,6 @@ impl TransactionReceipt {
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
-    }
-
-    pub fn new_system_addresses(&self) -> &Vec<SystemAddress> {
-        let commit = self.expect_commit();
-        &commit.entity_changes.new_system_addresses
     }
 }
 
@@ -267,7 +299,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let contents = &self.contents;
         let execution = &self.execution;
         let result = &self.result;
 
@@ -283,6 +314,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
                 },
                 TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
+                TransactionResult::Abort(a) => format!("ABORTED: {}", a.reason).bright_red(),
             },
         )?;
 
@@ -305,50 +337,36 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             execution.fee_summary.tip_percentage
         )?;
 
-        write!(
-            f,
-            "\n{} {}",
-            "Logs:".bold().green(),
-            execution.application_logs.len()
-        )?;
-        for (i, (level, msg)) in execution.application_logs.iter().enumerate() {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
-            };
+        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
-                "\n{} [{:5}] {}",
-                prefix!(i, execution.application_logs),
-                l,
-                m
+                "\n{} {}",
+                "Logs:".bold().green(),
+                c.application_logs.len()
             )?;
-        }
-
-        let mut decompilation_context =
-            DecompilationContext::new_with_optional_network(bech32_encoder);
-
-        write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in contents.instructions.iter().enumerate() {
-            write!(f, "\n{} ", prefix!(i, contents.instructions))?;
-            let res = decompile_instruction(f, inst, &mut decompilation_context);
-            if let Err(err) = res {
-                write!(f, "[INVALID_INSTRUCTION({:?})]", err)?
+            for (i, (level, msg)) in c.application_logs.iter().enumerate() {
+                let (l, m) = match level {
+                    Level::Error => ("ERROR".red(), msg.red()),
+                    Level::Warn => ("WARN".yellow(), msg.yellow()),
+                    Level::Info => ("INFO".green(), msg.green()),
+                    Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                    Level::Trace => ("TRACE".normal(), msg.normal()),
+                };
+                write!(f, "\n{} [{:5}] {}", prefix!(i, c.application_logs), l, m)?;
             }
         }
 
+        let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
+
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
-                write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
+                write!(f, "\n{}", "Outputs:".bold().green())?;
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        IndexedScryptoValue::from_slice(output)
+                        IndexedScryptoValue::from_slice(&output.as_vec())
                             .expect("Failed to parse return data")
                             .display(decompilation_context.for_value_display())
                     )?;

@@ -1,22 +1,21 @@
 use radix_engine_constants::*;
 use radix_engine_interface::constants::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::node::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
-
 pub trait TransactionValidator<T: ScryptoDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
     ) -> Result<T, TransactionValidationError> {
-        if transaction.len() > MAX_PAYLOAD_SIZE {
+        if transaction.len() > MAX_TRANSACTION_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
@@ -29,6 +28,7 @@ pub trait TransactionValidator<T: ScryptoDecode> {
     fn validate<'a, 't, I: IntentHashManager>(
         &'a self,
         transaction: &'t T,
+        payload_size: usize,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError>;
 }
@@ -38,8 +38,8 @@ pub struct ValidationConfig {
     pub network_id: u8,
     pub min_cost_unit_limit: u32,
     pub max_cost_unit_limit: u32,
-    pub min_tip_percentage: u8,
-    pub max_tip_percentage: u8,
+    pub min_tip_percentage: u16,
+    pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
 }
 
@@ -69,6 +69,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
     fn validate<'a, 't, I: IntentHashManager>(
         &'a self,
         transaction: &'t NotarizedTransaction,
+        payload_size: usize,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError> {
         let intent = &transaction.signed_intent.intent;
@@ -85,14 +86,15 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            &intent.manifest.instructions,
+            InstructionList::Basic(&intent.manifest.instructions),
             &intent.manifest.blobs,
             ExecutionContext {
+                transaction_hash,
+                payload_size,
                 auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthModule::pk_non_fungibles(&signer_keys),
+                    initial_proofs: AuthAddresses::signer_set(&signer_keys),
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
-                transaction_hash,
                 fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
                     tip_percentage: header.tip_percentage,
@@ -105,6 +107,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                     }
                     .enforced(),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -126,7 +129,7 @@ impl NotarizedTransactionValidator {
         let flags = &preview_intent.flags;
         let intent_hash = intent.hash()?;
         self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
-        let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
+        let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
         if flags.assume_all_signature_proofs {
@@ -147,10 +150,11 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            &manifest.instructions,
+            InstructionList::Basic(&manifest.instructions),
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses,
@@ -165,6 +169,7 @@ impl NotarizedTransactionValidator {
                     }
                     .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -193,87 +198,115 @@ impl NotarizedTransactionValidator {
         manifest: &TransactionManifest,
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
-        let mut id_validator = IdValidator::new();
+        let mut id_validator = ManifestIdValidator::new();
         for inst in &manifest.instructions {
             match inst {
-                Instruction::TakeFromWorktop { .. } => {
+                BasicInstruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktopByAmount { .. } => {
+                BasicInstruction::TakeFromWorktopByAmount { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktopByIds { .. } => {
+                BasicInstruction::TakeFromWorktopByIds { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::ReturnToWorktop { bucket_id } => {
+                BasicInstruction::ReturnToWorktop { bucket_id } => {
                     id_validator
-                        .drop_bucket(*bucket_id)
+                        .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::AssertWorktopContains { .. } => {}
-                Instruction::AssertWorktopContainsByAmount { .. } => {}
-                Instruction::AssertWorktopContainsByIds { .. } => {}
-                Instruction::PopFromAuthZone => {
-                    id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                Instruction::PushToAuthZone { proof_id } => {
-                    id_validator
-                        .drop_proof(*proof_id)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                Instruction::ClearAuthZone => {}
-                Instruction::CreateProofFromAuthZone { .. } => {
+                BasicInstruction::AssertWorktopContains { .. } => {}
+                BasicInstruction::AssertWorktopContainsByAmount { .. } => {}
+                BasicInstruction::AssertWorktopContainsByIds { .. } => {}
+                BasicInstruction::PopFromAuthZone => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
+                BasicInstruction::PushToAuthZone { proof_id } => {
+                    id_validator
+                        .drop_proof(proof_id)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::ClearAuthZone => {}
+                BasicInstruction::CreateProofFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByIds { .. } => {
+                BasicInstruction::CreateProofFromAuthZoneByAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucket { bucket_id } => {
+                BasicInstruction::CreateProofFromAuthZoneByIds { .. } => {
                     id_validator
-                        .new_proof(ProofKind::BucketProof(*bucket_id))
+                        .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CloneProof { proof_id } => {
+                BasicInstruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
-                        .clone_proof(*proof_id)
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropProof { proof_id } => {
+                BasicInstruction::CloneProof { proof_id } => {
                     id_validator
-                        .drop_proof(*proof_id)
+                        .clone_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropAllProofs => {
+                BasicInstruction::DropProof { proof_id } => {
+                    id_validator
+                        .drop_proof(proof_id)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::DropAllProofs => {
                     id_validator
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CallFunction { args, .. }
-                | Instruction::CallMethod { args, .. }
-                | Instruction::CallNativeFunction { args, .. }
-                | Instruction::CallNativeMethod { args, .. } => {
+                BasicInstruction::CallFunction { args, .. }
+                | BasicInstruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
-                    Self::validate_call_data(&args, &mut id_validator)
+                    Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackageWithOwner { .. } => {}
+                BasicInstruction::PublishPackage { .. } => {}
+                BasicInstruction::PublishPackageWithOwner { .. } => {}
+                BasicInstruction::BurnResource { bucket_id } => {
+                    id_validator
+                        .drop_bucket(bucket_id)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::CreateAccessController {
+                    controlled_asset, ..
+                } => {
+                    id_validator
+                        .drop_bucket(controlled_asset)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                BasicInstruction::RecallResource { .. }
+                | BasicInstruction::SetMetadata { .. }
+                | BasicInstruction::SetPackageRoyaltyConfig { .. }
+                | BasicInstruction::SetComponentRoyaltyConfig { .. }
+                | BasicInstruction::ClaimPackageRoyalty { .. }
+                | BasicInstruction::ClaimComponentRoyalty { .. }
+                | BasicInstruction::SetMethodAccessRule { .. }
+                | BasicInstruction::MintFungible { .. }
+                | BasicInstruction::MintNonFungible { .. }
+                | BasicInstruction::MintUuidNonFungible { .. }
+                | BasicInstruction::CreateFungibleResource { .. }
+                | BasicInstruction::CreateFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateNonFungibleResource { .. }
+                | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
+                | BasicInstruction::CreateValidator { .. }
+                | BasicInstruction::CreateIdentity { .. }
+                | BasicInstruction::AssertAccessRule { .. } => {}
             }
         }
 
@@ -360,30 +393,32 @@ impl NotarizedTransactionValidator {
         Ok(signers.into_iter().collect())
     }
 
-    pub fn validate_call_data(
-        call_data: &[u8],
-        id_validator: &mut IdValidator,
+    pub fn validate_call_args(
+        args: &[u8],
+        id_validator: &mut ManifestIdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value = IndexedScryptoValue::from_slice(call_data)
-            .map_err(CallDataValidationError::InvalidScryptoValue)?;
+        let indexed_args =
+            IndexedScryptoValue::from_slice(args).map_err(CallDataValidationError::DecodeError)?;
+
         id_validator
-            .move_resources(&value)
+            .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
             .map_err(CallDataValidationError::IdValidationError)?;
-        if let Some(vault_id) = value.vault_ids.iter().nth(0) {
-            return Err(CallDataValidationError::VaultNotAllowed(vault_id.clone()));
+
+        if let Ok(node_ids) = indexed_args.owned_node_ids() {
+            if !node_ids.is_empty() {
+                return Err(CallDataValidationError::OwnNotAllowed);
+            }
+        } else {
+            return Err(CallDataValidationError::OwnNotAllowed);
         }
-        if let Some(kv_store_id) = value.kv_store_ids.iter().nth(0) {
-            return Err(CallDataValidationError::KeyValueStoreNotAllowed(
-                kv_store_id.clone(),
-            ));
-        }
+
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
 
     use super::*;
     use crate::{
@@ -396,18 +431,21 @@ mod tests {
             let config: ValidationConfig = ValidationConfig::simulator();
             let validator = NotarizedTransactionValidator::new(config);
             assert_eq!(
-                Err($result),
-                validator.validate(
-                    &create_transaction(
-                        $version,
-                        $start_epoch,
-                        $end_epoch,
-                        $nonce,
-                        $signers,
-                        $notary
-                    ),
-                    &mut intent_hash_manager,
-                )
+                $result,
+                validator
+                    .validate(
+                        &create_transaction(
+                            $version,
+                            $start_epoch,
+                            $end_epoch,
+                            $nonce,
+                            $signers,
+                            $notary
+                        ),
+                        0,
+                        &mut intent_hash_manager,
+                    )
+                    .expect_err("Should be an error")
             );
         }};
     }
@@ -497,11 +535,7 @@ mod tests {
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,
             })
-            .manifest(
-                ManifestBuilder::new(&NetworkDefinition::simulator())
-                    .clear_auth_zone()
-                    .build(),
-            );
+            .manifest(ManifestBuilder::new().clear_auth_zone().build());
 
         for signer in signers {
             builder = builder.sign(&EcdsaSecp256k1PrivateKey::from_u64(signer).unwrap());

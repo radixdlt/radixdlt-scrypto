@@ -1,7 +1,4 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -10,27 +7,23 @@ use utils::ContextualDisplay;
 #[test]
 fn test_integer_basic_ops() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function_with_abi(
+        .call_function(
             package_address,
             "Hello",
             "integer_basic_ops",
-            vec!["55".to_string()],
-            Some(account),
-            &test_runner.export_abi(package_address, "Hello"),
+            args!(String::from("55")),
         )
-        .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
@@ -41,12 +34,11 @@ fn test_integer_basic_ops() {
 #[test]
 fn test_native_and_safe_integer_interop() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

@@ -7,11 +7,12 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
+    Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -26,10 +27,19 @@ pub enum PersistedSubstate {
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl PersistedSubstate {
     pub fn vault(&self) -> &VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
         if let PersistedSubstate::Vault(vault) = self {
             vault
         } else {
@@ -52,6 +62,22 @@ impl PersistedSubstate {
             panic!("Not a package royalty accumulator");
         }
     }
+
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let PersistedSubstate::Global(state) = self {
+            state
+        } else {
+            panic!("Not a global address substate");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        if let PersistedSubstate::ResourceManager(state) = self {
+            state
+        } else {
+            panic!("Not a resource manager substate");
+        }
+    }
 }
 
 impl Into<VaultSubstate> for PersistedSubstate {
@@ -69,6 +95,8 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
+            PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
+            PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -97,6 +125,7 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
+            PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
         }
     }
 }
@@ -109,6 +138,8 @@ pub enum PersistError {
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
+    Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -127,7 +158,10 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
+    Logger(LoggerSubstate),
     FeeReserve(FeeReserveSubstate),
+    TransactionRuntime(TransactionRuntimeSubstate),
+    AccessController(AccessControllerSubstate),
 }
 
 impl RuntimeSubstate {
@@ -135,6 +169,8 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
+            RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
             RuntimeSubstate::AccessRulesChain(value) => {
                 PersistedSubstate::AccessRulesChain(value.clone())
             }
@@ -172,11 +208,16 @@ impl RuntimeSubstate {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::AccessController(value) => {
+                PersistedSubstate::AccessController(value.clone())
+            }
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::FeeReserve(..) => {
+            | RuntimeSubstate::Logger(..)
+            | RuntimeSubstate::FeeReserve(..)
+            | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
         }
@@ -186,6 +227,8 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
             RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
@@ -217,11 +260,14 @@ impl RuntimeSubstate {
                     .expect("Vault should be liquid at end of successful transaction");
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::FeeReserve(..) => {
+            | RuntimeSubstate::Logger(..)
+            | RuntimeSubstate::FeeReserve(..)
+            | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
         }
@@ -234,17 +280,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
@@ -261,6 +307,8 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
@@ -289,7 +337,10 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
+            RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
+            RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
         }
     }
 
@@ -297,6 +348,8 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
+            RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
@@ -325,7 +378,10 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
+            RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
+            RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
         }
     }
 
@@ -385,11 +441,35 @@ impl RuntimeSubstate {
         }
     }
 
+    pub fn logger(&self) -> &LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
+        }
+    }
+
     pub fn metadata(&self) -> &MetadataSubstate {
         if let RuntimeSubstate::Metadata(metadata) = self {
             metadata
         } else {
             panic!("Not metadata");
+        }
+    }
+
+    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
+        if let RuntimeSubstate::EpochManager(epoch_manager) = self {
+            epoch_manager
+        } else {
+            panic!("Not epoch manager");
+        }
+    }
+
+    pub fn validator_set(&self) -> &ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(validator_set) = self {
+            validator_set
+        } else {
+            panic!("Not a validator set");
         }
     }
 }
@@ -409,6 +489,18 @@ impl Into<RuntimeSubstate> for MetadataSubstate {
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for ValidatorSetSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ValidatorSet(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for ValidatorSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Validator(self)
     }
 }
 
@@ -487,6 +579,28 @@ impl Into<RuntimeSubstate> for PackageRoyaltyConfigSubstate {
 impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageRoyaltyAccumulator(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::TransactionRuntime(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for AccessControllerSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::AccessController(self)
+    }
+}
+
+impl Into<LoggerSubstate> for RuntimeSubstate {
+    fn into(self) -> LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
+        }
     }
 }
 
@@ -610,6 +724,16 @@ impl Into<EpochManagerSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSubstate {
+        if let RuntimeSubstate::Validator(validator) = self {
+            validator
+        } else {
+            panic!("Not a validator");
+        }
+    }
+}
+
 impl Into<GlobalAddressSubstate> for RuntimeSubstate {
     fn into(self) -> GlobalAddressSubstate {
         if let RuntimeSubstate::Global(substate) = self {
@@ -660,9 +784,20 @@ impl Into<MetadataSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSetSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(substate) = self {
+            substate
+        } else {
+            panic!("Not a validator set");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
+    Logger(&'a LoggerSubstate),
     FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
@@ -678,10 +813,14 @@ pub enum SubstateRef<'a> {
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
+    ValidatorSet(&'a ValidatorSetSubstate),
+    Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
+    TransactionRuntime(&'a TransactionRuntimeSubstate),
+    AccessController(&'a AccessControllerSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
@@ -722,6 +861,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::EpochManager(epoch_manager_substate) => *epoch_manager_substate,
             _ => panic!("Not an epoch manager substate"),
+        }
+    }
+
+    pub fn validator(&self) -> &ValidatorSubstate {
+        match self {
+            SubstateRef::Validator(substate) => *substate,
+            _ => panic!("Not a validator substate"),
         }
     }
 
@@ -844,10 +990,24 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn transaction_runtime(&self) -> &TransactionRuntimeSubstate {
+        match self {
+            SubstateRef::TransactionRuntime(value) => *value,
+            _ => panic!("Not transaction runtime"),
+        }
+    }
+
     pub fn current_time_rounded_to_minutes(&self) -> &CurrentTimeRoundedToMinutesSubstate {
         match self {
             SubstateRef::CurrentTimeRoundedToMinutes(substate) => *substate,
             _ => panic!("Not a current time rounded to minutes substate ref"),
+        }
+    }
+
+    pub fn access_controller(&self) -> &AccessControllerSubstate {
+        match self {
+            SubstateRef::AccessController(substate) => *substate,
+            _ => panic!("Not an access controller substate"),
         }
     }
 
@@ -862,6 +1022,9 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component_id) => {
                         owned_nodes.insert(RENodeId::Component(*component_id))
                     }
+                    GlobalAddressSubstate::Identity(identity_id) => {
+                        owned_nodes.insert(RENodeId::Identity(*identity_id))
+                    }
                     GlobalAddressSubstate::EpochManager(epoch_manager_id) => {
                         owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
                     }
@@ -871,9 +1034,23 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Package(package_id) => {
                         owned_nodes.insert(RENodeId::Package(*package_id))
                     }
+                    GlobalAddressSubstate::Validator(validator_id) => {
+                        owned_nodes.insert(RENodeId::Validator(*validator_id))
+                    }
+                    GlobalAddressSubstate::AccessController(access_controller_id) => {
+                        owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
+                    }
                 };
 
                 (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::Worktop(worktop) => {
+                let nodes = worktop
+                    .resources
+                    .values()
+                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .collect();
+                (HashSet::new(), nodes)
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
@@ -902,9 +1079,39 @@ impl<'a> SubstateRef<'a> {
                 }
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::Validator(substate) => {
+                let mut references = HashSet::new();
+                let mut owned_nodes = HashSet::new();
+                references.insert(GlobalAddress::Component(substate.manager));
+                references.insert(GlobalAddress::Resource(substate.unstake_nft));
+                references.insert(GlobalAddress::Resource(substate.liquidity_token));
+                owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
+                owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
+                (references, owned_nodes)
+            }
+            SubstateRef::AccessController(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.controlled_asset));
+                (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::PackageRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
+                (
+                    scrypto_value.global_references(),
+                    scrypto_value
+                        .owned_node_ids()
+                        .expect("No duplicates expected"),
+                )
+            }
+            SubstateRef::ComponentRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -912,7 +1119,12 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }
@@ -923,7 +1135,12 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }
@@ -946,6 +1163,8 @@ pub enum SubstateRefMut<'a> {
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
+    ValidatorSet(&'a mut ValidatorSetSubstate),
+    Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
@@ -953,9 +1172,12 @@ pub enum SubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
+    Logger(&'a mut LoggerSubstate),
     FeeReserve(&'a mut FeeReserveSubstate),
+    TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
+    AccessController(&'a mut AccessControllerSubstate),
 }
 
 impl<'a> SubstateRefMut<'a> {
@@ -1071,10 +1293,38 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn validator(&mut self) -> &mut ValidatorSubstate {
+        match self {
+            SubstateRefMut::Validator(value) => *value,
+            _ => panic!("Not validator"),
+        }
+    }
+
+    pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
+        match self {
+            SubstateRefMut::ValidatorSet(value) => *value,
+            _ => panic!("Not a validator set"),
+        }
+    }
+
     pub fn current_time_rounded_to_minutes(&mut self) -> &mut CurrentTimeRoundedToMinutesSubstate {
         match self {
             SubstateRefMut::CurrentTimeRoundedToMinutes(value) => *value,
             _ => panic!("Not a current time rounded to minutes"),
+        }
+    }
+
+    pub fn transaction_runtime(&mut self) -> &mut TransactionRuntimeSubstate {
+        match self {
+            SubstateRefMut::TransactionRuntime(value) => *value,
+            _ => panic!("Not a transaction runtime"),
+        }
+    }
+
+    pub fn logger(&mut self) -> &mut LoggerSubstate {
+        match self {
+            SubstateRefMut::Logger(value) => *value,
+            _ => panic!("Not a logger"),
         }
     }
 
@@ -1089,6 +1339,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::Metadata(value) => *value,
             _ => panic!("Not metadata"),
+        }
+    }
+
+    pub fn access_controller(&mut self) -> &mut AccessControllerSubstate {
+        match self {
+            SubstateRefMut::AccessController(value) => *value,
+            _ => panic!("Not access controller"),
         }
     }
 }

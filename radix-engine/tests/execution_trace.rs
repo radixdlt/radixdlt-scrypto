@@ -1,10 +1,6 @@
-use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, TrackedEvent};
-use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::LockedAmountOrIds;
+use radix_engine::engine::*;
+use radix_engine::model::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NativeMethod;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -12,14 +8,13 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .call_function(
             package_address,
@@ -30,16 +25,15 @@ fn test_trace_resource_transfers() {
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
-    let output = receipt.expect_commit_success();
     let (resource_address, source_component, target_component): (
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
-    ) = scrypto_decode(&output.get(1).unwrap()[..]).unwrap();
+    ) = receipt.output(1);
 
     let account_component_id: ComponentId = test_runner.deref_component(account).unwrap().into();
     let source_component_id: ComponentId = test_runner
@@ -91,19 +85,18 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
-    let manifest_prepare = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest_prepare = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -122,7 +115,7 @@ fn test_trace_fee_payments() {
         .into();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             funded_component.clone(),
@@ -150,16 +143,15 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
-    let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manfiest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder.drop_proof(proof_id)
                 })
                 .return_to_worktop(bucket_id)
@@ -168,7 +160,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -181,8 +173,7 @@ fn test_instruction_traces() {
         .events
         .into_iter()
         .filter_map(|e| match e {
-            TrackedEvent::Native(NativeEvent::SysCallTrace(trace)) => Some(trace),
-            _ => None,
+            TrackedEvent::SysCallTrace(trace) => Some(trace),
         })
         .collect();
 
@@ -206,8 +197,9 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let SysCallTraceOrigin::ScryptoMethod(_package_address, _blueprint_name, method_name) =
-            &free_trace.origin
+        if let SysCallTraceOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            ident: method_name, ..
+        }) = &free_trace.origin
         {
             assert_eq!("free", method_name);
         } else {
@@ -225,7 +217,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -248,7 +240,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::TakeAll)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
             trace.origin
         );
 
@@ -267,7 +259,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Bucket(BucketMethod::CreateProof)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
             trace.origin
         );
 
@@ -308,7 +300,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -328,16 +320,15 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Drain)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
             take_trace.origin
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let SysCallTraceOrigin::ScryptoFunction(
-            _package_address,
-            _blueprint_name,
-            function_name,
-        ) = &call_trace.origin
+        if let SysCallTraceOrigin::ScryptoFunction(ScryptoFnIdentifier {
+            ident: function_name,
+            ..
+        }) = &call_trace.origin
         {
             assert_eq!("create_and_fund_a_component", function_name);
         } else {
@@ -354,7 +345,7 @@ fn test_instruction_traces() {
 
 fn traces_for_instruction(
     traces: &Vec<SysCallTrace>,
-    instruction_index: usize,
+    instruction_index: u32,
 ) -> Vec<&SysCallTrace> {
     traces
         .iter()

@@ -13,6 +13,20 @@ temp=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
 account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
+# Test - set epoch & time
+$resim set-current-epoch 858585
+$resim set-current-time 2023-01-27T13:01:16Z
+$resim show-configs
+ledger_state=`$resim show-ledger`
+if [[ ${ledger_state} != *"858585"* ]];then
+    echo "Epoch not set!"
+    exit 1
+fi
+if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
+    echo "Time not set!"
+    exit 1
+fi
+
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
 
@@ -21,19 +35,17 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
-non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
-non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
-non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
+non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
 # The below line looks like this: U32#1,resource_address
-# You can put multiple ids into a bucket like so: String#Id1,String#num2,String#num3,resource_address
-$resim call-method $account2 deposit "$non_fungible_id,$non_fungible_resource"
+# You can put multiple ids into a bucket like so: resource_address:id1,id2,id3
+$resim call-method $account2 deposit "$non_fungible_global_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs 1,$minter_badge
 $resim transfer 111 $token_address $account2
 
 # Test - publish, call-function and call-method and non-fungibles
-owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
+owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NonFungibleGlobalId:/ {print $NF}'`
 package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
@@ -85,17 +97,19 @@ $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superad
 
 # Test - publishing a large package
 $resim publish ./tests/large_package.wasm --owner-badge $owner_badge
+$resim publish ./tests/large_package.wasm
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2
 
-# Test - create mutable supply token (requires a `NonFungibleAddress`)
+# Test - set epoch
+$resim set-current-epoch 100
+
+# Test - create mutable supply token (requires a `NonFungibleGlobalId`)
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
-non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
-non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
-non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
+non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
 
-token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print $NF}'`
+token_address=`$resim new-token-mutable $non_fungible_global_id | awk '/Resource:/ {print $NF}'`
 
-# Test - mint and transfer (Mintable that requires a `NonFungibleAddress`)
-$resim mint 777 $token_address --proofs "$non_fungible_id,$non_fungible_resource"
+# Test - mint and transfer (Mintable that requires a `NonFungibleGlobalId`)
+$resim mint 777 $token_address --proofs "$non_fungible_global_id"

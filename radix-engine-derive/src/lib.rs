@@ -1,6 +1,10 @@
+mod categorize;
+mod decode;
 mod describe;
-mod scrypto;
-mod utils;
+mod encode;
+mod legacy_describe;
+mod non_fungible_data;
+mod scrypto_sbor;
 
 use proc_macro::TokenStream;
 
@@ -12,32 +16,119 @@ use proc_macro::TokenStream;
 ///     array: Vec<A>
 /// }
 /// ```
-#[proc_macro_derive(Describe, attributes(skip))]
-pub fn describe(input: TokenStream) -> TokenStream {
-    describe::handle_describe(proc_macro2::TokenStream::from(input))
+#[proc_macro_derive(LegacyDescribe, attributes(legacy_skip))]
+pub fn legacy_describe(input: TokenStream) -> TokenStream {
+    legacy_describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
 
-/// Attribute that derives code to encode, decode and/or describe the struct or enum, using Scrypto data and schema model.
+/// Derives code for encoding a struct or enum with Scrypto value model.
 ///
 /// # Example
 ///
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// #[scrypto(Encode, Decode, TypeId, Describe, NonFungibleData)]
+/// #[derive(ScryptoEncode)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
 ///     pub field_2: String,
 /// }
 /// ```
-#[proc_macro_attribute]
-pub fn scrypto(attr: TokenStream, item: TokenStream) -> TokenStream {
-    scrypto::handle_scrypto(
-        proc_macro2::TokenStream::from(attr),
-        proc_macro2::TokenStream::from(item),
-    )
-    .unwrap_or_else(|err| err.to_compile_error())
-    .into()
+#[proc_macro_derive(ScryptoEncode, attributes(sbor))]
+pub fn encode(input: TokenStream) -> TokenStream {
+    encode::handle_encode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for decoding a struct or enum with Scrypto value model.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(ScryptoDecode)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ScryptoDecode, attributes(sbor))]
+pub fn decode(input: TokenStream) -> TokenStream {
+    decode::handle_decode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for categorizing a struct or enum with Scrypto value model.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(ScryptoCategorize)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ScryptoCategorize, attributes(sbor))]
+pub fn categorize(input: TokenStream) -> TokenStream {
+    categorize::handle_categorize(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for describing a struct or enum with Scrypto schema.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(ScryptoDescribe)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ScryptoDescribe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that implements `ScryptoCategorize`, `ScryptoEncode`, `ScryptoDecode`, and `ScryptoDescribe` traits for this struct or enum.
+///
+#[proc_macro_derive(ScryptoSbor, attributes(sbor))]
+pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
+    scrypto_sbor::handle_scrypto_sbor(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that describe a non-fungible data structure.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(NonFungibleData)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     #[mutable]
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(NonFungibleData, attributes(mutable))]
+pub fn non_fungible_data(input: TokenStream) -> TokenStream {
+    non_fungible_data::handle_non_fungible_data(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }

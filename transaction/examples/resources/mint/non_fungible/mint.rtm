@@ -13,37 +13,33 @@
 # a method for creating a proof and locking a fee at the same time. Therefore, locking a fee will be
 # its own method call and creating a proof will be its own method call.
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # We have a badge in our account component which allows us to mint this resource. So, we create a 
 # proof from this badge which will allow us to mint the resource
 CALL_METHOD
-    ComponentAddress("{account_component_address}")
+    ComponentAddress("${account_component_address}")
     "create_proof_by_amount"
     Decimal("1")
-    ResourceAddress("{minter_badge_resource_address}");
+    ResourceAddress("${minter_badge_resource_address}");
 
 # Minting a single non-fungible token from the resource. This non-fungible token has no data (this
 # is what the 5c2100 bit means, it's the SBOR representation of an empty struct) and has an id that
 # is user specified.
-CALL_NATIVE_METHOD
-    Global("{mintable_resource_address}") 
-    "mint" 
-    ResourceAddress("{mintable_resource_address}") 
-    Enum(
-        "NonFungible", 
-        Array<Tuple>(
-            Tuple(
-                NonFungibleId({non_fungible_id}), 
-                Tuple(Bytes("5c2100"), Bytes("5c2100"))
-            )
+MINT_NON_FUNGIBLE
+    ResourceAddress("${mintable_resource_address}") 
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("${non_fungible_local_id}"), 
+        Tuple(
+            Tuple("Hello World", Decimal("12")),        # The immutable part of the data    
+            Tuple(12u8, 19u128)                         # The mutable part of the data
         )
     );
 
 # Depositing the entirety of the newly minted tokens into out account
 CALL_METHOD
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

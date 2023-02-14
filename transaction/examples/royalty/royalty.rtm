@@ -1,0 +1,26 @@
+SET_PACKAGE_ROYALTY_CONFIG
+    PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe")
+    Map<String, Tuple>(
+        "Blueprint",
+        Tuple(
+            Map<String, U32>(
+                "method", 1u32
+            ),
+            0u32
+        )
+    );
+
+SET_COMPONENT_ROYALTY_CONFIG
+    ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt")
+    Tuple(
+        Map<String, U32>(
+            "method", 1u32
+        ),
+        0u32
+    );
+
+CLAIM_PACKAGE_ROYALTY
+    PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe");
+
+CLAIM_COMPONENT_ROYALTY
+    ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt");

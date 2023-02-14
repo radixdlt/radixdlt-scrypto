@@ -1,5 +1,5 @@
 use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
@@ -16,12 +16,6 @@ impl SerializedInMemorySubstateStore {
         Self {
             substates: HashMap::new(),
         }
-    }
-
-    pub fn with_bootstrap() -> Self {
-        let mut substate_store = Self::new();
-        bootstrap(&mut substate_store);
-        substate_store
     }
 }
 

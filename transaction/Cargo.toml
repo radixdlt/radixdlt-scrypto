@@ -1,19 +1,18 @@
 [package]
 name = "transaction"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false, features = ["indexmap"] }
+sbor = { path = "../sbor", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants", default-features = false }
 utils = { path = "../utils", default-features = false }
-clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
 serde = { version = "1.0.144", default-features = false, optional = true }
-serde_with = { version = "2.0.1" }
+lazy_static = "1.4.0"
 
 [features]
 # You should enable either `std` or `alloc`

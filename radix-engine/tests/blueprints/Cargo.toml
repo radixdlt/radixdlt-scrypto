@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "abi",
+    "access_rules",
     "arguments",
     "bucket",
     "component",
@@ -22,8 +23,10 @@ members = [
     "metadata_component",
     "non_fungible",
     "package",
+    "package_token",
     "proof",
     "recursion",
+    "reentrancy",
     "resource",
     "resource_creator",
     "stored_external_component",

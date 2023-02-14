@@ -1,23 +1,27 @@
 [package]
 name = "sbor"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
-hashbrown = { version = "0.12.1", optional = true }
+hashbrown = { version = "0.13.2", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
-hex = { version = "0.4.3", default-features = false, optional = true }
-indexmap = { version = "1.9.2", default-features = false, optional = true }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+
+# INDEXMAP:
+# The v1 version doesn't play well with no-std (or CLion) due to the autocfg build.rs - https://github.com/bluss/indexmap/blob/indexmap-1.x/build.rs
+# Instead, we need the std feature https://github.com/bluss/indexmap/issues/135 which is coming in v2 (not yet out), so pull a fixed revision from github
+indexmap = { git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520eab01325b305c08f3773e66c", default-features = false, optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["serde?/std", "hex?/std"]
-alloc = ["hashbrown", "serde?/alloc", "hex?/alloc"]
+std = ["serde?/std", "indexmap?/std"]
+alloc = ["hashbrown", "serde?/alloc"]
 
 # Enable serde derives for SBOR value and type models
-serde = ["dep:serde", "hex/serde"]
+serde = ["dep:serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]

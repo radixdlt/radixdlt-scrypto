@@ -7,7 +7,7 @@ use bitflags::bitflags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
-    #[derive(Encode, Decode, TypeId)]
+    #[derive(Encode, Decode, Categorize)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;
@@ -32,15 +32,6 @@ pub struct LockInfo {
 }
 
 pub trait SystemApi {
-    fn execute_in_mode<X, RTN, E>(
-        &mut self,
-        execution_mode: ExecutionMode,
-        execute: X,
-    ) -> Result<RTN, RuntimeError>
-    where
-        RuntimeError: From<E>,
-        X: FnOnce(&mut Self) -> Result<RTN, E>;
-
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
@@ -50,11 +41,8 @@ pub trait SystemApi {
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
-    /// Retrieve the running actor for the current frame
-    fn get_actor(&self) -> &REActor;
-
     /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     fn get_visible_node_data(
         &mut self,
@@ -69,7 +57,7 @@ pub trait SystemApi {
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError>;
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENodeInit) -> Result<(), RuntimeError>;
 
     /// Locks a visible substate
     fn lock_substate(
@@ -89,19 +77,14 @@ pub trait SystemApi {
 
     /// Get a mutable reference to a locked substate
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
+}
 
-    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
-
-    fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
-
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
-
-    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
+pub trait VmApi<W: WasmEngine> {
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
 }
 
 // TODO: Clean this up
-pub trait ResolverApi<W: WasmEngine> {
+pub trait ResolverApi {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
-    fn vm(&mut self) -> &ScryptoInterpreter<W>;
-    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 }

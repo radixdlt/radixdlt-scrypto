@@ -1,81 +1,79 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable, LoggerApi};
+use crate::engine::wasm_api::*;
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, ScryptoActor, ScryptoRENode, SubstateOffset,
+    FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::wasm::*;
+use radix_engine_interface::api::wasm::SerializableInvocation;
+use radix_engine_interface::api::{ActorApi, EngineApi, Invokable};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::model::CallTableInvocation;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[cfg(target_arch = "wasm32")]
-extern "C" {
-    pub fn radix_engine(input: *mut u8) -> *mut u8;
+#[derive(Debug, Categorize, Encode, Decode)]
+pub enum EngineApiError {
+    DecodeError(DecodeError),
 }
-
-/// Utility function for making a radix engine call.
-#[cfg(target_arch = "wasm32")]
-pub fn call_engine<V: ScryptoDecode>(input: RadixEngineInput) -> V {
-    use crate::buffer::{scrypto_decode_from_buffer, *};
-
-    unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
-        let output_ptr = radix_engine(input_ptr);
-        scrypto_decode_from_buffer::<V>(output_ptr).unwrap()
-    }
-}
-
-/// Utility function for making a radix engine call.
-#[cfg(target_arch = "wasm32")]
-pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
-    use crate::buffer::{scrypto_buffer_to_vec, *};
-
-    unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
-        let output_ptr = radix_engine(input_ptr);
-        scrypto_buffer_to_vec(output_ptr)
-    }
-}
-
-/// Utility function for making a radix engine call.
-#[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<V: ScryptoDecode>(_input: RadixEngineInput) -> V {
-    todo!()
-}
-/// Utility function for making a radix engine call.
-#[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine_to_raw(_input: RadixEngineInput) -> Vec<u8> {
-    todo!()
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EngineApiError;
 
 pub struct ScryptoEnv;
 
+impl ScryptoEnv {
+    // Slightly different from ComponentApi::invoke_method
+
+    pub fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, EngineApiError> {
+        let receiver = scrypto_encode(&receiver).unwrap();
+
+        let return_data = copy_buffer(unsafe {
+            invoke_method(
+                receiver.as_ptr(),
+                receiver.len(),
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        Ok(return_data)
+    }
+}
+
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::Invoke(input.into()));
-        Ok(rtn)
+        let invocation = scrypto_encode(&Into::<CallTableInvocation>::into(input)).unwrap();
+
+        let return_data = copy_buffer(unsafe { invoke(invocation.as_ptr(), invocation.len()) });
+
+        scrypto_decode(&return_data).map_err(EngineApiError::DecodeError)
     }
 }
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::CreateNode(node));
-        Ok(rtn)
+        let node = scrypto_encode(&node).unwrap();
+
+        let node_id = copy_buffer(unsafe { create_node(node.as_ptr(), node.len()) });
+
+        scrypto_decode(&node_id).map_err(EngineApiError::DecodeError)
     }
 
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::DropNode(node_id));
-        Ok(rtn)
+        let node_id = scrypto_encode(&node_id).unwrap();
+
+        unsafe { drop_node(node_id.as_ptr(), node_id.len()) };
+
+        Ok(())
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetVisibleNodeIds());
-        Ok(rtn)
+        let node_ids = copy_buffer(unsafe { get_visible_nodes() });
+
+        scrypto_decode(&node_ids).map_err(EngineApiError::DecodeError)
     }
 
     fn sys_lock_substate(
@@ -84,13 +82,26 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::LockSubstate(node_id, offset, mutable));
-        Ok(rtn)
+        let node_id = scrypto_encode(&node_id).unwrap();
+        let offset = scrypto_encode(&offset).unwrap();
+
+        let handle = unsafe {
+            lock_substate(
+                node_id.as_ptr(),
+                node_id.len(),
+                offset.as_ptr(),
+                offset.len(),
+                mutable,
+            )
+        };
+
+        Ok(handle)
     }
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, EngineApiError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::Read(lock_handle));
-        Ok(rtn)
+        let substate = copy_buffer(unsafe { read_substate(lock_handle) });
+
+        Ok(substate)
     }
 
     fn sys_write(
@@ -98,35 +109,23 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::Write(lock_handle, buffer));
-        Ok(rtn)
+        unsafe { write_substate(lock_handle, buffer.as_ptr(), buffer.len()) };
+
+        Ok(())
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::DropLock(lock_handle));
-        Ok(rtn)
-    }
+        unsafe { unlock_substate(lock_handle) };
 
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetActor());
-        Ok(rtn)
-    }
-
-    fn sys_generate_uuid(&mut self) -> Result<u128, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GenerateUuid());
-        Ok(rtn)
-    }
-
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetTransactionHash());
-        Ok(rtn)
+        Ok(())
     }
 }
 
-impl LoggerApi<EngineApiError> for ScryptoEnv {
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::EmitLog(level, message));
-        Ok(rtn)
+impl ActorApi<EngineApiError> for ScryptoEnv {
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, EngineApiError> {
+        let actor = copy_buffer(unsafe { get_actor() });
+
+        scrypto_decode(&actor).map_err(EngineApiError::DecodeError)
     }
 }
 
@@ -136,7 +135,7 @@ macro_rules! scrypto_env_native_fn {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
                 let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                radix_engine_interface::api::api::Invokable::invoke(&mut env, $arg).unwrap()
+                radix_engine_interface::api::Invokable::invoke(&mut env, $arg).unwrap()
             }
         )+
     };

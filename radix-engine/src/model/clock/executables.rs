@@ -1,7 +1,6 @@
 use crate::engine::{
-    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
-    SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
+    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate,
@@ -9,12 +8,12 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
-    SubstateOffset,
+    ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -24,59 +23,52 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ClockCreateInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Clock(
-            ClockFunction::Create,
-        )));
+        let actor = ResolvedActor::function(NativeFn::Clock(ClockFn::Create));
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ClockCreateInvocation {
-    type Output = SystemAddress;
+impl Executor for ClockCreateInvocation {
+    type Output = ComponentAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::SetCurrentTime,
-            ))),
-            rule!(require(auth_non_fungible)),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::SetCurrentTime)),
+            rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::GetCurrentTime,
-            ))),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::GetCurrentTime)),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::CompareCurrentTime,
-            ))),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::CompareCurrentTime)),
             rule!(allow_all),
         );
 
         system_api.create_node(
             underlying_node_id,
-            RENode::Clock(
+            RENodeInit::Clock(
                 CurrentTimeRoundedToMinutesSubstate {
                     current_time_rounded_to_minutes_ms: 0,
                 },
@@ -86,13 +78,15 @@ impl NativeProcedure for ClockCreateInvocation {
             ),
         )?;
 
-        let global_node_id = system_api.allocate_node_id(RENodeType::GlobalClock)?;
+        let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
+            self.component_address,
+        )));
         system_api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
+            RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
         )?;
 
-        let system_address: SystemAddress = global_node_id.into();
+        let system_address: ComponentAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(global_node_id);
 
@@ -107,37 +101,36 @@ impl NativeProcedure for ClockCreateInvocation {
 
 pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
-    type Exec = NativeExecutor<ClockSetCurrentTimeExecutable>;
+impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
+    type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::SetCurrentTime)),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ClockSetCurrentTimeExecutable(
-            resolved_receiver.receiver,
-            self.current_time_ms,
-        ));
+        let actor =
+            ResolvedActor::method(NativeFn::Clock(ClockFn::SetCurrentTime), resolved_receiver);
+        let executor =
+            ClockSetCurrentTimeExecutable(resolved_receiver.receiver, self.current_time_ms);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ClockSetCurrentTimeExecutable {
+impl Executor for ClockSetCurrentTimeExecutable {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -160,37 +153,35 @@ impl NativeProcedure for ClockSetCurrentTimeExecutable {
 
 pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
-    type Exec = NativeExecutor<ClockGetCurrentTimeExecutable>;
+impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
+    type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::GetCurrentTime)),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ClockGetCurrentTimeExecutable(
-            resolved_receiver.receiver,
-            self.precision,
-        ));
+        let actor =
+            ResolvedActor::method(NativeFn::Clock(ClockFn::GetCurrentTime), resolved_receiver);
+        let executor = ClockGetCurrentTimeExecutable(resolved_receiver.receiver, self.precision);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ClockGetCurrentTimeExecutable {
+impl Executor for ClockGetCurrentTimeExecutable {
     type Output = Instant;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Instant, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -219,39 +210,42 @@ pub struct ClockCompareCurrentTimeExecutable {
     operator: TimeComparisonOperator,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocation {
-    type Exec = NativeExecutor<ClockCompareCurrentTimeExecutable>;
+impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
+    type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::CompareCurrentTime)),
+        let actor = ResolvedActor::method(
+            NativeFn::Clock(ClockFn::CompareCurrentTime),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ClockCompareCurrentTimeExecutable {
+        let executor = ClockCompareCurrentTimeExecutable {
             node_id: resolved_receiver.receiver,
             instant: self.instant,
             precision: self.precision,
             operator: self.operator,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ClockCompareCurrentTimeExecutable {
+impl Executor for ClockCompareCurrentTimeExecutable {
     type Output = bool;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -277,15 +271,11 @@ impl NativeProcedure for ClockCompareCurrentTimeExecutable {
 }
 
 impl Clock {
-    pub fn function_auth(func: &ClockFunction) -> Vec<MethodAuthorization> {
-        match func {
-            ClockFunction::Create => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
-                    )),
-                ))]
-            }
-        }
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
     }
 }

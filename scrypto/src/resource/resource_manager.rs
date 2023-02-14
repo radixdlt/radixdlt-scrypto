@@ -1,18 +1,19 @@
-use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
-    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+    GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
 
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
-use crate::scrypto;
+use crate::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -40,12 +41,10 @@ impl ResourceManager {
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+        env.invoke(AccessRulesSetGroupAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
+            name: "mint".to_string(),
             rule: access_rule,
         })
         .unwrap();
@@ -56,10 +55,8 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
-            rule: access_rule,
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }
@@ -99,10 +96,8 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            rule: access_rule,
+            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }
@@ -112,22 +107,20 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
-            rule: access_rule,
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(
+                ResourceManagerFn::UpdateNonFungibleData,
+            )),
+            rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
     }
 
     pub fn lock_mintable(&mut self) {
         let mut env = ScryptoEnv;
-        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+        env.invoke(AccessRulesSetGroupMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
+            name: "mint".to_string(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -138,9 +131,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -151,9 +142,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -164,9 +153,9 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(
+                ResourceManagerFn::UpdateNonFungibleData,
+            )),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -202,16 +191,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let mut env = ScryptoEnv;
-        env.invoke(ResourceManagerMintInvocation {
-            mint_params,
-            receiver: self.0,
-        })
-        .unwrap()
-    }
-
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
             id,
@@ -221,7 +201,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> [Vec<u8>; 2] {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -241,7 +221,7 @@ impl ResourceManager {
                 receiver: self.0,
             }
         }
-        pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+        pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
             ResourceManagerNonFungibleExistsInvocation {
                 receiver: self.0,
                 id: id.clone()
@@ -257,26 +237,50 @@ impl ResourceManager {
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
-        self.mint_internal(MintParams::Fungible {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintFungibleInvocation {
             amount: amount.into(),
+            receiver: self.0,
         })
+        .unwrap()
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
-        let mut entries = HashMap::new();
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleLocalId,
+        data: T,
+    ) -> Bucket {
+        let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),
             (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
         );
-        self.mint_internal(MintParams::NonFungible { entries })
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintNonFungibleInvocation {
+            entries,
+            receiver: self.0,
+        })
+        .unwrap()
+    }
+
+    /// Mints uuid non-fungible resources
+    pub fn mint_uuid_non_fungible<T: NonFungibleData>(&mut self, data: T) -> Bucket {
+        let mut entries = Vec::new();
+        entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintUuidNonFungibleInvocation {
+            entries,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         let non_fungible = self.get_non_fungible_data_internal(id.clone());
         T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
@@ -287,7 +291,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &mut self,
-        id: &NonFungibleId,
+        id: &NonFungibleLocalId,
         new_data: T,
     ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())

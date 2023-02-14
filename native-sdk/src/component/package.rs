@@ -1,8 +1,8 @@
-use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::EngineApi;
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 
@@ -12,7 +12,7 @@ pub struct BorrowedPackage(pub(crate) PackageAddress);
 impl BorrowedPackage {
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &self,
-        royalty_config: HashMap<String, RoyaltyConfig>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
         sys_calls: &mut Y,
     ) -> Result<&Self, E>
     where

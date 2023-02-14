@@ -3,25 +3,25 @@
 use sbor::rust::vec;
 use sbor::*;
 
-#[derive(TypeId, Decode, Debug, PartialEq)]
+#[derive(Categorize, Decode, Debug, PartialEq)]
 pub struct TestStructNamed {
     pub state: u32,
 }
 
-#[derive(TypeId, Decode, Debug, PartialEq)]
+#[derive(Categorize, Decode, Debug, PartialEq)]
 pub struct TestStructUnnamed(u32);
 
-#[derive(TypeId, Decode, Debug, PartialEq)]
+#[derive(Categorize, Decode, Debug, PartialEq)]
 pub struct TestStructUnit;
 
-#[derive(TypeId, Decode, Debug, PartialEq)]
+#[derive(Categorize, Decode, Debug, PartialEq)]
 pub enum TestEnum {
     A { x: u32, y: u32 },
     B(u32),
     C,
 }
 
-#[derive(TypeId, Decode, Debug, PartialEq)]
+#[derive(Categorize, Decode, Debug, PartialEq)]
 pub enum EmptyEnum {}
 
 #[test]
@@ -54,22 +54,19 @@ fn test_decode_struct() {
 fn test_decode_enum() {
     #[rustfmt::skip]
     let bytes = vec![
-        17, // enum type
-        1,  // string size
-        65, // "A"
+        34, // enum type
+        0, // "A"
         2,  // number of fields
         9, 2, 0, 0, 0, // field value
         9, 3, 0, 0, 0,  // field value
 
-        17, // enum type
-        1,  // string size
-        66, // "B"
+        34, // enum type
+        1,  // "B"
         1,  // number of fields
         9, 1, 0, 0, 0, // field value
         
-        17, // enum type
-        1,  // string size
-        67, // "C"
+        34, // enum type
+        2,  // "C"
         0,  // number of fields
     ];
 
@@ -87,7 +84,7 @@ fn test_decode_enum() {
 fn test_decode_empty_enum() {
     #[rustfmt::skip]
     let bytes = vec![
-        17, // enum type
+        34, // enum type
         1,  // string size
         65, // "A"
         2,  // number of fields

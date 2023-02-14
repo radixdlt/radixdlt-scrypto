@@ -1,27 +1,31 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    NativeExecutor, NativeProcedure, REActor, ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, InterpreterError, LockFlags,
+    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{NativeFn, RENodeId, SubstateOffset};
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::model::*;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for MetadataSetInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
 
         // TODO: Move this into a more static check once node types implemented
         match &resolved_receiver.receiver {
-            RENodeId::Package(..) | RENodeId::ResourceManager(..) | RENodeId::Component(..) => {}
+            RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::Component(..)
+            | RENodeId::Validator(..)
+            | RENodeId::Identity(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
@@ -30,20 +34,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)),
-            resolved_receiver,
-        );
+        let actor = ResolvedActor::method(NativeFn::Metadata(MetadataFn::Set), resolved_receiver);
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for MetadataSetInvocation {
+impl Executor for MetadataSetInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -58,20 +61,24 @@ impl NativeProcedure for MetadataSetInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for MetadataGetInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
 
         // TODO: Move this into a more static check once node types implemented
         match &resolved_receiver.receiver {
-            RENodeId::Package(..) | RENodeId::ResourceManager(..) | RENodeId::Component(..) => {}
+            RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::Component(..)
+            | RENodeId::Validator(..)
+            | RENodeId::Identity(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
@@ -80,20 +87,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Get)),
-            resolved_receiver,
-        );
+        let actor = ResolvedActor::method(NativeFn::Metadata(MetadataFn::Get), resolved_receiver);
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for MetadataGetInvocation {
+impl Executor for MetadataGetInvocation {
     type Output = Option<String>;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

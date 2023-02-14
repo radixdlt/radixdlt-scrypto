@@ -1,6 +1,6 @@
 [package]
 name = "sbor-derive"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [lib]
@@ -8,9 +8,7 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = { version = "1.0.38" }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
-quote = { version = "1.0.18" }
-uuid = { version = "1.0.0", features = ["v4"] }
+sbor-derive-common = { path = "../sbor-derive-common" }
 
 [features]
-trace = []
+trace = ["sbor-derive-common/trace"]

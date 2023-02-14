@@ -9,16 +9,14 @@ pub trait QueryableSubstateStore {
     ) -> HashMap<Vec<u8>, PersistedSubstate>;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct OutputId {
     pub substate_id: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct OutputValue {
     pub substate: PersistedSubstate,
     pub version: u32,

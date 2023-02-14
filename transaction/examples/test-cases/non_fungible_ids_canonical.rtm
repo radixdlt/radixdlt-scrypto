@@ -1,5 +1,0 @@
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(12u32)) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(19u64)) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId("HelloWorld")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(Bytes("121922ff03"))) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket4");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(1922931322u128)) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket5");

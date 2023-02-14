@@ -1,17 +1,18 @@
 use scrypto::prelude::*;
 
-#[derive(TypeId, Encode, Decode, Describe, Clone)]
+#[derive(Categorize, Encode, Decode, LegacyDescribe, Clone)]
 pub struct ExtraStruct {
     field_one: String,
 }
 
-#[derive(TypeId, Encode, Decode, Describe, Clone)]
+#[derive(Categorize, Encode, Decode, LegacyDescribe, Clone)]
 pub enum ExtraEnum {
     EntryOne,
     EntryTwo,
 }
 
-blueprint! {
+#[blueprint]
+mod external_blueprint_target {
     struct ExternalBlueprintTarget {
         some_field: ExtraStruct,
     }

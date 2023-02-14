@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-derive"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [lib]
@@ -10,9 +10,7 @@ proc-macro = true
 proc-macro2 = { version = "1.0.38" }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
-uuid = { version = "1.0.0", features = ["v4"] }
-sbor = { path = "../sbor", default-features = false }
-scrypto-abi = { path = "../scrypto-abi", default-features = false }
+sbor-derive-common = { path = "../sbor-derive-common" }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
@@ -26,14 +24,8 @@ scrypto-abi = { path = "../scrypto-abi", default-features = false }
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = [
-    "sbor/std", "sbor/serde", 
-    "scrypto-abi/std", "scrypto-abi/serde"
-]
-alloc = [
-    "sbor/alloc", "sbor/serde", 
-    "scrypto-abi/alloc", "scrypto-abi/serde"
-]
+std = []
+alloc = []
 
 # Enable trace
-trace = []
+trace = ["sbor-derive-common/trace"]

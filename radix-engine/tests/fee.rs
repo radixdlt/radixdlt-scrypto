@@ -1,11 +1,8 @@
 use radix_engine::engine::{ApplicationError, KernelError, TrackError};
 use radix_engine::engine::{RejectionError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,38 +12,62 @@ fn run_manifest<F>(f: F) -> TransactionReceipt
 where
     F: FnOnce(ComponentAddress) -> TransactionManifest,
 {
-    // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_allocated_account();
-
-    // Publish package and instantiate component
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
-    let receipt1 = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(account, 10u32.into())
-            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", args!(Bucket(bucket_id)));
-                builder
-            })
-            .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
-    );
-    let component_address = receipt1
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let (mut test_runner, component_address) = setup_test_runner();
 
     // Run the provided manifest
     let manifest = f(component_address);
     test_runner.execute_manifest(manifest, vec![])
 }
 
+fn setup_test_runner() -> (TestRunner, ComponentAddress) {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package and instantiate component
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
+    let receipt1 = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.call_function(package_address, "Fee", "new", args!(bucket_id));
+                builder
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let component_address = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    (test_runner, component_address)
+}
+
+#[test]
+fn should_be_aborted_when_loan_repaid() {
+    let (mut test_runner, component_address) = setup_test_runner();
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", args!())
+        .build();
+
+    let start = std::time::Instant::now();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let duration = start.elapsed();
+    println!("Time elapsed is: {:?}", duration);
+    println!("{:?}", receipt);
+    receipt.expect_commit_failure();
+}
+
 #[test]
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
             .build()
     });
@@ -56,7 +77,7 @@ fn should_succeed_when_fee_is_paid() {
 
 #[test]
 fn should_be_rejected_when_no_fee_is_paid() {
-    let receipt = run_manifest(|_| ManifestBuilder::new(&NetworkDefinition::simulator()).build());
+    let receipt = run_manifest(|_| ManifestBuilder::new().build());
 
     receipt.expect_rejection();
 }
@@ -64,7 +85,7 @@ fn should_be_rejected_when_no_fee_is_paid() {
 #[test]
 fn should_be_rejected_when_insufficient_balance() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
@@ -79,7 +100,7 @@ fn should_be_rejected_when_insufficient_balance() {
 #[test]
 fn should_be_rejected_when_non_xrd() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
@@ -94,7 +115,7 @@ fn should_be_rejected_when_non_xrd() {
 #[test]
 fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee",
@@ -109,7 +130,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 #[test]
 fn should_be_rejected_when_lock_fee_with_temp_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
@@ -130,7 +151,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 #[test]
 fn should_be_success_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
@@ -145,7 +166,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
 #[test]
 fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "update_vault_and_lock_fee",
@@ -167,7 +188,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 #[test]
 fn should_succeed_when_lock_fee_and_query_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
@@ -182,8 +203,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -198,18 +218,18 @@ fn test_fee_accounting_success() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
         .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -238,8 +258,7 @@ fn test_fee_accounting_success() {
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -254,19 +273,19 @@ fn test_fee_accounting_failure() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
         .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -301,8 +320,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
@@ -311,12 +329,12 @@ fn test_fee_accounting_rejection() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, Decimal::from_str("0.000000000000000001").unwrap())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -332,8 +350,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -348,15 +365,15 @@ fn test_contingent_fee_accounting_success() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, dec!("10"))
         .lock_contingent_fee(account2, dec!("0.001"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 
@@ -386,8 +403,7 @@ fn test_contingent_fee_accounting_success() {
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -402,7 +418,7 @@ fn test_contingent_fee_accounting_failure() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, dec!("10"))
         .lock_contingent_fee(account2, dec!("0.001"))
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
@@ -410,8 +426,8 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(
         manifest,
         vec![
-            NonFungibleAddress::from_public_key(&public_key1),
-            NonFungibleAddress::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(&public_key1),
+            NonFungibleGlobalId::from_public_key(&public_key2),
         ],
     );
 

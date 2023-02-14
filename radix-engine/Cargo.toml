@@ -1,10 +1,10 @@
 [package]
 name = "radix-engine"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false, features = ["indexmap"] }
+sbor = { path = "../sbor", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 native-sdk = { path = "../native-sdk", default-features = false }
@@ -13,9 +13,10 @@ utils = { path = "../utils", default-features = false }
 colored = { version = "2.0.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 bitflags = { version = "1.3" }
-indexmap = { version = "1.9.2" }
-lru = { version = "0.8.1", default-features = false }
+lru = { version = "0.8.1", default-features = false, optional = true}
 moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
+slotmap = "1.0.6"
+im = "15.1.0"
 
 # WASM de-/serialization
 parity-wasm = { version = "0.42.2" }
@@ -41,6 +42,8 @@ scrypto-unit = { path = "../scrypto-unit", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon = "1.5.3"
+serde = { version = "1.0.144", default-features = false }
+serde_json = { version = "1.0.81", default-features = false }
 
 [[bench]]
 name = "radix_engine"

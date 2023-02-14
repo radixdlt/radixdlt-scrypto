@@ -1,8 +1,5 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,10 +12,9 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .clear_auth_zone()
         .build();
@@ -29,7 +25,7 @@ fn test_transaction_preview_cost_estimate() {
         permit_duplicate_intent_hash: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
-        &test_runner,
+        &mut test_runner,
         &network,
         manifest,
         &preview_flags,
@@ -37,15 +33,12 @@ fn test_transaction_preview_cost_estimate() {
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
-    let preview_result = test_runner.execute_preview(preview_intent, &network);
+    let preview_result = test_runner.preview(preview_intent, &network);
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt = test_runner.execute_transaction_with_config(
-        &make_executable(&network, &notarized_transaction),
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::default(),
-    );
+    let receipt =
+        test_runner.execute_transaction(make_executable(&network, &notarized_transaction));
     receipt.expect_commit_success();
 
     assert_eq!(
@@ -58,12 +51,11 @@ fn test_transaction_preview_cost_estimate() {
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
-    let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&public_key)));
+    let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
     let account = test_runner.new_account_with_auth_rule(&withdraw_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -75,32 +67,32 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
-        &test_runner,
+        &mut test_runner,
         &network,
         manifest,
         &preview_flags,
     );
 
     // Act
-    let result = test_runner.execute_preview(preview_intent, &network);
+    let result = test_runner.preview(preview_intent, &network);
 
     // Assert
     result.unwrap().receipt.expect_commit_success();
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &TestRunner<TypedInMemorySubstateStore>,
+    test_runner: &mut TestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifest,
     flags: &PreviewFlags,
@@ -139,6 +131,6 @@ fn make_executable<'a>(
     transaction: &'a NotarizedTransaction,
 ) -> Executable<'a> {
     NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-        .validate(transaction, &TestIntentHashManager::new())
+        .validate(transaction, 0, &TestIntentHashManager::new())
         .unwrap()
 }

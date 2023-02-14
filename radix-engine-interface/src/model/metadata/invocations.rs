@@ -1,11 +1,11 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, types::*};
-use crate::scrypto;
-use crate::wasm::*;
+use crate::api::types::*;
+use crate::api::wasm::*;
+use crate::api::*;
+use crate::*;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MetadataSetInvocation {
     pub receiver: RENodeId,
     pub key: String,
@@ -20,17 +20,13 @@ impl SerializableInvocation for MetadataSetInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for MetadataSetInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Set(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for MetadataSetInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Metadata(MetadataInvocation::Set(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MetadataGetInvocation {
     pub receiver: RENodeId,
     pub key: String,
@@ -44,11 +40,8 @@ impl SerializableInvocation for MetadataGetInvocation {
     type ScryptoOutput = Option<String>;
 }
 
-impl Into<SerializedInvocation> for MetadataGetInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Get(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for MetadataGetInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Metadata(MetadataInvocation::Get(self)).into()
     }
 }

@@ -2,17 +2,17 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
-use radix_engine_interface::scrypto;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;
 use std::env;
 
 /// Simulator configurations.
-#[derive(Debug, Clone, Default)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct Configs {
-    pub default_account: Option<(ComponentAddress, String)>,
+    pub default_account: Option<ComponentAddress>,
+    pub default_private_key: Option<String>,
+    pub default_owner_badge: Option<NonFungibleGlobalId>,
     pub nonce: u64,
 }
 
@@ -54,15 +54,20 @@ pub fn set_configs(configs: &Configs) -> Result<(), Error> {
 pub fn get_default_account() -> Result<ComponentAddress, Error> {
     get_configs()?
         .default_account
-        .map(|pair| pair.0)
         .ok_or(Error::NoDefaultAccount)
 }
 
 pub fn get_default_private_key() -> Result<EcdsaSecp256k1PrivateKey, Error> {
     get_configs()?
-        .default_account
-        .map(|pair| EcdsaSecp256k1PrivateKey::from_bytes(&hex::decode(&pair.1).unwrap()).unwrap())
-        .ok_or(Error::NoDefaultAccount)
+        .default_private_key
+        .map(|v| EcdsaSecp256k1PrivateKey::from_bytes(&hex::decode(&v).unwrap()).unwrap())
+        .ok_or(Error::NoDefaultPrivateKey)
+}
+
+pub fn get_default_owner_badge() -> Result<NonFungibleGlobalId, Error> {
+    get_configs()?
+        .default_owner_badge
+        .ok_or(Error::NoDefaultOwnerBadge)
 }
 
 pub fn get_nonce() -> Result<u64, Error> {

@@ -1,77 +1,87 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::core::*;
-use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
+use crate::utils::*;
 
 /// Call a function
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_address: SimulatorPackageAddress,
+    pub package_address: SimulatorPackageAddress,
 
     /// The name of the blueprint which the function belongs to
-    blueprint_name: String,
+    pub blueprint_name: String,
 
     /// The function name
-    function_name: String,
+    pub function_name: String,
 
-    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for non-fungible Bucket
-    arguments: Vec<String>,
+    /// The call arguments, such as "5", "hello", "<amount>,<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    pub arguments: Vec<String>,
 
-    /// The proofs to add to the auth zone
+    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
-    proofs: Option<Vec<String>>,
+    pub proofs: Option<Vec<String>>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signing_keys: Option<String>,
+    pub signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl CallFunction {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+        let bech32_decoder = Bech32Decoder::for_simulator();
+
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::simulator());
+        let mut manifest_builder = &mut ManifestBuilder::new();
         for resource_specifier in proofs {
-            manifest_builder = manifest_builder
-                .create_proof_from_account_by_resource_specifier(
+            manifest_builder = manifest_builder.borrow_mut(|builder| {
+                add_create_proof_instruction_from_account_with_resource_specifier(
+                    builder,
+                    &bech32_decoder,
                     default_account,
                     resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
+                Ok(builder)
+            })?;
         }
 
         let manifest = manifest_builder
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_function_with_abi(
-                self.package_address.0,
-                &self.blueprint_name,
-                &self.function_name,
-                self.arguments.clone(),
-                Some(default_account),
-                &export_abi(self.package_address.0, &self.blueprint_name)?,
-            )
-            .map_err(Error::TransactionConstructionError)?
+            .borrow_mut(|builder| {
+                add_call_function_instruction_with_abi(
+                    builder,
+                    &bech32_decoder,
+                    self.package_address.0,
+                    &self.blueprint_name,
+                    &self.function_name,
+                    self.arguments.clone(),
+                    Some(default_account),
+                    &export_abi(self.package_address.0, &self.blueprint_name)?,
+                )
+                .map_err(Error::TransactionConstructionError)?;
+                Ok(builder)
+            })?
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         handle_manifest(
@@ -81,7 +91,6 @@ impl CallFunction {
             &self.manifest,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

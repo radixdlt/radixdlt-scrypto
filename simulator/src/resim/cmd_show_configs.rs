@@ -14,19 +14,42 @@ impl ShowConfigs {
         writeln!(
             out,
             "{}: {}",
-            "Default Account".green().bold(),
+            "Account Address".green().bold(),
             match configs.default_account {
-                Some((component, str)) => format!(
-                    "({}, {})",
-                    component.display(&Bech32Encoder::for_simulator()),
-                    str
-                ),
+                Some(component) =>
+                    format!("{}", component.display(&Bech32Encoder::for_simulator()),),
                 None => "None".to_owned(),
             }
         )
         .map_err(Error::IOError)?;
-        writeln!(out, "{}: {}", "Current Nonce".green().bold(), configs.nonce)
-            .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Account Private Key".green().bold(),
+            match configs.default_private_key {
+                Some(private_key) => private_key,
+                None => "None".to_owned(),
+            }
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Account Owner Badge".green().bold(),
+            match configs.default_owner_badge {
+                Some(owner_badge) =>
+                    format!("{}", owner_badge.display(&Bech32Encoder::for_simulator())),
+                None => "None".to_owned(),
+            }
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Next Transaction Nonce".green().bold(),
+            configs.nonce
+        )
+        .map_err(Error::IOError)?;
         Ok(())
     }
 }

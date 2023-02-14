@@ -1,9 +1,9 @@
 mod access_rules;
 mod bucket;
-mod mint_params;
-mod non_fungible_address;
 mod non_fungible_data;
-mod non_fungible_id;
+mod non_fungible_global_id;
+mod non_fungible_id_type;
+mod non_fungible_local_id;
 mod proof;
 mod proof_rule;
 mod resource_manager;
@@ -13,10 +13,10 @@ mod worktop;
 
 pub use access_rules::*;
 pub use bucket::*;
-pub use mint_params::MintParams;
-pub use non_fungible_address::*;
 pub use non_fungible_data::*;
-pub use non_fungible_id::*;
+pub use non_fungible_global_id::*;
+pub use non_fungible_id_type::*;
+pub use non_fungible_local_id::*;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource_manager::ResourceMethodAuthKey::*;

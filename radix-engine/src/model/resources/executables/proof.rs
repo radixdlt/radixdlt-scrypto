@@ -1,18 +1,16 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
-    SystemApi,
+    CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit, ResolvedActor,
+    ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
-use crate::model::{InvokeError, ResourceOperationError};
+use crate::model::ResourceOperationError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
+    GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceOperationError(ResourceOperationError),
@@ -28,28 +26,30 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ProofGetAmountInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetAmount)),
+        let actor = ResolvedActor::method(
+            NativeFn::Proof(ProofFn::GetAmount),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetAmountInvocation {
+impl Executor for ProofGetAmountInvocation {
     type Output = Decimal;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -63,31 +63,30 @@ impl NativeProcedure for ProofGetAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ProofGetNonFungibleLocalIdsInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetNonFungibleIds)),
+        let actor = ResolvedActor::method(
+            NativeFn::Proof(ProofFn::GetNonFungibleLocalIds),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Executor for ProofGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -96,39 +95,36 @@ impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
-        let ids = proof.total_ids().map_err(|e| match e {
-            InvokeError::Error(e) => {
-                RuntimeError::ApplicationError(ApplicationError::ProofError(e))
-            }
-            InvokeError::Downstream(runtime_error) => runtime_error,
-        })?;
+        let ids = proof.total_ids()?;
 
         Ok((ids, CallFrameUpdate::empty()))
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ProofGetResourceAddressInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetResourceAddress)),
+        let actor = ResolvedActor::method(
+            NativeFn::Proof(ProofFn::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetResourceAddressInvocation {
+impl Executor for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -147,28 +143,30 @@ impl NativeProcedure for ProofGetResourceAddressInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ProofCloneInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::Clone)),
+        let actor = ResolvedActor::method(
+            NativeFn::Proof(ProofFn::Clone),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofCloneInvocation {
+impl Executor for ProofCloneInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -180,7 +178,7 @@ impl NativeProcedure for ProofCloneInvocation {
         let cloned_proof = proof.clone();
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(cloned_proof))?;
+        api.create_node(node_id, RENodeInit::Proof(cloned_proof))?;
         let proof_id = node_id.into();
 
         Ok((

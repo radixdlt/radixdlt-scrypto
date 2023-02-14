@@ -1,4 +1,4 @@
-/// Constructs an RE address.
+/// Constructs an address.
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::Resource, $($bytes:expr),*) => {
@@ -14,14 +14,13 @@ macro_rules! construct_address {
         radix_engine_interface::model::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
-        radix_engine_interface::model::SystemAddress::EpochManager([$($bytes),*])
+        radix_engine_interface::model::ComponentAddress::EpochManager([$($bytes),*])
     };
     (EntityType::Clock, $($bytes:expr),*) => {
-        radix_engine_interface::model::SystemAddress::Clock([$($bytes),*])
+        radix_engine_interface::model::ComponentAddress::Clock([$($bytes),*])
     };
 }
 
-/// (Deprecated) Constructs an RE address.
 #[macro_export]
 macro_rules! address {
     (EntityType::$entity_type:tt, $last_byte:literal) => {

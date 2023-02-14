@@ -1,11 +1,10 @@
 use parity_wasm::elements::Instruction::{self, *};
-use sbor::rust::num::NonZeroU32;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
 
 use crate::types::*;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Categorize, Encode, Decode)]
 pub struct InstructionCostRules {
     tier_1_cost: u32,
     tier_2_cost: u32,

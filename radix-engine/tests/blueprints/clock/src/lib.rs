@@ -1,9 +1,9 @@
-use radix_engine_interface::time::*;
-use radix_engine_interface::wasm::*;
+use radix_engine_interface::api::Invokable;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod clock_test {
     struct ClockTest;
 
     impl ClockTest {
@@ -113,16 +113,13 @@ blueprint! {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
 
-        pub fn set_current_time(clock: SystemAddress, current_time_ms: i64) {
-            let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
-                NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-                    ClockMethodInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
-                        receiver: clock,
-                        current_time_ms,
-                    }),
-                )),
-            ));
-            call_engine(input)
+        pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
+            ScryptoEnv
+                .invoke(ClockSetCurrentTimeInvocation {
+                    receiver: clock,
+                    current_time_ms,
+                })
+                .unwrap()
         }
     }
 }

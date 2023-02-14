@@ -3,20 +3,20 @@ use scrypto::prelude::*;
 #[derive(NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
-    #[scrypto(mutable)]
+    #[mutable]
     pub available: bool,
 }
 
-blueprint! {
+#[blueprint]
+mod resource_test {
     struct ResourceTest;
 
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_badge: ResourceAddress =
-                ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
-                    .metadata("name", "Super Admin Badge")
-                    .mintable(rule!(allow_all), rule!(allow_all))
-                    .no_initial_supply();
+            let super_admin_badge: ResourceAddress = ResourceBuilder::new_uuid_non_fungible()
+                .metadata("name", "Super Admin Badge")
+                .mintable(rule!(allow_all), rule!(allow_all))
+                .create_with_no_initial_supply();
 
             let super_admin_manager: &mut ResourceManager =
                 borrow_resource_manager!(super_admin_badge);
@@ -26,13 +26,13 @@ blueprint! {
         pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .no_initial_supply();
+                .create_with_no_initial_supply();
             (badge, token_address)
         }
 
@@ -42,13 +42,13 @@ blueprint! {
         ) -> (Bucket, Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .no_initial_supply();
+                .create_with_no_initial_supply();
             let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
         }
@@ -57,7 +57,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1u32);
+                .mint_initial_supply(1u32);
             bucket
         }
 
@@ -65,7 +65,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1u32);
+                .mint_initial_supply(1u32);
             bucket
         }
 
@@ -73,13 +73,13 @@ blueprint! {
         {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .no_initial_supply();
+                .create_with_no_initial_supply();
             (badge, token_address)
         }
 
@@ -104,21 +104,21 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge =
-                ResourceBuilder::new_non_fungible(NonFungibleIdType::U32).initial_supply(vec![(
-                    NonFungibleId::U32(0),
-                    Sandwich {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]);
-            let manager_address =
-                NonFungibleAddress::new(badge.resource_address(), NonFungibleId::U32(0));
+            let badge = ResourceBuilder::new_integer_non_fungible().mint_initial_supply(vec![(
+                0u64.into(),
+                Sandwich {
+                    name: "name".to_string(),
+                    available: false,
+                },
+            )]);
+            let manager_badge =
+                NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
             let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply_with_owner(manager_address);
+                .owner_non_fungible_badge(manager_badge)
+                .create_with_no_initial_supply();
 
             badge.authorize(|| {
                 let token_resource_manager = borrow_resource_manager!(resource_address);

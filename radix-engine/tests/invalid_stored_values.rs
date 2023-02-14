@@ -1,21 +1,17 @@
 use radix_engine::engine::{KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -41,12 +37,11 @@ fn stored_bucket_in_committed_component_should_fail() {
 #[test]
 fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

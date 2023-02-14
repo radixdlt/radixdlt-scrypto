@@ -4,8 +4,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::hash;
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
@@ -44,5 +43,32 @@ impl StateDiff {
         }
 
         receipt
+    }
+
+    pub fn up_substate_ids(&self) -> BTreeSet<&SubstateId> {
+        self.up_substates.iter().map(|(id, _)| id).collect()
+    }
+
+    pub fn down_substate_ids(&self) -> BTreeSet<&SubstateId> {
+        self.down_substates
+            .iter()
+            .map(|output| &output.substate_id)
+            .collect()
+    }
+
+    pub fn up_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
+        let mut counter = BTreeMap::new();
+        for s in &self.up_substates {
+            *counter.entry(&s.0 .1).or_default() += 1;
+        }
+        counter
+    }
+
+    pub fn down_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
+        let mut counter = BTreeMap::new();
+        for s in &self.down_substates {
+            *counter.entry(&s.substate_id.1).or_default() += 1;
+        }
+        counter
     }
 }

@@ -1,17 +1,13 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn stored_resource_is_invokeable() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_resource");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "StoredResource", "create", args!())
         .build();
@@ -23,7 +19,7 @@ fn stored_resource_is_invokeable() {
         .new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component, "total_supply", args!())
         .build();

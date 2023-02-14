@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod leaks {
     struct Leaks {}
 
     impl Leaks {
@@ -12,14 +13,14 @@ blueprint! {
             let _bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
         }
 
         pub fn dangling_vault() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
         }
 
@@ -27,7 +28,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             bucket
         }
 
@@ -41,7 +42,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
 
             bucket.create_proof()
         }

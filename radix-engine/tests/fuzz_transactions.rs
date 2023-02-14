@@ -1,15 +1,11 @@
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_interface::node::NetworkDefinition;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -26,27 +22,20 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     let executable = validator
-        .validate(&transaction, &TestIntentHashManager::new())
+        .validate(&transaction, 0, &TestIntentHashManager::new())
         .unwrap();
 
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::new(
-            InstructionCostRules::tiered(1, 5, 10, 5000),
-            1024,
-        ),
+        wasm_metering_config: WasmMeteringConfig::V0,
     };
+    let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 
-    let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
-    let staged_node = staged_store_manager.new_child_node(0);
-
-    let mut staged_store = staged_store_manager.get_output_store(staged_node);
     execute_and_commit_transaction(
-        &mut staged_store,
+        &mut store,
         &mut scrypto_interpreter,
         &fee_reserve_config,
         &execution_config,
@@ -65,7 +54,7 @@ impl TransactionFuzzer {
     }
 
     fn next_transaction(&mut self) -> NotarizedTransaction {
-        let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+        let mut builder = ManifestBuilder::new();
         let instruction_count = self.rng.gen_range(0u32..20u32);
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
@@ -76,7 +65,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, bucket_id),
                         )
                     });
                 }
@@ -94,7 +83,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, bucket_id),
                         )
                     });
                 }
