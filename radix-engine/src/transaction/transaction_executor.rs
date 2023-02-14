@@ -178,7 +178,10 @@ where
         if execution_config.debug {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction auth zone params: {:?}", transaction.pre_allocated_ids());
+            println!(
+                "Transaction auth zone params: {:?}",
+                transaction.pre_allocated_ids()
+            );
             println!("Number of unique blobs: {}", transaction.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -214,11 +217,10 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut id_allocator =
-                IdAllocator::new(
-                    transaction_hash.clone(),
-                    transaction.pre_allocated_ids().clone(),
-                );
+            let mut id_allocator = IdAllocator::new(
+                transaction_hash.clone(),
+                transaction.pre_allocated_ids().clone(),
+            );
 
             // Create kernel
             let modules = KernelModuleMixer::standard(

@@ -232,7 +232,7 @@ impl IdAllocator {
 
     /// Creates a new bucket ID.
     pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
-        Ok(self.next()?)
+        self.next_id()
     }
 
     /// Creates a new proof ID.

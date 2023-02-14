@@ -2,6 +2,7 @@ use crate::errors::{InterpreterError, InvokeError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -9,7 +10,6 @@ use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {

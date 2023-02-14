@@ -1,10 +1,10 @@
 mod executables;
 mod package;
+mod proof;
 mod resource_manager;
 mod substates;
 mod vault;
 mod worktop;
-mod proof;
 
 pub use executables::*;
 pub use substates::*;
