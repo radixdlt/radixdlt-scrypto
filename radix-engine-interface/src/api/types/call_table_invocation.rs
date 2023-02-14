@@ -124,10 +124,6 @@ pub enum AuthZoneStackInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WorktopInvocation {
-    TakeAll(WorktopTakeAllInvocation),
-    TakeAmount(WorktopTakeAmountInvocation),
-    TakeNonFungibles(WorktopTakeNonFungiblesInvocation),
-    Put(WorktopPutInvocation),
     AssertContains(WorktopAssertContainsInvocation),
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
@@ -206,14 +202,10 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Worktop(worktop_method) => match worktop_method {
-                WorktopInvocation::TakeNonFungibles(..) => {}
-                WorktopInvocation::Put(..) => {}
                 WorktopInvocation::Drain(..) => {}
                 WorktopInvocation::AssertContainsNonFungibles(..) => {}
                 WorktopInvocation::AssertContains(..) => {}
                 WorktopInvocation::AssertContainsAmount(..) => {}
-                WorktopInvocation::TakeAll(..) => {}
-                WorktopInvocation::TakeAmount(..) => {}
             },
             NativeInvocation::TransactionRuntime(method) => match method {
                 TransactionRuntimeInvocation::GetHash(..)
@@ -286,10 +278,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Worktop(i) => match i {
-                WorktopInvocation::TakeAll(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::TakeAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
                 WorktopInvocation::AssertContains(i) => (get_native_fn(i), scrypto_encode(i)),
                 WorktopInvocation::AssertContainsAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 WorktopInvocation::AssertContainsNonFungibles(i) => {

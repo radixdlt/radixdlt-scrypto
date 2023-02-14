@@ -68,6 +68,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
                 ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
                 ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
+                ScryptoReceiver::Worktop => RENodeId::Worktop,
             };
 
             // Type Check

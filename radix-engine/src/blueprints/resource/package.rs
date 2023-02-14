@@ -310,6 +310,30 @@ impl ResourceManagerNativePackage {
                 ))?;
                 BucketBlueprint::create_proof(receiver, input, api)
             }
+            WORKTOP_PUT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::put(receiver, input, api)
+            }
+            WORKTOP_TAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take(receiver, input, api)
+            }
+            WORKTOP_TAKE_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take_non_fungibles(receiver, input, api)
+            }
+            WORKTOP_TAKE_ALL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take_all(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

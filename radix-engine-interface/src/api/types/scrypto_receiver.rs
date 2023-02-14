@@ -9,4 +9,5 @@ pub enum ScryptoReceiver {
     Component(ComponentId),
     Proof(ProofId),
     Bucket(BucketId),
+    Worktop,
 }

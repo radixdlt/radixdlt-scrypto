@@ -305,10 +305,6 @@ pub enum KeyValueStoreFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopFn {
-    TakeAll,
-    TakeAmount,
-    TakeNonFungibles,
-    Put,
     AssertContains,
     AssertContainsAmount,
     AssertContainsNonFungibles,

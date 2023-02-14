@@ -138,6 +138,13 @@ impl FeeTable {
                 PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
+            (RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT) => match identifier.ident.as_str() {
+                WORKTOP_PUT_IDENT => self.fixed_low,
+                WORKTOP_TAKE_IDENT => self.fixed_low,
+                WORKTOP_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
+                WORKTOP_TAKE_ALL_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
                 IDENTITY_CREATE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
@@ -228,10 +235,6 @@ impl FeeTable {
                 }
             }
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
-                WorktopFn::Put => self.fixed_medium,
-                WorktopFn::TakeAmount => self.fixed_medium,
-                WorktopFn::TakeAll => self.fixed_medium,
-                WorktopFn::TakeNonFungibles => self.fixed_medium,
                 WorktopFn::AssertContains => self.fixed_low,
                 WorktopFn::AssertContainsAmount => self.fixed_low,
                 WorktopFn::AssertContainsNonFungibles => self.fixed_low,

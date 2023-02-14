@@ -5,12 +5,16 @@ use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 
+pub const WORKTOP_BLUEPRINT: &str = "Worktop";
+
+pub const WORKTOP_PUT_IDENT: &str = "Worktop_put";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct WorktopPutInvocation {
+pub struct WorktopPutInput {
     pub bucket: Bucket,
 }
 
-impl Clone for WorktopPutInvocation {
+impl Clone for WorktopPutInput {
     fn clone(&self) -> Self {
         Self {
             bucket: Bucket(self.bucket.0),
@@ -18,109 +22,27 @@ impl Clone for WorktopPutInvocation {
     }
 }
 
-impl Invocation for WorktopPutInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::Put))
-    }
-}
-
-impl SerializableInvocation for WorktopPutInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Worktop(WorktopFn::Put)
-    }
-}
-
-impl Into<CallTableInvocation> for WorktopPutInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Worktop(WorktopInvocation::Put(self)).into()
-    }
-}
+pub const WORKTOP_TAKE_IDENT: &str = "Worktop_take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct WorktopTakeAmountInvocation {
+pub struct WorktopTakeInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-impl Invocation for WorktopTakeAmountInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeAmount))
-    }
-}
-
-impl SerializableInvocation for WorktopTakeAmountInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Worktop(WorktopFn::TakeAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for WorktopTakeAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Worktop(WorktopInvocation::TakeAmount(self)).into()
-    }
-}
+pub const WORKTOP_TAKE_NON_FUNGIBLES_IDENT: &str = "Worktop_take_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct WorktopTakeNonFungiblesInvocation {
+pub struct WorktopTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
-impl Invocation for WorktopTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeNonFungibles))
-    }
-}
-
-impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Worktop(WorktopFn::TakeNonFungibles)
-    }
-}
-
-impl Into<CallTableInvocation> for WorktopTakeNonFungiblesInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Worktop(WorktopInvocation::TakeNonFungibles(self)).into()
-    }
-}
+pub const WORKTOP_TAKE_ALL_IDENT: &str = "Worktop_take_all";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct WorktopTakeAllInvocation {
+pub struct WorktopTakeAllInput {
     pub resource_address: ResourceAddress,
-}
-
-impl Invocation for WorktopTakeAllInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Worktop(WorktopFn::TakeAll))
-    }
-}
-
-impl SerializableInvocation for WorktopTakeAllInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Worktop(WorktopFn::TakeAll)
-    }
-}
-
-impl Into<CallTableInvocation> for WorktopTakeAllInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Worktop(WorktopInvocation::TakeAll(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

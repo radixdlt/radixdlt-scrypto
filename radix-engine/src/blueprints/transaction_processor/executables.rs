@@ -298,7 +298,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                     resource_address,
                 }) => {
-                    let bucket = Worktop::sys_take_amount(*resource_address, *amount, api)?;
+                    let bucket = Worktop::sys_take(*resource_address, *amount, api)?;
                     let bucket = processor.next_static_bucket(bucket)?;
                     InstructionOutput::Native(Box::new(bucket))
                 }
@@ -805,9 +805,7 @@ impl TransactionProcessor {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value

@@ -138,12 +138,22 @@ impl KernelModule for AuthModule {
                     }),
                 ..
             } => vec![],
+
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Bucket(..),
                         ..
                     }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                Some(ResolvedReceiver {
+                         receiver: RENodeId::Worktop,
+                         ..
+                     }),
                 ..
             } => vec![],
 

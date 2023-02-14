@@ -129,14 +129,6 @@ where
             }
         },
         NativeInvocation::Worktop(worktop_invocation) => match worktop_invocation {
-            WorktopInvocation::TakeNonFungibles(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            WorktopInvocation::Put(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             WorktopInvocation::Drain(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -150,14 +142,6 @@ where
                 Ok(Box::new(rtn))
             }
             WorktopInvocation::AssertContainsAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            WorktopInvocation::TakeAll(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            WorktopInvocation::TakeAmount(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

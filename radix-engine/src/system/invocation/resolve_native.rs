@@ -155,16 +155,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Worktop(worktop_fn) => match worktop_fn {
-            WorktopFn::TakeNonFungibles => {
-                let invocation = scrypto_decode::<WorktopTakeNonFungiblesInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::Put => {
-                let invocation = scrypto_decode::<WorktopPutInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             WorktopFn::Drain => {
                 let invocation = scrypto_decode::<WorktopDrainInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -185,16 +175,6 @@ pub fn resolve_native(
                 let invocation =
                     scrypto_decode::<WorktopAssertContainsAmountInvocation>(&invocation)
                         .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::TakeAll => {
-                let invocation = scrypto_decode::<WorktopTakeAllInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            WorktopFn::TakeAmount => {
-                let invocation = scrypto_decode::<WorktopTakeAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

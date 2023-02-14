@@ -1,4 +1,4 @@
-use crate::errors::ApplicationError;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
@@ -16,6 +16,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug)]
 pub struct WorktopSubstate {
@@ -35,231 +36,170 @@ pub enum WorktopError {
     AssertionFailed,
 }
 
-impl ExecutableInvocation for WorktopPutInvocation {
-    type Exec = Self;
+pub struct WorktopBlueprint;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Worktop;
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.bucket.0));
-        let actor = ResolvedActor::method(
-            NativeFn::Worktop(WorktopFn::Put),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for WorktopPutInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+impl WorktopBlueprint {
+    pub(crate) fn put<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>,
     {
-        let node_id = RENodeId::Worktop;
-        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let input: WorktopPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resource_address = self.bucket.sys_resource_address(api)?;
+        let worktop_handle =
+            api.lock_substate(
+                RENodeId::Worktop,
+                NodeModuleId::SELF,
+                SubstateOffset::Worktop(WorktopOffset::Worktop),
+                LockFlags::MUTABLE,
+            )?;
+
+        let resource_address = input.bucket.sys_resource_address(api)?;
 
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
             let existing_bucket = Bucket(own.bucket_id());
-            existing_bucket.sys_put(self.bucket, api)?;
+            existing_bucket.sys_put(input.bucket, api)?;
         } else {
             worktop
                 .resources
-                .insert(resource_address, Own::Bucket(self.bucket.0));
+                .insert(resource_address, Own::Bucket(input.bucket.0));
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-impl ExecutableInvocation for WorktopTakeAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Worktop;
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Worktop(WorktopFn::TakeAmount),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for WorktopTakeAmountInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn take<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>,
     {
-        let node_id = RENodeId::Worktop;
-        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let input: WorktopTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Worktop,
+                NodeModuleId::SELF,
+                SubstateOffset::Worktop(WorktopOffset::Worktop),
+                LockFlags::MUTABLE,
+            )?;
 
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
-        let bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
+        let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
         } else {
-            let resman = ResourceManager(self.resource_address);
+            let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
             let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
-            worktop.resources.insert(self.resource_address, bucket);
+            worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
-                .get(&self.resource_address)
+                .get(&input.resource_address)
                 .cloned()
                 .unwrap()
         };
 
-        let rtn_bucket = Bucket(bucket.bucket_id()).sys_take(self.amount, api)?;
+        let rtn_bucket = Bucket(bucket.bucket_id()).sys_take(input.amount, api)?;
 
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
-        Ok((rtn_bucket, update))
+        Ok(IndexedScryptoValue::from_typed(&rtn_bucket))
     }
-}
 
-impl ExecutableInvocation for WorktopTakeAllInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Worktop;
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Worktop(WorktopFn::TakeAll),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for WorktopTakeAllInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn take_all<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>,
     {
-        let node_id = RENodeId::Worktop;
-        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let input: WorktopTakeAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Worktop,
+                NodeModuleId::SELF,
+                SubstateOffset::Worktop(WorktopOffset::Worktop),
+                LockFlags::MUTABLE,
+            )?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
-        let rtn_bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address) {
+        let rtn_bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
             let amount = bucket.sys_amount(api)?;
             let rtn_bucket = bucket.sys_take(amount, api)?;
             rtn_bucket
         } else {
-            let resman = ResourceManager(self.resource_address);
+            let resman = ResourceManager(input.resource_address);
             resman.new_empty_bucket(api)?
         };
 
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
-        Ok((rtn_bucket, update))
+        Ok(IndexedScryptoValue::from_typed(&rtn_bucket))
     }
-}
 
-impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Worktop;
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-        let actor = ResolvedActor::method(
-            NativeFn::Worktop(WorktopFn::TakeNonFungibles),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for WorktopTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn take_non_fungibles<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>,
     {
-        let node_id = RENodeId::Worktop;
-        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let input: WorktopTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.lock_substate(
+                RENodeId::Worktop,
+                NodeModuleId::SELF,
+                SubstateOffset::Worktop(WorktopOffset::Worktop),
+                LockFlags::MUTABLE,
+            )?;
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
-        let bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
+        let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
         } else {
-            let resman = ResourceManager(self.resource_address);
+            let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
             let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
-            worktop.resources.insert(self.resource_address, bucket);
+            worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
-                .get(&self.resource_address)
+                .get(&input.resource_address)
                 .cloned()
                 .unwrap()
         };
 
         let mut bucket = Bucket(bucket.bucket_id());
-        let rtn_bucket = bucket.sys_take_non_fungibles(self.ids, api)?;
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
-        Ok((rtn_bucket, update))
+        let rtn_bucket = bucket.sys_take_non_fungibles(input.ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&rtn_bucket))
     }
 }
 
