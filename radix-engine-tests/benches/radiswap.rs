@@ -12,6 +12,7 @@ use transaction::{
     },
 };
 
+#[allow(unused_variables)]
 fn bench_radiswap(c: &mut Criterion) {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
