@@ -236,15 +236,15 @@ mod tests {
         };
 
         assert_eq!(
-            "dc5ecacf6a3ceb4fef2e58deaa030d64edbfe6028eaf619f19fb411fc6223eba",
+            "641c247aa64c7f8f6706f365efcb2898b43893f006b748c2de46929756c08f5e",
             transaction.signed_intent.intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "279fb956a9143c0591424482c1bdfcc36c442485bdc8290c9f9f01ce9a15f99f",
+            "6815ed0fc10d5d5561ef894b32022ff3e360a8e9a55b17692118e8a833f254f4",
             transaction.signed_intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "d447fd70de1e7727067b6282ed11d2cc215e08ab495f5a017d2f4cc8628a9ebf",
+            "f49ed28a70c90e2c2394f40bc65b9a28a2eda812865002179b7369a2a50d5384",
             transaction.hash().unwrap().to_string()
         );
         assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220001b102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00080500210220220109002020002022020001b20093ce440fadbd89f53ec11e8f33a9f52073a4fb1447e4ca2fae5cc6951a8950a62d7cb46ee8b398796b630db258da0bf0bdb8a7d7dfad483e14ebf0eb2f6870da0001b201f6ab8f5364c763ad822790649738ee7ec9c69141bff73887e2124ffcd836c8ce703269f29484d8e7d2fbbd89c5f7960490b264de0ae1f3acdce3cc4dc4db9d6c220001b200b4fafc970acef2d0d63df34abac36e2f26e212d939c2d0aeeb14493b4e54ef0e27902de7e88e1864a56ce7f0cdcb797f1919d9e4f2c7c6262ef4958c2a777c08", hex::encode(scrypto_encode(&transaction).unwrap()));
@@ -292,15 +292,15 @@ mod tests {
         };
 
         assert_eq!(
-            "ba55b1c9725753da65d708e7f88e894accec5e57da1c17c889b421cd49898abd",
+            "9e6a155f408a445b7f5249bfc2df9dbc4f94b78a1b81f170d2dc0f91529cc212",
             transaction.signed_intent.intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "dca89a7072a349b7d222b57852ccdd369eedf87997b9e79aee22d5ce7d11c02d",
+            "d0e153166223c8d5501c28eca048b627a42c149971468740f9a75b73c778d8c1",
             transaction.signed_intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "6973345b165c9efb8f926b6decff306cd641d044518fdb15979cba801292a21d",
+            "a634164a0713efc33d14fc60f610657c50b21f4c761308de00a5ee1312f496b0",
             transaction.hash().unwrap().to_string()
         );
         assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101b3f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00080500210220220109002020002022020102b34cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29b4e756712638dc7deeabdee71bddc156f84cb69b24ed2bac7a0806a25a9831c1d63e26dfdb402313a07c9f3f1c4d2862dfb97b968f1dfbacc532eb0ce65ba66d090102b37422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674b4400bf5f21b9427bd6d379ee9200804066cf219044ac7f2cb9c1e22dccb122befee9e513a63f6f56ca120d91c04a00d7f250d80afcaaf089b942e4e631ed8d804220101b48b0b9f9ebe27b6a16158a91413488b3c9718cd0280d505e79efed54fc0edd7dfc2e31a4707925a642dd8d00b61c46cda670c16e8750bab5755cfa9f0f4092e0b", hex::encode(scrypto_encode(&transaction).unwrap()));
