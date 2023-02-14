@@ -3,6 +3,9 @@ use radix_engine::{
     system::kernel_modules::transaction_limits::TransactionLimitsError,
     types::*,
 };
+use radix_engine_constants::{
+    DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_INSTANCE, DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
+};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -135,8 +138,11 @@ fn test_grow_memory() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
+    // Calculate how much we can grow the memory (by wasm pages), subtract 1 to be below limit.
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_INSTANCE / (1024 * 64) - 1;
+
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "40"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -195,8 +201,11 @@ fn test_max_instance_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
+    // Grow memory (wasm pages) to exceed default max wasm memory per instance.
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_INSTANCE / (1024 * 64);
+
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "1000"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -236,6 +245,13 @@ fn test_max_transaction_memory_exceeded() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/recursion");
 
+    // Calculate value of additional bytes to allocate per call to exceed
+    // max wasm memory per transaction limit.
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / DEFAULT_MAX_CALL_DEPTH;
+
+    // Ensure calculated wasm instance grow value is lower than instance limit.
+    assert!(grow_value <= DEFAULT_MAX_WASM_MEM_PER_INSTANCE);
+
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -243,7 +259,7 @@ fn test_max_transaction_memory_exceeded() {
             package_address,
             "Caller",
             "recursive_with_memory",
-            args!(8u32, 1024 * 1024 as usize),
+            args!(DEFAULT_MAX_CALL_DEPTH as u32, grow_value),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
