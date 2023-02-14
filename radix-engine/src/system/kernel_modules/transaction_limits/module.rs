@@ -3,6 +3,7 @@ use crate::{
     errors::RuntimeError,
     kernel::*,
     kernel::{KernelModule, KernelModuleApi},
+    types::Vec,
 };
 use radix_engine_interface::*;
 
