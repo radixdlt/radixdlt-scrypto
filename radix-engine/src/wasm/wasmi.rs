@@ -811,7 +811,7 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
                 let invoke_err = trap
                     .downcast_ref::<InvokeError<WasmRuntimeError>>()
                     .unwrap_or(&InvokeError::SelfError(
-                        WasmRuntimeError::InvalidExportReturn,
+                        WasmRuntimeError::InvalidWasmPointer,
                     ));
                 invoke_err.clone()
             }
@@ -858,9 +858,7 @@ impl WasmInstance for WasmiInstance {
                 self.memory,
                 Slice::transmute_i64(ret),
             ),
-            _ => Err(InvokeError::SelfError(
-                WasmRuntimeError::InvalidExportReturn,
-            )),
+            _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
         }
     }
 }

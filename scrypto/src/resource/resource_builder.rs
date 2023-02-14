@@ -478,7 +478,11 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 })
                 .unwrap(),
             )
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| {
+                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                    .unwrap()
+                    .1
+            })
             .unwrap()
     }
 }
@@ -523,7 +527,11 @@ impl<A: ConfiguredAuth>
                 })
                 .unwrap(),
             )
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| {
+                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                    .unwrap()
+                    .1
+            })
             .unwrap()
     }
 }
@@ -568,7 +576,11 @@ impl<A: ConfiguredAuth>
                 })
                 .unwrap(),
             )
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| {
+                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                    .unwrap()
+                    .1
+            })
             .unwrap()
     }
 }
@@ -613,7 +625,11 @@ impl<A: ConfiguredAuth>
                 })
                 .unwrap(),
             )
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| {
+                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                    .unwrap()
+                    .1
+            })
             .unwrap()
     }
 }
@@ -667,7 +683,11 @@ impl<A: ConfiguredAuth>
                 )
                 .unwrap(),
             )
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| {
+                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                    .unwrap()
+                    .1
+            })
             .unwrap()
     }
 }
