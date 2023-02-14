@@ -1,6 +1,5 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
-use crate::blueprints::transaction_processor::InstructionOutput;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};

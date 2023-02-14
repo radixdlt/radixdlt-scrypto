@@ -254,7 +254,7 @@ impl<'s> Track<'s> {
                 &self
                     .loaded_substates
                     .get(&substate_id)
-                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .unwrap_or_else(|| panic!("Substate {:?} was never locked", substate_id))
                     .substate
             }
         };
@@ -283,7 +283,7 @@ impl<'s> Track<'s> {
                 &mut self
                     .loaded_substates
                     .get_mut(&substate_id)
-                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .unwrap_or_else(|| panic!("Substate {:?} was never locked", substate_id))
                     .substate
             }
         };
