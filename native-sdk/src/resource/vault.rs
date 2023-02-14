@@ -1,5 +1,7 @@
 use radix_engine_interface::api::types::{ScryptoReceiver, VaultId};
-use radix_engine_interface::api::{ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::{
+    ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -110,14 +112,15 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
             VAULT_GET_AMOUNT_IDENT,
-            scrypto_encode(&VaultGetAmountInput {
-            })
-                .unwrap(),
+            scrypto_encode(&VaultGetAmountInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -126,14 +129,15 @@ impl Vault {
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
             VAULT_CREATE_PROOF_IDENT,
-            scrypto_encode(&VaultCreateProofInput {
-            })
-                .unwrap(),
+            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -150,10 +154,7 @@ impl Vault {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
-            scrypto_encode(&VaultCreateProofByAmountInput {
-                amount,
-            })
-                .unwrap(),
+            scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -170,10 +171,7 @@ impl Vault {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
             VAULT_CREATE_PROOF_BY_IDS_IDENT,
-            scrypto_encode(&VaultCreateProofByIdsInput {
-                ids,
-            })
-                .unwrap(),
+            scrypto_encode(&VaultCreateProofByIdsInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -230,15 +228,15 @@ impl Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
-
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
             VAULT_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&VaultGetResourceAddressInput {
-            })
-                .unwrap(),
+            scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

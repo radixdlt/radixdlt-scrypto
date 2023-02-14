@@ -60,26 +60,22 @@ pub struct VaultRecallNonFungiblesInput {
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetAmountInput {
-}
+pub struct VaultGetAmountInput {}
 
 pub const VAULT_GET_RESOURCE_ADDRESS_IDENT: &str = "get_resource_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetResourceAddressInput {
-}
+pub struct VaultGetResourceAddressInput {}
 
 pub const VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetNonFungibleLocalIdsInput {
-}
+pub struct VaultGetNonFungibleLocalIdsInput {}
 
 pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultCreateProofInput {
-}
+pub struct VaultCreateProofInput {}
 
 pub const VAULT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
 

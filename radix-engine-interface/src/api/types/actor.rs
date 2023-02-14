@@ -36,14 +36,6 @@ impl From<NativeFn> for FnIdentifier {
 }
 
 impl FnIdentifier {
-    pub fn is_scrypto_or_transaction(&self) -> bool {
-        matches!(
-            self,
-            FnIdentifier::Scrypto(..)
-                | FnIdentifier::Native(NativeFn::TransactionProcessor(TransactionProcessorFn::Run))
-        )
-    }
-
     pub fn package_identifier(&self) -> PackageIdentifier {
         match self {
             FnIdentifier::Scrypto(identifier) => {
@@ -115,9 +107,9 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Bucket(..)
-            | NativeFn::Proof(..)
-            | NativeFn::Worktop(..) => NativePackage::Resource,
+            NativeFn::Bucket(..) | NativeFn::Proof(..) | NativeFn::Worktop(..) => {
+                NativePackage::Resource
+            }
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,

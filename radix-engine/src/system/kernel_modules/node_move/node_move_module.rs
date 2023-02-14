@@ -18,7 +18,6 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
-        to: &FnIdentifier,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -42,33 +41,27 @@ impl NodeMoveModule {
                 }
             }
             RENodeId::Proof(..) => {
-                let from = api.get_current_actor().identifier;
+                let handle = api.lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_ref_mut = api.get_ref_mut(handle)?;
+                let proof = substate_ref_mut.proof();
 
-                if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
-                    let handle = api.lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::Proof),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
-                    let proof = substate_ref_mut.proof();
-
-                    let rtn = if proof.is_restricted() {
-                        Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                            NodeMoveError::CantMoveDownstream(node_id),
-                        )))
-                    } else {
-                        proof.change_to_restricted();
-                        Ok(())
-                    };
-
-                    api.drop_lock(handle)?;
-
-                    rtn
+                let rtn = if proof.is_restricted() {
+                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                        NodeMoveError::CantMoveDownstream(node_id),
+                    )))
                 } else {
+                    proof.change_to_restricted();
                     Ok(())
-                }
+                };
+
+                api.drop_lock(handle)?;
+
+                rtn
             }
             RENodeId::Component(..) => Ok(()),
 
@@ -145,11 +138,11 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &ResolvedActor,
+        _actor: &ResolvedActor,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, &actor.identifier, api)?;
+            Self::prepare_move_downstream(*node_id, api)?;
         }
 
         Ok(())

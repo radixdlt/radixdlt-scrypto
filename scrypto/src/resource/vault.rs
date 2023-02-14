@@ -185,10 +185,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_PUT_IDENT,
-                scrypto_encode(&VaultPutInput {
-                    bucket,
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultPutInput { bucket }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -200,9 +197,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&VaultGetResourceAddressInput {
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -214,9 +209,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -228,9 +221,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_CREATE_PROOF_IDENT,
-                scrypto_encode(&VaultCreateProofInput {
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultCreateProofInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -242,10 +233,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofByAmountInput {
-                    amount,
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -257,10 +245,7 @@ impl ScryptoVault for Vault {
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_CREATE_PROOF_BY_IDS_IDENT,
-                scrypto_encode(&VaultCreateProofByIdsInput {
-                    ids: ids.clone(),
-                })
-                    .unwrap(),
+                scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
