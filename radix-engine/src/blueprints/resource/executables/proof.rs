@@ -2,17 +2,11 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
-};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
-};
-use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientNativeInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -40,25 +34,23 @@ impl ProofBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
+    where
+        Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: ProofCloneInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle =
-            api.lock_substate(
-                RENodeId::Proof(receiver),
-                NodeModuleId::SELF,
-                SubstateOffset::Proof(ProofOffset::Proof),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.lock_substate(
+            RENodeId::Proof(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
         let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let cloned_proof = proof.clone();
@@ -69,124 +61,87 @@ impl ProofBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for ProofGetAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Proof(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Proof(ProofFn::GetAmount),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for ProofGetAmountInvocation {
-    type Output = Decimal;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn get_amount<Y>(
+        receiver: ProofId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Proof(self.receiver);
-        let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        // TODO: Remove decode/encode mess
+        let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Proof(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
         let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
-
-        Ok((proof.total_amount(), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&proof.total_amount()))
     }
-}
 
-impl ExecutableInvocation for ProofGetNonFungibleLocalIdsInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Proof(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Proof(ProofFn::GetNonFungibleLocalIds),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for ProofGetNonFungibleLocalIdsInvocation {
-    type Output = BTreeSet<NonFungibleLocalId>;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn get_non_fungible_local_ids<Y>(
+        receiver: ProofId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Proof(self.receiver);
-        let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        // TODO: Remove decode/encode mess
+        let _input: ProofGetNonFungibleLocalIdsInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Proof(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
         let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids()?;
-
-        Ok((ids, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&ids))
     }
-}
 
-impl ExecutableInvocation for ProofGetResourceAddressInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Proof(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Proof(ProofFn::GetResourceAddress),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for ProofGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn get_resource_address<Y>(
+        receiver: ProofId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = RENodeId::Proof(self.receiver);
-        let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        // TODO: Remove decode/encode mess
+        let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.lock_substate(
+            RENodeId::Proof(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
         let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
-
-        Ok((
-            proof.resource_address,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                proof.resource_address,
-            ))),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&proof.resource_address))
     }
 }

@@ -250,6 +250,24 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ProofBlueprint::clone(receiver, input, api)
             }
+            PROOF_GET_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_amount(receiver, input, api)
+            }
+            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_non_fungible_local_ids(receiver, input, api)
+            }
+            PROOF_GET_RESOURCE_ADDRESS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_resource_address(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

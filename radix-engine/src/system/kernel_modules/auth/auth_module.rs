@@ -132,10 +132,10 @@ impl KernelModule for AuthModule {
 
             ResolvedActor {
                 receiver:
-                Some(ResolvedReceiver {
-                         receiver: RENodeId::Proof(..),
-                         ..
-                     }),
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Proof(..),
+                        ..
+                    }),
                 ..
             } => vec![],
 

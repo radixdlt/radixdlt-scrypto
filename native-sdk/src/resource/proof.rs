@@ -1,7 +1,9 @@
 use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{ClientComponentApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
+};
 use sbor::rust::fmt::Debug;
 
 pub trait SysProof {

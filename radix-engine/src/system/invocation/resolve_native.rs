@@ -137,24 +137,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::Proof(proof_fn) => match proof_fn {
-            ProofFn::GetAmount => {
-                let invocation = scrypto_decode::<ProofGetAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ProofFn::GetNonFungibleLocalIds => {
-                let invocation =
-                    scrypto_decode::<ProofGetNonFungibleLocalIdsInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            ProofFn::GetResourceAddress => {
-                let invocation = scrypto_decode::<ProofGetResourceAddressInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
             AccessRulesChainFn::AddAccessCheck => {
                 let invocation = scrypto_decode::<AccessRulesAddAccessCheckInvocation>(&invocation)

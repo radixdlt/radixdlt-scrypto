@@ -91,7 +91,6 @@ pub enum NativeFn {
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
     Bucket(BucketFn),
-    Proof(ProofFn),
     Worktop(WorktopFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
@@ -107,9 +106,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Bucket(..) | NativeFn::Proof(..) | NativeFn::Worktop(..) => {
-                NativePackage::Resource
-            }
+            NativeFn::Bucket(..) | NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
@@ -316,32 +313,6 @@ pub enum BucketFn {
     GetAmount,
     GetResourceAddress,
     CreateProof,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ProofFn {
-    GetAmount,
-    GetNonFungibleLocalIds,
-    GetResourceAddress,
 }
 
 #[derive(

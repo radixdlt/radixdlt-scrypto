@@ -123,8 +123,11 @@ impl FeeTable {
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match identifier.ident.as_str() {
                 PROOF_CLONE_IDENT => self.fixed_low,
+                PROOF_GET_AMOUNT_IDENT => self.fixed_low,
+                PROOF_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
-            }
+            },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
                 IDENTITY_CREATE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
@@ -222,11 +225,6 @@ impl FeeTable {
                 BucketFn::GetAmount => self.fixed_low,
                 BucketFn::GetResourceAddress => self.fixed_low,
                 BucketFn::CreateProof => self.fixed_low,
-            },
-            NativeFn::Proof(proof_ident) => match proof_ident {
-                ProofFn::GetAmount => self.fixed_low,
-                ProofFn::GetNonFungibleLocalIds => self.fixed_low,
-                ProofFn::GetResourceAddress => self.fixed_low,
             },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
                 WorktopFn::Put => self.fixed_medium,

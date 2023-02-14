@@ -58,7 +58,6 @@ pub enum NativeInvocation {
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     Bucket(BucketInvocation),
-    Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
 }
@@ -136,13 +135,6 @@ pub enum BucketInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ProofInvocation {
-    GetAmount(ProofGetAmountInvocation),
-    GetNonFungibleLocalIds(ProofGetNonFungibleLocalIdsInvocation),
-    GetResourceAddress(ProofGetResourceAddressInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WorktopInvocation {
     TakeAll(WorktopTakeAllInvocation),
     TakeAmount(WorktopTakeAmountInvocation),
@@ -200,11 +192,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::Clear(..) => {}
                 AuthZoneStackInvocation::Drain(..) => {}
                 AuthZoneStackInvocation::AssertAuthRule(..) => {}
-            },
-            NativeInvocation::Proof(proof_method) => match proof_method {
-                ProofInvocation::GetAmount(..) => {}
-                ProofInvocation::GetNonFungibleLocalIds(..) => {}
-                ProofInvocation::GetResourceAddress(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -329,11 +316,6 @@ impl NativeInvocation {
                 BucketInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
                 BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Proof(i) => match i {
-                ProofInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                ProofInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
-                ProofInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Worktop(i) => match i {
                 WorktopInvocation::TakeAll(i) => (get_native_fn(i), scrypto_encode(i)),

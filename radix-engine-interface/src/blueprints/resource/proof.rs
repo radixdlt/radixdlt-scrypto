@@ -11,93 +11,25 @@ use sbor::rust::fmt::Debug;
 
 pub const PROOF_BLUEPRINT: &str = "Proof";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetAmountInvocation {
-    pub receiver: ProofId,
-}
-
-impl Invocation for ProofGetAmountInvocation {
-    type Output = Decimal;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetAmount))
-    }
-}
-
-impl SerializableInvocation for ProofGetAmountInvocation {
-    type ScryptoOutput = Decimal;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofGetAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetAmount(self)).into()
-    }
-}
+pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetNonFungibleLocalIdsInvocation {
-    pub receiver: ProofId,
-}
+pub struct ProofGetAmountInput {}
 
-impl Invocation for ProofGetNonFungibleLocalIdsInvocation {
-    type Output = BTreeSet<NonFungibleLocalId>;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetNonFungibleLocalIds))
-    }
-}
-
-impl SerializableInvocation for ProofGetNonFungibleLocalIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetNonFungibleLocalIds)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofGetNonFungibleLocalIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetNonFungibleLocalIds(self)).into()
-    }
-}
+pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetResourceAddressInvocation {
-    pub receiver: ProofId,
-}
+pub struct ProofGetNonFungibleLocalIdsInput {}
 
-impl Invocation for ProofGetResourceAddressInvocation {
-    type Output = ResourceAddress;
+pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetResourceAddress))
-    }
-}
-
-impl SerializableInvocation for ProofGetResourceAddressInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetResourceAddress)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofGetResourceAddressInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetResourceAddress(self)).into()
-    }
-}
-
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+pub struct ProofGetResourceAddressInput {}
 
 pub const PROOF_CLONE_IDENT: &str = "clone";
 
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofCloneInput {
-}
+pub struct ProofCloneInput {}
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.

@@ -2,7 +2,7 @@ use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ComponentInvocation,
-    LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation, ProofInvocation,
+    LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation,
     TransactionRuntimeInvocation, WorktopInvocation,
 };
 
@@ -110,20 +110,6 @@ where
                 Ok(Box::new(rtn))
             }
             AuthZoneStackInvocation::AssertAuthRule(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Proof(proof_invocation) => match proof_invocation {
-            ProofInvocation::GetAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ProofInvocation::GetNonFungibleLocalIds(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            ProofInvocation::GetResourceAddress(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
