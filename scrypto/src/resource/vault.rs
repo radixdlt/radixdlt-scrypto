@@ -126,9 +126,9 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn lock_fee_internal(&mut self, amount: Decimal) -> () {
+    fn lock_fee_internal(&mut self, amount: Decimal) {
         let mut env = ScryptoEnv;
-        let rtn = env
+        let _rtn = env
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_LOCK_FEE_IDENT,
@@ -139,18 +139,34 @@ impl ScryptoVault for Vault {
                 .unwrap(),
             )
             .unwrap();
-        scrypto_decode(&rtn).unwrap()
     }
 
-    fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let mut env = ScryptoEnv;
-        let rtn = env
+        let _rtn = env
             .call_method(
                 ScryptoReceiver::Vault(self.0),
                 VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&VaultLockFeeInput {
                     amount,
                     contingent: true,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+    }
+
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_TAKE_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&VaultTakeNonFungiblesInput {
+                    non_fungible_local_ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
             )
@@ -163,13 +179,6 @@ impl ScryptoVault for Vault {
             VaultPutInvocation {
                 receiver: self.0,
                 bucket: Bucket(bucket.0),
-            }
-        }
-
-        fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
-            VaultTakeNonFungiblesInvocation {
-                receiver: self.0,
-                non_fungible_local_ids: non_fungible_local_ids.clone(),
             }
         }
 

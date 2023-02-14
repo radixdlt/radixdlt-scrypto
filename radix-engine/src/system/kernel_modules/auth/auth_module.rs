@@ -18,6 +18,7 @@ use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_ID
 use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::resource::*;
 use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
@@ -171,8 +172,10 @@ impl KernelModule for AuthModule {
                     RENodeVisibilityOrigin::DirectAccess => match identifier {
                         // TODO: Do we want to allow recaller to be able to withdraw from
                         // TODO: any visible vault?
-                        FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall))
-                        | FnIdentifier::Native(NativeFn::Vault(VaultFn::RecallNonFungibles)) => {
+                        FnIdentifier::Scrypto(ident)
+                            if ident.ident.eq(VAULT_RECALL_IDENT)
+                                || ident.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT) =>
+                        {
                             let access_rule = substate.access_rules_chain[0].get_group("recall");
                             let authorization = convert_contextless(access_rule);
                             vec![authorization]

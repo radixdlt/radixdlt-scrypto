@@ -323,7 +323,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::TakeNonFungibles)),
+        AccessRuleKey::ScryptoMethod(VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );

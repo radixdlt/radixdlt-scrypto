@@ -659,11 +659,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawNonFungiblesInput =

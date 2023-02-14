@@ -616,13 +616,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => {
-                    let rtn = api.call_native(VaultRecallInvocation {
-                        receiver: vault_id.clone(),
-                        amount: amount.clone(),
-                    })?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Vault(*vault_id),
+                        VAULT_RECALL_IDENT,
+                        scrypto_encode(&VaultRecallInput {
+                            amount: amount.clone(),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    let result_indexed =
-                        IndexedScryptoValue::from_vec(scrypto_encode(&rtn).unwrap()).unwrap();
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
                         api,

@@ -139,15 +139,12 @@ pub enum BucketInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultInvocation {
     Put(VaultPutInvocation),
-    TakeNonFungibles(VaultTakeNonFungiblesInvocation),
     GetAmount(VaultGetAmountInvocation),
     GetResourceAddress(VaultGetResourceAddressInvocation),
     GetNonFungibleLocalIds(VaultGetNonFungibleLocalIdsInvocation),
     CreateProof(VaultCreateProofInvocation),
     CreateProofByAmount(VaultCreateProofByAmountInvocation),
     CreateProofByIds(VaultCreateProofByIdsInvocation),
-    Recall(VaultRecallInvocation),
-    RecallNonFungibles(VaultRecallNonFungiblesInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -225,15 +222,12 @@ impl NativeInvocation {
             },
             NativeInvocation::Vault(vault_method) => match vault_method {
                 VaultInvocation::Put(..) => {}
-                VaultInvocation::TakeNonFungibles(..) => {}
                 VaultInvocation::GetAmount(..) => {}
                 VaultInvocation::GetResourceAddress(..) => {}
                 VaultInvocation::GetNonFungibleLocalIds(..) => {}
                 VaultInvocation::CreateProof(..) => {}
                 VaultInvocation::CreateProofByAmount(..) => {}
                 VaultInvocation::CreateProofByIds(..) => {}
-                VaultInvocation::Recall(..) => {}
-                VaultInvocation::RecallNonFungibles(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -361,15 +355,12 @@ impl NativeInvocation {
             },
             NativeInvocation::Vault(i) => match i {
                 VaultInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::Recall(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::RecallNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Proof(i) => match i {
                 ProofInvocation::Clone(i) => (get_native_fn(i), scrypto_encode(i)),

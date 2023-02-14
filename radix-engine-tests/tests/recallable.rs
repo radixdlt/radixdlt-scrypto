@@ -66,7 +66,10 @@ fn cannot_take_on_non_recallable_vault() {
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall)),
+                    identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        ..
+                    }),
                     receiver: Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(..),
                         ..

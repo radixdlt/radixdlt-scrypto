@@ -166,11 +166,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            VaultFn::TakeNonFungibles => {
-                let invocation = scrypto_decode::<VaultTakeNonFungiblesInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             VaultFn::GetAmount => {
                 let invocation = scrypto_decode::<VaultGetAmountInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
@@ -199,16 +194,6 @@ pub fn resolve_native(
             }
             VaultFn::CreateProofByIds => {
                 let invocation = scrypto_decode::<VaultCreateProofByIdsInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            VaultFn::Recall => {
-                let invocation = scrypto_decode::<VaultRecallInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            VaultFn::RecallNonFungibles => {
-                let invocation = scrypto_decode::<VaultRecallNonFungiblesInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

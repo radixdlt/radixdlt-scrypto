@@ -184,6 +184,24 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::take(receiver, input, api)
             }
+            VAULT_TAKE_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::take_non_fungibles(receiver, input, api)
+            }
+            VAULT_RECALL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::recall(receiver, input, api)
+            }
+            VAULT_RECALL_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::recall_non_fungibles(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

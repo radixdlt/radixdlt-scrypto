@@ -3,10 +3,10 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::KernelNodeApi;
 use crate::kernel::{
     CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
 };
-use crate::kernel::{KernelNodeApi, ScryptoExecutor};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -36,6 +36,77 @@ pub enum VaultError {
 pub struct VaultBlueprint;
 
 impl VaultBlueprint {
+    fn take_internal<Y>(
+        receiver: VaultId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let vault_handle = api.lock_substate(
+            RENodeId::Vault(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Vault),
+            LockFlags::MUTABLE,
+        )?;
+
+        let container = {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.take(amount)?
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+        Ok(Bucket(bucket_id))
+    }
+
+    fn take_non_fungibles_internal<Y>(
+        receiver: VaultId,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let vault_handle = api.lock_substate(
+            RENodeId::Vault(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Vault),
+            LockFlags::MUTABLE,
+        )?;
+
+        let container = {
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.take_non_fungibles(&non_fungible_local_ids)?
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(
+            node_id,
+            RENodeInit::Bucket(BucketSubstate::new(container)),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(Bucket(bucket_id))
+    }
+
     pub(crate) fn take<Y>(
         receiver: VaultId,
         input: ScryptoValue,
@@ -51,28 +122,30 @@ impl VaultBlueprint {
         let input: VaultTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.lock_substate(
-            RENodeId::Vault(receiver),
-            NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
-            LockFlags::MUTABLE,
-        )?;
+        let bucket = Self::take_internal(receiver, input.amount, api)?;
 
-        let container = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-            vault.take(input.amount)?
-        };
+        Ok(IndexedScryptoValue::from_typed(&bucket))
+    }
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
+    pub(crate) fn take_non_fungibles<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+        let bucket =
+            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
     pub(crate) fn lock_fee<Y>(
@@ -133,31 +206,46 @@ impl VaultBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-impl ExecutableInvocation for VaultRecallInvocation {
-    type Exec = ScryptoExecutor;
+    pub(crate) fn recall<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultRecallInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::Recall),
-            ResolvedReceiver::new(receiver),
-        );
-        let executor = ScryptoExecutor {
-            package_address: RESOURCE_MANAGER_PACKAGE,
-            export_name: VAULT_TAKE_IDENT.to_string(),
-            component_id: Some(self.receiver),
-            args: IndexedScryptoValue::from_typed(&VaultTakeInput {
-                amount: self.amount,
-            })
-            .into(),
-        };
-        Ok((actor, call_frame_update, executor))
+        let bucket = Self::take_internal(receiver, input.amount, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
+    }
+
+    pub(crate) fn recall_non_fungibles<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultRecallNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let bucket =
+            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 }
 
@@ -207,80 +295,6 @@ impl Executor for VaultPutInvocation {
         })?;
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
-    type Exec = VaultTakeNonFungiblesInvocation;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::RecallNonFungibles),
-            ResolvedReceiver::new(receiver),
-        );
-        let executor = VaultTakeNonFungiblesInvocation {
-            receiver: self.receiver,
-            non_fungible_local_ids: self.non_fungible_local_ids,
-        };
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::TakeNonFungibles),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let container = {
-            let mut substate_mut = api.get_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
-            vault.take_non_fungibles(&self.non_fungible_local_ids)?
-        };
-
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
     }
 }
 

@@ -2,7 +2,6 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
-use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
@@ -52,6 +51,13 @@ pub struct VaultTakeInput {
     pub amount: Decimal,
 }
 
+pub const VAULT_TAKE_NON_FUNGIBLES_IDENT: &str = "take_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultTakeNonFungiblesInput {
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
 pub const VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -60,32 +66,18 @@ pub struct VaultLockFeeInput {
     pub contingent: bool,
 }
 
+pub const VAULT_RECALL_IDENT: &str = "recall";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultTakeNonFungiblesInvocation {
-    pub receiver: VaultId,
+pub struct VaultRecallInput {
+    pub amount: Decimal,
+}
+
+pub const VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultRecallNonFungiblesInput {
     pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for VaultTakeNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::TakeNonFungibles))
-    }
-}
-
-impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::TakeNonFungibles)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultTakeNonFungiblesInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::TakeNonFungibles(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -112,62 +104,6 @@ impl SerializableInvocation for VaultGetAmountInvocation {
 impl Into<CallTableInvocation> for VaultGetAmountInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetAmount(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultRecallInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-}
-
-impl Invocation for VaultRecallInvocation {
-    type Output = ScryptoValue;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall))
-    }
-}
-
-impl SerializableInvocation for VaultRecallInvocation {
-    type ScryptoOutput = ScryptoValue;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::Recall)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultRecallInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::Recall(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultRecallNonFungiblesInvocation {
-    pub receiver: VaultId,
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl Invocation for VaultRecallNonFungiblesInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::RecallNonFungibles))
-    }
-}
-
-impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::RecallNonFungibles)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultRecallNonFungiblesInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::RecallNonFungibles(self)).into()
     }
 }
 

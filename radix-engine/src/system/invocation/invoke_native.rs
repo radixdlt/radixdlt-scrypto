@@ -137,10 +137,6 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            VaultInvocation::TakeNonFungibles(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             VaultInvocation::GetAmount(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -162,14 +158,6 @@ where
                 Ok(Box::new(rtn))
             }
             VaultInvocation::CreateProofByIds(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::Recall(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::RecallNonFungibles(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

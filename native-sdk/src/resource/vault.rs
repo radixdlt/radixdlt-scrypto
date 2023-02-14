@@ -86,16 +86,25 @@ impl Vault {
 
     pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E>
+            + ClientSubstateApi<E>
+            + ClientNativeInvokeApi<E>
+            + ClientComponentApi<E>,
     {
-        api.call_native(VaultTakeNonFungiblesInvocation {
-            receiver: self.0,
-            non_fungible_local_ids: ids,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&VaultTakeNonFungiblesInput {
+                non_fungible_local_ids,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
