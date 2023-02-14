@@ -1,6 +1,7 @@
-use radix_engine_interface::api::types::{ProofId, RENodeId};
-use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
+use radix_engine_interface::api::types::{ProofId, RENodeId, ScryptoReceiver};
+use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -57,8 +58,12 @@ impl ScryptoProof for Proof {
 
     fn clone(&self) -> Self {
         let mut env = ScryptoEnv;
-        env.call_native(ProofCloneInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env.call_method(
+            ScryptoReceiver::Proof(self.0),
+            PROOF_CLONE_IDENT,
+            scrypto_encode(&ProofCloneInput {}).unwrap()
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.

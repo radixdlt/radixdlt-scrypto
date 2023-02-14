@@ -244,6 +244,12 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::create_proof_by_ids(receiver, input, api)
             }
+            PROOF_CLONE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::clone(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

@@ -78,7 +78,7 @@ pub trait KernelInternalApi {
 
     /* Temporary interface, specifically for `ExecutionTrace` kernel module */
     fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
-    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
+    fn read_proof(&mut self, proof_id: ProofId) -> Option<ProofSnapshot>;
 }
 
 #[repr(u8)]
@@ -176,7 +176,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<BucketGetResourceAddressInvocation, E>
     + Invokable<BucketCreateProofInvocation, E>
     + Invokable<BucketCreateProofInvocation, E>
-    + Invokable<ProofCloneInvocation, E>
     + Invokable<ProofGetAmountInvocation, E>
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>

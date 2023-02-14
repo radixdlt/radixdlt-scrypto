@@ -9,6 +9,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
+pub const PROOF_BLUEPRINT: &str = "Proof";
+
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
@@ -90,31 +92,11 @@ impl Into<CallTableInvocation> for ProofGetResourceAddressInvocation {
     }
 }
 
+
+pub const PROOF_CLONE_IDENT: &str = "clone";
+
 #[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofCloneInvocation {
-    pub receiver: ProofId,
-}
-
-impl Invocation for ProofCloneInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::Clone))
-    }
-}
-
-impl SerializableInvocation for ProofCloneInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::Clone)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofCloneInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::Clone(self)).into()
-    }
+pub struct ProofCloneInput {
 }
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.

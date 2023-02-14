@@ -121,6 +121,10 @@ impl FeeTable {
                 VAULT_CREATE_PROOF_BY_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
+            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match identifier.ident.as_str() {
+                PROOF_CLONE_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            }
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
                 IDENTITY_CREATE_IDENT => self.fixed_low,
                 _ => self.fixed_low,
@@ -223,7 +227,6 @@ impl FeeTable {
                 ProofFn::GetAmount => self.fixed_low,
                 ProofFn::GetNonFungibleLocalIds => self.fixed_low,
                 ProofFn::GetResourceAddress => self.fixed_low,
-                ProofFn::Clone => self.fixed_low,
             },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
                 WorktopFn::Put => self.fixed_medium,

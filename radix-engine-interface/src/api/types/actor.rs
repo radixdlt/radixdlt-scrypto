@@ -339,7 +339,6 @@ pub enum BucketFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofFn {
-    Clone,
     GetAmount,
     GetNonFungibleLocalIds,
     GetResourceAddress,

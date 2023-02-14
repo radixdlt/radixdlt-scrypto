@@ -488,7 +488,7 @@ mod tests {
         let value = IndexedScryptoValue::from_typed(&vec![ManifestBucket(0), ManifestBucket(0)]);
         assert_eq!(
             value.replace_manifest_values(
-                &mut HashMap::from([(ManifestProof(0), 0u32)]),
+                &mut HashMap::from([(ManifestProof(0), [0u8; 36])]),
                 &mut HashMap::from([(ManifestBucket(0), 0u32)]),
                 Vec::new(),
             ),

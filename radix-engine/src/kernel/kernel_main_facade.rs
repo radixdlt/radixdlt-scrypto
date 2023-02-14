@@ -21,9 +21,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{
-    Resource, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{PROOF_BLUEPRINT, Resource, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT};
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -143,7 +141,15 @@ where
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
-            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
+            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: PROOF_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
                 module_init.insert(
@@ -290,7 +296,7 @@ where
             .ok()
     }
 
-    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+    fn read_proof(&mut self, proof_id: ProofId) -> Option<ProofSnapshot> {
         self.heap
             .get_substate(
                 RENodeId::Proof(proof_id),

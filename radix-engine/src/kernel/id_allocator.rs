@@ -237,7 +237,7 @@ impl IdAllocator {
 
     /// Creates a new proof ID.
     pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocationError> {
-        Ok(self.next()?)
+        self.next_id()
     }
 
     /// Creates a new vault ID.

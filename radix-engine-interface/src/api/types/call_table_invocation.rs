@@ -137,7 +137,6 @@ pub enum BucketInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofInvocation {
-    Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
     GetNonFungibleLocalIds(ProofGetNonFungibleLocalIdsInvocation),
     GetResourceAddress(ProofGetResourceAddressInvocation),
@@ -206,7 +205,6 @@ impl NativeInvocation {
                 ProofInvocation::GetAmount(..) => {}
                 ProofInvocation::GetNonFungibleLocalIds(..) => {}
                 ProofInvocation::GetResourceAddress(..) => {}
-                ProofInvocation::Clone(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -333,7 +331,6 @@ impl NativeInvocation {
                 BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Proof(i) => match i {
-                ProofInvocation::Clone(i) => (get_native_fn(i), scrypto_encode(i)),
                 ProofInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 ProofInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
                 ProofInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),

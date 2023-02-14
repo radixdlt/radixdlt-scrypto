@@ -127,10 +127,6 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            ProofInvocation::Clone(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
         },
         NativeInvocation::AccessRulesChain(access_rules_invocation) => {
             match access_rules_invocation {
