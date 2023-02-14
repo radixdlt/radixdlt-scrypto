@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":[["Categorize","The `Categorize` trait marks a rust type as having a fixed value kind for SBOR encoding/decoding."]]};

@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"radix_engine":[["impl&lt;'a&gt; ContextualDisplay&lt;AddressDisplayContext&lt;'a&gt;&gt; for <a class=\"struct\" href=\"radix_engine/transaction/transaction_receipt/struct.TransactionReceipt.html\" title=\"struct radix_engine::transaction::transaction_receipt::TransactionReceipt\">TransactionReceipt</a>"]]
+"radix_engine":[["impl&lt;'a&gt; ContextualDisplay&lt;<a class=\"struct\" href=\"radix_engine/types/address/struct.AddressDisplayContext.html\" title=\"struct radix_engine::types::address::AddressDisplayContext\">AddressDisplayContext</a>&lt;'a&gt;&gt; for <a class=\"struct\" href=\"radix_engine/transaction/transaction_receipt/struct.TransactionReceipt.html\" title=\"struct radix_engine::transaction::transaction_receipt::TransactionReceipt\">TransactionReceipt</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["deref_and_update",""]],"struct":[["NativeExecutor",""]],"trait":[["NativeProcedure",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["deref_and_update",""]]};

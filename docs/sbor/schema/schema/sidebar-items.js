@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["ResolvedTypeData",""],["Schema","An array of custom type kinds, and associated extra information which can attach to the type kinds"]]};

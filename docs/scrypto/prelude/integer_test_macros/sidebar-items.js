@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":[["test_add_all",""],["test_from_all_types_builtin_safe",""],["test_from_all_types_safe_builtin",""],["test_from_all_types_safe_safe",""],["test_from_builtin",""],["test_impl",""],["test_math",""],["test_signed",""],["test_unsigned",""]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["TimeComparisonOperator",""]],"struct":[["Instant","Represents a Unix timestamp, capturing the seconds since the unix epoch."]]};

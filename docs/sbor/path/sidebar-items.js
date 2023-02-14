@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["SborPath","A series of indexes which describes some value in the sbor tree"],["SborPathBuf",""],["SborValueRetriever","Helper structure which helps in retrieving a value given a root value and sbor path"]]};
+window.SIDEBAR_ITEMS = {"struct":[["SborPath","A series of indexes which describes some value in the sbor tree"],["SborPathBuf",""],["ValueRetriever","Helper structure which helps in retrieving a value given a root value and sbor path"]]};

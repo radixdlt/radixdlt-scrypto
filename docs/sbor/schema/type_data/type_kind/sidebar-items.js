@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["TypeKind","A schema for the values that a codec can decode / views as valid"]]};

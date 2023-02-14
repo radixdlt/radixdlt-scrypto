@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["ParseNetworkError",""]],"struct":[["NetworkDefinition","Network Definition is intended to be the actual definition of a network"]]};

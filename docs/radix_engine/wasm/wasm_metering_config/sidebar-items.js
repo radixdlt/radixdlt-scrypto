@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["WasmMeteringConfig",""],["WasmMeteringParams",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["WasmMeteringConfig",""]],"struct":[["WasmMeteringParams",""]]};

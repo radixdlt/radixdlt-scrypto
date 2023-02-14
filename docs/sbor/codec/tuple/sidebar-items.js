@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":[["decode_tuple",""],["encode_tuple",""]]};
+window.SIDEBAR_ITEMS = {"macro":[["categorize_tuple",""],["decode_tuple",""],["encode_tuple",""]],"mod":[["schema",""]]};

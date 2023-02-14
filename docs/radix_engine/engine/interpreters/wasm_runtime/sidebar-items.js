@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["encode",""]],"struct":[["NopWasmRuntime","A `Nop` runtime accepts any external function calls by doing nothing and returning void."],["RadixEngineWasmRuntime","A glue between system api (call frame and track abstraction) and WASM."]]};
+window.SIDEBAR_ITEMS = {"struct":[["NopWasmRuntime","A `Nop` runtime accepts any external function calls by doing nothing and returning void."],["RadixEngineWasmRuntime","A glue between system api (call frame and track abstraction) and WASM."]]};

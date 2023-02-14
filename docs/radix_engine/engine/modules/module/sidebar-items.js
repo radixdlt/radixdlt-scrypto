@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["SysCallInput",""],["SysCallOutput",""]],"trait":[["Module",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["SysCallInput",""],["SysCallOutput",""]],"trait":[["BaseModule",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["ParseKeyValueStoreError","Represents an error when decoding key value store."]],"struct":[["KeyValueStore","A scalable key-value map which loads entries on demand."],["KeyValueStoreEntrySubstate",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["KeyValueStore","A scalable key-value map which loads entries on demand."],["KeyValueStoreEntrySubstate",""]]};

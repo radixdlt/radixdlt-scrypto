@@ -1,339 +1,289 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/fee/fee_table.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_table.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
-<span id="2">2</span>
-<span id="3">3</span>
-<span id="4">4</span>
-<span id="5">5</span>
-<span id="6">6</span>
-<span id="7">7</span>
-<span id="8">8</span>
-<span id="9">9</span>
-<span id="10">10</span>
-<span id="11">11</span>
-<span id="12">12</span>
-<span id="13">13</span>
-<span id="14">14</span>
-<span id="15">15</span>
-<span id="16">16</span>
-<span id="17">17</span>
-<span id="18">18</span>
-<span id="19">19</span>
-<span id="20">20</span>
-<span id="21">21</span>
-<span id="22">22</span>
-<span id="23">23</span>
-<span id="24">24</span>
-<span id="25">25</span>
-<span id="26">26</span>
-<span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-<span id="31">31</span>
-<span id="32">32</span>
-<span id="33">33</span>
-<span id="34">34</span>
-<span id="35">35</span>
-<span id="36">36</span>
-<span id="37">37</span>
-<span id="38">38</span>
-<span id="39">39</span>
-<span id="40">40</span>
-<span id="41">41</span>
-<span id="42">42</span>
-<span id="43">43</span>
-<span id="44">44</span>
-<span id="45">45</span>
-<span id="46">46</span>
-<span id="47">47</span>
-<span id="48">48</span>
-<span id="49">49</span>
-<span id="50">50</span>
-<span id="51">51</span>
-<span id="52">52</span>
-<span id="53">53</span>
-<span id="54">54</span>
-<span id="55">55</span>
-<span id="56">56</span>
-<span id="57">57</span>
-<span id="58">58</span>
-<span id="59">59</span>
-<span id="60">60</span>
-<span id="61">61</span>
-<span id="62">62</span>
-<span id="63">63</span>
-<span id="64">64</span>
-<span id="65">65</span>
-<span id="66">66</span>
-<span id="67">67</span>
-<span id="68">68</span>
-<span id="69">69</span>
-<span id="70">70</span>
-<span id="71">71</span>
-<span id="72">72</span>
-<span id="73">73</span>
-<span id="74">74</span>
-<span id="75">75</span>
-<span id="76">76</span>
-<span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
-<span id="88">88</span>
-<span id="89">89</span>
-<span id="90">90</span>
-<span id="91">91</span>
-<span id="92">92</span>
-<span id="93">93</span>
-<span id="94">94</span>
-<span id="95">95</span>
-<span id="96">96</span>
-<span id="97">97</span>
-<span id="98">98</span>
-<span id="99">99</span>
-<span id="100">100</span>
-<span id="101">101</span>
-<span id="102">102</span>
-<span id="103">103</span>
-<span id="104">104</span>
-<span id="105">105</span>
-<span id="106">106</span>
-<span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
-<span id="110">110</span>
-<span id="111">111</span>
-<span id="112">112</span>
-<span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
-<span id="116">116</span>
-<span id="117">117</span>
-<span id="118">118</span>
-<span id="119">119</span>
-<span id="120">120</span>
-<span id="121">121</span>
-<span id="122">122</span>
-<span id="123">123</span>
-<span id="124">124</span>
-<span id="125">125</span>
-<span id="126">126</span>
-<span id="127">127</span>
-<span id="128">128</span>
-<span id="129">129</span>
-<span id="130">130</span>
-<span id="131">131</span>
-<span id="132">132</span>
-<span id="133">133</span>
-<span id="134">134</span>
-<span id="135">135</span>
-<span id="136">136</span>
-<span id="137">137</span>
-<span id="138">138</span>
-<span id="139">139</span>
-<span id="140">140</span>
-<span id="141">141</span>
-<span id="142">142</span>
-<span id="143">143</span>
-<span id="144">144</span>
-<span id="145">145</span>
-<span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
-<span id="164">164</span>
-<span id="165">165</span>
-<span id="166">166</span>
-<span id="167">167</span>
-<span id="168">168</span>
-<span id="169">169</span>
-<span id="170">170</span>
-<span id="171">171</span>
-<span id="172">172</span>
-<span id="173">173</span>
-<span id="174">174</span>
-<span id="175">175</span>
-<span id="176">176</span>
-<span id="177">177</span>
-<span id="178">178</span>
-<span id="179">179</span>
-<span id="180">180</span>
-<span id="181">181</span>
-<span id="182">182</span>
-<span id="183">183</span>
-<span id="184">184</span>
-<span id="185">185</span>
-<span id="186">186</span>
-<span id="187">187</span>
-<span id="188">188</span>
-<span id="189">189</span>
-<span id="190">190</span>
-<span id="191">191</span>
-<span id="192">192</span>
-<span id="193">193</span>
-<span id="194">194</span>
-<span id="195">195</span>
-<span id="196">196</span>
-<span id="197">197</span>
-<span id="198">198</span>
-<span id="199">199</span>
-<span id="200">200</span>
-<span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
-<span id="223">223</span>
-<span id="224">224</span>
-<span id="225">225</span>
-<span id="226">226</span>
-<span id="227">227</span>
-<span id="228">228</span>
-<span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
-<span id="232">232</span>
-<span id="233">233</span>
-<span id="234">234</span>
-<span id="235">235</span>
-<span id="236">236</span>
-<span id="237">237</span>
-<span id="238">238</span>
-<span id="239">239</span>
-<span id="240">240</span>
-<span id="241">241</span>
-<span id="242">242</span>
-<span id="243">243</span>
-<span id="244">244</span>
-<span id="245">245</span>
-<span id="246">246</span>
-<span id="247">247</span>
-<span id="248">248</span>
-<span id="249">249</span>
-<span id="250">250</span>
-<span id="251">251</span>
-<span id="252">252</span>
-<span id="253">253</span>
-<span id="254">254</span>
-<span id="255">255</span>
-<span id="256">256</span>
-<span id="257">257</span>
-<span id="258">258</span>
-<span id="259">259</span>
-<span id="260">260</span>
-<span id="261">261</span>
-<span id="262">262</span>
-<span id="263">263</span>
-<span id="264">264</span>
-<span id="265">265</span>
-<span id="266">266</span>
-<span id="267">267</span>
-<span id="268">268</span>
-<span id="269">269</span>
-<span id="270">270</span>
-<span id="271">271</span>
-<span id="272">272</span>
-<span id="273">273</span>
-<span id="274">274</span>
-<span id="275">275</span>
-<span id="276">276</span>
-<span id="277">277</span>
-<span id="278">278</span>
-<span id="279">279</span>
-<span id="280">280</span>
-<span id="281">281</span>
-<span id="282">282</span>
-<span id="283">283</span>
-<span id="284">284</span>
-<span id="285">285</span>
-<span id="286">286</span>
-<span id="287">287</span>
-<span id="288">288</span>
-<span id="289">289</span>
-<span id="290">290</span>
-<span id="291">291</span>
-<span id="292">292</span>
-<span id="293">293</span>
-<span id="294">294</span>
-<span id="295">295</span>
-<span id="296">296</span>
-<span id="297">297</span>
-<span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
-<span id="303">303</span>
-<span id="304">304</span>
-<span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
-<span id="313">313</span>
-<span id="314">314</span>
-<span id="315">315</span>
-<span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_interface::api::types::{
-    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
-    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
-};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/fee/fee_table.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_table.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_interface::api::types::<span class="kw-2">*</span>;
 
 <span class="kw">pub enum </span>SystemApiCostingEntry {
     <span class="comment">/*
@@ -341,7 +291,6 @@
      */
     </span>Invoke {
         input_size: u32,
-        value_count: u32,
     },
 
     <span class="comment">/*
@@ -356,15 +305,6 @@
     </span>DropNode {
         size: u32,
     },
-    <span class="doccomment">/// Globalizes a RENode.
-    </span>GlobalizeNode {
-        size: u32,
-    },
-    <span class="doccomment">/// Borrows a RENode.
-    </span>BorrowNode {
-        loaded: bool,
-        size: u32,
-    },
 
     <span class="comment">/*
      * Substate
@@ -372,14 +312,6 @@
     </span><span class="doccomment">/// Borrows a substate
     </span>BorrowSubstate {
         loaded: bool,
-        size: u32,
-    },
-    <span class="doccomment">/// Returns a substate.
-    </span>ReturnSubstate {
-        size: u32,
-    },
-    <span class="doccomment">/// Takes a substate
-    </span>TakeSubstate {
         size: u32,
     },
     LockSubstate {
@@ -393,38 +325,20 @@
     </span>WriteSubstate {
         size: u32,
     },
-
     DropLock,
 
     <span class="comment">/*
      * Misc
      */
-    </span><span class="doccomment">/// Reads the current epoch.
-    </span>ReadEpoch,
-    <span class="doccomment">/// Reads the transaction hash.
-    </span>ReadTransactionHash,
-    <span class="doccomment">/// Reads blob in transaction
+    </span><span class="doccomment">/// Reads blob in transaction
     </span>ReadBlob {
-        size: u32,
-    },
-    <span class="doccomment">/// Generates a UUID.
-    </span>GenerateUuid,
-    <span class="doccomment">/// Emits a log.
-    </span>EmitLog {
-        size: u32,
-    },
-
-    EmitEvent {
-        native: bool,
-        tracked: bool,
         size: u32,
     },
 }
 
 <span class="kw">pub struct </span>FeeTable {
     tx_base_fee: u32,
-    tx_manifest_decoding_per_byte: u32,
-    tx_manifest_verification_per_byte: u32,
+    tx_payload_cost_per_byte: u32,
     tx_signature_verification_per_sig: u32,
     tx_blob_price_per_byte: u32,
     fixed_low: u32,
@@ -436,15 +350,14 @@
 <span class="kw">impl </span>FeeTable {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            tx_base_fee: <span class="number">10_000</span>,
-            tx_manifest_decoding_per_byte: <span class="number">3</span>,
-            tx_manifest_verification_per_byte: <span class="number">1</span>,
-            tx_signature_verification_per_sig: <span class="number">3750</span>,
-            tx_blob_price_per_byte: <span class="number">1</span>,
-            wasm_instantiation_per_byte: <span class="number">0</span>, <span class="comment">// TODO: Re-enable WASM instantiation cost if it&#39;s unavoidable
-            </span>fixed_low: <span class="number">100</span>,
-            fixed_medium: <span class="number">500</span>,
-            fixed_high: <span class="number">1000</span>,
+            tx_base_fee: <span class="number">50_000</span>,
+            tx_payload_cost_per_byte: <span class="number">5</span>,
+            tx_signature_verification_per_sig: <span class="number">100_000</span>,
+            tx_blob_price_per_byte: <span class="number">5</span>,
+            wasm_instantiation_per_byte: <span class="number">1</span>, <span class="comment">// TODO: Re-enable WASM instantiation cost if it&#39;s unavoidable
+            </span>fixed_low: <span class="number">500</span>,
+            fixed_medium: <span class="number">2500</span>,
+            fixed_high: <span class="number">5000</span>,
         }
     }
 
@@ -452,12 +365,8 @@
         <span class="self">self</span>.tx_base_fee
     }
 
-    <span class="kw">pub fn </span>tx_manifest_decoding_per_byte(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.tx_manifest_decoding_per_byte
-    }
-
-    <span class="kw">pub fn </span>tx_manifest_verification_per_byte(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.tx_manifest_verification_per_byte
+    <span class="kw">pub fn </span>tx_payload_cost_per_byte(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.tx_payload_cost_per_byte
     }
 
     <span class="kw">pub fn </span>tx_signature_verification_per_sig(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
@@ -472,156 +381,176 @@
         <span class="self">self</span>.wasm_instantiation_per_byte
     }
 
-    <span class="kw">pub fn </span>run_native_function_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, native_function: <span class="kw-2">&amp;</span>NativeFunction) -&gt; u32 {
-        <span class="kw">match </span>native_function {
-            NativeFunction::Component(component_func) =&gt; <span class="kw">match </span>component_func {
-                ComponentFunction::Globalize =&gt; <span class="self">self</span>.fixed_high,
-                ComponentFunction::GlobalizeWithOwner =&gt; <span class="self">self</span>.fixed_high,
-            },
-            NativeFunction::TransactionProcessor(transaction_processor_fn) =&gt; {
-                <span class="kw">match </span>transaction_processor_fn {
-                    TransactionProcessorFunction::Run =&gt; <span class="self">self</span>.fixed_high,
-                }
-            }
-            NativeFunction::Package(package_fn) =&gt; <span class="kw">match </span>package_fn {
-                PackageFunction::Publish =&gt; <span class="self">self</span>.fixed_low,
-                PackageFunction::PublishWithOwner =&gt; <span class="self">self</span>.fixed_low,
-            },
-            NativeFunction::EpochManager(epoch_manager_fn) =&gt; <span class="kw">match </span>epoch_manager_fn {
-                EpochManagerFunction::Create =&gt; <span class="self">self</span>.fixed_low,
-            },
-            NativeFunction::Clock(clock_fn) =&gt; <span class="kw">match </span>clock_fn {
-                ClockFunction::Create =&gt; <span class="self">self</span>.fixed_low,
-            },
-            NativeFunction::ResourceManager(resource_manager_ident) =&gt; {
-                <span class="kw">match </span>resource_manager_ident {
-                    ResourceManagerFunction::Create =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
-                    </span>ResourceManagerFunction::CreateWithOwner =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
-                    </span>ResourceManagerFunction::BurnBucket =&gt; <span class="self">self</span>.fixed_low,
-                }
-            }
-        }
-    }
-
-    <span class="kw">pub fn </span>run_native_method_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, native_method: <span class="kw-2">&amp;</span>NativeMethod) -&gt; u32 {
-        <span class="kw">match </span>native_method {
-            NativeMethod::AuthZoneStack(auth_zone_ident) =&gt; {
+    <span class="kw">pub fn </span>run_native_fn_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, native_fn: <span class="kw-2">&amp;</span>NativeFn) -&gt; u32 {
+        <span class="kw">match </span>native_fn {
+            NativeFn::AuthZoneStack(auth_zone_ident) =&gt; {
                 <span class="kw">match </span>auth_zone_ident {
-                    AuthZoneStackMethod::Pop =&gt; <span class="self">self</span>.fixed_low,
-                    AuthZoneStackMethod::Push =&gt; <span class="self">self</span>.fixed_low,
-                    AuthZoneStackMethod::CreateProof =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: charge differently based on auth zone size and fungibility
-                    </span>AuthZoneStackMethod::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
-                    AuthZoneStackMethod::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
-                    AuthZoneStackMethod::Clear =&gt; <span class="self">self</span>.fixed_high,
-                    AuthZoneStackMethod::Drain =&gt; <span class="self">self</span>.fixed_high,
-                    AuthZoneStackMethod::AssertAccessRule =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackFn::Pop =&gt; <span class="self">self</span>.fixed_low,
+                    AuthZoneStackFn::Push =&gt; <span class="self">self</span>.fixed_low,
+                    AuthZoneStackFn::CreateProof =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: charge differently based on auth zone size and fungibility
+                    </span>AuthZoneStackFn::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackFn::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackFn::Clear =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackFn::Drain =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackFn::AssertAccessRule =&gt; <span class="self">self</span>.fixed_high,
                 }
             }
-            NativeMethod::EpochManager(epoch_manager_method) =&gt; <span class="kw">match </span>epoch_manager_method {
-                EpochManagerMethod::GetCurrentEpoch =&gt; <span class="self">self</span>.fixed_low,
-                EpochManagerMethod::SetEpoch =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::EpochManager(epoch_manager_method) =&gt; <span class="kw">match </span>epoch_manager_method {
+                EpochManagerFn::Create =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerFn::GetCurrentEpoch =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerFn::NextRound =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerFn::SetEpoch =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerFn::UpdateValidator =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerFn::CreateValidator =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Clock(clock_method) =&gt; <span class="kw">match </span>clock_method {
-                ClockMethod::SetCurrentTime =&gt; <span class="self">self</span>.fixed_low,
-                ClockMethod::GetCurrentTime =&gt; <span class="self">self</span>.fixed_high,
-                ClockMethod::CompareCurrentTime =&gt; <span class="self">self</span>.fixed_high,
+            NativeFn::Validator(validator_fn) =&gt; <span class="kw">match </span>validator_fn {
+                ValidatorFn::Register =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::Unregister =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::Stake =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::Unstake =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::ClaimXrd =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::UpdateKey =&gt; <span class="self">self</span>.fixed_low,
+                ValidatorFn::UpdateAcceptDelegatedStake =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Bucket(bucket_ident) =&gt; <span class="kw">match </span>bucket_ident {
-                BucketMethod::Take =&gt; <span class="self">self</span>.fixed_medium,
-                BucketMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                BucketMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
-                BucketMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
-                BucketMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                BucketMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                BucketMethod::CreateProof =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::Clock(clock_method) =&gt; <span class="kw">match </span>clock_method {
+                ClockFn::Create =&gt; <span class="self">self</span>.fixed_low,
+                ClockFn::SetCurrentTime =&gt; <span class="self">self</span>.fixed_low,
+                ClockFn::GetCurrentTime =&gt; <span class="self">self</span>.fixed_high,
+                ClockFn::CompareCurrentTime =&gt; <span class="self">self</span>.fixed_high,
             },
-            NativeMethod::Proof(proof_ident) =&gt; <span class="kw">match </span>proof_ident {
-                ProofMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                ProofMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_low,
-                ProofMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                ProofMethod::Clone =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::Identity(identity_fn) =&gt; <span class="kw">match </span>identity_fn {
+                IdentityFn::Create =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::ResourceManager(resource_manager_ident) =&gt; <span class="kw">match </span>resource_manager_ident {
-                ResourceManagerMethod::UpdateVaultAuth =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::LockAuth =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::CreateVault =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::CreateBucket =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::Mint =&gt; <span class="self">self</span>.fixed_high,
-                ResourceManagerMethod::GetResourceType =&gt; <span class="self">self</span>.fixed_low,
-                ResourceManagerMethod::GetTotalSupply =&gt; <span class="self">self</span>.fixed_low,
-                ResourceManagerMethod::UpdateNonFungibleData =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::NonFungibleExists =&gt; <span class="self">self</span>.fixed_low,
-                ResourceManagerMethod::GetNonFungible =&gt; <span class="self">self</span>.fixed_medium,
-                ResourceManagerMethod::Burn =&gt; <span class="self">self</span>.fixed_medium,
+            NativeFn::Bucket(bucket_ident) =&gt; <span class="kw">match </span>bucket_ident {
+                BucketFn::Take =&gt; <span class="self">self</span>.fixed_medium,
+                BucketFn::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                BucketFn::GetNonFungibleLocalIds =&gt; <span class="self">self</span>.fixed_medium,
+                BucketFn::Put =&gt; <span class="self">self</span>.fixed_medium,
+                BucketFn::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                BucketFn::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                BucketFn::CreateProof =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Worktop(worktop_ident) =&gt; <span class="kw">match </span>worktop_ident {
-                WorktopMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
-                WorktopMethod::TakeAmount =&gt; <span class="self">self</span>.fixed_medium,
-                WorktopMethod::TakeAll =&gt; <span class="self">self</span>.fixed_medium,
-                WorktopMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                WorktopMethod::AssertContains =&gt; <span class="self">self</span>.fixed_low,
-                WorktopMethod::AssertContainsAmount =&gt; <span class="self">self</span>.fixed_low,
-                WorktopMethod::AssertContainsNonFungibles =&gt; <span class="self">self</span>.fixed_low,
-                WorktopMethod::Drain =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::Proof(proof_ident) =&gt; <span class="kw">match </span>proof_ident {
+                ProofFn::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                ProofFn::GetNonFungibleLocalIds =&gt; <span class="self">self</span>.fixed_low,
+                ProofFn::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                ProofFn::Clone =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::AccessRulesChain(component_ident) =&gt; <span class="kw">match </span>component_ident {
-                AccessRulesChainMethod::AddAccessCheck =&gt; <span class="self">self</span>.fixed_low,
-                AccessRulesChainMethod::SetMethodAccessRule =&gt; <span class="self">self</span>.fixed_low,
-                AccessRulesChainMethod::SetMethodMutability =&gt; <span class="self">self</span>.fixed_low,
-                AccessRulesChainMethod::SetGroupAccessRule =&gt; <span class="self">self</span>.fixed_low,
-                AccessRulesChainMethod::SetGroupMutability =&gt; <span class="self">self</span>.fixed_low,
-                AccessRulesChainMethod::GetLength =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::ResourceManager(resource_manager_ident) =&gt; <span class="kw">match </span>resource_manager_ident {
+                ResourceManagerFn::CreateNonFungible =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                </span>ResourceManagerFn::CreateFungible =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                </span>ResourceManagerFn::CreateNonFungibleWithInitialSupply =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                </span>ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                </span>ResourceManagerFn::CreateFungibleWithInitialSupply =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                </span>ResourceManagerFn::BurnBucket =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerFn::UpdateVaultAuth =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::LockAuth =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::CreateVault =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::CreateBucket =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::MintNonFungible =&gt; <span class="self">self</span>.fixed_high,
+                ResourceManagerFn::MintUuidNonFungible =&gt; <span class="self">self</span>.fixed_high,
+                ResourceManagerFn::MintFungible =&gt; <span class="self">self</span>.fixed_high,
+                ResourceManagerFn::GetResourceType =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerFn::GetTotalSupply =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerFn::UpdateNonFungibleData =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::NonFungibleExists =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerFn::GetNonFungible =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerFn::Burn =&gt; <span class="self">self</span>.fixed_medium,
             },
-            NativeMethod::Metadata(metadata_method) =&gt; <span class="kw">match </span>metadata_method {
-                MetadataMethod::Set =&gt; <span class="self">self</span>.fixed_low,
-                MetadataMethod::Get =&gt; <span class="self">self</span>.fixed_low,
+            NativeFn::Worktop(worktop_ident) =&gt; <span class="kw">match </span>worktop_ident {
+                WorktopFn::Put =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopFn::TakeAmount =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopFn::TakeAll =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopFn::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopFn::AssertContains =&gt; <span class="self">self</span>.fixed_low,
+                WorktopFn::AssertContainsAmount =&gt; <span class="self">self</span>.fixed_low,
+                WorktopFn::AssertContainsNonFungibles =&gt; <span class="self">self</span>.fixed_low,
+                WorktopFn::Drain =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Component(method_ident) =&gt; <span class="kw">match </span>method_ident {
-                ComponentMethod::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
-                ComponentMethod::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            NativeFn::Logger(logger_method) =&gt; <span class="kw">match </span>logger_method {
+                LoggerFn::Log =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Package(method_ident) =&gt; <span class="kw">match </span>method_ident {
-                PackageMethod::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
-                PackageMethod::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            NativeFn::AccessRulesChain(component_ident) =&gt; <span class="kw">match </span>component_ident {
+                AccessRulesChainFn::AddAccessCheck =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainFn::SetMethodAccessRule =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainFn::SetMethodMutability =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainFn::SetGroupAccessRule =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainFn::SetGroupMutability =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainFn::GetLength =&gt; <span class="self">self</span>.fixed_low,
             },
-            NativeMethod::Vault(vault_ident) =&gt; {
+            NativeFn::Metadata(metadata_method) =&gt; <span class="kw">match </span>metadata_method {
+                MetadataFn::Set =&gt; <span class="self">self</span>.fixed_low,
+                MetadataFn::Get =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeFn::Component(method_ident) =&gt; <span class="kw">match </span>method_ident {
+                ComponentFn::Globalize =&gt; <span class="self">self</span>.fixed_high,
+                ComponentFn::GlobalizeWithOwner =&gt; <span class="self">self</span>.fixed_high,
+                ComponentFn::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
+                ComponentFn::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            },
+            NativeFn::Package(method_ident) =&gt; <span class="kw">match </span>method_ident {
+                PackageFn::Publish =&gt; <span class="self">self</span>.fixed_high,
+                PackageFn::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
+                PackageFn::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            },
+            NativeFn::Vault(vault_ident) =&gt; {
                 <span class="kw">match </span>vault_ident {
-                    VaultMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
-                    VaultMethod::Take =&gt; <span class="self">self</span>.fixed_medium, <span class="comment">// TODO: revisit this if vault is not loaded in full
-                    </span>VaultMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                    VaultMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                    VaultMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                    VaultMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
-                    VaultMethod::CreateProof =&gt; <span class="self">self</span>.fixed_high,
-                    VaultMethod::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
-                    VaultMethod::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
-                    VaultMethod::LockFee =&gt; <span class="self">self</span>.fixed_medium,
-                    VaultMethod::Recall =&gt; <span class="self">self</span>.fixed_low,
-                    VaultMethod::RecallNonFungibles =&gt; <span class="self">self</span>.fixed_low,
+                    VaultFn::Put =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultFn::Take =&gt; <span class="self">self</span>.fixed_medium, <span class="comment">// TODO: revisit this if vault is not loaded in full
+                    </span>VaultFn::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultFn::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                    VaultFn::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                    VaultFn::GetNonFungibleLocalIds =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultFn::CreateProof =&gt; <span class="self">self</span>.fixed_high,
+                    VaultFn::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
+                    VaultFn::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
+                    VaultFn::LockFee =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultFn::Recall =&gt; <span class="self">self</span>.fixed_low,
+                    VaultFn::RecallNonFungibles =&gt; <span class="self">self</span>.fixed_low,
                 }
             }
+            NativeFn::TransactionRuntime(ident) =&gt; <span class="kw">match </span>ident {
+                TransactionRuntimeFn::Get =&gt; <span class="self">self</span>.fixed_low,
+                TransactionRuntimeFn::GenerateUuid =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeFn::TransactionProcessor(transaction_processor_fn) =&gt; {
+                <span class="kw">match </span>transaction_processor_fn {
+                    TransactionProcessorFn::Run =&gt; <span class="self">self</span>.fixed_high,
+                }
+            }
+            NativeFn::AccessController(access_controller_fn) =&gt; <span class="kw">match </span>access_controller_fn {
+                AccessControllerFn::CreateGlobal =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::CreateProof =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::InitiateRecoveryAsPrimary =&gt; <span class="self">self</span>.fixed_low,
+                AccessControllerFn::InitiateRecoveryAsRecovery =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal =&gt; <span class="self">self</span>.fixed_low,
+                AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::TimedConfirmRecovery =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::CancelPrimaryRoleRecoveryProposal =&gt; <span class="self">self</span>.fixed_low,
+                AccessControllerFn::CancelRecoveryRoleRecoveryProposal =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::LockPrimaryRole =&gt; <span class="self">self</span>.fixed_low,
+                AccessControllerFn::UnlockPrimaryRole =&gt; <span class="self">self</span>.fixed_low,
+
+                AccessControllerFn::StopTimedRecovery =&gt; <span class="self">self</span>.fixed_low,
+            },
         }
     }
 
     <span class="kw">pub fn </span>system_api_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, entry: SystemApiCostingEntry) -&gt; u32 {
         <span class="kw">match </span>entry {
-            SystemApiCostingEntry::Invoke {
-                input_size,
-                value_count,
-                ..
-            } =&gt; <span class="self">self</span>.fixed_low + (<span class="number">5 </span>* input_size + <span class="number">10 </span>* value_count) <span class="kw">as </span>u32,
+            SystemApiCostingEntry::Invoke { input_size, .. } =&gt; {
+                <span class="self">self</span>.fixed_low + (<span class="number">5 </span>* input_size) <span class="kw">as </span>u32
+            }
 
             SystemApiCostingEntry::ReadOwnedNodes =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } =&gt; <span class="self">self</span>.fixed_medium,
-            SystemApiCostingEntry::GlobalizeNode { size } =&gt; <span class="self">self</span>.fixed_high + <span class="number">200 </span>* size,
-            SystemApiCostingEntry::BorrowNode { loaded, size } =&gt; {
-                <span class="kw">if </span>loaded {
-                    <span class="self">self</span>.fixed_high
-                } <span class="kw">else </span>{
-                    <span class="self">self</span>.fixed_low + <span class="number">100 </span>* size
-                }
-            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } =&gt; {
                 <span class="kw">if </span>loaded {
@@ -630,31 +559,14 @@
                     <span class="self">self</span>.fixed_low + <span class="number">100 </span>* size
                 }
             }
-            SystemApiCostingEntry::ReturnSubstate { size } =&gt; <span class="self">self</span>.fixed_low + <span class="number">100 </span>* size,
-
             SystemApiCostingEntry::LockSubstate { .. } =&gt; <span class="self">self</span>.fixed_low,
-            SystemApiCostingEntry::TakeSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::DropLock =&gt; <span class="self">self</span>.fixed_low,
 
-            SystemApiCostingEntry::ReadEpoch =&gt; <span class="self">self</span>.fixed_low,
-            SystemApiCostingEntry::ReadTransactionHash =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } =&gt; <span class="self">self</span>.fixed_low + size,
-            SystemApiCostingEntry::GenerateUuid =&gt; <span class="self">self</span>.fixed_low,
-            SystemApiCostingEntry::EmitLog { size } =&gt; <span class="self">self</span>.fixed_low + <span class="number">10 </span>* size,
-            SystemApiCostingEntry::EmitEvent {
-                native,
-                tracked,
-                size,
-            } =&gt; <span class="kw">match </span>(native, tracked) {
-                (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="self">self</span>.fixed_high,
-                (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="self">self</span>.fixed_low,
-                (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="self">self</span>.fixed_low + <span class="number">10 </span>* size,
-                (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">todo!</span>(<span class="string">&quot;No such events yet&quot;</span>),
-            },
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="radix_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

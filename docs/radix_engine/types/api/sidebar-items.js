@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["types","Data types used by Radix Engine API."],["wasm",""]],"trait":[["ActorApi",""],["ComponentApi",""],["EngineApi",""],["Invocation",""],["Invokable",""],["InvokableModel",""]]};

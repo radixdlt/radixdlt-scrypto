@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["ChildNames",""]],"struct":[["NovelTypeMetadata","This is the struct used in the Schema"],["TypeMetadata","This enables the type to be represented as eg JSON Also used to facilitate type reconstruction"]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["substates",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["module",""],["substates",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["executables",""],["substates",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["epoch_manager",""],["validator",""]]};

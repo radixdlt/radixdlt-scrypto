@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["IdAllocator","An ID allocator defines how identities are generated."]]};

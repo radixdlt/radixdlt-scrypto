@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["NoCustomTypeExtension",""],["NoCustomTypeKind",""],["NoCustomTypeValidation",""]],"type":[["BasicSchema",""],["BasicTypeKind",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["HardAuthRule",""],["HardCount",""],["HardDecimal",""],["HardProofRule",""],["HardProofRuleResourceList",""],["HardResourceOrNonFungible",""],["MethodAuthorization",""],["MethodAuthorizationError",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["HardAuthRule",""],["HardCount",""],["HardDecimal",""],["HardProofRule",""],["HardProofRuleResourceList",""],["HardResourceOrNonFungible",""],["MethodAuthorization","Authorization of a method call"],["MethodAuthorizationError",""]]};

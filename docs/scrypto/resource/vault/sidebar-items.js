@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["ScryptoVault",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["Vault",""]],"trait":[["ScryptoVault",""]]};

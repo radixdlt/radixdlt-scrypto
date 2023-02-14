@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"radix_engine":[["impl&lt;'a&gt; Invocation for <a class=\"struct\" href=\"radix_engine/model/transaction_processor/executables/struct.TransactionProcessorRunInvocation.html\" title=\"struct radix_engine::model::transaction_processor::executables::TransactionProcessorRunInvocation\">TransactionProcessorRunInvocation</a>&lt;'a&gt;"]]
+"radix_engine":[["impl&lt;'a&gt; Invocation for <a class=\"struct\" href=\"radix_engine/model/struct.TransactionProcessorRunInvocation.html\" title=\"struct radix_engine::model::TransactionProcessorRunInvocation\">TransactionProcessorRunInvocation</a>&lt;'a&gt;"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

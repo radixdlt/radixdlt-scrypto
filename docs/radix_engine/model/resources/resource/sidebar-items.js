@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["LockableResource","Resource that can be partially or completely locked for proofs."],["LockedAmountOrIds",""],["Resource",""],["ResourceContainerId",""],["ResourceOperationError",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["LockableResource","Resource that can be partially or completely locked for proofs."],["LockedAmountOrIds","The locked amount or non-fungible IDs."],["Resource","A raw record of resource persisted in the substate store"],["ResourceContainerId",""],["ResourceOperationError",""]]};

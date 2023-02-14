@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":[["Describe","The `Describe` trait allows a type to describe how to interpret and validate a corresponding SBOR payload."]]};

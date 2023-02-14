@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["LockFlags",""],["LockInfo",""]],"trait":[["ResolverApi",""],["SystemApi",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["LockFlags",""],["LockInfo",""]],"trait":[["ResolverApi",""],["SystemApi",""],["VmApi",""]]};

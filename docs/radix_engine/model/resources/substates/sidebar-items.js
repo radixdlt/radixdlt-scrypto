@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["bucket",""],["non_fungible",""],["proof",""],["resource_manager",""],["vault",""],["worktop",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["bucket",""],["non_fungible",""],["proof",""],["resource_manager",""],["vault",""]]};

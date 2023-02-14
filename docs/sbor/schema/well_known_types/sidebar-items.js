@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["CUSTOM_WELL_KNOWN_TYPE_START",""]],"fn":[["resolve_well_known_type",""]],"mod":[["basic_well_known_types",""]]};

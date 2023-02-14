@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["RoyaltyError",""]],"macro":[["preload_vault",""]],"struct":[["RoyaltyModule",""]]};

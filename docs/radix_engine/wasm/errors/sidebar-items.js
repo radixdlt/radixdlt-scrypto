@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["InvalidImport",""],["InvalidMemory",""],["InvalidTable",""],["PrepareError","Represents an error when validating a WASM file."],["WasmError",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["InvalidImport",""],["InvalidMemory",""],["InvalidTable",""],["PrepareError","Represents an error when validating a WASM file."],["WasmRuntimeError","Represents an error when invoking an export of a Scrypto module."]]};

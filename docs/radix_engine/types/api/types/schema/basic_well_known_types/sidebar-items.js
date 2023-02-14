@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["ANY_ID",""],["BOOL_ID",""],["BYTES_ID",""],["I128_ID",""],["I16_ID",""],["I32_ID",""],["I64_ID",""],["I8_ID",""],["STRING_ID",""],["U128_ID",""],["U16_ID",""],["U32_ID",""],["U64_ID",""],["U8_ID",""],["UNIT_ID",""]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["resolve_native_function",""],["resolve_native_method",""]]};

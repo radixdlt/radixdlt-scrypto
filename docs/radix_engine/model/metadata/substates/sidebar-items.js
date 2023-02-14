@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["MetadataSubstate",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["MetadataSubstate","A transient resource container."]]};

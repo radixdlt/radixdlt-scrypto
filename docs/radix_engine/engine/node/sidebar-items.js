@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["RENode",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["RENodeInit",""]]};

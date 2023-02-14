@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Buffer",""],["Slice",""]],"trait":[["SerializableInvocation",""]],"type":[["BufferId",""]]};

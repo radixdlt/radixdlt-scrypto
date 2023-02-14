@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["DateTimeError",""],["ParseUtcDateTimeError",""],["TimeComparisonOperator",""]],"mod":[["instant",""],["utc_date_time",""]],"struct":[["Instant","Represents a Unix timestamp, capturing the seconds since the unix epoch."],["UtcDateTime","A `UtcDateTime` represents a Unix timestamp on the UTC Calendar."]]};

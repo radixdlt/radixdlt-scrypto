@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ScryptoExecutor",""],["ScryptoExecutorToParsed",""],["ScryptoInterpreter",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["ScryptoExecutor",""],["ScryptoInterpreter",""]]};

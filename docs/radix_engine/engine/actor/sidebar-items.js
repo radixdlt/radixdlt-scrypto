@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["ExecutionMode","Execution mode"],["REActor",""],["ResolvedFunction",""],["ResolvedMethod",""]],"struct":[["ResolvedReceiver",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["ExecutionMode","Execution mode"]],"struct":[["ResolvedActor",""],["ResolvedReceiver","Resolved receiver including info whether receiver was derefed or not"]]};

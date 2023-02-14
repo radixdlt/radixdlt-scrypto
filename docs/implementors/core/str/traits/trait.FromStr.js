@@ -1,5 +1,5 @@
 (function() {var implementors = {
 "radix_engine":[],
 "sbor":[],
-"scrypto":[["impl <a class=\"trait\" href=\"scrypto/prelude/trait.FromStr.html\" title=\"trait scrypto::prelude::FromStr\">FromStr</a> for <a class=\"struct\" href=\"scrypto/component/component/struct.Component.html\" title=\"struct scrypto::component::component::Component\">Component</a>"],["impl&lt;K:&nbsp;<a class=\"trait\" href=\"scrypto/prelude/trait.ScryptoEncode.html\" title=\"trait scrypto::prelude::ScryptoEncode\">ScryptoEncode</a> + <a class=\"trait\" href=\"scrypto/prelude/trait.ScryptoDecode.html\" title=\"trait scrypto::prelude::ScryptoDecode\">ScryptoDecode</a>, V:&nbsp;<a class=\"trait\" href=\"scrypto/prelude/trait.ScryptoEncode.html\" title=\"trait scrypto::prelude::ScryptoEncode\">ScryptoEncode</a> + <a class=\"trait\" href=\"scrypto/prelude/trait.ScryptoDecode.html\" title=\"trait scrypto::prelude::ScryptoDecode\">ScryptoDecode</a>&gt; <a class=\"trait\" href=\"scrypto/prelude/trait.FromStr.html\" title=\"trait scrypto::prelude::FromStr\">FromStr</a> for <a class=\"struct\" href=\"scrypto/component/kv_store/struct.KeyValueStore.html\" title=\"struct scrypto::component::kv_store::KeyValueStore\">KeyValueStore</a>&lt;K, V&gt;"]]
+"scrypto":[]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

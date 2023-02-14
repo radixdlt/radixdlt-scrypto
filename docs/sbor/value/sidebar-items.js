@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["SborValue","Y is the CustomValue type. This is likely an enum, capturing all the custom values for the particular SBOR extension."]],"fn":[["traverse_any",""]],"trait":[["CustomValueVisitor",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["Value","Y is the CustomValue type. This is likely an enum, capturing all the custom values for the particular SBOR extension."]],"fn":[["traverse_any",""]],"mod":[["schema",""]],"trait":[["ValueVisitor",""]]};

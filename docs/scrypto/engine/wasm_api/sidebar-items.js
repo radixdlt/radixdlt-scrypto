@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["consume_buffer",""],["copy_buffer",""],["create_node",""],["drop_node",""],["forget_vec",""],["get_actor",""],["get_visible_nodes",""],["invoke",""],["invoke_method",""],["lock_substate",""],["read_substate",""],["unlock_substate",""],["write_substate",""]],"struct":[["Buffer",""],["Slice",""]],"type":[["BufferId",""]]};

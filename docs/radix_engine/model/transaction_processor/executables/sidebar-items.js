@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["TransactionProcessorError",""]],"struct":[["TransactionProcessor",""],["TransactionProcessorRunInvocation",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["InstructionOutput",""],["TransactionProcessorError",""]],"fn":[["instruction_get_update",""],["slice_to_global_references",""]],"struct":[["TransactionProcessor",""],["TransactionProcessorRunInvocation",""]],"trait":[["NativeOutput",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["executables",""],["resource",""],["substates",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["executables",""],["resource",""],["substates",""],["worktop",""]]};

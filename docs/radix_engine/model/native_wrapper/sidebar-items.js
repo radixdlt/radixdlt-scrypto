@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["invoke_call_table",""],["invoke_native_fn",""],["resolve_method",""]]};

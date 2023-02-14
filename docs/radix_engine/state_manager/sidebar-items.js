@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["commit_receipt",""],["staging",""],["state_diff",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["commit_receipt",""],["deprecated",""],["deprecated_staging",""],["execution_cache",""],["staging",""],["state_diff",""]]};

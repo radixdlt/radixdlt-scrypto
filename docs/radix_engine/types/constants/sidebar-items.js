@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["CUSTOM_TYPE_START","A custom type is an application defined type with special semantics."],["OPTION_VARIANT_NONE",""],["OPTION_VARIANT_SOME",""],["RESULT_VARIANT_ERR",""],["RESULT_VARIANT_OK",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["CUSTOM_VALUE_KIND_START","A custom type is an application defined type with special semantics."],["OPTION_VARIANT_NONE",""],["OPTION_VARIANT_SOME",""],["RESULT_VARIANT_ERR",""],["RESULT_VARIANT_OK",""]]};

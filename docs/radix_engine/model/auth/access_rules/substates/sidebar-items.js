@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["AccessRulesChainSubstate",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["AccessRulesChainSubstate","A transient resource container."]]};

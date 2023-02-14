@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["auth_module",""],["costing_module",""],["execution_trace",""],["logger_module",""],["module",""],["node_move_module",""],["royalty_module",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["auth_module",""],["module",""],["node_move_module",""]]};

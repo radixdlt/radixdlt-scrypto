@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":[["Decode","A data structure that can be decoded from a byte array using SBOR."]]};
