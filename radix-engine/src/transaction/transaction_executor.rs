@@ -173,17 +173,13 @@ where
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let auth_zone_params = transaction.auth_zone_params();
-        let pre_allocated_ids = transaction.pre_allocated_ids();
-        let instructions = transaction.instructions();
-        let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.debug {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction auth zone params: {:?}", auth_zone_params);
-            println!("Number of unique blobs: {}", blobs.len());
+            println!("Transaction auth zone params: {:?}", transaction.pre_allocated_ids());
+            println!("Number of unique blobs: {}", transaction.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -219,12 +215,15 @@ where
         // Invoke the function/method
         let track_receipt = {
             let mut id_allocator =
-                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
+                IdAllocator::new(
+                    transaction_hash.clone(),
+                    transaction.pre_allocated_ids().clone(),
+                );
 
             // Create kernel
             let modules = KernelModuleMixer::standard(
                 execution_config.debug,
-                transaction.transaction_hash().clone(),
+                transaction_hash.clone(),
                 transaction.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
@@ -245,14 +244,14 @@ where
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: match instructions {
+                instructions: match transaction.instructions() {
                     InstructionList::Basic(instructions) => {
                         Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
                     }
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
                     InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
-                blobs: Cow::Borrowed(blobs),
+                blobs: Cow::Borrowed(transaction.blobs()),
             });
 
             // Teardown
