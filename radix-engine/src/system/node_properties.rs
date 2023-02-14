@@ -56,7 +56,6 @@ impl VisibilityProperties {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         ..
                     })
-                    | FnIdentifier::Native(NativeFn::Bucket(..))
                     | FnIdentifier::Native(NativeFn::Worktop(..)) => true,
                     _ => false,
                 },
@@ -163,6 +162,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,

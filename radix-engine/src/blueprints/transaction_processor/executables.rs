@@ -13,10 +13,9 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{
-    ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi,
+    ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -265,15 +264,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientPackageApi<RuntimeError>
-            + ClientComponentApi<RuntimeError>
-            + ClientPackageApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;

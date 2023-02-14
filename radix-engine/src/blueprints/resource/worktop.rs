@@ -13,8 +13,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
@@ -290,7 +290,7 @@ impl Executor for WorktopAssertContainsInvocation {
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);

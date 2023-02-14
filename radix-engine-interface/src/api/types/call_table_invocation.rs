@@ -57,7 +57,6 @@ pub enum NativeInvocation {
     Component(ComponentInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
-    Bucket(BucketInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
 }
@@ -124,14 +123,6 @@ pub enum AuthZoneStackInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum BucketInvocation {
-    GetNonFungibleLocalIds(BucketGetNonFungibleLocalIdsInvocation),
-    GetAmount(BucketGetAmountInvocation),
-    GetResourceAddress(BucketGetResourceAddressInvocation),
-    CreateProof(BucketCreateProofInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WorktopInvocation {
     TakeAll(WorktopTakeAllInvocation),
     TakeAmount(WorktopTakeAmountInvocation),
@@ -170,12 +161,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-            },
-            NativeInvocation::Bucket(bucket_method) => match bucket_method {
-                BucketInvocation::CreateProof(..) => {}
-                BucketInvocation::GetNonFungibleLocalIds(..) => {}
-                BucketInvocation::GetAmount(..) => {}
-                BucketInvocation::GetResourceAddress(..) => {}
             },
             NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
                 AuthZoneStackInvocation::Pop(..) => {}
@@ -299,14 +284,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Bucket(i) => match i {
-                BucketInvocation::GetNonFungibleLocalIds(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                BucketInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Worktop(i) => match i {
                 WorktopInvocation::TakeAll(i) => (get_native_fn(i), scrypto_encode(i)),

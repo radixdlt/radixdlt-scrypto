@@ -56,29 +56,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::Bucket(bucket_fn) => match bucket_fn {
-            BucketFn::CreateProof => {
-                let invocation = scrypto_decode::<BucketCreateProofInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            BucketFn::GetNonFungibleLocalIds => {
-                let invocation =
-                    scrypto_decode::<BucketGetNonFungibleLocalIdsInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            BucketFn::GetAmount => {
-                let invocation = scrypto_decode::<BucketGetAmountInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            BucketFn::GetResourceAddress => {
-                let invocation = scrypto_decode::<BucketGetResourceAddressInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::AuthZoneStack(auth_zone_fn) => match auth_zone_fn {
             AuthZoneStackFn::Pop => {
                 let invocation = scrypto_decode::<AuthZonePopInvocation>(&invocation)

@@ -1,3 +1,4 @@
+mod bucket;
 mod executables;
 mod package;
 mod proof;

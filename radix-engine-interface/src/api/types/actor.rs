@@ -90,7 +90,6 @@ pub enum NativeFn {
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
     AuthZoneStack(AuthZoneStackFn),
-    Bucket(BucketFn),
     Worktop(WorktopFn),
     Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
@@ -106,7 +105,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Bucket(..) | NativeFn::Worktop(..) => NativePackage::Resource,
+            NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
@@ -283,33 +282,6 @@ pub enum AuthZoneStackFn {
 pub enum KeyValueStoreFn {
     Create,
     Insert,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum BucketFn {
-    GetNonFungibleLocalIds,
-    GetAmount,
-    GetResourceAddress,
-    CreateProof,
 }
 
 #[derive(

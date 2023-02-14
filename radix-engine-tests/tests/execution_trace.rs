@@ -260,7 +260,11 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
+            }),
             trace.origin
         );
 

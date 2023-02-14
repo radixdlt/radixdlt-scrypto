@@ -21,7 +21,9 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{Resource, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, BUCKET_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    Resource, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
+};
 
 impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
 where

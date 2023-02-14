@@ -125,6 +125,10 @@ impl FeeTable {
                 BUCKET_PUT_IDENT => self.fixed_low,
                 BUCKET_TAKE_IDENT => self.fixed_low,
                 BUCKET_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
+                BUCKET_GET_AMOUNT_IDENT => self.fixed_low,
+                BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
+                BUCKET_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
+                BUCKET_CREATE_PROOF_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match identifier.ident.as_str() {
@@ -223,12 +227,6 @@ impl FeeTable {
                     AuthZoneStackFn::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeFn::Bucket(bucket_ident) => match bucket_ident {
-                BucketFn::GetNonFungibleLocalIds => self.fixed_medium,
-                BucketFn::GetAmount => self.fixed_low,
-                BucketFn::GetResourceAddress => self.fixed_low,
-                BucketFn::CreateProof => self.fixed_low,
-            },
             NativeFn::Worktop(worktop_ident) => match worktop_ident {
                 WorktopFn::Put => self.fixed_medium,
                 WorktopFn::TakeAmount => self.fixed_medium,

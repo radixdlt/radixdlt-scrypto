@@ -1,9 +1,9 @@
 use crate::kernel::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, AuthZoneStackInvocation, BucketInvocation, ComponentInvocation,
-    LoggerInvocation, MetadataInvocation, NativeInvocation, PackageInvocation,
-    TransactionRuntimeInvocation, WorktopInvocation,
+    AccessRulesChainInvocation, AuthZoneStackInvocation, ComponentInvocation, LoggerInvocation,
+    MetadataInvocation, NativeInvocation, PackageInvocation, TransactionRuntimeInvocation,
+    WorktopInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -46,24 +46,6 @@ where
                 Ok(Box::new(rtn))
             }
             PackageInvocation::ClaimRoyalty(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::Bucket(bucket_invocation) => match bucket_invocation {
-            BucketInvocation::CreateProof(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            BucketInvocation::GetNonFungibleLocalIds(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            BucketInvocation::GetAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            BucketInvocation::GetResourceAddress(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
