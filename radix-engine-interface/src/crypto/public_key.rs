@@ -1,5 +1,30 @@
-use super::{EcdsaSecp256k1PublicKey, EddsaEd25519PublicKey};
 use crate::*;
+
+/// Represents an ECDSA public key.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub struct EcdsaSecp256k1PublicKey(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
+
+impl EcdsaSecp256k1PublicKey {
+    pub const LENGTH: usize = 33;
+}
+
+/// Represents an ED25519 public key.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub struct EddsaEd25519PublicKey(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
+
+impl EddsaEd25519PublicKey {
+    pub const LENGTH: usize = 32;
+}
 
 /// Represents any natively supported public key.
 #[cfg_attr(
