@@ -1,10 +1,4 @@
-use radix_engine_interface::api::types::{
-    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
-    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
-};
+use radix_engine_interface::api::types::*;
 
 pub enum SystemApiCostingEntry {
     /*
@@ -12,7 +6,6 @@ pub enum SystemApiCostingEntry {
      */
     Invoke {
         input_size: u32,
-        value_count: u32,
     },
 
     /*
@@ -27,15 +20,6 @@ pub enum SystemApiCostingEntry {
     DropNode {
         size: u32,
     },
-    /// Globalizes a RENode.
-    GlobalizeNode {
-        size: u32,
-    },
-    /// Borrows a RENode.
-    BorrowNode {
-        loaded: bool,
-        size: u32,
-    },
 
     /*
      * Substate
@@ -43,14 +27,6 @@ pub enum SystemApiCostingEntry {
     /// Borrows a substate
     BorrowSubstate {
         loaded: bool,
-        size: u32,
-    },
-    /// Returns a substate.
-    ReturnSubstate {
-        size: u32,
-    },
-    /// Takes a substate
-    TakeSubstate {
         size: u32,
     },
     LockSubstate {
@@ -64,38 +40,20 @@ pub enum SystemApiCostingEntry {
     WriteSubstate {
         size: u32,
     },
-
     DropLock,
 
     /*
      * Misc
      */
-    /// Reads the current epoch.
-    ReadEpoch,
-    /// Reads the transaction hash.
-    ReadTransactionHash,
     /// Reads blob in transaction
     ReadBlob {
-        size: u32,
-    },
-    /// Generates a UUID.
-    GenerateUuid,
-    /// Emits a log.
-    EmitLog {
-        size: u32,
-    },
-
-    EmitEvent {
-        native: bool,
-        tracked: bool,
         size: u32,
     },
 }
 
 pub struct FeeTable {
     tx_base_fee: u32,
-    tx_manifest_decoding_per_byte: u32,
-    tx_manifest_verification_per_byte: u32,
+    tx_payload_cost_per_byte: u32,
     tx_signature_verification_per_sig: u32,
     tx_blob_price_per_byte: u32,
     fixed_low: u32,
@@ -107,15 +65,14 @@ pub struct FeeTable {
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_base_fee: 10_000,
-            tx_manifest_decoding_per_byte: 3,
-            tx_manifest_verification_per_byte: 1,
-            tx_signature_verification_per_sig: 3750,
-            tx_blob_price_per_byte: 1,
-            wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
-            fixed_low: 100,
-            fixed_medium: 500,
-            fixed_high: 1000,
+            tx_base_fee: 50_000,
+            tx_payload_cost_per_byte: 5,
+            tx_signature_verification_per_sig: 100_000,
+            tx_blob_price_per_byte: 5,
+            wasm_instantiation_per_byte: 1, // TODO: Re-enable WASM instantiation cost if it's unavoidable
+            fixed_low: 500,
+            fixed_medium: 2500,
+            fixed_high: 5000,
         }
     }
 
@@ -123,12 +80,8 @@ impl FeeTable {
         self.tx_base_fee
     }
 
-    pub fn tx_manifest_decoding_per_byte(&self) -> u32 {
-        self.tx_manifest_decoding_per_byte
-    }
-
-    pub fn tx_manifest_verification_per_byte(&self) -> u32 {
-        self.tx_manifest_verification_per_byte
+    pub fn tx_payload_cost_per_byte(&self) -> u32 {
+        self.tx_payload_cost_per_byte
     }
 
     pub fn tx_signature_verification_per_sig(&self) -> u32 {
@@ -143,156 +96,176 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn run_native_function_cost(&self, native_function: &NativeFunction) -> u32 {
-        match native_function {
-            NativeFunction::Component(component_func) => match component_func {
-                ComponentFunction::Globalize => self.fixed_high,
-                ComponentFunction::GlobalizeWithOwner => self.fixed_high,
-            },
-            NativeFunction::TransactionProcessor(transaction_processor_fn) => {
-                match transaction_processor_fn {
-                    TransactionProcessorFunction::Run => self.fixed_high,
-                }
-            }
-            NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::Publish => self.fixed_low,
-                PackageFunction::PublishWithOwner => self.fixed_low,
-            },
-            NativeFunction::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
-                EpochManagerFunction::Create => self.fixed_low,
-            },
-            NativeFunction::Clock(clock_fn) => match clock_fn {
-                ClockFunction::Create => self.fixed_low,
-            },
-            NativeFunction::ResourceManager(resource_manager_ident) => {
-                match resource_manager_ident {
-                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
-                    ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
-                    ResourceManagerFunction::BurnBucket => self.fixed_low,
-                }
-            }
-        }
-    }
-
-    pub fn run_native_method_cost(&self, native_method: &NativeMethod) -> u32 {
-        match native_method {
-            NativeMethod::AuthZoneStack(auth_zone_ident) => {
+    pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
+        match native_fn {
+            NativeFn::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneStackMethod::Pop => self.fixed_low,
-                    AuthZoneStackMethod::Push => self.fixed_low,
-                    AuthZoneStackMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneStackMethod::CreateProofByAmount => self.fixed_high,
-                    AuthZoneStackMethod::CreateProofByIds => self.fixed_high,
-                    AuthZoneStackMethod::Clear => self.fixed_high,
-                    AuthZoneStackMethod::Drain => self.fixed_high,
-                    AuthZoneStackMethod::AssertAccessRule => self.fixed_high,
+                    AuthZoneStackFn::Pop => self.fixed_low,
+                    AuthZoneStackFn::Push => self.fixed_low,
+                    AuthZoneStackFn::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                    AuthZoneStackFn::CreateProofByAmount => self.fixed_high,
+                    AuthZoneStackFn::CreateProofByIds => self.fixed_high,
+                    AuthZoneStackFn::Clear => self.fixed_high,
+                    AuthZoneStackFn::Drain => self.fixed_high,
+                    AuthZoneStackFn::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeMethod::EpochManager(epoch_manager_method) => match epoch_manager_method {
-                EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
-                EpochManagerMethod::SetEpoch => self.fixed_low,
+            NativeFn::EpochManager(epoch_manager_method) => match epoch_manager_method {
+                EpochManagerFn::Create => self.fixed_low,
+                EpochManagerFn::GetCurrentEpoch => self.fixed_low,
+                EpochManagerFn::NextRound => self.fixed_low,
+                EpochManagerFn::SetEpoch => self.fixed_low,
+                EpochManagerFn::UpdateValidator => self.fixed_low,
+                EpochManagerFn::CreateValidator => self.fixed_low,
             },
-            NativeMethod::Clock(clock_method) => match clock_method {
-                ClockMethod::SetCurrentTime => self.fixed_low,
-                ClockMethod::GetCurrentTime => self.fixed_high,
-                ClockMethod::CompareCurrentTime => self.fixed_high,
+            NativeFn::Validator(validator_fn) => match validator_fn {
+                ValidatorFn::Register => self.fixed_low,
+                ValidatorFn::Unregister => self.fixed_low,
+                ValidatorFn::Stake => self.fixed_low,
+                ValidatorFn::Unstake => self.fixed_low,
+                ValidatorFn::ClaimXrd => self.fixed_low,
+                ValidatorFn::UpdateKey => self.fixed_low,
+                ValidatorFn::UpdateAcceptDelegatedStake => self.fixed_low,
             },
-            NativeMethod::Bucket(bucket_ident) => match bucket_ident {
-                BucketMethod::Take => self.fixed_medium,
-                BucketMethod::TakeNonFungibles => self.fixed_medium,
-                BucketMethod::GetNonFungibleIds => self.fixed_medium,
-                BucketMethod::Put => self.fixed_medium,
-                BucketMethod::GetAmount => self.fixed_low,
-                BucketMethod::GetResourceAddress => self.fixed_low,
-                BucketMethod::CreateProof => self.fixed_low,
+            NativeFn::Clock(clock_method) => match clock_method {
+                ClockFn::Create => self.fixed_low,
+                ClockFn::SetCurrentTime => self.fixed_low,
+                ClockFn::GetCurrentTime => self.fixed_high,
+                ClockFn::CompareCurrentTime => self.fixed_high,
             },
-            NativeMethod::Proof(proof_ident) => match proof_ident {
-                ProofMethod::GetAmount => self.fixed_low,
-                ProofMethod::GetNonFungibleIds => self.fixed_low,
-                ProofMethod::GetResourceAddress => self.fixed_low,
-                ProofMethod::Clone => self.fixed_low,
+            NativeFn::Identity(identity_fn) => match identity_fn {
+                IdentityFn::Create => self.fixed_low,
             },
-            NativeMethod::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerMethod::UpdateVaultAuth => self.fixed_medium,
-                ResourceManagerMethod::LockAuth => self.fixed_medium,
-                ResourceManagerMethod::CreateVault => self.fixed_medium,
-                ResourceManagerMethod::CreateBucket => self.fixed_medium,
-                ResourceManagerMethod::Mint => self.fixed_high,
-                ResourceManagerMethod::GetResourceType => self.fixed_low,
-                ResourceManagerMethod::GetTotalSupply => self.fixed_low,
-                ResourceManagerMethod::UpdateNonFungibleData => self.fixed_medium,
-                ResourceManagerMethod::NonFungibleExists => self.fixed_low,
-                ResourceManagerMethod::GetNonFungible => self.fixed_medium,
-                ResourceManagerMethod::Burn => self.fixed_medium,
+            NativeFn::Bucket(bucket_ident) => match bucket_ident {
+                BucketFn::Take => self.fixed_medium,
+                BucketFn::TakeNonFungibles => self.fixed_medium,
+                BucketFn::GetNonFungibleLocalIds => self.fixed_medium,
+                BucketFn::Put => self.fixed_medium,
+                BucketFn::GetAmount => self.fixed_low,
+                BucketFn::GetResourceAddress => self.fixed_low,
+                BucketFn::CreateProof => self.fixed_low,
             },
-            NativeMethod::Worktop(worktop_ident) => match worktop_ident {
-                WorktopMethod::Put => self.fixed_medium,
-                WorktopMethod::TakeAmount => self.fixed_medium,
-                WorktopMethod::TakeAll => self.fixed_medium,
-                WorktopMethod::TakeNonFungibles => self.fixed_medium,
-                WorktopMethod::AssertContains => self.fixed_low,
-                WorktopMethod::AssertContainsAmount => self.fixed_low,
-                WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
-                WorktopMethod::Drain => self.fixed_low,
+            NativeFn::Proof(proof_ident) => match proof_ident {
+                ProofFn::GetAmount => self.fixed_low,
+                ProofFn::GetNonFungibleLocalIds => self.fixed_low,
+                ProofFn::GetResourceAddress => self.fixed_low,
+                ProofFn::Clone => self.fixed_low,
             },
-            NativeMethod::AccessRulesChain(component_ident) => match component_ident {
-                AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
-                AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,
-                AccessRulesChainMethod::SetMethodMutability => self.fixed_low,
-                AccessRulesChainMethod::SetGroupAccessRule => self.fixed_low,
-                AccessRulesChainMethod::SetGroupMutability => self.fixed_low,
-                AccessRulesChainMethod::GetLength => self.fixed_low,
+            NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
+                ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::BurnBucket => self.fixed_low,
+                ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
+                ResourceManagerFn::LockAuth => self.fixed_medium,
+                ResourceManagerFn::CreateVault => self.fixed_medium,
+                ResourceManagerFn::CreateBucket => self.fixed_medium,
+                ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintUuidNonFungible => self.fixed_high,
+                ResourceManagerFn::MintFungible => self.fixed_high,
+                ResourceManagerFn::GetResourceType => self.fixed_low,
+                ResourceManagerFn::GetTotalSupply => self.fixed_low,
+                ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,
+                ResourceManagerFn::NonFungibleExists => self.fixed_low,
+                ResourceManagerFn::GetNonFungible => self.fixed_medium,
+                ResourceManagerFn::Burn => self.fixed_medium,
             },
-            NativeMethod::Metadata(metadata_method) => match metadata_method {
-                MetadataMethod::Set => self.fixed_low,
-                MetadataMethod::Get => self.fixed_low,
+            NativeFn::Worktop(worktop_ident) => match worktop_ident {
+                WorktopFn::Put => self.fixed_medium,
+                WorktopFn::TakeAmount => self.fixed_medium,
+                WorktopFn::TakeAll => self.fixed_medium,
+                WorktopFn::TakeNonFungibles => self.fixed_medium,
+                WorktopFn::AssertContains => self.fixed_low,
+                WorktopFn::AssertContainsAmount => self.fixed_low,
+                WorktopFn::AssertContainsNonFungibles => self.fixed_low,
+                WorktopFn::Drain => self.fixed_low,
             },
-            NativeMethod::Component(method_ident) => match method_ident {
-                ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
-                ComponentMethod::ClaimRoyalty => self.fixed_medium,
+            NativeFn::Logger(logger_method) => match logger_method {
+                LoggerFn::Log => self.fixed_low,
             },
-            NativeMethod::Package(method_ident) => match method_ident {
-                PackageMethod::SetRoyaltyConfig => self.fixed_medium,
-                PackageMethod::ClaimRoyalty => self.fixed_medium,
+            NativeFn::AccessRulesChain(component_ident) => match component_ident {
+                AccessRulesChainFn::AddAccessCheck => self.fixed_low,
+                AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
+                AccessRulesChainFn::SetMethodMutability => self.fixed_low,
+                AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
+                AccessRulesChainFn::SetGroupMutability => self.fixed_low,
+                AccessRulesChainFn::GetLength => self.fixed_low,
             },
-            NativeMethod::Vault(vault_ident) => {
+            NativeFn::Metadata(metadata_method) => match metadata_method {
+                MetadataFn::Set => self.fixed_low,
+                MetadataFn::Get => self.fixed_low,
+            },
+            NativeFn::Component(method_ident) => match method_ident {
+                ComponentFn::Globalize => self.fixed_high,
+                ComponentFn::GlobalizeWithOwner => self.fixed_high,
+                ComponentFn::SetRoyaltyConfig => self.fixed_medium,
+                ComponentFn::ClaimRoyalty => self.fixed_medium,
+            },
+            NativeFn::Package(method_ident) => match method_ident {
+                PackageFn::Publish => self.fixed_high,
+                PackageFn::SetRoyaltyConfig => self.fixed_medium,
+                PackageFn::ClaimRoyalty => self.fixed_medium,
+            },
+            NativeFn::Vault(vault_ident) => {
                 match vault_ident {
-                    VaultMethod::Put => self.fixed_medium,
-                    VaultMethod::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                    VaultMethod::TakeNonFungibles => self.fixed_medium,
-                    VaultMethod::GetAmount => self.fixed_low,
-                    VaultMethod::GetResourceAddress => self.fixed_low,
-                    VaultMethod::GetNonFungibleIds => self.fixed_medium,
-                    VaultMethod::CreateProof => self.fixed_high,
-                    VaultMethod::CreateProofByAmount => self.fixed_high,
-                    VaultMethod::CreateProofByIds => self.fixed_high,
-                    VaultMethod::LockFee => self.fixed_medium,
-                    VaultMethod::Recall => self.fixed_low,
-                    VaultMethod::RecallNonFungibles => self.fixed_low,
+                    VaultFn::Put => self.fixed_medium,
+                    VaultFn::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                    VaultFn::TakeNonFungibles => self.fixed_medium,
+                    VaultFn::GetAmount => self.fixed_low,
+                    VaultFn::GetResourceAddress => self.fixed_low,
+                    VaultFn::GetNonFungibleLocalIds => self.fixed_medium,
+                    VaultFn::CreateProof => self.fixed_high,
+                    VaultFn::CreateProofByAmount => self.fixed_high,
+                    VaultFn::CreateProofByIds => self.fixed_high,
+                    VaultFn::LockFee => self.fixed_medium,
+                    VaultFn::Recall => self.fixed_low,
+                    VaultFn::RecallNonFungibles => self.fixed_low,
                 }
             }
+            NativeFn::TransactionRuntime(ident) => match ident {
+                TransactionRuntimeFn::Get => self.fixed_low,
+                TransactionRuntimeFn::GenerateUuid => self.fixed_low,
+            },
+            NativeFn::TransactionProcessor(transaction_processor_fn) => {
+                match transaction_processor_fn {
+                    TransactionProcessorFn::Run => self.fixed_high,
+                }
+            }
+            NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
+                AccessControllerFn::CreateGlobal => self.fixed_low,
+
+                AccessControllerFn::CreateProof => self.fixed_low,
+
+                AccessControllerFn::InitiateRecoveryAsPrimary => self.fixed_low,
+                AccessControllerFn::InitiateRecoveryAsRecovery => self.fixed_low,
+
+                AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal => self.fixed_low,
+                AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal => self.fixed_low,
+
+                AccessControllerFn::TimedConfirmRecovery => self.fixed_low,
+
+                AccessControllerFn::CancelPrimaryRoleRecoveryProposal => self.fixed_low,
+                AccessControllerFn::CancelRecoveryRoleRecoveryProposal => self.fixed_low,
+
+                AccessControllerFn::LockPrimaryRole => self.fixed_low,
+                AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
+
+                AccessControllerFn::StopTimedRecovery => self.fixed_low,
+            },
         }
     }
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke {
-                input_size,
-                value_count,
-                ..
-            } => self.fixed_low + (5 * input_size + 10 * value_count) as u32,
+            SystemApiCostingEntry::Invoke { input_size, .. } => {
+                self.fixed_low + (5 * input_size) as u32
+            }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
-            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowNode { loaded, size } => {
-                if loaded {
-                    self.fixed_high
-                } else {
-                    self.fixed_low + 100 * size
-                }
-            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
@@ -301,29 +274,12 @@ impl FeeTable {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
-
             SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadEpoch => self.fixed_low,
-            SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::GenerateUuid => self.fixed_low,
-            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::EmitEvent {
-                native,
-                tracked,
-                size,
-            } => match (native, tracked) {
-                (true, true) => self.fixed_high,
-                (true, false) => self.fixed_low,
-                (false, true) => self.fixed_low + 10 * size,
-                (false, false) => todo!("No such events yet"),
-            },
         }
     }
 }

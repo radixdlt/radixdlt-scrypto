@@ -1,21 +1,22 @@
 [package]
 name = "radix-engine-stores"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-radix-engine = { path = "../radix-engine" }
+radix-engine = { path = "../radix-engine", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 rocksdb = { version = "0.19.0", optional = true }
+itertools = { version = "0.10.3", default-features = false }
 
 [features]
 default = ["std"]
 std = [
-    "sbor/std", "radix-engine-interface/std", 
+    "sbor/std", "radix-engine/std", "radix-engine-interface/std", "itertools/use_std"
 ]
 alloc = [
-    "sbor/alloc","radix-engine-interface/alloc", 
+    "sbor/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "itertools/use_alloc"
 ]
 
 rocksdb = ["dep:rocksdb"]

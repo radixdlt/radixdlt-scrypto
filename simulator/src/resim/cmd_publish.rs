@@ -16,34 +16,31 @@ use crate::utils::*;
 #[derive(Parser, Debug)]
 pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
-    path: PathBuf,
+    pub path: PathBuf,
 
     /// The owner badge (hex value).
     #[clap(long)]
-    owner_badge: Option<String>,
+    pub owner_badge: Option<SimulatorNonFungibleGlobalId>,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
-    package_address: Option<SimulatorPackageAddress>,
+    pub package_address: Option<SimulatorPackageAddress>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let network = NetworkDefinition::simulator();
-        let bech32_decoder = Bech32Decoder::new(&network);
-
         // Load wasm code
         let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
@@ -53,14 +50,16 @@ impl Publish {
             (code_path, abi_path)
         };
 
-        let code = fs::read(&code_path).map_err(Error::IOError)?;
+        let code = fs::read(code_path).map_err(Error::IOError)?;
         let abi = scrypto_decode(
             &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
         )
         .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let mut substate_store =
+                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let global: GlobalAddressSubstate = substate_store
                 .get_substate(&SubstateId(
@@ -99,19 +98,15 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let owner_badge = self
+            let owner_badge_non_fungible_global_id = self
                 .owner_badge
-                .as_ref()
-                .ok_or(Error::OwnerBadgeNotSpecified)?;
-            let owner_badge_nf_address = NonFungibleAddress::try_from_canonical_combined_string(
-                &bech32_decoder,
-                owner_badge,
-            )
-            .map_err(Error::NonFungibleAddressError)?;
+                .clone()
+                .map(|owner_badge| owner_badge.0)
+                .unwrap_or(get_default_owner_badge()?);
 
-            let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, owner_badge_nf_address)
+                .publish_package_with_owner(code, abi, owner_badge_non_fungible_global_id)
                 .build();
 
             let receipt = handle_manifest(
@@ -120,7 +115,6 @@ impl Publish {
                 &self.network,
                 &self.manifest,
                 self.trace,
-                false,
                 false,
                 out,
             )?;

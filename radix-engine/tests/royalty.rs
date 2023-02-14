@@ -1,9 +1,6 @@
 use radix_engine::fee::u128_to_decimal;
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -11,8 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_component_royalty() {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -20,7 +16,7 @@ fn test_component_royalty() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .call_function(
                 package_address,
@@ -29,14 +25,13 @@ fn test_component_royalty() {
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress =
-        scrypto_decode(&receipt.expect_commit_success()[1]).unwrap();
+    let component_address: ComponentAddress = receipt.output(1);
 
     // Call the paid method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
@@ -51,7 +46,7 @@ fn test_component_royalty() {
 }
 
 fn set_up_package_and_component() -> (
-    TypedInMemorySubstateStore,
+    TestRunner,
     ComponentAddress,
     EcdsaSecp256k1PublicKey,
     PackageAddress,
@@ -59,19 +54,19 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
         test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .create_proof_from_account(account, owner_badge_resource)
             .call_function(
@@ -81,13 +76,13 @@ fn set_up_package_and_component() -> (
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .call_function(
                 package_address,
@@ -96,13 +91,12 @@ fn set_up_package_and_component() -> (
                 args!(),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress =
-        scrypto_decode(&receipt.expect_commit_success()[1]).unwrap();
+    let component_address: ComponentAddress = receipt.output(1);
 
     (
-        store,
+        test_runner,
         account,
         public_key,
         package_address,
@@ -114,21 +108,20 @@ fn set_up_package_and_component() -> (
 #[test]
 fn test_package_royalty() {
     let (
-        mut store,
+        mut test_runner,
         account,
         public_key,
         _package_address,
         component_address,
         _owner_badge_resource,
     ) = set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_success();
@@ -140,16 +133,21 @@ fn test_package_royalty() {
 
 #[test]
 fn test_royalty_accumulation_when_success() {
-    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        _owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_success();
@@ -165,16 +163,21 @@ fn test_royalty_accumulation_when_success() {
 
 #[test]
 fn test_royalty_accumulation_when_failure() {
-    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        _owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method_panic", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     receipt.expect_commit_failure();
@@ -190,16 +193,21 @@ fn test_royalty_accumulation_when_failure() {
 
 #[test]
 fn test_claim_royalty() {
-    let (mut store, account, public_key, package_address, component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
     receipt.expect_commit_success();
@@ -214,7 +222,7 @@ fn test_claim_royalty() {
 
     // Claim package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .call_function(
@@ -226,16 +234,16 @@ fn test_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 
     // Claim component royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_function(
                 package_address,
@@ -246,10 +254,10 @@ fn test_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
 

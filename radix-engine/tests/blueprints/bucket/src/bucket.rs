@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod bucket_test {
     struct BucketTest {
         vault: Vault,
     }
@@ -10,7 +11,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(amount);
+                .mint_initial_supply(amount);
             let proof1 = bucket.create_proof();
             let proof2 = proof1.clone();
             proof1.drop();
@@ -47,14 +48,14 @@ blueprint! {
         pub fn test_restricted_transfer() -> Vec<Bucket> {
             let auth_bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .restrict_withdraw(
                     rule!(require(auth_bucket.resource_address())),
                     rule!(deny_all),
                 )
-                .initial_supply(5);
+                .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
             let token_bucket = auth_bucket.authorize(|| vault.take(1));
@@ -66,11 +67,11 @@ blueprint! {
         pub fn test_burn() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .initial_supply(5);
+                .mint_initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
         }
@@ -78,11 +79,11 @@ blueprint! {
         pub fn test_burn_freely() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burnable(rule!(allow_all), rule!(deny_all))
-                .initial_supply(5);
+                .mint_initial_supply(5);
             let bucket2 = bucket1.take(2);
             badge.authorize(|| bucket1.burn());
             bucket2.burn();
@@ -100,7 +101,7 @@ blueprint! {
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_address =
-                ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID).no_initial_supply();
+                ResourceBuilder::new_uuid_non_fungible().create_with_no_initial_supply();
             Bucket::new(resource_address)
         }
     }

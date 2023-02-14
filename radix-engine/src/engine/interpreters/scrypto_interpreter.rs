@@ -1,60 +1,80 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{EngineApi, InvokableModel, LoggerApi};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
+use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
+use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
-pub struct ScryptoExecutorToParsed<I: WasmInstance> {
-    instance: I,
-    args: IndexedScryptoValue,
+pub struct ScryptoExecutor {
+    pub package_address: PackageAddress,
+    pub export_name: String,
+    pub component_id: Option<ComponentId>,
+    pub args: ScryptoValue,
 }
 
-impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
-    type Output = IndexedScryptoValue;
+impl Executor for ScryptoExecutor {
+    type Output = ScryptoValue;
 
-    fn execute<Y>(
-        mut self,
-        api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>,
+            + ActorApi<RuntimeError>
+            + ComponentApi<RuntimeError>
+            + VmApi<W>,
+        W: WasmEngine,
     {
-        let (export_name, return_type) = match api.get_actor() {
-            REActor::Method(
-                ResolvedMethod::Scrypto {
-                    export_name,
-                    return_type,
-                    ..
-                },
-                ResolvedReceiver {
-                    receiver: RENodeId::Component(..),
-                    ..
-                },
-            ) => (export_name.to_string(), return_type.clone()),
-            REActor::Function(ResolvedFunction::Scrypto {
-                export_name,
-                return_type,
-                ..
-            }) => (export_name.to_string(), return_type.clone()),
+        let package = {
+            let handle = api.lock_substate(
+                RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                SubstateOffset::Package(PackageOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.get_ref(handle)?;
+            let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+            api.drop_lock(handle)?;
 
-            _ => panic!("Should not get here."),
+            package
         };
+
+        let fn_abi = package
+            .fn_abi(&self.export_name)
+            .expect("TODO: Remove this expect");
+        let rtn_type = fn_abi.output.clone();
+
+        // Emit event
+        api.on_wasm_instantiation(package.code())?;
+        let mut instance = api
+            .vm()
+            .create_instance(self.package_address, &package.code);
 
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
-            self.instance
-                .invoke_export(&export_name, &self.args, &mut runtime)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?
-        };
 
-        let rtn = if !match_schema_with_value(&return_type, &output.dom) {
+            let mut input = Vec::new();
+            if let Some(component_id) = self.component_id {
+                input.push(
+                    runtime
+                        .allocate_buffer(
+                            scrypto_encode(&component_id).expect("Failed to encode component id"),
+                        )
+                        .expect("Failed to allocate buffer"),
+                );
+            }
+            input.push(
+                runtime
+                    .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
+                    .expect("Failed to allocate buffer"),
+            );
+
+            instance.invoke_export(&self.export_name, input, &mut runtime)?
+        };
+        let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
+        })?;
+
+        let rtn = if !match_schema_with_value(&rtn_type, output.as_value()) {
             Err(RuntimeError::KernelError(
                 KernelError::InvalidScryptoFnOutput,
             ))
@@ -65,36 +85,16 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
                     .into_iter()
                     .map(|a| RENodeId::Global(a))
                     .collect(),
-                nodes_to_move: output.node_ids().into_iter().collect(),
+                nodes_to_move: output
+                    .owned_node_ids()
+                    .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
+                    .into_iter()
+                    .collect(),
             };
-            Ok((output, update))
+            Ok((output.into(), update))
         };
 
         rtn
-    }
-}
-
-pub struct ScryptoExecutor<I: WasmInstance> {
-    instance: I,
-    args: IndexedScryptoValue,
-}
-
-impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
-    type Output = Vec<u8>;
-
-    fn execute<Y>(self, api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>,
-    {
-        ScryptoExecutorToParsed {
-            instance: self.instance,
-            args: self.args,
-        }
-        .execute(api)
-        .map(|(indexed, update)| (indexed.raw, update))
     }
 }
 
@@ -106,35 +106,22 @@ pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_metering_config: WasmMeteringConfig,
 }
 
-impl<W: WasmEngine> ScryptoInterpreter<W> {
-    pub fn create_executor(
-        &self,
-        code: &[u8],
-        args: IndexedScryptoValue,
-    ) -> ScryptoExecutor<W::WasmInstance> {
-        let instrumented_code = self
-            .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
-        let instance = self.wasm_engine.instantiate(&instrumented_code);
-        ScryptoExecutor {
-            instance,
-            args: args,
+impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
+    fn default() -> Self {
+        Self {
+            wasm_engine: W::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::default(),
         }
     }
+}
 
-    pub fn create_executor_to_parsed(
-        &self,
-        code: &[u8],
-        args: IndexedScryptoValue,
-    ) -> ScryptoExecutorToParsed<W::WasmInstance> {
-        let instrumented_code = self
-            .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
-        let instance = self.wasm_engine.instantiate(&instrumented_code);
-        ScryptoExecutorToParsed {
-            instance,
-            args: args,
-        }
+impl<W: WasmEngine> ScryptoInterpreter<W> {
+    pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> W::WasmInstance {
+        let instrumented_code =
+            self.wasm_instrumenter
+                .instrument(package_address, code, self.wasm_metering_config);
+        self.wasm_engine.instantiate(&instrumented_code)
     }
 }
 

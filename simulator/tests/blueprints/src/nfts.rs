@@ -6,36 +6,28 @@ struct Car {
     manufacturer: String,
 }
 
-blueprint! {
+#[blueprint]
+mod foo {
     struct Foo {}
 
     impl Foo {
         pub fn nfts() -> Bucket {
-            ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
+            ResourceBuilder::new_uuid_non_fungible()
                 .metadata("name", "Cars!")
                 .metadata("description", "Fast Cars")
-                .initial_supply(vec![
-                    (
-                        NonFungibleId::random(),
-                        Car {
-                            manufacturer: "Ford".to_string(),
-                            name: "Raptor".to_string(),
-                        },
-                    ),
-                    (
-                        NonFungibleId::random(),
-                        Car {
-                            manufacturer: "Toyota".to_string(),
-                            name: "Camry".to_string(),
-                        },
-                    ),
-                    (
-                        NonFungibleId::random(),
-                        Car {
-                            manufacturer: "Nissan".to_string(),
-                            name: "Altima".to_string(),
-                        },
-                    ),
+                .mint_initial_supply(vec![
+                    Car {
+                        manufacturer: "Ford".to_string(),
+                        name: "Raptor".to_string(),
+                    },
+                    Car {
+                        manufacturer: "Toyota".to_string(),
+                        name: "Camry".to_string(),
+                    },
+                    Car {
+                        manufacturer: "Nissan".to_string(),
+                        name: "Altima".to_string(),
+                    },
                 ])
         }
     }

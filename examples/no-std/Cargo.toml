@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
+sbor = { path = "../../sbor", default-features = false, features = ["alloc", "indexmap"] }
 scrypto = { path = "../../scrypto", default-features = false, features = ["alloc", "prelude"] }
 wee_alloc = { version = "0.4", default-features = false }
 

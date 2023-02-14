@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod fee {
     struct Fee {
         xrd: Vault,
         xrd_empty: Vault,
@@ -12,7 +13,7 @@ blueprint! {
         pub fn new(xrd: Bucket) -> ComponentAddress {
             let doge_tokens = ResourceBuilder::new_fungible()
                 .metadata("name", "DogeCoin")
-                .initial_supply(100);
+                .mint_initial_supply(100);
 
             Self {
                 xrd: Vault::with_bucket(xrd),
@@ -57,6 +58,15 @@ blueprint! {
         pub fn lock_fee_and_query_vault(&mut self, amount: Decimal) {
             self.xrd.lock_fee(amount);
             info!("Balance: {}", self.xrd.amount());
+        }
+
+        pub fn spin_loop(&self) {
+            let mut n: u64 = 0;
+            loop {
+                n += 1;
+                // Avoid loop being optimised away!
+                std::hint::black_box(n);
+            }
         }
     }
 }

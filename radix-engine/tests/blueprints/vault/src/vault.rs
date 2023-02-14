@@ -3,7 +3,8 @@ use scrypto::prelude::*;
 #[derive(NonFungibleData)]
 pub struct Data {}
 
-blueprint! {
+#[blueprint]
+mod vault_test {
     struct VaultTest {
         vault: Vault,
         vaults: KeyValueStore<u128, Vault>,
@@ -15,7 +16,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1)
+                .mint_initial_supply(1)
         }
 
         pub fn new_vault_into_map() -> ComponentAddress {
@@ -122,15 +123,15 @@ blueprint! {
         }
 
         fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_non_fungible(NonFungibleIdType::U32)
+            let bucket = ResourceBuilder::new_integer_non_fungible()
                 .metadata("name", "TestToken")
-                .initial_supply([(NonFungibleId::U32(1), Data {})]);
+                .mint_initial_supply([(1u64.into(), Data {})]);
             Vault::with_bucket(bucket)
         }
 
         pub fn new_vault_with_take_non_fungible() -> ComponentAddress {
             let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleId::U32(1));
+            let bucket = vault.take_non_fungible(&NonFungibleLocalId::integer(1));
             vault.put(bucket);
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
@@ -143,9 +144,9 @@ blueprint! {
             .globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_ids() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_ids() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _ids = vault.non_fungible_ids();
+            let _ids = vault.non_fungible_local_ids();
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
@@ -157,9 +158,9 @@ blueprint! {
             .globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_id() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_id() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _id = vault.non_fungible_id();
+            let _id = vault.non_fungible_local_id();
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {

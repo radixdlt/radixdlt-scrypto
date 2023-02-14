@@ -9,7 +9,7 @@ use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -37,6 +37,7 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
     pub max_sys_call_trace_depth: usize,
+    pub abort_when_loan_repaid: bool,
 }
 
 impl Default for ExecutionConfig {
@@ -51,14 +52,37 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
             max_sys_call_trace_depth: 1,
+            abort_when_loan_repaid: false,
         }
     }
 
     pub fn debug() -> Self {
         Self {
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
-            max_sys_call_trace_depth: 1,
+            ..Self::default()
+        }
+    }
+
+    pub fn with_tracing(trace: bool) -> Self {
+        if trace {
+            Self::debug()
+        } else {
+            Self::standard()
+        }
+    }
+
+    pub fn up_to_loan_repayment() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            ..Self::default()
+        }
+    }
+
+    pub fn up_to_loan_repayment_with_debug() -> Self {
+        Self {
+            abort_when_loan_repaid: true,
+            trace: true,
+            ..Self::default()
         }
     }
 }
@@ -102,6 +126,7 @@ where
                 *tip_percentage,
                 *cost_unit_limit,
                 fee_reserve_config.system_loan,
+                execution_config.abort_when_loan_repaid,
             ),
             FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
         };
@@ -117,6 +142,7 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
+        let pre_allocated_ids = transaction.pre_allocated_ids();
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
@@ -135,16 +161,12 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let track = match pre_execution_result {
+        let mut track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
-                    contents: TransactionContents {
-                        instructions: instructions.to_vec(),
-                    },
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
-                        application_logs: vec![],
                         events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
@@ -158,41 +180,38 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut modules = Vec::<Box<dyn Module<R>>>::new();
-            if execution_config.trace {
-                modules.push(Box::new(LoggerModule::new()));
-            }
-            modules.push(Box::new(CostingModule::default()));
-            modules.push(Box::new(RoyaltyModule::default()));
-            modules.push(Box::new(ExecutionTraceModule::new(
-                execution_config.max_sys_call_trace_depth,
-            )));
+            let mut module = KernelModule::new(execution_config);
+            let mut id_allocator =
+                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
             let mut kernel = Kernel::new(
-                transaction_hash.clone(),
                 auth_zone_params.clone(),
-                blobs,
-                execution_config.max_call_depth,
-                track,
+                &mut id_allocator,
+                &mut track,
                 self.scrypto_interpreter,
-                modules,
+                &mut module,
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: Cow::Borrowed(instructions),
+                instructions: match instructions {
+                    InstructionList::Basic(instructions) => {
+                        Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
+                    }
+                    InstructionList::Any(instructions) => Cow::Borrowed(instructions),
+                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
+                },
+                blobs: Cow::Borrowed(blobs),
             });
 
-            kernel.finalize(invoke_result)
+            let events = module.collect_events();
+            track.finalize(invoke_result, events)
         };
 
         let receipt = TransactionReceipt {
-            contents: TransactionContents {
-                instructions: instructions.to_vec(),
-            },
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
-                application_logs: track_receipt.application_logs,
                 events: track_receipt.events,
             },
             result: track_receipt.result,
@@ -207,15 +226,49 @@ where
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {
-                println!("{:<30}: {:>8}", k, v);
+                println!("{:<30}: {:>10}", k, v);
             }
 
-            println!("{:-^80}", "Application Logs");
-            for (level, message) in &receipt.execution.application_logs {
-                println!("[{}] {}", level, message);
-            }
-            if receipt.execution.application_logs.is_empty() {
-                println!("None");
+            println!("{:-^80}", "Cost Totals");
+            println!(
+                "{:<30}: {:>10}",
+                "Total Cost Units Consumed", receipt.execution.fee_summary.cost_unit_consumed
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Cost Unit Limit", receipt.execution.fee_summary.cost_unit_limit
+            );
+            // NB - we use "to_string" to ensure they align correctly
+            println!(
+                "{:<30}: {:>10}",
+                "Execution XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_execution_cost_xrd
+                    .to_string()
+            );
+            println!(
+                "{:<30}: {:>10}",
+                "Royalty XRD",
+                receipt
+                    .execution
+                    .fee_summary
+                    .total_royalty_cost_xrd
+                    .to_string()
+            );
+
+            match &receipt.result {
+                TransactionResult::Commit(commit) => {
+                    println!("{:-^80}", "Application Logs");
+                    for (level, message) in &commit.application_logs {
+                        println!("[{}] {}", level, message);
+                    }
+                    if commit.application_logs.is_empty() {
+                        println!("None");
+                    }
+                }
+                _ => {}
             }
         }
         receipt

@@ -1,9 +1,9 @@
 [package]
 name = "scrypto-tests"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
-[dependencies]
+[dev-dependencies]
 scrypto = { path = "../scrypto", default-features = false, features=["prelude"]}
 sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.144", default-features = false }

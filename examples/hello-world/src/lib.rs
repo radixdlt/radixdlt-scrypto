@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod hello {
     struct Hello {
         // Define what resources and data will be managed by Hello components
         sample_vault: Vault,
@@ -16,7 +17,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .initial_supply(1000);
+                .mint_initial_supply(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {

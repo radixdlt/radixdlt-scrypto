@@ -12,7 +12,7 @@ use crate::scrypto_type;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct EcdsaSecp256k1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
@@ -95,6 +95,12 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1PublicKey {
     }
 }
 
+impl From<EcdsaSecp256k1PublicKey> for Vec<u8> {
+    fn from(value: EcdsaSecp256k1PublicKey) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EcdsaSecp256k1PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -103,7 +109,7 @@ impl EcdsaSecp256k1PublicKey {
 
 scrypto_type!(
     EcdsaSecp256k1PublicKey,
-    ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
+    ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
     Type::EcdsaSecp256k1PublicKey,
     EcdsaSecp256k1PublicKey::LENGTH
 );
@@ -122,6 +128,12 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1Signature {
     }
 }
 
+impl From<EcdsaSecp256k1Signature> for Vec<u8> {
+    fn from(value: EcdsaSecp256k1Signature) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EcdsaSecp256k1Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -130,7 +142,7 @@ impl EcdsaSecp256k1Signature {
 
 scrypto_type!(
     EcdsaSecp256k1Signature,
-    ScryptoCustomTypeId::EcdsaSecp256k1Signature,
+    ScryptoCustomValueKind::EcdsaSecp256k1Signature,
     Type::EcdsaSecp256k1Signature,
     EcdsaSecp256k1Signature::LENGTH
 );

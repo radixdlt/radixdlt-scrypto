@@ -14,6 +14,7 @@ mod cmd_publish;
 mod cmd_reset;
 mod cmd_run;
 mod cmd_set_current_epoch;
+mod cmd_set_current_time;
 mod cmd_set_default_account;
 mod cmd_show;
 mod cmd_show_configs;
@@ -38,6 +39,7 @@ pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_run::*;
 pub use cmd_set_current_epoch::*;
+pub use cmd_set_current_time::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
 pub use cmd_show_configs::*;
@@ -54,6 +56,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::execute_and_commit_transaction;
+use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -62,16 +65,17 @@ use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::abi;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
-use transaction::model::AuthModule;
+use transaction::model::Instruction;
+use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -108,6 +112,7 @@ pub enum Command {
     Reset(Reset),
     Run(Run),
     SetCurrentEpoch(SetCurrentEpoch),
+    SetCurrentTime(SetCurrentTime),
     SetDefaultAccount(SetDefaultAccount),
     ShowConfigs(ShowConfigs),
     ShowLedger(ShowLedger),
@@ -127,7 +132,7 @@ pub fn run() -> Result<(), Error> {
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
-        Command::NewSimpleBadge(cmd) => cmd.run(&mut out),
+        Command::NewSimpleBadge(cmd) => cmd.run(&mut out).map(|_| ()),
         Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
         Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
         Command::NewTokenFixed(cmd) => cmd.run(&mut out),
@@ -136,12 +141,49 @@ pub fn run() -> Result<(), Error> {
         Command::Reset(cmd) => cmd.run(&mut out),
         Command::Run(cmd) => cmd.run(&mut out),
         Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
+        Command::SetCurrentTime(cmd) => cmd.run(&mut out),
         Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
         Command::ShowConfigs(cmd) => cmd.run(&mut out),
         Command::ShowLedger(cmd) => cmd.run(&mut out),
         Command::Show(cmd) => cmd.run(&mut out),
         Command::Transfer(cmd) => cmd.run(&mut out),
     }
+}
+
+pub fn handle_system_transaction<O: std::io::Write>(
+    instructions: Vec<Instruction>,
+    blobs: Vec<Vec<u8>>,
+    initial_proofs: Vec<NonFungibleGlobalId>,
+    trace: bool,
+    print_receipt: bool,
+    out: &mut O,
+) -> Result<TransactionReceipt, Error> {
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+
+    let nonce = get_nonce()?;
+    let transaction = SystemTransaction {
+        instructions,
+        blobs,
+        nonce,
+        pre_allocated_ids: BTreeSet::new(),
+    };
+
+    let receipt = execute_and_commit_transaction(
+        &mut substate_store,
+        &scrypto_interpreter,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig::with_tracing(trace),
+        &transaction.get_executable(initial_proofs),
+    );
+    drop(substate_store);
+
+    if print_receipt {
+        writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
+            .map_err(Error::IOError)?;
+    }
+
+    process_receipt(receipt)
 }
 
 pub fn handle_manifest<O: std::io::Write>(
@@ -151,7 +193,6 @@ pub fn handle_manifest<O: std::io::Write>(
     write_manifest: &Option<PathBuf>,
     trace: bool,
     print_receipt: bool,
-    with_system_privilege: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
     let network = match network {
@@ -177,66 +218,61 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-
-            let mut scrypto_interpreter = ScryptoInterpreter {
-                wasm_engine: DefaultWasmEngine::default(),
-                wasm_instrumenter: WasmInstrumenter::default(),
-                wasm_metering_config: WasmMeteringConfig::new(
-                    InstructionCostRules::tiered(1, 5, 10, 5000),
-                    1024,
-                ),
-            };
+            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let mut substate_store =
+                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
-            let mut initial_proofs = sks
+            let initial_proofs = sks
                 .into_iter()
-                .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
-                .collect::<Vec<NonFungibleAddress>>();
-            if with_system_privilege {
-                initial_proofs.push(AuthModule::system_role_non_fungible_address());
-            }
+                .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
+                .collect::<Vec<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
-                &mut scrypto_interpreter,
+                &scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig {
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    trace,
-                    max_sys_call_trace_depth: 1,
-                },
+                &ExecutionConfig::with_tracing(trace),
                 &transaction.get_executable(initial_proofs),
             );
+            drop(substate_store);
 
             if print_receipt {
                 writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
                     .map_err(Error::IOError)?;
             }
 
-            if receipt.is_commit() {
-                let mut configs = get_configs()?;
-                configs.nonce = nonce + 1;
-                set_configs(&configs)?;
-                return Ok(Some(receipt));
-            }
+            process_receipt(receipt).map(Option::Some)
+        }
+    }
+}
 
-            match receipt.result {
-                TransactionResult::Commit(commit) => match commit.outcome {
-                    TransactionOutcome::Failure(error) => {
-                        Err(Error::TransactionExecutionError(error))
-                    }
-                    TransactionOutcome::Success(..) => {
-                        panic!("Success case handled above to appease borrowing rules")
-                    }
-                },
-                TransactionResult::Reject(rejection) => {
-                    Err(Error::TransactionRejected(rejection.error))
-                }
+pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
+    match receipt.result {
+        TransactionResult::Commit(commit) => {
+            let mut configs = get_configs()?;
+            configs.nonce = get_nonce()? + 1;
+            set_configs(&configs)?;
+
+            match commit.outcome {
+                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
+                TransactionOutcome::Success(output) => Ok(TransactionReceipt {
+                    execution: receipt.execution,
+                    result: TransactionResult::Commit(CommitResult {
+                        outcome: TransactionOutcome::Success(output),
+                        state_updates: commit.state_updates,
+                        entity_changes: commit.entity_changes,
+                        resource_changes: commit.resource_changes,
+                        application_logs: commit.application_logs,
+                        next_epoch: commit.next_epoch,
+                    }),
+                }),
             }
         }
+        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
+        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason)),
     }
 }
 
@@ -267,7 +303,8 @@ pub fn export_abi(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, Error> {
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
     radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
         .map_err(Error::AbiExportError)
 }
@@ -275,7 +312,8 @@ pub fn export_abi(
 pub fn export_abi_by_component(
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, Error> {
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
     radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
         .map_err(Error::AbiExportError)
 }

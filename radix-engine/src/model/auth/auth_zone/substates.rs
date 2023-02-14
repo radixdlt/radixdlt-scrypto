@@ -12,11 +12,11 @@ struct AuthVerification;
 impl AuthVerification {
     pub fn proof_matches(resource_rule: &HardResourceOrNonFungible, proof: &ProofSubstate) -> bool {
         match resource_rule {
-            HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
+            HardResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
                 let proof_resource_address = proof.resource_address();
-                proof_resource_address == non_fungible_address.resource_address()
+                proof_resource_address == non_fungible_global_id.resource_address()
                     && match proof.total_ids() {
-                        Ok(ids) => ids.contains(non_fungible_address.non_fungible_id()),
+                        Ok(ids) => ids.contains(non_fungible_global_id.local_id()),
                         Err(_) => false,
                     }
             }
@@ -24,7 +24,8 @@ impl AuthVerification {
                 let proof_resource_address = proof.resource_address();
                 proof_resource_address == *resource_address
             }
-            HardResourceOrNonFungible::SoftResourceNotFound => false,
+            HardResourceOrNonFungible::InvalidSchemaPath
+            | HardResourceOrNonFungible::DisallowdValueType => false,
         }
     }
 
@@ -34,10 +35,10 @@ impl AuthVerification {
         check: P,
     ) -> bool
     where
-        P: Fn(&AuthZone) -> bool,
+        P: Fn(&AuthZone, usize) -> bool,
     {
-        for auth_zone in auth_zones.auth_zones.iter().rev() {
-            if check(auth_zone) {
+        for (rev_index, auth_zone) in auth_zones.auth_zones.iter().rev().enumerate() {
+            if check(auth_zone, rev_index) {
                 return true;
             }
 
@@ -58,7 +59,7 @@ impl AuthVerification {
         amount: Decimal,
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
+        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone, _| {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             auth_zone
                 .proofs
@@ -72,32 +73,47 @@ impl AuthVerification {
         resource_rule: &HardResourceOrNonFungible,
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
-            if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
+        Self::check_auth_zones(
+            barrier_crossings_allowed,
+            auth_zone,
+            |auth_zone, rev_index| {
+                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) =
+                    resource_rule
+                {
+                    if rev_index == 0 {
+                        if auth_zone
+                            .virtual_non_fungibles_non_extending
+                            .contains(&non_fungible_global_id)
+                        {
+                            return true;
+                        }
+                    }
+
+                    if auth_zone
+                        .virtual_non_fungibles
+                        .contains(&non_fungible_global_id)
+                    {
+                        return true;
+                    }
+                    if auth_zone
+                        .virtual_resources
+                        .contains(&non_fungible_global_id.resource_address())
+                    {
+                        return true;
+                    }
+                }
+
                 if auth_zone
-                    .virtual_non_fungibles
-                    .contains(&non_fungible_address)
+                    .proofs
+                    .iter()
+                    .any(|p| Self::proof_matches(resource_rule, p))
                 {
                     return true;
                 }
-                if auth_zone
-                    .virtual_resources
-                    .contains(&non_fungible_address.resource_address())
-                {
-                    return true;
-                }
-            }
 
-            if auth_zone
-                .proofs
-                .iter()
-                .any(|p| Self::proof_matches(resource_rule, p))
-            {
-                return true;
-            }
-
-            false
-        })
+                false
+            },
+        )
     }
 
     pub fn verify_proof_rule(
@@ -211,7 +227,7 @@ impl AuthZoneStackSubstate {
     pub fn new(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     ) -> Self {
         Self {
             auth_zones: vec![AuthZone::new_with_virtual_proofs(
@@ -241,8 +257,13 @@ impl AuthZoneStackSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self, barrier: bool) {
-        let auth_zone = AuthZone::empty(barrier);
+    pub fn new_frame(
+        &mut self,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
+        barrier: bool,
+    ) {
+        let auth_zone =
+            AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
         self.auth_zones.push(auth_zone);
     }
 
@@ -272,16 +293,21 @@ pub struct AuthZone {
     proofs: Vec<ProofSubstate>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
     virtual_resources: BTreeSet<ResourceAddress>,
-    virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+    virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+    virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
     barrier: bool,
 }
 
 impl AuthZone {
-    fn empty(barrier: bool) -> Self {
+    fn new_with_virtual_non_fungibles(
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
+        barrier: bool,
+    ) -> Self {
         Self {
             proofs: vec![],
             virtual_resources: BTreeSet::new(),
             virtual_non_fungibles: BTreeSet::new(),
+            virtual_non_fungibles_non_extending,
             barrier,
         }
     }
@@ -289,20 +315,21 @@ impl AuthZone {
     fn new_with_virtual_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
+            virtual_non_fungibles_non_extending: BTreeSet::new(),
             barrier,
         }
     }
 
     pub fn pop(&mut self) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         if self.proofs.is_empty() {
-            return Err(InvokeError::Error(AuthZoneError::EmptyAuthZone));
+            return Err(InvokeError::SelfError(AuthZoneError::EmptyAuthZone));
         }
 
         Ok(self.proofs.remove(self.proofs.len() - 1))
@@ -332,7 +359,7 @@ impl AuthZone {
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         ProofSubstate::compose(&self.proofs, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_amount(
@@ -342,24 +369,16 @@ impl AuthZone {
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         ProofSubstate::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_ids(
         &self,
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
-        let maybe_existing_proof =
-            ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
-                .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)));
-
-        let proof = match maybe_existing_proof {
-            Ok(proof) => proof,
-            Err(e) => Err(e)?,
-        };
-
-        Ok(proof)
+        ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 }

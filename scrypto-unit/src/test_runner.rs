@@ -1,39 +1,41 @@
+use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
-use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::ledger::*;
 use radix_engine::model::{
     export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
+    ValidatorSetSubstate, ValidatorSubstate,
 };
-use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
-    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
+    PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::*;
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
+use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
+    NativeInvocation, NonFungibleGlobalId, NonFungibleIdType,
 };
+use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
+use radix_engine_stores::hash_tree::put_at_next_version;
+use radix_engine_stores::hash_tree::tree_store::{MemoryTreeStore, Version};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
+use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -41,7 +43,7 @@ use transaction::validation::TestIntentHashManager;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, HashMap<String, BlueprintAbi>) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -102,46 +104,98 @@ impl Compile {
     }
 }
 
-pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
-    execution_stores: StagedSubstateStoreManager<'s, S>,
+pub struct TestRunnerBuilder {
+    custom_genesis: Option<SystemTransaction>,
+    trace: bool,
+    state_hashing: bool,
+}
+
+impl TestRunnerBuilder {
+    pub fn without_trace(mut self) -> Self {
+        self.trace = false;
+        self
+    }
+
+    pub fn with_state_hashing(mut self) -> Self {
+        self.state_hashing = true;
+        self
+    }
+
+    pub fn with_custom_genesis(mut self, genesis: SystemTransaction) -> Self {
+        self.custom_genesis = Some(genesis);
+        self
+    }
+
+    pub fn build(self) -> TestRunner {
+        let mut runner = TestRunner {
+            scrypto_interpreter: ScryptoInterpreter {
+                wasm_metering_config: WasmMeteringConfig::V0,
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+            },
+            substate_store: TypedInMemorySubstateStore::new(),
+            state_hash_support: Some(self.state_hashing)
+                .filter(|x| *x)
+                .map(|_| StateHashSupport::new()),
+            intent_hash_manager: TestIntentHashManager::new(),
+            next_private_key: 1, // 0 is invalid
+            next_transaction_nonce: 0,
+            trace: self.trace,
+        };
+        let genesis = self
+            .custom_genesis
+            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
+        let receipt = runner.execute_transaction_with_config(
+            genesis.get_executable(vec![AuthAddresses::system_role()]),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+        );
+        receipt.expect_commit_success();
+        runner
+    }
+}
+
+pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    substate_store: TypedInMemorySubstateStore,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
+    state_hash_support: Option<StateHashSupport>,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
-    TestRunner<'s, S>
-{
-    pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
-        let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_config: WasmMeteringConfig::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                1024,
-            ),
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-        };
-        Self {
-            execution_stores: StagedSubstateStoreManager::new(substate_store),
-            scrypto_interpreter,
-            intent_hash_manager: TestIntentHashManager::new(),
-            next_private_key: 1, // 0 is invalid
-            next_transaction_nonce: 0,
-            trace,
+impl TestRunner {
+    pub fn builder() -> TestRunnerBuilder {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            trace: true,
+            state_hashing: false,
         }
     }
 
-    pub fn next_transaction_nonce(&self) -> u64 {
-        self.next_transaction_nonce
+    pub fn substate_store(&self) -> &TypedInMemorySubstateStore {
+        &self.substate_store
+    }
+
+    pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
+        &mut self.substate_store
+    }
+
+    pub fn next_private_key(&mut self) -> u64 {
+        self.next_private_key += 1;
+        self.next_private_key - 1
+    }
+
+    pub fn next_transaction_nonce(&mut self) -> u64 {
+        self.next_transaction_nonce += 1;
+        self.next_transaction_nonce - 1
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaSecp256k1PublicKey, EcdsaSecp256k1PrivateKey) {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
         let public_key = private_key.public_key();
 
-        self.next_private_key += 1;
         (public_key, private_key)
     }
 
@@ -150,21 +204,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> (
         EcdsaSecp256k1PublicKey,
         EcdsaSecp256k1PrivateKey,
-        NonFungibleAddress,
+        NonFungibleGlobalId,
     ) {
         let key_pair = self.new_allocated_account();
         (
             key_pair.0,
             key_pair.1,
-            NonFungibleAddress::from_public_key(&key_pair.0),
+            NonFungibleGlobalId::from_public_key(&key_pair.0),
         )
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress) -> HashMap<String, String> {
+    pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -175,8 +228,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let underlying_node = global.global().node_deref();
 
         let metadata = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -191,8 +243,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -204,8 +255,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -220,37 +270,49 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .component_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .component_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .package_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .package_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn get_component_vaults(
@@ -261,15 +323,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
-        let mut state_tree_visitor = StateTreeTraverser::new(
-            self.execution_stores.get_root_store(),
-            &mut vault_finder,
-            100,
-        );
+        let mut state_tree_visitor =
+            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
         vault_finder.to_vaults()
+    }
+
+    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.ids().clone())
     }
 
     pub fn get_component_resources(
@@ -277,17 +345,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-        let mut accounter = ResourceAccounter::new(self.execution_stores.get_root_store());
+        let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(account_address, "deposit", args!(Bucket(bucket_id)))
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.call_method(account_address, "deposit", args!(bucket))
             })
             .build();
 
@@ -296,11 +364,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(withdraw_auth, bucket_id)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.new_account_with_resource(withdraw_auth, bucket)
             })
             .build();
 
@@ -330,8 +398,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -344,8 +411,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -356,6 +422,44 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         substate.node_deref()
     }
 
+    pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
+        let node_id = self.deref_component_address(system_address);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
+        let substate: ValidatorSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
+    }
+
+    pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+        let node_id = self.deref_component_address(EPOCH_MANAGER);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+        );
+        let substate: ValidatorSetSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
+            .validator_set
+            .iter()
+            .find(|(_, v)| v.key.eq(key))
+            .unwrap()
+            .0
+            .clone()
+    }
+
     pub fn new_allocated_account(
         &mut self,
     ) -> (
@@ -364,7 +468,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         ComponentAddress,
     ) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
@@ -384,15 +488,40 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         }
     }
 
+    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
+        let (pub_key, _) = self.new_key_pair();
+        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
+        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
+        (pub_key, address)
+    }
+
+    pub fn new_validator_with_pub_key(
+        &mut self,
+        pub_key: EcdsaSecp256k1PublicKey,
+        owner_access_rule: AccessRule,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_validator(pub_key, owner_access_rule)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let address = receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+        address
+    }
+
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        metadata: HashMap<String, String>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package(code, abi, royalty_config, metadata, access_rules)
             .build();
@@ -405,10 +534,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
+        abi: BTreeMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package_with_owner(code, abi, owner_badge)
             .build();
@@ -423,8 +552,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         self.publish_package(
             code,
             abi,
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new(),
         )
     }
@@ -432,84 +561,94 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
-        owner_badge: NonFungibleAddress,
+        owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let (code, abi) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, abi, owner_badge)
     }
 
-    pub fn execute_manifest(
-        &mut self,
-        manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
-    ) -> TransactionReceipt {
-        let mut receipts =
-            self.execute_batch(vec![(manifest, initial_proofs)], DEFAULT_COST_UNIT_LIMIT);
-        receipts.pop().unwrap()
-    }
-
-    pub fn execute_manifest_with_cost_unit_limit(
-        &mut self,
-        manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
-        limit: u32,
-    ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(manifest, initial_proofs)], limit);
-        receipts.pop().unwrap()
-    }
-
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
-            transaction::model::Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
-                    method_name: "lock_fee".to_string(),
-                },
+            transaction::model::BasicInstruction::CallMethod {
+                component_address: FAUCET_COMPONENT,
+                method_name: "lock_fee".to_string(),
                 args: args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
-        self.execute_transaction_with_config(
-            transaction,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+    pub fn execute_manifest(
+        &mut self,
+        manifest: TransactionManifest,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        self.execute_manifest_with_cost_unit_limit(
+            manifest,
+            initial_proofs,
+            DEFAULT_COST_UNIT_LIMIT,
         )
+    }
+
+    pub fn execute_manifest_with_cost_unit_limit(
+        &mut self,
+        manifest: TransactionManifest,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+        cost_unit_limit: u32,
+    ) -> TransactionReceipt {
+        let transactions =
+            TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit);
+        let executable = transactions.get_executable(initial_proofs);
+
+        let fee_reserve_config = FeeReserveConfig::default();
+        let mut execution_config = ExecutionConfig::default();
+        execution_config.trace = self.trace;
+
+        self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
+    }
+
+    pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
+        let fee_config = FeeReserveConfig::default();
+        let mut execution_config = ExecutionConfig::default();
+        execution_config.trace = self.trace;
+
+        self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
 
     pub fn execute_transaction_with_config(
         &mut self,
-        transaction: &Executable,
+        executable: Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let node_id = self.create_child_node(0);
-
-        execute_transaction(
-            &self.execution_stores.get_output_store(node_id),
+        let transaction_receipt = execute_transaction(
+            &mut self.substate_store,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
-            transaction,
-        )
+            &executable,
+        );
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            let commit_receipt = commit.state_updates.commit(&mut self.substate_store);
+            if let Some(state_hash_support) = &mut self.state_hash_support {
+                state_hash_support.update_with(commit_receipt.outputs);
+            }
+        }
+        transaction_receipt
     }
 
-    pub fn execute_preview(
+    pub fn preview(
         &mut self,
         preview_intent: PreviewIntent,
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
-        let node_id = self.create_child_node(0);
-
         execute_preview(
-            &self.execution_stores.get_output_store(node_id),
+            &self.substate_store,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -517,69 +656,18 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         )
     }
 
-    pub fn execute_batch(
-        &mut self,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
-    ) -> Vec<TransactionReceipt> {
-        let node_id = self.create_child_node(0);
-        let receipts = self.execute_batch_on_node(node_id, manifests, cost_unit_limit);
-        self.merge_node(node_id);
-        receipts
-    }
-
-    pub fn create_child_node(&mut self, parent_id: u64) -> u64 {
-        self.execution_stores.new_child_node(parent_id)
-    }
-
-    pub fn execute_batch_on_node(
-        &mut self,
-        node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
-    ) -> Vec<TransactionReceipt> {
-        let mut store = self.execution_stores.get_output_store(node_id);
-        let mut receipts = Vec::new();
-        for (manifest, initial_proofs) in manifests {
-            let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, cost_unit_limit);
-            self.next_transaction_nonce += 1;
-            let receipt = execute_and_commit_transaction(
-                &mut store,
-                &mut self.scrypto_interpreter,
-                &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE,
-                    system_loan: DEFAULT_SYSTEM_LOAN,
-                },
-                &ExecutionConfig {
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    trace: self.trace,
-                    max_sys_call_trace_depth: 1,
-                },
-                &transaction.get_executable(initial_proofs),
-            );
-            receipts.push(receipt);
-        }
-
-        receipts
-    }
-
-    pub fn merge_node(&mut self, node_id: u64) {
-        self.execution_stores.merge_to_parent(node_id);
-    }
-
     pub fn export_abi(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        let output_store = self.execution_stores.get_root_store();
-        export_abi(output_store, package_address, blueprint_name).expect("Failed to export ABI")
+        export_abi(&self.substate_store, package_address, blueprint_name)
+            .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        let output_store = self.execution_stores.get_root_store();
-        export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
+        export_abi_by_component(&self.substate_store, component_address)
+            .expect("Failed to export ABI")
     }
 
     pub fn lock_resource_auth(
@@ -591,14 +679,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token))
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -613,39 +701,36 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
 
     fn create_fungible_resource_and_deposit(
         &mut self,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
+            .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
+            .call_method(
+                to,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
             )
-            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -674,7 +759,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let update_metadata_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(
             Mint,
             (
@@ -729,7 +814,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
@@ -743,7 +828,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
@@ -758,7 +843,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(require(auth_resource_address)), LOCKED),
@@ -770,38 +855,27 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
-        let mut entries = HashMap::new();
-        entries.insert(
-            NonFungibleId::U32(1),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(2),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(3),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
+        let mut entries = BTreeMap::new();
+        entries.insert(NonFungibleLocalId::integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(3), SampleNonFungibleData {});
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::U32,
-                },
-                HashMap::new(),
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                BTreeMap::new(),
                 access_rules,
-                Some(MintParams::NonFungible { entries }),
+                Some(entries),
             )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -818,21 +892,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible { amount }),
-            )
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -849,22 +918,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible { amount }),
-            )
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -875,110 +939,149 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             .new_resource_addresses[0]
     }
 
-    pub fn instantiate_component(
+    pub fn instantiate_component<F>(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<String>,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_function_with_abi(
-                package_address,
-                blueprint_name,
-                function_name,
-                args,
-                Some(account),
-                &self.export_abi(package_address, blueprint_name),
-            )
+        initial_proofs: Vec<NonFungibleGlobalId>,
+        handler: F,
+    ) -> ComponentAddress
+    where
+        F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+    {
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("10")))
+            .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
             .build();
-        let receipt = self.execute_manifest(
-            manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
-        );
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0]
+
+        let receipt = self.execute_manifest(manifest, initial_proofs);
+        receipt.new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.kernel_call(
-            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
-            |kernel| {
-                kernel
-                    .invoke(EpochManagerSetEpochInvocation {
-                        epoch,
-                        receiver: EPOCH_MANAGER,
-                    })
-                    .unwrap()
-            },
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+                receiver: EPOCH_MANAGER,
+                epoch,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .get_executable(vec![AuthAddresses::system_role()]),
         );
+        receipt.expect_commit_success();
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        self.kernel_call(vec![], |kernel| {
-            kernel
-                .invoke(EpochManagerGetCurrentEpochInvocation {
-                    receiver: EPOCH_MANAGER,
-                })
-                .unwrap()
-        })
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
     }
 
-    /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
-    where
-        F: FnOnce(&mut Kernel<DefaultWasmEngine, SystemLoanFeeReserve>) -> O,
-    {
-        let tx_hash = hash(self.next_transaction_nonce.to_string());
-        let blobs = HashMap::new();
-        let substate_store = self.execution_stores.get_root_store();
-        let track = Track::new(
-            substate_store,
-            SystemLoanFeeReserve::default(),
-            FeeTable::new(),
+    pub fn get_state_hash(&self) -> Hash {
+        self.state_hash_support
+            .as_ref()
+            .expect("state hashing not enabled")
+            .get_current()
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                current_time_ms,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
         );
+        receipt.output(0)
+    }
 
-        let auth_zone_params = AuthZoneParams {
-            initial_proofs,
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
-        };
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                precision,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
 
-        let mut kernel = Kernel::new(
-            tx_hash,
-            auth_zone_params,
-            &blobs,
-            DEFAULT_MAX_CALL_DEPTH,
-            track,
-            &mut self.scrypto_interpreter,
-            Vec::new(),
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
         );
+        receipt.output(0)
+    }
+}
 
-        // Invoke the system
-        let output = fun(&mut kernel);
+pub struct StateHashSupport {
+    tree_store: MemoryTreeStore,
+    current_version: Version,
+    current_hash: Hash,
+}
 
-        // The output is of generic type, so it isn't necessarily Vec<Vec<u8>> (the output type of TransactionProcessorRunInvocation).
-        // The receipt's output isn't really used, so it's fine to use an empty Vec here.
-        let receipt = kernel.finalize(Ok(Vec::new()));
-
-        // Commit
-        self.next_transaction_nonce += 1;
-        if let TransactionResult::Commit(c) = receipt.result {
-            c.state_updates.commit(substate_store);
+impl StateHashSupport {
+    fn new() -> Self {
+        StateHashSupport {
+            tree_store: MemoryTreeStore::new(),
+            current_version: 0,
+            current_hash: Hash([0; Hash::LENGTH]),
         }
+    }
 
-        output
+    pub fn update_with(&mut self, transaction_outputs: Vec<OutputId>) {
+        let hash_changes = transaction_outputs
+            .iter()
+            .map(|output_id| (output_id.substate_id.clone(), Some(output_id.substate_hash)))
+            .collect::<Vec<(SubstateId, Option<Hash>)>>();
+        self.current_hash = put_at_next_version(
+            &mut self.tree_store,
+            Some(self.current_version).filter(|version| *version > 0),
+            &hash_changes,
+        );
+        self.current_version += 1;
+    }
+
+    pub fn get_current(&self) -> Hash {
+        self.current_hash
     }
 }
 
@@ -991,15 +1094,17 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
             .replace("${memmove}", include_str!("snippets/memmove.wat"))
-            .replace("${memset}", include_str!("snippets/memset.wat"))
-            .replace("${buffer}", include_str!("snippets/buffer.wat")),
+            .replace("${memset}", include_str!("snippets/memset.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }
@@ -1034,12 +1139,14 @@ pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
     output_type: Type,
-) -> HashMap<String, BlueprintAbi> {
-    let mut blueprint_abis = HashMap::new();
+) -> BTreeMap<String, BlueprintAbi> {
+    let mut blueprint_abis = BTreeMap::new();
     blueprint_abis.insert(
         blueprint_name.to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: function_name.to_string(),
                 mutability: Option::None,
@@ -1054,3 +1161,6 @@ pub fn generate_single_function_abi(
     );
     blueprint_abis
 }
+
+#[derive(NonFungibleData)]
+struct SampleNonFungibleData {}

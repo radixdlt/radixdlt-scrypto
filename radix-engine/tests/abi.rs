@@ -2,23 +2,164 @@ use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
+use serde::Serialize;
+use serde_json::{json, to_string, to_value, Value};
 use transaction::builder::ManifestBuilder;
+
+pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    let actual = to_value(&actual).unwrap();
+    if actual != expected {
+        panic!(
+            "Mismatching JSONs:\nActual:\n{}\nExpected:\n{}\n",
+            to_string(&actual).unwrap(),
+            to_string(&expected).unwrap()
+        );
+    }
+}
+
+#[test]
+fn test_export_abi() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
+
+    let abi = test_runner.export_abi(package_address, "Simple");
+    assert_json_eq(
+        abi,
+        json!({
+          "fns": [
+            {
+              "export_name": "Simple_new",
+              "ident": "new",
+              "input": {
+                "fields": {
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_new_Input",
+                "type": "Struct"
+              },
+              "mutability": null,
+              "output": {
+                "type": "ComponentAddress"
+              }
+            },
+            {
+              "export_name": "Simple_get_state",
+              "ident": "get_state",
+              "input": {
+                "fields": {
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_get_state_Input",
+                "type": "Struct"
+              },
+              "mutability": "Immutable",
+              "output": {
+                "type": "U32"
+              }
+            },
+            {
+              "export_name": "Simple_set_state",
+              "ident": "set_state",
+              "input": {
+                "fields": {
+                  "named": [
+                    [
+                      "arg0",
+                      {
+                        "type": "U32"
+                      }
+                    ]
+                  ],
+                  "type": "Named"
+                },
+                "name": "Simple_set_state_Input",
+                "type": "Struct"
+              },
+              "mutability": "Mutable",
+              "output": {
+                "element_types": [],
+                "type": "Tuple"
+              }
+            },
+            {
+              "export_name": "Simple_custom_types",
+              "ident": "custom_types",
+              "input": {
+                "fields": {
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_custom_types_Input",
+                "type": "Struct"
+              },
+              "mutability": null,
+              "output": {
+                "element_types": [
+                  {
+                    "type": "Decimal"
+                  },
+                  {
+                    "type": "PackageAddress"
+                  },
+                  {
+                    "key_type": {
+                      "type": "String"
+                    },
+                    "type": "KeyValueStore",
+                    "value_type": {
+                      "type": "String"
+                    }
+                  },
+                  {
+                    "type": "Hash"
+                  },
+                  {
+                    "type": "Bucket"
+                  },
+                  {
+                    "type": "Proof"
+                  },
+                  {
+                    "type": "Vault"
+                  }
+                ],
+                "type": "Tuple"
+              }
+            }
+          ],
+          "structure": {
+            "fields": {
+              "named": [
+                [
+                  "state",
+                  {
+                    "type": "U32"
+                  }
+                ]
+              ],
+              "type": "Named"
+            },
+            "name": "Simple",
+            "type": "Struct"
+          }
+        }),
+    );
+}
 
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -48,12 +189,11 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
@@ -68,12 +208,12 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            _,
-                            ScryptoFnResolvingError::InvalidInput
-                        )
-                    )
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
+                        _,
+                        _,
+                        _,
+                        ScryptoFnResolvingError::InvalidInput
+                    ))
                 )
             });
         }

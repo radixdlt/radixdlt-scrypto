@@ -21,7 +21,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
         ```
     * Linux:
-        * Make sure a C++ compiler and LLVM is installed (`sudo apt install build-essential llvm`).
+        * Make sure a C++ compiler, LLVM and cmake is installed (`sudo apt install build-essential llvm cmake`).
         * Install the Rust compiler:
         ```bash
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -76,12 +76,12 @@ scrypto test
 | Action                             | Command                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Create an account                  | ``` resim new-account ```                                                                            |
-| Change the default account         | ``` resim set-default-account <account_component_address> <account_public_key>```                    |
+| Change the default account         | ``` resim set-default-account <account_component_address> <account_public_key> ```                   |
 | Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                               |
 | Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_address> ```                                            |
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                               |
 | Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_address> ```                                            |
-| Mint resource                      | ``` resim mint <amount> <resource_address> <minter_resource_address>```                              |
+| Mint resource                      | ``` resim mint <amount> <resource_address> <minter_resource_address> ```                             |
 | Transfer resource                  | ``` resim transfer <amount> <resource_address> <recipient_component_address> ```                     |
 | Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                          |
 | Call a function                    | ``` resim call-function <package_address> <blueprint_name> <function> <args> ```                     |
@@ -107,3 +107,13 @@ scrypto test
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
+
+## License
+
+This software/code is licensed and used pursuant to the Radix License, Version 1.0 and includes
+modified third party work which is reproduced here pursuant to the Apache 2.0 licensing regime.
+Where third party software has been used this is identified together with the appropriate
+open-source licence.
+
+A copy of the Radix License, Version 1.0 may be found in the `LICENSE` file in the root directory of
+this repository.

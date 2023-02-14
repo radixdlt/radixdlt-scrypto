@@ -17,7 +17,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
-    let bp = parse2::<ast::Blueprint>(input)?;
+    let bp = parse2::<ast::BlueprintMod>(input)?;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
@@ -42,17 +42,34 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         ));
     }
 
-    let module_ident = format_ident!("{}_impl", bp_ident);
+    let module_ident = bp.module_ident;
     let component_ident = format_ident!("{}Component", bp_ident);
     let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
+    let use_statements = {
+        let mut use_statements = bp.use_statements;
+
+        let contains_prelude_import = use_statements
+            .iter()
+            .map(|x| quote! { #(#x) }.to_string())
+            .any(|x| x.contains("scrypto :: prelude :: *"));
+
+        if !contains_prelude_import {
+            let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
+            use_statements.push(item);
+        }
+
+        use_statements
+    };
 
     let output_mod = quote! {
+        #(#use_statements)*
+
         #[allow(non_snake_case)]
         pub mod #module_ident {
             use super::*;
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-            #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+            #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+            #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -91,20 +108,20 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let abi_functions = generate_abi(bp_ident, bp_items)?;
         quote! {
             #[no_mangle]
-            pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
-                use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
+            pub extern "C" fn #abi_ident() -> ::scrypto::engine::wasm_api::Slice {
+                use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                 use ::sbor::rust::borrow::ToOwned;
                 use ::sbor::rust::vec;
                 use ::sbor::rust::vec::Vec;
 
                 let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
                 let structure: Type = #module_ident::#bp_ident::describe();
-                let output = BlueprintAbi {
+                let return_data = BlueprintAbi {
                     structure,
                     fns,
                 };
 
-                ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
             }
         }
     };
@@ -126,7 +143,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("blueprint!", &output);
+    crate::utils::print_generated_code("blueprint", &output);
 
     trace!("handle_blueprint() finishes");
     Ok(output)
@@ -164,8 +181,8 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct #input_struct_name {
                     #(#args),*
                 }
@@ -230,20 +247,19 @@ fn generate_dispatcher(
                     }
                 }
 
-                // parse input
+                // parse args
                 let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
-                stmts.push(parse_quote!{
-                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
+                stmts.push(parse_quote! {
+                    let input: #input_struct_name = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
-                // load state if needed
+                let is_method = get_state.is_some();
+
+                // load component state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let actor = ::scrypto::runtime::Runtime::actor();
-                    });
-                    stmts.push(parse_quote! {
-                        let (component_id, ..) = actor.as_component();
+                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::DataPointer::new(
@@ -254,32 +270,54 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                // call the function
+                // call the function/method
                 let stmt: Stmt = parse_quote! {
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &#module_ident::#bp_ident::#ident(#(#dispatch_args),*)
-                    ).unwrap();
+                    let return_data = #module_ident::#bp_ident::#ident(#(#dispatch_args),*);
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
 
-                // update state
-                stmts.push(Stmt::Expr(parse_quote! { rtn }));
+                // return
+                let stmt: Stmt = parse_quote! {
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                };
+                trace!("Generated stmt: {}", quote! { #stmt });
+                stmts.push(stmt);
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
-                let extern_function = quote! {
-                    #[no_mangle]
-                    pub extern "C" fn #fn_ident(args: *mut u8) -> *mut u8 {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                let extern_function = {
+                    if is_method {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                                use ::sbor::rust::ops::{Deref, DerefMut};
 
-                        // Set up panic hook
-                        ::scrypto::set_up_panic_hook();
+                                // Set up panic hook
+                                ::scrypto::set_up_panic_hook();
 
-                        // Set up component and resource subsystems;
-                        ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                        ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+                                // Set up component and resource subsystems;
+                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                        #(#stmts)*
+                                #(#stmts)*
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                                use ::sbor::rust::ops::{Deref, DerefMut};
+
+                                // Set up panic hook
+                                ::scrypto::set_up_panic_hook();
+
+                                // Set up component and resource subsystems;
+                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                                #(#stmts)*
+                            }
+                        }
                     }
                 };
                 functions.push(extern_function);
@@ -334,7 +372,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     };
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::scrypto::abi::Type::Unit
+                            ::scrypto::abi::Type::Tuple { element_types: ::sbor::rust::vec![] }
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, &bp_ident.to_string());
@@ -468,8 +506,8 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
         pub struct #component_ident {
             pub component: ::scrypto::component::Component,
         }
@@ -496,7 +534,7 @@ fn generate_stubs(
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
             }
-            fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+            fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                 self.component.globalize_with_owner(owner_badge)
             }
         }
@@ -572,8 +610,9 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
 
 #[cfg(test)]
 mod tests {
-    use proc_macro2::TokenStream;
     use std::str::FromStr;
+
+    use proc_macro2::TokenStream;
 
     use super::*;
 
@@ -591,20 +630,22 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } }",
+            "mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
         )
-        .unwrap();
+            .unwrap();
         let output = handle_blueprint(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
+                use scrypto::prelude::*;
+
                 #[allow(non_snake_case)]
-                pub mod Test_impl {
+                pub mod test {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                    #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                     pub struct Test {
                         a: u32,
                         admin: ResourceManager
@@ -633,17 +674,17 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct Test_x_Input { arg0 : u32 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x(args: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -653,21 +694,20 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let actor = ::scrypto::runtime::Runtime::actor();
-                    let (component_id, ..) = actor.as_component();
+                    let input: Test_x_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     let mut component_data = ::scrypto::runtime::DataPointer::new(
                         radix_engine_interface::api::types::RENodeId::Component(component_id),
                         radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
                     );
-                    let state: DataRef<Test_impl::Test> = component_data.get();
+                    let state: DataRef<test::Test> = component_data.get();
 
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0)).unwrap();
-                    rtn
+                    let return_data = test::Test::x(state.deref(), input.arg0);
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_y(args: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -677,14 +717,14 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0)).unwrap();
-                    rtn
+                    let input: Test_y_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let return_data = test::Test::y(input.arg0);
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
-                    use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
@@ -704,17 +744,17 @@ mod tests {
                             export_name: "Test_y".to_string(),
                         }
                     ];
-                    let structure: Type = Test_impl::Test::describe();
-                    let output = BlueprintAbi {
+                    let structure: Type = test::Test::describe();
+                    let return_data = BlueprintAbi {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
@@ -741,7 +781,7 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }
@@ -807,18 +847,20 @@ mod tests {
 
     #[test]
     fn test_empty_blueprint() {
-        let input = TokenStream::from_str("struct Test {} impl Test {}").unwrap();
+        let input = TokenStream::from_str("mod test { struct Test {} impl Test {} }").unwrap();
         let output = handle_blueprint(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
+                use scrypto::prelude::*;
+
                 #[allow(non_snake_case)]
-                pub mod Test_impl {
+                pub mod test {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                    #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                     pub struct Test {
                     }
 
@@ -839,23 +881,23 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
-                    use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
-                    let structure: Type = Test_impl::Test::describe();
-                    let output = BlueprintAbi {
+                    let structure: Type = test::Test::describe();
+                    let return_data = BlueprintAbi {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
@@ -882,7 +924,144 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
-                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
+                        self.component.globalize_with_owner(owner_badge)
+                    }
+                }
+
+                impl TestComponent {
+                }
+
+                #[allow(non_camel_case_types)]
+                pub struct TestGlobalComponentRef {
+                    pub component: ::scrypto::component::GlobalComponentRef,
+                }
+
+                impl From<ComponentAddress> for TestGlobalComponentRef {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::GlobalComponentRef(component)
+                        }
+                    }
+                }
+
+                impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
+                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                        self.component.access_rules_chain()
+                    }
+                }
+
+                impl TestGlobalComponentRef {
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_empty_blueprint_with_use_statements() {
+        let input = TokenStream::from_str(
+            "mod test { use scrypto::prelude::*; use std::fs; struct Test {} impl Test {} }",
+        )
+        .unwrap();
+        let output = handle_blueprint(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                use scrypto::prelude::*;
+                use std::fs;
+
+                #[allow(non_snake_case)]
+                pub mod test {
+                    use super::*;
+
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                    pub struct Test {
+                    }
+
+                    impl Test {
+                    }
+
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
+                            let component = ::scrypto::component::component_system().create_component(
+                                "Test",
+                                self
+                            );
+                            TestComponent {
+                                component
+                            }
+                        }
+                    }
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
+                    use ::sbor::rust::borrow::ToOwned;
+                    use ::sbor::rust::vec;
+                    use ::sbor::rust::vec::Vec;
+                    let fns: Vec<Fn> = vec![];
+                    let structure: Type = test::Test::describe();
+                    let return_data = BlueprintAbi {
+                        structure,
+                        fns,
+                    };
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                pub struct TestComponent {
+                    pub component: ::scrypto::component::Component,
+                }
+
+                impl ::scrypto::component::LocalComponent for TestComponent {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn globalize(self) -> ComponentAddress {
+                        self.component.globalize()
+                    }
+                    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
                         self.component.globalize_with_owner(owner_badge)
                     }
                 }

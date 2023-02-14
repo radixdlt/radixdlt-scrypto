@@ -4,29 +4,29 @@ use sbor::rust::marker::PhantomData;
 use crate::borrow_resource_manager;
 use crate::resource::*;
 
-pub trait ScryptoNonFungibleId {
+pub trait ScryptoNonFungibleLocalId {
     /// Creates a non-fungible ID from some uuid.
     fn random() -> Self;
 }
 
-impl ScryptoNonFungibleId for NonFungibleId {
+impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
     fn random() -> Self {
         let uuid = crate::runtime::Runtime::generate_uuid();
-        Self::UUID(uuid)
+        Self::uuid(uuid).unwrap()
     }
 }
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {
-    address: NonFungibleAddress,
+    non_fungible_global_id: NonFungibleGlobalId,
     data: PhantomData<T>,
 }
 
-impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
-    fn from(address: NonFungibleAddress) -> Self {
+impl<T: NonFungibleData> From<NonFungibleGlobalId> for NonFungible<T> {
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
         Self {
-            address,
+            non_fungible_global_id,
             data: PhantomData,
         }
     }
@@ -35,27 +35,28 @@ impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        self.address.resource_address()
+        self.non_fungible_global_id.resource_address().clone()
     }
 
     /// Returns a reference to the non-fungible address.
-    pub fn address(&self) -> &NonFungibleAddress {
-        &self.address
+    pub fn global_id(&self) -> &NonFungibleGlobalId {
+        &self.non_fungible_global_id
     }
 
     /// Returns a reference to the the non-fungible ID.
-    pub fn id(&self) -> &NonFungibleId {
-        self.address.non_fungible_id()
+    pub fn local_id(&self) -> &NonFungibleLocalId {
+        self.non_fungible_global_id.local_id()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        borrow_resource_manager!(self.resource_address()).get_non_fungible_data(self.id())
+        borrow_resource_manager!(self.resource_address().clone())
+            .get_non_fungible_data(self.local_id())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
-        borrow_resource_manager!(self.resource_address())
-            .update_non_fungible_data(self.id(), new_data);
+        borrow_resource_manager!(self.resource_address().clone())
+            .update_non_fungible_data(self.local_id(), new_data);
     }
 }

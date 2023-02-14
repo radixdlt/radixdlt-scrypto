@@ -4,8 +4,8 @@ use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, NativeFunction, NonFungibleStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, TransactionProcessorFunction,
+    GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    TransactionProcessorFn,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,6 +36,10 @@ impl CallFrameUpdate {
             nodes_to_move: vec![],
             node_refs_to_copy,
         }
+    }
+
+    pub fn add_ref(&mut self, node_id: RENodeId) {
+        self.node_refs_to_copy.insert(node_id);
     }
 }
 
@@ -84,7 +88,7 @@ pub struct CallFrame {
     pub depth: usize,
 
     /// The running application actor of this frame
-    pub actor: REActor,
+    pub actor: ResolvedActor,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
     node_refs: HashMap<RENodeId, RENodeRefData>,
@@ -95,8 +99,6 @@ pub struct CallFrame {
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
-
-    allocated_ids: HashSet<RENodeId>,
 }
 
 impl CallFrame {
@@ -194,9 +196,11 @@ impl CallFrame {
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
-                    return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
-                        old_child.clone(),
-                    )));
+                    if SubstateProperties::is_persisted(&offset) {
+                        return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                            old_child.clone(),
+                        )));
+                    }
                 }
             }
 
@@ -277,20 +281,19 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(ResolvedFunction::Native(
-                NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-            )),
+            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::TransactionProcessor(
+                TransactionProcessorFn::Run,
+            ))),
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
-            allocated_ids: HashSet::new(),
         }
     }
 
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
-        actor: REActor,
+        actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashMap::new();
@@ -314,7 +317,6 @@ impl CallFrame {
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
-            allocated_ids: HashSet::new(),
         };
 
         Ok(frame)
@@ -378,25 +380,14 @@ impl CallFrame {
         }
     }
 
-    pub fn add_allocated_id(&mut self, node_id: RENodeId) {
-        self.allocated_ids.insert(node_id);
-    }
-
     pub fn create_node<'f, 's, R: FeeReserve>(
         &mut self,
         node_id: RENodeId,
-        re_node: RENode,
+        re_node: RENodeInit,
         heap: &mut Heap,
         track: &'f mut Track<'s, R>,
         push_to_store: bool,
-        force_create: bool, // TODO: Figure out better abstraction to remove this
     ) -> Result<(), RuntimeError> {
-        if !force_create && !self.allocated_ids.remove(&node_id) {
-            return Err(RuntimeError::CallFrameError(
-                CallFrameError::RENodeIdWasNotAllocated(node_id),
-            ));
-        }
-
         let substates = re_node.to_substates();
 
         for (offset, substate) in &substates {
@@ -439,16 +430,6 @@ impl CallFrame {
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
         self.owned_root_nodes.keys().cloned().collect()
-    }
-
-    pub fn verify_allocated_ids_empty(&self) -> Result<(), RuntimeError> {
-        if !self.allocated_ids.is_empty() {
-            return Err(RuntimeError::CallFrameError(
-                CallFrameError::CallFrameCleanupAllocatedIdsNotEmpty,
-            ));
-        }
-
-        Ok(())
     }
 
     /// Removes node from call frame and re-owns any children

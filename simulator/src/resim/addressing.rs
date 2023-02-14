@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use radix_engine::types::{
     require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleAddress, PackageAddress, ParseNonFungibleAddressError, ResourceAddress,
+    NonFungibleGlobalId, PackageAddress, ParseNonFungibleGlobalIdError, ResourceAddress,
 };
 use utils::ContextualDisplay;
 
@@ -129,136 +129,133 @@ impl fmt::Debug for SimulatorComponentAddress {
 }
 
 #[derive(Clone)]
-pub struct SimulatorNonFungibleAddress(pub NonFungibleAddress);
+pub struct SimulatorNonFungibleGlobalId(pub NonFungibleGlobalId);
 
-impl From<SimulatorNonFungibleAddress> for NonFungibleAddress {
-    fn from(simulator_address: SimulatorNonFungibleAddress) -> Self {
-        simulator_address.0
+impl From<SimulatorNonFungibleGlobalId> for NonFungibleGlobalId {
+    fn from(global_id: SimulatorNonFungibleGlobalId) -> Self {
+        global_id.0
     }
 }
 
-impl From<NonFungibleAddress> for SimulatorNonFungibleAddress {
-    fn from(address: NonFungibleAddress) -> Self {
+impl From<NonFungibleGlobalId> for SimulatorNonFungibleGlobalId {
+    fn from(address: NonFungibleGlobalId) -> Self {
         Self(address)
     }
 }
 
-impl FromStr for SimulatorNonFungibleAddress {
-    type Err = ParseNonFungibleAddressError;
+impl FromStr for SimulatorNonFungibleGlobalId {
+    type Err = ParseNonFungibleGlobalIdError;
 
-    fn from_str(address: &str) -> Result<Self, Self::Err> {
-        NonFungibleAddress::try_from_canonical_combined_string(
-            &Bech32Decoder::for_simulator(),
-            address,
-        )
-        .map(Self)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let global_id =
+            NonFungibleGlobalId::try_from_canonical_string(&Bech32Decoder::for_simulator(), s)?;
+        Ok(Self(global_id))
     }
 }
 
-impl fmt::Display for SimulatorNonFungibleAddress {
+impl fmt::Display for SimulatorNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
-            self.0
-                .to_canonical_combined_string(&Bech32Encoder::for_simulator())
+            self.0.to_canonical_string(&Bech32Encoder::for_simulator())
         )
     }
 }
 
-impl fmt::Debug for SimulatorNonFungibleAddress {
+impl fmt::Debug for SimulatorNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
     }
 }
 
 #[derive(Clone)]
-pub enum SimulatorResourceOrNonFungibleAddress {
+pub enum SimulatorResourceOrNonFungibleGlobalId {
     ResourceAddress(SimulatorResourceAddress),
-    NonFungibleAddress(SimulatorNonFungibleAddress),
+    NonFungibleGlobalId(SimulatorNonFungibleGlobalId),
 }
 
-impl From<SimulatorResourceAddress> for SimulatorResourceOrNonFungibleAddress {
+impl From<SimulatorResourceAddress> for SimulatorResourceOrNonFungibleGlobalId {
     fn from(address: SimulatorResourceAddress) -> Self {
         Self::ResourceAddress(address)
     }
 }
 
-impl From<SimulatorNonFungibleAddress> for SimulatorResourceOrNonFungibleAddress {
-    fn from(address: SimulatorNonFungibleAddress) -> Self {
-        Self::NonFungibleAddress(address)
+impl From<SimulatorNonFungibleGlobalId> for SimulatorResourceOrNonFungibleGlobalId {
+    fn from(address: SimulatorNonFungibleGlobalId) -> Self {
+        Self::NonFungibleGlobalId(address)
     }
 }
 
-impl From<SimulatorResourceOrNonFungibleAddress> for AccessRule {
-    fn from(address: SimulatorResourceOrNonFungibleAddress) -> Self {
+impl From<SimulatorResourceOrNonFungibleGlobalId> for AccessRule {
+    fn from(address: SimulatorResourceOrNonFungibleGlobalId) -> Self {
         match address {
-            SimulatorResourceOrNonFungibleAddress::ResourceAddress(resource_address) => {
+            SimulatorResourceOrNonFungibleGlobalId::ResourceAddress(resource_address) => {
                 rule!(require(resource_address.0))
             }
-            SimulatorResourceOrNonFungibleAddress::NonFungibleAddress(non_fungible_address) => {
-                rule!(require(non_fungible_address.0))
+            SimulatorResourceOrNonFungibleGlobalId::NonFungibleGlobalId(non_fungible_global_id) => {
+                rule!(require(non_fungible_global_id.0))
             }
         }
     }
 }
 
-impl FromStr for SimulatorResourceOrNonFungibleAddress {
-    type Err = ParseSimulatorResourceOrNonFungibleAddressError;
+impl FromStr for SimulatorResourceOrNonFungibleGlobalId {
+    type Err = ParseSimulatorResourceOrNonFungibleGlobalIdError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
         if address.contains(":") {
-            SimulatorNonFungibleAddress::from_str(address)
-                .map_err(ParseSimulatorResourceOrNonFungibleAddressError::from)
-                .map(Self::NonFungibleAddress)
+            SimulatorNonFungibleGlobalId::from_str(address)
+                .map_err(ParseSimulatorResourceOrNonFungibleGlobalIdError::from)
+                .map(Self::NonFungibleGlobalId)
         } else {
             SimulatorResourceAddress::from_str(address)
-                .map_err(ParseSimulatorResourceOrNonFungibleAddressError::from)
+                .map_err(ParseSimulatorResourceOrNonFungibleGlobalIdError::from)
                 .map(Self::ResourceAddress)
         }
     }
 }
 
-impl fmt::Display for SimulatorResourceOrNonFungibleAddress {
+impl fmt::Display for SimulatorResourceOrNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NonFungibleAddress(non_fungible_address) => non_fungible_address.fmt(f),
+            Self::NonFungibleGlobalId(non_fungible_global_id) => non_fungible_global_id.fmt(f),
             Self::ResourceAddress(resource_address) => resource_address.fmt(f),
         }
     }
 }
 
-impl fmt::Debug for SimulatorResourceOrNonFungibleAddress {
+impl fmt::Debug for SimulatorResourceOrNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NonFungibleAddress(non_fungible_address) => non_fungible_address.fmt(f),
+            Self::NonFungibleGlobalId(non_fungible_global_id) => non_fungible_global_id.fmt(f),
             Self::ResourceAddress(resource_address) => resource_address.fmt(f),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ParseSimulatorResourceOrNonFungibleAddressError {
-    ParseNonFungibleAddressError(ParseNonFungibleAddressError),
+pub enum ParseSimulatorResourceOrNonFungibleGlobalIdError {
+    ParseNonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
     ParseResourceAddressError(AddressError),
 }
 
-impl From<ParseNonFungibleAddressError> for ParseSimulatorResourceOrNonFungibleAddressError {
-    fn from(error: ParseNonFungibleAddressError) -> Self {
-        Self::ParseNonFungibleAddressError(error)
+impl From<ParseNonFungibleGlobalIdError> for ParseSimulatorResourceOrNonFungibleGlobalIdError {
+    fn from(error: ParseNonFungibleGlobalIdError) -> Self {
+        Self::ParseNonFungibleGlobalIdError(error)
     }
 }
 
-impl From<AddressError> for ParseSimulatorResourceOrNonFungibleAddressError {
+impl From<AddressError> for ParseSimulatorResourceOrNonFungibleGlobalIdError {
     fn from(error: AddressError) -> Self {
         Self::ParseResourceAddressError(error)
     }
 }
 
-impl fmt::Display for ParseSimulatorResourceOrNonFungibleAddressError {
+impl fmt::Display for ParseSimulatorResourceOrNonFungibleGlobalIdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl std::error::Error for ParseSimulatorResourceOrNonFungibleAddressError {}
+impl std::error::Error for ParseSimulatorResourceOrNonFungibleGlobalIdError {}

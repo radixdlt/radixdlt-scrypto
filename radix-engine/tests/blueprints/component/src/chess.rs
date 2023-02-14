@@ -1,12 +1,13 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod chess {
     struct Chess {
-        players: [NonFungibleAddress; 2],
+        players: [NonFungibleGlobalId; 2],
     }
 
     impl Chess {
-        pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentAddress {
+        pub fn create_game(players: [NonFungibleGlobalId; 2]) -> ComponentAddress {
             let access_rules = AccessRules::new().method(
                 "make_move",
                 rule!(require("players/0")),

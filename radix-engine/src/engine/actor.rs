@@ -1,12 +1,9 @@
 use crate::types::*;
-use radix_engine_interface::api::types::{
-    NativeFunction, NativeMethod, RENodeId, TransactionProcessorFunction,
-};
+use radix_engine_interface::api::types::RENodeId;
 
 /// Resolved receiver including info whether receiver was derefed
 /// or not
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<(RENodeId, LockHandle)>,
     pub receiver: RENodeId,
@@ -28,101 +25,41 @@ impl ResolvedReceiver {
     }
 }
 
-#[derive(Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum ResolvedFunction {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-        export_name: String,
-        return_type: Type,
-    },
-    Native(NativeFunction),
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResolvedActor {
+    pub identifier: FnIdentifier,
+    pub receiver: Option<ResolvedReceiver>,
 }
 
-#[derive(Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum ResolvedMethod {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-        export_name: String,
-        return_type: Type,
-    },
-    Native(NativeMethod),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum REActor {
-    Function(ResolvedFunction),
-    Method(ResolvedMethod, ResolvedReceiver),
-}
-
-impl REActor {
-    pub fn is_scrypto_or_transaction(&self) -> bool {
-        matches!(
-            self,
-            REActor::Method(ResolvedMethod::Scrypto { .. }, ..)
-                | REActor::Function(ResolvedFunction::Scrypto { .. })
-                | REActor::Function(ResolvedFunction::Native(
-                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
-                ))
-        )
-    }
-}
-
-impl fmt::Debug for ResolvedFunction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-                ..
-            } => f
-                .debug_struct("Scrypto")
-                .field("package_address", package_address)
-                .field("blueprint_name", blueprint_name)
-                .field("ident", ident)
-                .finish(),
-            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+impl ResolvedActor {
+    pub fn method<I: Into<FnIdentifier>>(identifier: I, receiver: ResolvedReceiver) -> Self {
+        Self {
+            identifier: identifier.into(),
+            receiver: Some(receiver),
         }
     }
-}
 
-impl fmt::Debug for ResolvedMethod {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-                ..
-            } => f
-                .debug_struct("Scrypto")
-                .field("package_address", package_address)
-                .field("blueprint_name", blueprint_name)
-                .field("ident", ident)
-                .finish(),
-            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+    pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
+        Self {
+            identifier: identifier.into(),
+            receiver: None,
         }
     }
 }
 
 /// Execution mode
-#[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
-    Globalize,
     MoveUpstream,
     Deref,
-    ScryptoInterpreter,
+    Globalize,
+    Resolver,
     NodeMoveModule,
     AuthModule,
+    LoggerModule,
     EntityModule,
+    TransactionModule,
     Application,
     DropNode,
 }

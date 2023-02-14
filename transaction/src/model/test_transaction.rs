@@ -1,57 +1,52 @@
-use radix_engine_constants::TRANSACTION_VERSION_V1;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::*;
-
+use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 
-use crate::builder::TransactionBuilder;
 use crate::model::*;
 
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TestTransaction {
-    transaction: NotarizedTransaction,
+    nonce: u64,
+    cost_unit_limit: u32,
+    manifest: TransactionManifest,
 }
 
 impl TestTransaction {
     pub fn new(manifest: TransactionManifest, nonce: u64, cost_unit_limit: u32) -> Self {
-        let transaction = TransactionBuilder::new()
-            .header(TransactionHeader {
-                version: TRANSACTION_VERSION_V1,
-                network_id: NetworkDefinition::simulator().id,
-                start_epoch_inclusive: 0,
-                end_epoch_exclusive: 100,
-                nonce,
-                notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
-                notary_as_signatory: false,
-                cost_unit_limit,
-                tip_percentage: 5,
-            })
-            .manifest(manifest)
-            .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
-            .build();
-
-        Self { transaction }
+        Self {
+            nonce,
+            cost_unit_limit,
+            manifest,
+        }
     }
 
-    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
-        let transaction_hash = self.transaction.hash().unwrap();
-        let intent = &self.transaction.signed_intent.intent;
+    pub fn get_executable<'a>(
+        &'a self,
+        initial_proofs: Vec<NonFungibleGlobalId>,
+    ) -> Executable<'a> {
+        let payload = scrypto_encode(self).unwrap();
+        let payload_size = payload.len();
+        let transaction_hash = hash(payload);
 
         Executable::new(
-            &intent.manifest.instructions,
-            &intent.manifest.blobs,
+            InstructionList::Basic(&self.manifest.instructions),
+            &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
-                    cost_unit_limit: intent.header.cost_unit_limit,
-                    tip_percentage: intent.header.tip_percentage,
+                    cost_unit_limit: self.cost_unit_limit,
+                    tip_percentage: 0,
                 },
                 runtime_validations: vec![],
+                pre_allocated_ids: BTreeSet::new(),
             },
         )
     }

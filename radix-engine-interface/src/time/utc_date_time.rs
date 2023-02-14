@@ -1,6 +1,10 @@
 use crate::time::constants::*;
 use crate::time::Instant;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Display;
+use sbor::rust::num::ParseIntError;
+use sbor::rust::str::FromStr;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
@@ -37,7 +41,7 @@ const MIN_SUPPORTED_TIMESTAMP: i64 = -62135596800;
 /// where year `4294967295` equals `u32::MAX`.
 const MAX_SUPPORTED_TIMESTAMP: i64 = 135536014634284799;
 
-#[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Categorize, PartialEq, Eq, Copy, Clone, Debug)]
 pub enum DateTimeError {
     InvalidYear,
     InvalidMonth,
@@ -47,6 +51,9 @@ pub enum DateTimeError {
     InvalidSecond,
     InstantIsOutOfRange,
 }
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for DateTimeError {}
 
 impl fmt::Display for DateTimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -81,7 +88,7 @@ impl fmt::Display for DateTimeError {
 ///
 /// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
 /// can be queried from the Radix Engine.
-#[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Categorize, PartialEq, Eq, Copy, Clone, Debug)]
 pub struct UtcDateTime {
     year: u32,
     month: u8,
@@ -409,11 +416,93 @@ impl From<UtcDateTime> for Instant {
     }
 }
 
+impl Display for UtcDateTime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            self.year, self.month, self.day_of_month, self.hour, self.minute, self.second,
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ParseUtcDateTimeError {
+    InvalidFormat,
+    DateTimeError(DateTimeError),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseUtcDateTimeError {}
+
+impl fmt::Display for ParseUtcDateTimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseUtcDateTimeError::InvalidFormat => write!(f, "Invalid date time format. Must be in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'."),
+            ParseUtcDateTimeError::DateTimeError(e) => e.fmt(f)
+        }
+    }
+}
+
+impl From<ParseIntError> for ParseUtcDateTimeError {
+    fn from(_value: ParseIntError) -> Self {
+        Self::InvalidFormat
+    }
+}
+
+impl From<DateTimeError> for ParseUtcDateTimeError {
+    fn from(value: DateTimeError) -> Self {
+        Self::DateTimeError(value)
+    }
+}
+
+impl FromStr for UtcDateTime {
+    type Err = ParseUtcDateTimeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let chars: Vec<char> = s.chars().into_iter().collect();
+        if chars.len() == 20
+            && chars[4] == '-'
+            && chars[7] == '-'
+            && chars[10] == 'T'
+            && chars[13] == ':'
+            && chars[16] == ':'
+            && chars[19] == 'Z'
+        {
+            Ok(UtcDateTime::new(
+                s[0..4].parse::<u32>()?,
+                s[5..7].parse::<u8>()?,
+                s[8..10].parse::<u8>()?,
+                s[11..13].parse::<u8>()?,
+                s[14..16].parse::<u8>()?,
+                s[17..19].parse::<u8>()?,
+            )?)
+        } else {
+            Err(ParseUtcDateTimeError::InvalidFormat)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Instant, UtcDateTime};
+    use super::*;
     use crate::time::utc_date_time::MAX_SUPPORTED_TIMESTAMP;
     use radix_engine_interface::time::utc_date_time::MIN_SUPPORTED_TIMESTAMP;
+
+    #[test]
+    pub fn test_to_string() {
+        let expected_str = "2023-01-27T12:17:25Z";
+        let instant = Instant {
+            seconds_since_unix_epoch: 1674821845,
+        };
+        let date_time = UtcDateTime::from_instant(&instant).unwrap();
+        assert_eq!(date_time.to_string(), expected_str);
+        assert_eq!(format!("{}", date_time), expected_str);
+        assert_eq!(
+            UtcDateTime::from_str(expected_str).unwrap().to_instant(),
+            instant
+        );
+    }
 
     #[test]
     pub fn test_instant_date_time_conversions() {

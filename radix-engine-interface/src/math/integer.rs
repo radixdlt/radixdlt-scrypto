@@ -15,7 +15,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::type_id::*;
+use sbor::value_kind::*;
 use sbor::*;
 
 pub mod basic;
@@ -304,17 +304,17 @@ types! {
 
 macro_rules! sbor_codec {
     ($t:ident, $t_id:expr, $t_model:ident) => {
-        impl<X: CustomTypeId> TypeId<X> for $t {
+        impl<X: CustomValueKind> Categorize<X> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<X> {
+            fn value_kind() -> ValueKind<X> {
                 $t_id
             }
         }
 
-        impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for $t {
+        impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for $t {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-                encoder.write_type_id(Self::type_id())
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
             }
 
             #[inline]
@@ -323,12 +323,12 @@ macro_rules! sbor_codec {
             }
         }
 
-        impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for $t {
-            fn decode_body_with_type_id(
+        impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for $t {
+            fn decode_body_with_value_kind(
                 decoder: &mut D,
-                type_id: SborTypeId<X>,
+                value_kind: ValueKind<X>,
             ) -> Result<Self, DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);
@@ -336,23 +336,23 @@ macro_rules! sbor_codec {
             }
         }
 
-        impl Describe for $t {
+        impl LegacyDescribe for $t {
             fn describe() -> Type {
                 Type::$t_model
             }
         }
     };
 }
-sbor_codec!(I8, SborTypeId::I8, I8);
-sbor_codec!(I16, SborTypeId::I16, I16);
-sbor_codec!(I32, SborTypeId::I32, I32);
-sbor_codec!(I64, SborTypeId::I64, I64);
-sbor_codec!(I128, SborTypeId::I128, I128);
-sbor_codec!(U8, SborTypeId::U8, U8);
-sbor_codec!(U16, SborTypeId::U16, U16);
-sbor_codec!(U32, SborTypeId::U32, U32);
-sbor_codec!(U64, SborTypeId::U64, U64);
-sbor_codec!(U128, SborTypeId::U128, U128);
+sbor_codec!(I8, ValueKind::I8, I8);
+sbor_codec!(I16, ValueKind::I16, I16);
+sbor_codec!(I32, ValueKind::I32, I32);
+sbor_codec!(I64, ValueKind::I64, I64);
+sbor_codec!(I128, ValueKind::I128, I128);
+sbor_codec!(U8, ValueKind::U8, U8);
+sbor_codec!(U16, ValueKind::U16, U16);
+sbor_codec!(U32, ValueKind::U32, U32);
+sbor_codec!(U64, ValueKind::U64, U64);
+sbor_codec!(U128, ValueKind::U128, U128);
 
 pub trait Min {
     const MIN: Self;
@@ -962,7 +962,7 @@ macro_rules! roots_op_impl
         };
 }
 
-roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512}
+roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, U768, I8, I16, I32, I64, I128, I256, I384, I512, I768}
 
 #[cfg(test)]
 mod tests {

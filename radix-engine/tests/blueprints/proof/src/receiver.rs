@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod receiver {
     struct Receiver {
         vault: Vault,
     }
@@ -24,11 +25,11 @@ blueprint! {
 
         pub fn assert_ids(
             proof: Proof,
-            ids: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) {
             let proof = proof.unsafe_skip_proof_validation();
-            assert_eq!(proof.non_fungible_ids(), ids);
+            assert_eq!(proof.non_fungible_local_ids(), ids);
             assert_eq!(proof.resource_address(), resource_address);
         }
     }

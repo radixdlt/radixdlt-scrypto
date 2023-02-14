@@ -1,37 +1,38 @@
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
-use crate::api::api::*;
+use crate::api::wasm::*;
+use crate::api::*;
 use crate::model::*;
-use crate::scrypto;
 use crate::time::{Instant, TimeComparisonOperator};
-use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ClockCreateInvocation {}
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ClockCreateInvocation {
+    pub component_address: [u8; 26], // TODO: Clean this up
+}
 
 impl Invocation for ClockCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for ClockCreateInvocation {
-    type ScryptoOutput = SystemAddress;
+    type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for ClockCreateInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-            ClockFunctionInvocation::Create(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for ClockCreateInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Clock(ClockInvocation::Create(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ClockGetCurrentTimeMethodArgs {
+    pub precision: TimePrecision,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockGetCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub precision: TimePrecision,
 }
 
@@ -43,19 +44,22 @@ impl SerializableInvocation for ClockGetCurrentTimeInvocation {
     type ScryptoOutput = Instant;
 }
 
-impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::GetCurrentTime(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for ClockGetCurrentTimeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Clock(ClockInvocation::GetCurrentTime(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ClockCompareCurrentTimeMethodArgs {
+    pub instant: Instant,
+    pub precision: TimePrecision,
+    pub operator: TimeComparisonOperator,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCompareCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub instant: Instant,
     pub precision: TimePrecision,
     pub operator: TimeComparisonOperator,
@@ -69,19 +73,20 @@ impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
     type ScryptoOutput = bool;
 }
 
-impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::CompareCurrentTime(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for ClockCompareCurrentTimeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Clock(ClockInvocation::CompareCurrentTime(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ClockSetCurrentTimeMethodArgs {
+    pub current_time_ms: i64,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockSetCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub current_time_ms: i64,
 }
 
@@ -93,11 +98,8 @@ impl SerializableInvocation for ClockSetCurrentTimeInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for ClockSetCurrentTimeInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::SetCurrentTime(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for ClockSetCurrentTimeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Clock(ClockInvocation::SetCurrentTime(self)).into()
     }
 }

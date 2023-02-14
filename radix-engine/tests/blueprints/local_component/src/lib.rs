@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod secret {
     struct Secret {
         secret: u32,
     }
@@ -19,7 +20,7 @@ blueprint! {
         }
 
         pub fn try_to_read_local_component_with_auth(
-            some_non_fungible: NonFungibleAddress,
+            some_non_fungible: NonFungibleGlobalId,
         ) -> ComponentAddress {
             let mut local_component = Self::new(12345);
             local_component.add_access_check(
@@ -64,7 +65,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod stored_kv_local {
     struct StoredKVLocal {
         components: KeyValueStore<u32, SecretComponent>,
     }
@@ -111,7 +113,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod stored_secret {
     struct StoredSecret {
         component: SecretComponent,
     }

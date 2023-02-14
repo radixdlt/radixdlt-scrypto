@@ -1,5 +1,5 @@
 // Disable std and enable language features.
-#![cfg_attr(target_arch = "wasm32", no_std, feature(default_alloc_error_handler))]
+#![cfg_attr(target_arch = "wasm32", no_std)]
 
 // Abort when panicking.
 #[cfg(target_arch = "wasm32")]
@@ -19,7 +19,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod no_std {
     struct NoStd;
 
     impl NoStd {

@@ -1,25 +1,38 @@
 #!/bin/bash
 
-set -e
+set -eE
+
+err_report() {
+    echo "Something went wrong on line $1"
+}
+
+trap 'err_report $LINENO' ERR
+
+
+failed=0
 
 cd "$(dirname "$0")"
 
-(cd sbor; cargo fmt --check --quiet)
-(cd sbor-derive; cargo fmt --check --quiet)
-(cd sbor-tests; cargo fmt --check --quiet)
-(cd scrypto; cargo fmt --check --quiet)
-(cd scrypto-abi; cargo fmt --check --quiet)
-(cd scrypto-derive; cargo fmt --check --quiet)
-(cd scrypto-tests; cargo fmt --check --quiet)
-(cd scrypto-unit; cargo fmt --check --quiet)
-(cd radix-engine; cargo fmt --check --quiet)
-(cd radix-engine-stores; cargo fmt --check --quiet)
-(cd simulator; cargo fmt --check --quiet)
-(cd transaction; cargo fmt --check --quiet)
+packages=$(cat Cargo.toml | \
+    awk '/members/{flag=1;next} /\]/{flag=0} flag' | \
+    awk -F '"' '{print $2}')
 
-(cd assets/blueprints/account; scrypto fmt --check --quiet)
-(cd assets/blueprints/faucet; scrypto fmt --check --quiet)
-(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {} --check --quiet)
-(cd radix-engine/tests/blueprints; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {} --check --quiet)
+for package in $packages; do
+    cargo fmt -p $package --check --quiet ||
+        { echo "Code format check FAILED for $package"; failed=1; }
+done
 
-echo "Code format check passed!"
+packages="
+    assets/blueprints/account \
+    assets/blueprints/faucet \
+    "
+packages+=$(find examples -maxdepth 1 -type d \( ! -name . \))
+packages+=$(find radix-engine/tests/blueprints -maxdepth 1 -type d \( ! -name . \))
+
+for package in $packages; do
+    scrypto fmt --check --quiet --path $package ||
+        { echo "Code format check FAILED for $package"; failed=1; }
+done
+
+[ $failed -eq 0 ] && echo "Code format check passed!"
+exit $failed

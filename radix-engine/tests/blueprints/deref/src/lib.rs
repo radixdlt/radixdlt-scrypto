@@ -1,10 +1,10 @@
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::wasm::*;
+use radix_engine_interface::api::EngineApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod deref {
     struct Deref {}
 
     impl Deref {
@@ -20,8 +20,7 @@ blueprint! {
                 )
                 .unwrap();
 
-            let visible_node_ids: Vec<RENodeId> =
-                call_engine(RadixEngineInput::GetVisibleNodeIds());
+            let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
 
             for node_id in visible_node_ids {
                 if let RENodeId::Component(..) = node_id {
@@ -45,8 +44,7 @@ blueprint! {
                 syscalls.sys_drop_lock(lock_handle).unwrap();
             }
 
-            let visible_node_ids: Vec<RENodeId> =
-                call_engine(RadixEngineInput::GetVisibleNodeIds());
+            let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
 
             for node_id in visible_node_ids {
                 if let RENodeId::Component(..) = node_id {

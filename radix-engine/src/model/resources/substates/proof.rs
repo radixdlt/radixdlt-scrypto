@@ -1,6 +1,6 @@
-use crate::engine::ProofSnapshot;
 use crate::model::{
-    InvokeError, LockableResource, LockedAmountOrIds, ProofError, ResourceContainerId,
+    InvokeError, LockableResource, LockedAmountOrIds, ProofError, ProofSnapshot,
+    ResourceContainerId,
 };
 use crate::types::*;
 
@@ -60,7 +60,7 @@ impl ProofSubstate {
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_amount = locked_amount_or_ids.amount();
-                        if let Some(existing) = max.get_mut(&container_id) {
+                        if let Some(existing) = max.get_mut(container_id) {
                             *existing = Decimal::max(*existing, new_amount);
                         } else {
                             max.insert(container_id.clone(), new_amount);
@@ -79,20 +79,20 @@ impl ProofSubstate {
                 (LockedAmountOrIds::Amount(total), per_container)
             }
             ResourceType::NonFungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleId>>::new();
+                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_ids = locked_amount_or_ids
                             .ids()
                             .expect("Failed to list non-fungible IDS on non-fungible proof");
-                        if let Some(ids) = max.get_mut(&container_id) {
+                        if let Some(ids) = max.get_mut(container_id) {
                             ids.extend(new_ids);
                         } else {
                             max.insert(container_id.clone(), new_ids);
                         }
                     }
                 }
-                let mut total = BTreeSet::<NonFungibleId>::new();
+                let mut total = BTreeSet::<NonFungibleLocalId>::new();
                 for value in max.values() {
                     total.extend(value.clone());
                 }
@@ -177,7 +177,8 @@ impl ProofSubstate {
                         .to_string()
                         .parse()
                         .expect("Failed to convert non-fungible amount to usize");
-                    let ids: BTreeSet<NonFungibleId> = locked_ids.iter().take(n).cloned().collect();
+                    let ids: BTreeSet<NonFungibleLocalId> =
+                        locked_ids.iter().take(n).cloned().collect();
                     Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
                 }
             }
@@ -186,7 +187,7 @@ impl ProofSubstate {
 
     pub fn compose_by_ids(
         proofs: &[ProofSubstate],
-        ids: &BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, ProofError> {
@@ -294,10 +295,10 @@ impl ProofSubstate {
         self.total_locked.amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, InvokeError<ProofError>> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, InvokeError<ProofError>> {
         self.total_locked
             .ids()
-            .map_err(|_| InvokeError::Error(ProofError::NonFungibleOperationNotAllowed))
+            .map_err(|_| InvokeError::SelfError(ProofError::NonFungibleOperationNotAllowed))
     }
 
     pub fn is_restricted(&self) -> bool {

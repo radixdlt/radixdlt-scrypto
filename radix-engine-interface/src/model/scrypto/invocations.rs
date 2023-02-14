@@ -1,57 +1,38 @@
-use crate::api::api::Invocation;
-use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent};
-use crate::data::IndexedScryptoValue;
-use crate::scrypto;
-use crate::wasm::{SerializableInvocation, SerializedInvocation};
+use crate::api::types::ComponentId;
+use crate::api::wasm::SerializableInvocation;
+use crate::api::Invocation;
+use crate::model::{CallTableInvocation, ComponentAddress, PackageAddress};
+use crate::*;
+use radix_engine_interface::data::ScryptoValue;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ScryptoReceiver {
+    Global(ComponentAddress),
+    Component(ComponentId),
+}
 
 /// Scrypto function/method invocation.
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, Vec<u8>),
-    Method(ScryptoMethodIdent, Vec<u8>),
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ScryptoInvocation {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub fn_name: String,
+    pub receiver: Option<ScryptoReceiver>,
+    pub args: Vec<u8>,
 }
 
 impl Invocation for ScryptoInvocation {
-    type Output = Vec<u8>;
+    type Output = ScryptoValue;
 }
 
 impl SerializableInvocation for ScryptoInvocation {
-    type ScryptoOutput = Vec<u8>;
+    type ScryptoOutput = ScryptoValue;
 }
 
-impl Into<SerializedInvocation> for ScryptoInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Scrypto(self)
-    }
-}
-
-impl ScryptoInvocation {
-    pub fn args(&self) -> &[u8] {
-        match self {
-            ScryptoInvocation::Function(_, args) => &args,
-            ScryptoInvocation::Method(_, args) => &args,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum ParsedScryptoInvocation {
-    Function(ScryptoFunctionIdent, IndexedScryptoValue),
-    Method(ScryptoMethodIdent, IndexedScryptoValue),
-}
-
-impl Invocation for ParsedScryptoInvocation {
-    type Output = IndexedScryptoValue;
-}
-
-impl ParsedScryptoInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
-        match self {
-            ParsedScryptoInvocation::Function(_, args) => &args,
-            ParsedScryptoInvocation::Method(_, args) => &args,
-        }
+impl Into<CallTableInvocation> for ScryptoInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Scrypto(self)
     }
 }

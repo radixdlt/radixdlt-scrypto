@@ -8,7 +8,7 @@ on:
       - docs
       - alphanet
       - betanet
-      - release/*
+      - release\/*
   pull_request:
     branches:
       - main
@@ -16,7 +16,7 @@ on:
       - docs
       - alphanet
       - betanet
-      - release/*
+      - release\/*
 
 env:
   CARGO_TERM_COLOR: always
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -36,20 +36,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
+        prefix-key: ""
+        shared-key: simulator-release-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
-      if: matrix.os == 'linux'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -59,7 +61,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -71,15 +73,18 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --no-default-features --features alloc
       working-directory: sbor
+    - name: Run tests (indexmap + no_std)
+      run: cargo test --no-default-features --features alloc,indexmap
+      working-directory: sbor
     - name: Run derive tests
       run: cargo test
-      working-directory: sbor-derive
+      working-directory: sbor-derive-common
   sbor-integration-tests:
     name: Run SBOR integration tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -99,7 +104,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -122,7 +127,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -139,7 +144,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -147,8 +152,8 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -170,73 +175,80 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test
-      working-directory: radix-engine-derive
-    - name: Run tests
-      run: cargo test
-      working-directory: radix-engine-interface
-    - name: Run tests
-      run: cargo test
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
+          -p radix-engine
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --no-default-features --features alloc
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          --no-default-features --features alloc \
+          -p radix-engine
   radix-engine-wasmer:
-    name: Run Radix Engine tests with Wasmer
+    name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --features wasmer
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          --features wasmer \
+          -p radix-engine
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -244,8 +256,8 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -256,7 +268,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -265,25 +277,27 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: transaction
-  simulator:
-    name: Run CLI tests
+  cli-resim-rtmc:
+    name: Run CLI tests (resim & rtmc)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [k8s-linux-runner, windows-latest-16-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
+        prefix-key: ""
+        shared-key: simulator-debug-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
-      if: matrix.os == 'linux'
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
@@ -292,12 +306,44 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
+    - name: Run Unit tests
+      run: cargo test
+      working-directory: simulator
     - name: Run tests
       run: bash ./tests/resim.sh
       working-directory: simulator
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
+  cli-scrypto:
+    name: Run CLI tests (scrypto)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner, windows-latest-16-cores]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
+      with:
+        prefix-key: ""
+        shared-key: simulator-debug-${{ runner.os }}
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake m4 -y
+      if: matrix.os == 'k8s-linux-runner'
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+      if: runner.os == 'Windows'
+      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+    - name: Install dependencies
+      if: runner.os == 'Windows'
+      run: choco install llvm -y
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator

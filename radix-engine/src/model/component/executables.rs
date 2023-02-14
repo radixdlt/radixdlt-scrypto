@@ -1,38 +1,38 @@
-use crate::engine::{deref_and_update, RENode, ResolvedFunction};
+use crate::engine::{deref_and_update, Executor, RENodeInit};
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor, NativeProcedure, REActor,
-    ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
+    CallFrameUpdate, ExecutableInvocation, LockFlags, ResolvedActor, ResolverApi, RuntimeError,
+    SystemApi,
 };
-use crate::model::{BucketSubstate, GlobalAddressSubstate};
+use crate::model::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::{constants::*, rule};
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ComponentGlobalizeInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
-            ComponentFunction::Globalize,
-        )));
+        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ComponentGlobalizeInvocation {
+impl Executor for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -60,7 +60,7 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+            RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -71,30 +71,30 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
-            ComponentFunction::Globalize,
-        )));
+        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
+impl Executor for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -124,30 +124,22 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
             AccessRule::AllowAll,
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                ComponentMethod::SetRoyaltyConfig,
-            ))),
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                ComponentMethod::ClaimRoyalty,
-            ))),
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
@@ -158,7 +150,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
 
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+            RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
         )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
@@ -169,13 +161,13 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -183,92 +175,95 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::SetRoyaltyConfig)),
+        let actor = ResolvedActor::method(
+            NativeFn::Component(ComponentFn::SetRoyaltyConfig),
             resolved_receiver,
         );
-        let executor = NativeExecutor(Self {
+        let executor = Self {
             receiver: resolved_receiver.receiver,
             royalty_config: self.royalty_config,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
+impl Executor for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = self.royalty_config;
 
-        system_api.drop_lock(handle)?;
+        api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::ClaimRoyalty)),
+        let actor = ResolvedActor::method(
+            NativeFn::Component(ComponentFn::ClaimRoyalty),
             resolved_receiver,
         );
-        let executor = NativeExecutor(Self {
+        let executor = Self {
             receiver: resolved_receiver.receiver,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ComponentClaimRoyaltyInvocation {
+impl Executor for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        let resource = substate_mut
-            .component_royalty_accumulator()
-            .royalty
-            .take_all();
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
-        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
-        system_api.create_node(
-            bucket_node_id,
-            RENode::Bucket(BucketSubstate::new(resource)),
-        )?;
-        let bucket_id = bucket_node_id.into();
+        let amount = api.invoke(VaultGetAmountInvocation {
+            receiver: royalty_vault.vault_id(),
+        })?;
 
-        system_api.drop_lock(handle)?;
+        let bucket = api.invoke(VaultTakeInvocation {
+            receiver: royalty_vault.vault_id(),
+            amount,
+        })?;
+        let bucket_id = bucket.0;
+
+        api.drop_lock(handle)?;
 
         Ok((
-            Bucket(bucket_id),
+            bucket,
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }

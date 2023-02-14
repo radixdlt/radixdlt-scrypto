@@ -93,6 +93,12 @@ impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
     }
 }
 
+impl From<EddsaEd25519PublicKey> for Vec<u8> {
+    fn from(value: EddsaEd25519PublicKey) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EddsaEd25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -101,7 +107,7 @@ impl EddsaEd25519PublicKey {
 
 scrypto_type!(
     EddsaEd25519PublicKey,
-    ScryptoCustomTypeId::EddsaEd25519PublicKey,
+    ScryptoCustomValueKind::EddsaEd25519PublicKey,
     Type::EddsaEd25519PublicKey,
     EddsaEd25519PublicKey::LENGTH
 );
@@ -118,6 +124,12 @@ impl TryFrom<&[u8]> for EddsaEd25519Signature {
     }
 }
 
+impl From<EddsaEd25519Signature> for Vec<u8> {
+    fn from(value: EddsaEd25519Signature) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EddsaEd25519Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -126,7 +138,7 @@ impl EddsaEd25519Signature {
 
 scrypto_type!(
     EddsaEd25519Signature,
-    ScryptoCustomTypeId::EddsaEd25519Signature,
+    ScryptoCustomValueKind::EddsaEd25519Signature,
     Type::EddsaEd25519Signature,
     EddsaEd25519Signature::LENGTH
 );

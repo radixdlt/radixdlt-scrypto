@@ -1,7 +1,9 @@
+use crate::engine::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 use crate::model::PersistedSubstate;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -19,10 +21,35 @@ impl TypedInMemorySubstateStore {
         }
     }
 
-    pub fn with_bootstrap() -> Self {
+    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
         let mut substate_store = Self::new();
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
+    }
+
+    pub fn assert_eq(&self, other: &TypedInMemorySubstateStore) {
+        for (id, val) in &self.substates {
+            let maybe_val = other.substates.get(id);
+            match maybe_val {
+                None => panic!("Right missing substate: {:?}", id),
+                Some(right_val) => {
+                    if !val.eq(right_val) {
+                        panic!(
+                            "Substates not equal.\nLeft: {:?}\nRight: {:?}",
+                            val, right_val
+                        );
+                    }
+                }
+            }
+        }
+
+        for (id, _) in &other.substates {
+            let maybe_val = self.substates.get(id);
+            match maybe_val {
+                None => panic!("Left missing substate: {:?}", id),
+                Some(..) => {}
+            }
+        }
     }
 }
 

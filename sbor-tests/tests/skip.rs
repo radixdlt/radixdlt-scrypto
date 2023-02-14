@@ -4,7 +4,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
     #[sbor(skip)]
@@ -12,13 +12,13 @@ pub struct TestStructNamed {
     pub y: u32,
 }
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
 pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
 pub struct TestStructUnit;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
 pub enum TestEnum {
     A {
         #[sbor(skip)]
@@ -83,21 +83,18 @@ fn test_enum_with_skip() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            17, // enum type
-            1,  // string size
-            65, // "A"
+            34, // enum type
+            0, // "A"
             1,  // number of fields
             9, 2, 0, 0, 0, // field value
 
-            17, // enum type
-            1,  // string size
-            66, // "B"
+            34, // enum type
+            1, // "B"
             1,  // number of fields
             9, 4, 0, 0, 0, // field value
             
-            17, // enum type
-            1,  // string size
-            67, // "C"
+            34, // enum type
+            2, // "C"
             0,  // number of fields
         ],
         bytes

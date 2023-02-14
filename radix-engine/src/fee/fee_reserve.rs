@@ -1,5 +1,7 @@
+use crate::engine::CanBeAbortion;
 use crate::fee::FeeSummary;
 use crate::model::Resource;
+use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
@@ -9,28 +11,54 @@ use sbor::rust::cmp::min;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum FeeReserveError {
     InsufficientBalance,
     Overflow,
     LimitExceeded,
     LoanRepaymentFailed,
     NotXrd,
+    Abort(AbortReason),
 }
 
-pub trait FeeReserve {
-    fn consume_royalty(
-        &mut self,
-        receiver: RoyaltyReceiver,
-        amount: u32,
-    ) -> Result<(), FeeReserveError>;
+impl CanBeAbortion for FeeReserveError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            Self::Abort(reason) => Some(reason),
+            _ => None,
+        }
+    }
+}
 
-    fn consume_execution(
+pub trait PreExecutionFeeReserve {
+    /// This is only allowed before a transaction properly begins.
+    /// After any other methods are called, this cannot be called again.
+    fn consume_deferred(
         &mut self,
         amount: u32,
         multiplier: usize,
         reason: &'static str,
-        deferred: bool,
+    ) -> Result<(), FeeReserveError>;
+}
+
+pub trait ExecutionFeeReserve {
+    fn consume_royalty(
+        &mut self,
+        receiver: RoyaltyReceiver,
+        cost_units: u32,
+    ) -> Result<(), FeeReserveError>;
+
+    fn consume_multiplied_execution(
+        &mut self,
+        cost_units_per_multiple: u32,
+        multiplier: usize,
+        reason: &'static str,
+    ) -> Result<(), FeeReserveError>;
+
+    fn consume_execution(
+        &mut self,
+        cost_units: u32,
+        reason: &'static str,
     ) -> Result<(), FeeReserveError>;
 
     fn lock_fee(
@@ -39,12 +67,26 @@ pub trait FeeReserve {
         fee: Resource,
         contingent: bool,
     ) -> Result<Resource, FeeReserveError>;
+}
 
+pub trait FinalizingFeeReserve {
     fn finalize(self) -> FeeSummary;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingFeeReserve {}
+
+#[derive(
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress, RENodeId),
     Component(ComponentAddress, RENodeId),
@@ -55,7 +97,7 @@ pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: u128,
     /// The tip percentage
-    tip_percentage: u8,
+    tip_percentage: u16,
 
     /// Payments made during the execution of a transaction.
     payments: Vec<(VaultId, Resource, bool)>,
@@ -68,7 +110,7 @@ pub struct SystemLoanFeeReserve {
     xrd_owed: u128,
 
     /// The amount of cost units consumed
-    cost_unit_consumed: u32,
+    cost_units_consumed: u32,
     /// The max number of cost units that can be consumed
     cost_unit_limit: u32,
     /// At which point the system loan repayment is checked
@@ -85,15 +127,28 @@ pub struct SystemLoanFeeReserve {
     effective_execution_price: u128,
     /// Cache: effective royalty price
     effective_royalty_price: u128,
+
+    /// Cache: Whether to abort the transaction run when the loan is repaid.
+    /// This is used when test-executing pending transactions.
+    abort_when_loan_repaid: bool,
 }
 
+#[inline]
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
     a.checked_add(b).ok_or(FeeReserveError::Overflow)
 }
 
-fn checked_assign_add(a: &mut u32, b: u32) -> Result<(), FeeReserveError> {
-    *a = checked_add(*a, b)?;
+#[inline]
+fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
+    *value = checked_add(*value, summand)?;
     Ok(())
+}
+
+#[inline]
+fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, FeeReserveError> {
+    u32::try_from(multiplier)
+        .map_err(|_| FeeReserveError::Overflow)
+        .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))
 }
 
 pub fn u128_to_decimal(a: u128) -> Decimal {
@@ -107,14 +162,15 @@ pub fn decimal_to_u128(a: Decimal) -> u128 {
 
 impl SystemLoanFeeReserve {
     pub fn no_fee() -> Self {
-        Self::new(0, 0, DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN)
+        Self::new(0, 0, DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN, false)
     }
 
     pub fn new(
         cost_unit_price: u128,
-        tip_percentage: u8,
+        tip_percentage: u16,
         cost_unit_limit: u32,
         system_loan: u32,
+        abort_when_loan_repaid: bool,
     ) -> Self {
         Self {
             cost_unit_price,
@@ -123,7 +179,7 @@ impl SystemLoanFeeReserve {
             loan_balance: system_loan.into(),
             xrd_balance: 0,
             xrd_owed: 0,
-            cost_unit_consumed: 0,
+            cost_units_consumed: 0,
             cost_unit_limit: cost_unit_limit.into(),
             check_point: system_loan.into(),
             execution_deferred: HashMap::new(),
@@ -132,20 +188,21 @@ impl SystemLoanFeeReserve {
             effective_execution_price: cost_unit_price
                 + cost_unit_price * tip_percentage as u128 / 100,
             effective_royalty_price: cost_unit_price,
+            abort_when_loan_repaid,
         }
     }
 
-    fn consume(&mut self, n: u32, price: u128) -> Result<(), FeeReserveError> {
+    fn consume(&mut self, cost_units: u32, price: u128) -> Result<(), FeeReserveError> {
         // Check limit
-        if checked_add(self.cost_unit_consumed, n)? > self.cost_unit_limit {
+        if checked_add(self.cost_units_consumed, cost_units)? > self.cost_unit_limit {
             return Err(FeeReserveError::LimitExceeded);
         }
 
         // Sort out the amount from system loan
-        let from_loan = min(self.loan_balance, n);
+        let from_loan = min(self.loan_balance, cost_units);
 
         // Sort out the amount from locked payments
-        let from_locked = price * (n - from_loan) as u128;
+        let from_locked = price * (cost_units - from_loan) as u128;
         if self.xrd_balance < from_locked {
             return Err(FeeReserveError::InsufficientBalance);
         }
@@ -154,7 +211,7 @@ impl SystemLoanFeeReserve {
         self.loan_balance -= from_loan;
         self.xrd_balance -= from_locked;
         self.xrd_owed += price * from_loan as u128;
-        self.cost_unit_consumed += n;
+        self.cost_units_consumed += cost_units;
         Ok(())
     }
 
@@ -178,6 +235,12 @@ impl SystemLoanFeeReserve {
             self.xrd_owed = 0;
         }
 
+        if self.abort_when_loan_repaid {
+            return Err(FeeReserveError::Abort(
+                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
+            ));
+        }
+
         Ok(())
     }
 
@@ -198,7 +261,29 @@ impl SystemLoanFeeReserve {
     }
 }
 
-impl FeeReserve for SystemLoanFeeReserve {
+impl PreExecutionFeeReserve for SystemLoanFeeReserve {
+    fn consume_deferred(
+        &mut self,
+        amount: u32,
+        multiplier: usize,
+        reason: &'static str,
+    ) -> Result<(), FeeReserveError> {
+        if amount == 0 {
+            return Ok(());
+        }
+
+        let units_consumed = checked_multiply(amount, multiplier)?;
+
+        checked_assign_add(
+            self.execution_deferred.entry(reason).or_default(),
+            units_consumed,
+        )?;
+
+        Ok(())
+    }
+}
+
+impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_royalty(
         &mut self,
         receiver: RoyaltyReceiver,
@@ -211,37 +296,44 @@ impl FeeReserve for SystemLoanFeeReserve {
         self.consume(amount.into(), self.execution_price())?;
         checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
 
-        if self.cost_unit_consumed >= self.check_point && !self.fully_repaid() {
+        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
         Ok(())
     }
 
-    fn consume_execution(
+    fn consume_multiplied_execution(
         &mut self,
-        amount: u32,
+        cost_units_per_multiple: u32,
         multiplier: usize,
         reason: &'static str,
-        deferred: bool,
     ) -> Result<(), FeeReserveError> {
-        if amount == 0 {
+        if multiplier == 0 {
             return Ok(());
         }
 
-        let n = u32::try_from(multiplier)
-            .map_err(|_| FeeReserveError::Overflow)
-            .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))?;
+        self.consume_execution(
+            checked_multiply(cost_units_per_multiple, multiplier)?,
+            reason,
+        )
+    }
 
-        if deferred {
-            checked_assign_add(self.execution_deferred.entry(reason).or_default(), n)?;
-        } else {
-            self.consume(n, self.execution_price())?;
-            checked_assign_add(self.execution.entry(reason).or_default(), n)?;
+    fn consume_execution(
+        &mut self,
+        cost_units: u32,
+        reason: &'static str,
+    ) -> Result<(), FeeReserveError> {
+        if cost_units == 0 {
+            return Ok(());
         }
 
-        if self.cost_unit_consumed >= self.check_point && !self.fully_repaid() {
+        self.consume(cost_units, self.execution_price())?;
+        checked_assign_add(self.execution.entry(reason).or_default(), cost_units)?;
+
+        if self.cost_units_consumed >= self.check_point && !self.fully_repaid() {
             self.repay_all()?;
         }
+
         Ok(())
     }
 
@@ -266,14 +358,16 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         Ok(fee)
     }
+}
 
+impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(mut self) -> FeeSummary {
         // In case the transaction finishes before check point.
         self.attempt_to_repay_all();
 
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
-            cost_unit_consumed: self.cost_unit_consumed,
+            cost_unit_consumed: self.cost_units_consumed,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
             total_execution_cost_xrd: u128_to_decimal(
@@ -295,6 +389,8 @@ impl FeeReserve for SystemLoanFeeReserve {
     }
 }
 
+impl FeeReserve for SystemLoanFeeReserve {}
+
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
@@ -302,6 +398,7 @@ impl Default for SystemLoanFeeReserve {
             0,
             DEFAULT_COST_UNIT_LIMIT,
             DEFAULT_SYSTEM_LOAN,
+            false,
         )
     }
 }
@@ -319,8 +416,10 @@ mod tests {
 
     #[test]
     fn test_consume_and_repay() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5);
-        fee_reserve.consume_execution(2, 1, "test", false).unwrap();
+        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5, false);
+        fee_reserve
+            .consume_multiplied_execution(2, 1, "test")
+            .unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -332,10 +431,10 @@ mod tests {
 
     #[test]
     fn test_out_of_cost_unit() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5);
+        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 5, false);
         assert_eq!(
             Err(FeeReserveError::InsufficientBalance),
-            fee_reserve.consume_execution(6, 1, "test", false)
+            fee_reserve.consume_multiplied_execution(6, 1, "test")
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -347,7 +446,8 @@ mod tests {
 
     #[test]
     fn test_lock_fee() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 500);
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 2, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -361,7 +461,8 @@ mod tests {
 
     #[test]
     fn test_xrd_cost_unit_conversion() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 0, 100, 500);
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 0, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -376,8 +477,11 @@ mod tests {
 
     #[test]
     fn test_bad_debt() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50);
-        fee_reserve.consume_execution(2, 1, "test", false).unwrap();
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50, false);
+        fee_reserve
+            .consume_multiplied_execution(2, 1, "test")
+            .unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.cost_unit_consumed, 2);
@@ -389,8 +493,11 @@ mod tests {
 
     #[test]
     fn test_royalty_execution_mix() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50);
-        fee_reserve.consume_execution(2, 1, "test", false).unwrap();
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(5)), 1, 100, 50, false);
+        fee_reserve
+            .consume_multiplied_execution(2, 1, "test")
+            .unwrap();
         fee_reserve
             .consume_royalty(
                 RoyaltyReceiver::Package(FAUCET_PACKAGE, RENodeId::Package([0u8; 36])),

@@ -1,23 +1,20 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
-    SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENodeInit,
+    ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
-    convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
+    convert_contextless, MethodAuthorization, MethodAuthorizationError, ProofError,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofOffset, RENodeId,
+    AuthZoneStackFn, AuthZoneStackOffset, GlobalAddress, NativeFn, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),
@@ -29,31 +26,33 @@ pub enum AuthZoneError {
     AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZonePopInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Pop)),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Pop),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZonePopInvocation {
+impl Executor for AuthZonePopInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -64,20 +63,12 @@ impl NativeProcedure for AuthZonePopInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone_mut()
-                .pop()
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -87,13 +78,13 @@ impl NativeProcedure for AuthZonePopInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZonePushInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -101,20 +92,22 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
             .nodes_to_move
             .push(RENodeId::Proof(self.proof.0));
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Push)),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Push),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZonePushInvocation {
+impl Executor for AuthZonePushInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -142,13 +135,13 @@ impl NativeProcedure for AuthZonePushInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneCreateProofInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -158,22 +151,22 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
                 self.resource_address,
             )));
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProof,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProof),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneCreateProofInvocation {
+impl Executor for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -194,18 +187,12 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack
                 .cur_auth_zone()
-                .create_proof(self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+                .create_proof(self.resource_address, resource_type)?;
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -215,13 +202,13 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -231,22 +218,22 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvoc
                 self.resource_address,
             )));
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProofByAmount,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByAmount),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
+impl Executor for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -265,21 +252,17 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_amount(self.amount, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
+                self.amount,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -289,13 +272,13 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -305,22 +288,22 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocati
                 self.resource_address,
             )));
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProofByIds,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByIds),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
+impl Executor for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -339,21 +322,17 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
         let proof = {
             let substate_ref = api.get_ref(auth_zone_handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_ids(&self.ids, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
+                &self.ids,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENode::Proof(proof))?;
+        api.create_node(node_id, RENodeInit::Proof(proof))?;
         let proof_id = node_id.into();
 
         Ok((
@@ -363,31 +342,33 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneClearInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Clear)),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Clear),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneClearInvocation {
+impl Executor for AuthZoneClearInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -402,31 +383,33 @@ impl NativeProcedure for AuthZoneClearInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneDrainInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Drain)),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Drain),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneDrainInvocation {
+impl Executor for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -445,7 +428,7 @@ impl NativeProcedure for AuthZoneDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let node_id = api.allocate_node_id(RENodeType::Proof)?;
-            api.create_node(node_id, RENode::Proof(proof))?;
+            api.create_node(node_id, RENodeInit::Proof(proof))?;
             let proof_id = node_id.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
@@ -461,33 +444,30 @@ impl NativeProcedure for AuthZoneDrainInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::AssertAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AuthZoneStack(AuthZoneStackFn::AssertAccessRule),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AuthZoneAssertAccessRuleInvocation {
+impl Executor for AuthZoneAssertAccessRuleInvocation {
     type Output = ();
 
-    fn main<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -496,7 +476,7 @@ impl NativeProcedure for AuthZoneAssertAccessRuleInvocation {
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
-        let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), &self.access_rule);
+        let authorization = convert_contextless(&self.access_rule);
 
         // Authorization check
         auth_zone_stack

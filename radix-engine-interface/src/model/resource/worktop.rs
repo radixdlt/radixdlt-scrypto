@@ -1,16 +1,22 @@
-use crate::api::api::Invocation;
+use crate::api::wasm::*;
+use crate::api::Invocation;
 use crate::math::Decimal;
 use crate::model::*;
-use crate::scrypto;
-use crate::wasm::*;
+use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopPutInvocation {
     pub bucket: Bucket,
+}
+
+impl Clone for WorktopPutInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            bucket: Bucket(self.bucket.0),
+        }
+    }
 }
 
 impl Invocation for WorktopPutInvocation {
@@ -21,17 +27,13 @@ impl SerializableInvocation for WorktopPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for WorktopPutInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::Put(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopPutInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::Put(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
@@ -45,19 +47,15 @@ impl SerializableInvocation for WorktopTakeAmountInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for WorktopTakeAmountInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeAmount(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopTakeAmountInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::TakeAmount(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopTakeNonFungiblesInvocation {
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
@@ -69,17 +67,13 @@ impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for WorktopTakeNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeNonFungibles(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopTakeNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::TakeNonFungibles(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -92,17 +86,13 @@ impl SerializableInvocation for WorktopTakeAllInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for WorktopTakeAllInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeAll(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopTakeAllInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::TakeAll(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -115,17 +105,13 @@ impl SerializableInvocation for WorktopAssertContainsInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for WorktopAssertContainsInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContains(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopAssertContainsInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::AssertContains(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
@@ -138,20 +124,16 @@ impl SerializableInvocation for WorktopAssertContainsAmountInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for WorktopAssertContainsAmountInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContainsAmount(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopAssertContainsAmountInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::AssertContainsAmount(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for WorktopAssertContainsNonFungiblesInvocation {
@@ -162,17 +144,13 @@ impl SerializableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for WorktopAssertContainsNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContainsNonFungibles(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopAssertContainsNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::AssertContainsNonFungibles(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct WorktopDrainInvocation {}
 
 impl Invocation for WorktopDrainInvocation {
@@ -183,11 +161,8 @@ impl SerializableInvocation for WorktopDrainInvocation {
     type ScryptoOutput = Vec<Bucket>;
 }
 
-impl Into<SerializedInvocation> for WorktopDrainInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::Drain(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for WorktopDrainInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Worktop(WorktopInvocation::Drain(self)).into()
     }
 }

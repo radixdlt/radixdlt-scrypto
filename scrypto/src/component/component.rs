@@ -1,28 +1,22 @@
-use radix_engine_derive::Describe;
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_derive::LegacyDescribe;
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
-    SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::data::{
-    scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto_type;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
-use crate::scrypto;
+use crate::*;
 
 use super::ComponentAccessRules;
 
@@ -54,19 +48,20 @@ pub trait LocalComponent {
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
-    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress;
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, LegacyDescribe, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
@@ -78,17 +73,10 @@ pub struct Component(pub ComponentId);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let buffer = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Component(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+        let output = ScryptoEnv
+            .invoke_method(ScryptoReceiver::Component(self.0), method, args)
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -113,12 +101,12 @@ impl Component {
 
     /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let mut env = ScryptoEnv;
-        env.invoke(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Component(self.0),
-            access_rules,
-        })
-        .unwrap();
+        ScryptoEnv
+            .invoke(AccessRulesAddAccessCheckInvocation {
+                receiver: RENodeId::Component(self.0),
+                access_rules,
+            })
+            .unwrap();
         self
     }
 
@@ -154,7 +142,7 @@ impl Component {
 
     /// Globalize with owner badge. This will add additional access rules to protect native
     /// methods, such as metadata and royalty.
-    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
         ScryptoEnv
             .invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
@@ -184,17 +172,10 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let raw = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+        let output = ScryptoEnv
+            .invoke_method(ScryptoReceiver::Global(self.0), method, args)
             .unwrap();
-        scrypto_decode(&raw).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
@@ -277,58 +258,40 @@ impl GlobalComponentRef {
 // binary
 //========
 
-/// Represents an error when decoding key value store.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseComponentError {
-    InvalidHex(String),
-    InvalidLength(usize),
+impl Categorize<ScryptoCustomValueKind> for Component {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
+    }
 }
 
-impl TryFrom<&[u8]> for Component {
-    type Error = ParseComponentError;
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Component {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentError::InvalidLength(slice.len())),
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Component(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Component {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
+        match o {
+            Own::Component(component_id) => Ok(Self(component_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Component {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-}
-
-scrypto_type!(
-    Component,
-    ScryptoCustomTypeId::Component,
-    Type::Component,
-    36
-);
-
-//======
-// text
-//======
-
-impl FromStr for Component {
-    type Err = ParseComponentError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseComponentError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{:?}", self.0)
+impl scrypto_abi::LegacyDescribe for Component {
+    fn describe() -> scrypto_abi::Type {
+        Type::Component
     }
 }

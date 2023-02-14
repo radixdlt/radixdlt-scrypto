@@ -1,12 +1,12 @@
 [package]
 name = "sbor-tests"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
 
 [dev-dependencies]
+sbor = { path = "../sbor", default-features = false, features = ["indexmap"]}
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
 bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }

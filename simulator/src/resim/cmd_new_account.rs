@@ -1,13 +1,12 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;
 
-use crate::resim::Error::TransactionExecutionError;
+use crate::resim::Error::TransactionFailed;
 use crate::resim::*;
 
 /// Create an account
@@ -31,9 +30,9 @@ impl NewAccount {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
-        let auth_address = NonFungibleAddress::from_public_key(&public_key);
-        let withdraw_auth = rule!(require(auth_address));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+        let withdraw_auth = rule!(require(auth_global_id));
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -48,7 +47,6 @@ impl NewAccount {
             &self.manifest,
             self.trace,
             false,
-            false,
             out,
         )?;
 
@@ -58,7 +56,7 @@ impl NewAccount {
             let commit_result = receipt.result.expect_commit();
             commit_result
                 .outcome
-                .success_or_else(|err| TransactionExecutionError(err.clone()))?;
+                .success_or_else(|err| TransactionFailed(err.clone()))?;
 
             let account = commit_result.entity_changes.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
@@ -78,14 +76,34 @@ impl NewAccount {
             .map_err(Error::IOError)?;
 
             let mut configs = get_configs()?;
-            if configs.default_account.is_none() {
+            if configs.default_account.is_none()
+                || configs.default_private_key.is_none()
+                || configs.default_owner_badge.is_none()
+            {
+                configs.default_account = Some(account);
+                configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
+                set_configs(&configs)?;
+
+                let nf_global_id = NewSimpleBadge {
+                    symbol: None,
+                    name: Some("Owner badge".to_string()),
+                    description: None,
+                    url: None,
+                    icon_url: None,
+                    network: None,
+                    manifest: None,
+                    signing_keys: None,
+                    trace: false,
+                }
+                .run(out)?;
+                configs.default_owner_badge = Some(nf_global_id.unwrap());
+                set_configs(&configs)?;
+
                 writeln!(
                     out,
-                    "No configuration found on system. will use the above account as default."
+                    "Account configuration in complete. Will use the above account as default."
                 )
                 .map_err(Error::IOError)?;
-                configs.default_account = Some((account, hex::encode(private_key.to_bytes())));
-                set_configs(&configs)?;
             }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;

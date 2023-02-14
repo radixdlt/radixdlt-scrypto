@@ -1,33 +1,33 @@
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::*;
+use sbor::rust::collections::*;
 use transaction::model::Executable;
 
 use crate::engine::*;
-use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
+use crate::fee::{ExecutionFeeReserve, FeeReserveError};
 use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::ledger::*;
-use crate::model::Resource;
 use crate::model::RuntimeSubstate;
 use crate::model::SubstateRef;
 use crate::model::TransactionProcessorError;
+use crate::model::*;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
 use crate::state_manager::StateDiff;
-use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
+use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -67,14 +67,12 @@ pub struct Track<'s, R: FeeReserve> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
-    pub fee_reserve: R,
+    fee_reserve: R,
     pub fee_table: FeeTable,
-    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
-    pub events: Vec<TrackedEvent>,
+    pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -82,11 +80,9 @@ pub enum TrackError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
 }
 
-pub type InvokeResult = Result<Vec<Vec<u8>>, RuntimeError>;
-
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
-    pub application_logs: Vec<(Level, String)>,
+    //pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
     pub events: Vec<TrackedEvent>,
 }
@@ -110,7 +106,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
-            events: Vec::new(),
         }
     }
 
@@ -119,13 +114,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.application_logs.push((level, message));
     }
 
-    pub fn add_event(&mut self, event: TrackedEvent) {
-        self.events.push(event);
-    }
-
     /// Returns a copy of the substate associated with the given address, if exists
     fn load_substate(&mut self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substate_store.get_substate(substate_id)
+    }
+
+    #[inline]
+    /// During execution, we only allow access to the Execution subset of the FeeReserve
+    pub fn fee_reserve(&mut self) -> &mut impl ExecutionFeeReserve {
+        &mut self.fee_reserve
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -476,66 +473,36 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     fn attempt_apply_pre_execution_costs(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions())
-            .expect("Valid transaction had instructions which couldn't be encoded")
-            .len();
-        let blobs_size = {
-            let mut total_size: usize = 0;
-            for blob in transaction.blobs() {
-                total_size = total_size
-                    .checked_add(Hash::LENGTH)
-                    .ok_or(FeeReserveError::Overflow)?;
-                total_size = total_size
-                    .checked_add(blob.1.len())
-                    .ok_or(FeeReserveError::Overflow)?;
-            }
-            total_size
-        };
-
         self.fee_reserve
-            .consume_execution(self.fee_table.tx_base_fee(), 1, "base_fee", true)
+            .consume_deferred(self.fee_table.tx_base_fee(), 1, "tx_base_fee")
             .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_decoding_per_byte(),
-                    encoded_instructions_byte_length,
-                    "decode_manifest",
-                    true,
+                self.fee_reserve.consume_deferred(
+                    self.fee_table.tx_payload_cost_per_byte(),
+                    executable.payload_size(),
+                    "tx_payload_cost",
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_verification_per_byte(),
-                    encoded_instructions_byte_length,
-                    "verify_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
+                self.fee_reserve.consume_deferred(
                     self.fee_table.tx_signature_verification_per_sig(),
-                    transaction.auth_zone_params().initial_proofs.len(),
-                    "verify_signatures",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_blob_price_per_byte(),
-                    blobs_size,
-                    "blobs",
-                    true,
+                    executable.auth_zone_params().initial_proofs.len(),
+                    "tx_signature_verification",
                 )
             })
     }
 
-    pub fn finalize(self, invoke_result: InvokeResult) -> TrackReceipt {
+    pub fn finalize(
+        self,
+        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        events: Vec<TrackedEvent>,
+    ) -> TrackReceipt {
         // Close fee reserve
         let mut fee_summary = self.fee_reserve.finalize();
 
-        let result = match check_for_rejection(invoke_result, &fee_summary) {
-            Ok(invoke_result) => {
+        let result = match determine_result_type(invoke_result, &fee_summary) {
+            TransactionResultType::Commit(invoke_result) => {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
@@ -544,24 +511,34 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 };
                 finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary)
             }
-            Err(rejection_error) => TransactionResult::Reject(RejectResult {
-                error: rejection_error,
+            TransactionResultType::Reject(rejection_error) => {
+                TransactionResult::Reject(RejectResult {
+                    error: rejection_error,
+                })
+            }
+            TransactionResultType::Abort(abort_reason) => TransactionResult::Abort(AbortResult {
+                reason: abort_reason,
             }),
         };
 
         TrackReceipt {
             fee_summary,
-            application_logs: self.application_logs,
             result,
-            events: self.events,
+            events,
         }
     }
 }
 
-fn check_for_rejection(
-    invoke_result: InvokeResult,
+pub enum TransactionResultType {
+    Commit(Result<Vec<InstructionOutput>, RuntimeError>),
+    Reject(RejectionError),
+    Abort(AbortReason),
+}
+
+fn determine_result_type(
+    invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
     fee_summary: &FeeSummary,
-) -> Result<InvokeResult, RejectionError> {
+) -> TransactionResultType {
     // First - check for required rejections from explicit invoke result errors
     match &invoke_result {
         Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(err))) => {
@@ -570,21 +547,30 @@ fn check_for_rejection(
                     valid_from,
                     current_epoch,
                 } => {
-                    return Err(RejectionError::TransactionEpochNotYetValid {
-                        valid_from: *valid_from,
-                        current_epoch: *current_epoch,
-                    })
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNotYetValid {
+                            valid_from: *valid_from,
+                            current_epoch: *current_epoch,
+                        },
+                    )
                 }
                 TransactionProcessorError::TransactionEpochNoLongerValid {
                     valid_until,
                     current_epoch,
                 } => {
-                    return Err(RejectionError::TransactionEpochNoLongerValid {
-                        valid_until: *valid_until,
-                        current_epoch: *current_epoch,
-                    })
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNoLongerValid {
+                            valid_until: *valid_until,
+                            current_epoch: *current_epoch,
+                        },
+                    )
                 }
                 _ => {}
+            }
+        }
+        Err(err) => {
+            if let Some(abort_reason) = err.abortion() {
+                return TransactionResultType::Abort(abort_reason.clone());
             }
         }
         _ => {}
@@ -592,13 +578,15 @@ fn check_for_rejection(
 
     // Check for errors before loan is repaid - in which case, we also reject
     if !fee_summary.loan_fully_repaid() {
-        return Err(match invoke_result {
-            Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
-            Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
-        });
+        return match invoke_result {
+            Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
+            Err(error) => {
+                TransactionResultType::Reject(RejectionError::ErrorBeforeFeeLoanRepaid(error))
+            }
+        };
     }
 
-    return Ok(invoke_result);
+    return TransactionResultType::Commit(invoke_result);
 }
 
 /// This is just used when finalizing track into a commit
@@ -606,27 +594,55 @@ struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     new_global_addresses: Vec<GlobalAddress>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
-    vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
-        invoke_result: InvokeResult,
+        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
+        let mut application_logs = Vec::new();
+        let mut next_epoch = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
-                    SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
+                    SubstateMetaState::New => None,
+                    SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
 
-                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                match id.1 {
+                    SubstateOffset::Logger(LoggerOffset::Logger) => {
+                        let logger: LoggerSubstate = loaded.substate.into();
+                        application_logs.extend(logger.logs);
+                    }
+                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
+                        // TODO: Use application layer events rather than state updates to get this info
+                        match &loaded.metastate {
+                            SubstateMetaState::New
+                            | SubstateMetaState::Existing {
+                                state: ExistingMetaState::Updated(..),
+                                ..
+                            } => {
+                                let validator_set = loaded.substate.validator_set();
+                                let epoch = validator_set.epoch;
+                                let validator_set = validator_set.validator_set.clone();
+                                next_epoch = Some((validator_set, epoch));
+                            }
+                            _ => {}
+                        }
+
+                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                    }
+                    _ => {
+                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                    }
+                }
             }
 
             self.new_global_addresses
@@ -652,7 +668,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         // Finalize payments
-        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = IndexMap::new();
+        let mut actual_fee_payments: BTreeMap<VaultId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
@@ -706,38 +722,54 @@ impl<'s> FinalizingTrack<'s> {
                         node_id.clone(),
                         SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .package_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
                 RoyaltyReceiver::Component(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
                         SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .component_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
             }
         }
@@ -757,6 +789,8 @@ impl<'s> FinalizingTrack<'s> {
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
+            application_logs,
+            next_epoch,
         })
     }
 

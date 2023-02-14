@@ -1,14 +1,11 @@
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
-use radix_engine_interface::model::*;
-
-use sbor::SborTypeId;
-
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 use crate::types::*;
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::model::*;
 
 fn soft_to_hard_decimal(
     schema: &Type,
@@ -18,16 +15,23 @@ fn soft_to_hard_decimal(
     match soft_decimal {
         SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
         SoftDecimal::Dynamic(schema_path) => {
-            if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
-                match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
-                        ScryptoCustomValue::Decimal(v) => HardDecimal::Amount(v.clone()),
-                        _ => HardDecimal::SoftDecimalNotFound,
-                    },
-                    _ => HardDecimal::SoftDecimalNotFound,
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema) {
+                match &ty {
+                    Type::Decimal => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardDecimal::Amount(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    _ => HardDecimal::DisallowdValueType,
                 }
             } else {
-                return HardDecimal::SoftDecimalNotFound;
+                HardDecimal::InvalidSchemaPath
             }
         }
     }
@@ -41,13 +45,23 @@ fn soft_to_hard_count(
     match soft_count {
         SoftCount::Static(count) => HardCount::Count(count.clone()),
         SoftCount::Dynamic(schema_path) => {
-            if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
-                match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::U8 { value }) => HardCount::Count(value.clone()),
-                    _ => HardCount::SoftCountNotFound,
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema) {
+                match &ty {
+                    Type::U8 => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardCount::Count(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    _ => HardCount::DisallowdValueType,
                 }
             } else {
-                return HardCount::SoftCountNotFound;
+                HardCount::InvalidSchemaPath
             }
         }
     }
@@ -68,50 +82,46 @@ fn soft_to_hard_resource_list(
             HardProofRuleResourceList::List(hard_resources)
         }
         SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
-            if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
-                match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Array {
-                        element_type_id,
-                        elements,
-                    }) => match element_type_id {
-                        SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress) => {
-                            HardProofRuleResourceList::List(
-                                elements
-                                    .iter()
-                                    .map(|v| {
-                                        if let SborValue::Custom {
-                                            value: ScryptoCustomValue::ResourceAddress(address),
-                                        } = v
-                                        {
-                                            return address.clone().into();
-                                        }
-                                        panic!("Unexpected type");
-                                    })
-                                    .collect(),
-                            )
-                        }
-                        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress) => {
-                            HardProofRuleResourceList::List(
-                                elements
-                                    .iter()
-                                    .map(|v| {
-                                        if let SborValue::Custom {
-                                            value: ScryptoCustomValue::NonFungibleAddress(address),
-                                        } = v
-                                        {
-                                            return address.clone().into();
-                                        }
-                                        panic!("Unexpected type");
-                                    })
-                                    .collect(),
-                            )
-                        }
-                        _ => HardProofRuleResourceList::SoftResourceListNotFound,
-                    },
-                    _ => HardProofRuleResourceList::SoftResourceListNotFound,
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema) {
+                match &ty {
+                    Type::Array { element_type, .. } | Type::Vec { element_type }
+                        if matches!(element_type.as_ref(), Type::ResourceAddress) =>
+                    {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardProofRuleResourceList::List(
+                            scrypto_decode::<Vec<ResourceAddress>>(&scrypto_encode(v).unwrap())
+                                .expect(
+                                    format!("Unexpected value type at {:?}", schema_path).as_str(),
+                                )
+                                .into_iter()
+                                .map(|e| HardResourceOrNonFungible::Resource(e))
+                                .collect(),
+                        )
+                    }
+                    Type::Array { element_type, .. } | Type::Vec { element_type }
+                        if matches!(element_type.as_ref(), Type::NonFungibleGlobalId) =>
+                    {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardProofRuleResourceList::List(
+                            scrypto_decode::<Vec<NonFungibleGlobalId>>(&scrypto_encode(v).unwrap())
+                                .expect(
+                                    format!("Unexpected value type at {:?}", schema_path).as_str(),
+                                )
+                                .into_iter()
+                                .map(|e| HardResourceOrNonFungible::NonFungible(e))
+                                .collect(),
+                        )
+                    }
+                    _ => HardProofRuleResourceList::DisallowdValueType,
                 }
             } else {
-                return HardProofRuleResourceList::SoftResourceListNotFound;
+                HardProofRuleResourceList::InvalidSchemaPath
             }
         }
     }
@@ -124,16 +134,23 @@ fn soft_to_hard_resource(
 ) -> HardResourceOrNonFungible {
     match soft_resource {
         SoftResource::Dynamic(schema_path) => {
-            if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
-                match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
-                        ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
-                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
-                    },
-                    _ => HardResourceOrNonFungible::SoftResourceNotFound,
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema) {
+                match &ty {
+                    Type::ResourceAddress => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardResourceOrNonFungible::Resource(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    _ => HardResourceOrNonFungible::DisallowdValueType,
                 }
             } else {
-                return HardResourceOrNonFungible::SoftResourceNotFound;
+                HardResourceOrNonFungible::InvalidSchemaPath
             }
         }
         SoftResource::Static(resource_def_id) => {
@@ -144,26 +161,43 @@ fn soft_to_hard_resource(
 
 fn soft_to_hard_resource_or_non_fungible(
     schema: &Type,
-    proof_rule_resource: &SoftResourceOrNonFungible,
+    soft_resource_or_non_fungible: &SoftResourceOrNonFungible,
     value: &IndexedScryptoValue,
 ) -> HardResourceOrNonFungible {
-    match proof_rule_resource {
+    match soft_resource_or_non_fungible {
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
-            if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
-                match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
-                        ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
-                        ScryptoCustomValue::NonFungibleAddress(address) => address.clone().into(),
-                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
-                    },
-                    _ => HardResourceOrNonFungible::SoftResourceNotFound,
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema) {
+                match &ty {
+                    Type::ResourceAddress => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardResourceOrNonFungible::Resource(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    Type::NonFungibleGlobalId => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardResourceOrNonFungible::NonFungible(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    _ => HardResourceOrNonFungible::DisallowdValueType,
                 }
             } else {
-                return HardResourceOrNonFungible::SoftResourceNotFound;
+                HardResourceOrNonFungible::InvalidSchemaPath
             }
         }
-        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) => {
-            HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_global_id) => {
+            HardResourceOrNonFungible::NonFungible(non_fungible_global_id.clone())
         }
         SoftResourceOrNonFungible::StaticResource(resource_def_id) => {
             HardResourceOrNonFungible::Resource(resource_def_id.clone())
@@ -229,6 +263,10 @@ fn soft_to_hard_auth_rule(
     }
 }
 
+/// Converts an `AccessRule` into a `MethodAuthorization`, with the given context of
+/// Scrypto value and schema.
+///
+/// This method assumes that the value matches with the schema.
 pub fn convert(
     schema: &Type,
     value: &IndexedScryptoValue,
@@ -241,4 +279,14 @@ pub fn convert(
         AccessRule::AllowAll => MethodAuthorization::AllowAll,
         AccessRule::DenyAll => MethodAuthorization::DenyAll,
     }
+}
+
+pub fn convert_contextless(method_auth: &AccessRule) -> MethodAuthorization {
+    convert(
+        &Type::Tuple {
+            element_types: Vec::new(),
+        },
+        &IndexedScryptoValue::unit(),
+        method_auth,
+    )
 }

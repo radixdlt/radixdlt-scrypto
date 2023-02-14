@@ -1,47 +1,53 @@
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
-use sbor::rust::collections::{BTreeSet, HashMap};
+use radix_engine_interface::*;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneParams {
-    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub initial_proofs: Vec<NonFungibleGlobalId>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
+    pub pre_allocated_ids: BTreeSet<RENodeId>,
+    pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
-        tip_percentage: u8,
+        tip_percentage: u16,
     },
     NoFee,
 }
 
-/// Represents a validated transaction
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
+pub enum InstructionList<'a> {
+    Basic(&'a [BasicInstruction]),
+    Any(&'a [Instruction]),
+    AnyOwned(Vec<Instruction>),
+}
+
+#[derive(Debug)]
 pub struct Executable<'a> {
-    instructions: &'a [Instruction],
-    blobs: HashMap<Hash, &'a [u8]>,
+    instructions: InstructionList<'a>,
+    blobs: &'a [Vec<u8>],
     context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RuntimeValidationRequest {
     /// The validation to perform
     pub validation: RuntimeValidation,
@@ -50,8 +56,7 @@ pub struct RuntimeValidationRequest {
     pub skip_assertion: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
     IntentHashUniqueness { intent_hash: Hash },
@@ -80,14 +85,21 @@ impl RuntimeValidation {
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: &'a [Instruction],
+        instructions: InstructionList<'a>,
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
-        let blobs = blobs.iter().map(|b| (hash(b), b.as_slice())).collect();
         Self {
             instructions,
             blobs,
+            context,
+        }
+    }
+
+    pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
+        Self {
+            instructions,
+            blobs: &[],
             context,
         }
     }
@@ -100,7 +112,7 @@ impl<'a> Executable<'a> {
         &self.context.fee_payment
     }
 
-    pub fn instructions(&self) -> &[Instruction] {
+    pub fn instructions(&self) -> &InstructionList {
         &self.instructions
     }
 
@@ -108,8 +120,16 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
+    pub fn pre_allocated_ids(&self) -> &BTreeSet<RENodeId> {
+        &self.context.pre_allocated_ids
+    }
+
+    pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.context.payload_size
     }
 
     pub fn runtime_validations(&self) -> &[RuntimeValidationRequest] {

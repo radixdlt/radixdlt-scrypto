@@ -1,21 +1,17 @@
 use sbor::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::api::{api::*, types::*};
-use crate::data::ScryptoCustomTypeId;
+use crate::api::types::*;
+use crate::api::wasm::*;
+use crate::api::*;
+use crate::data::types::Own;
+use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
-use crate::scrypto;
-use crate::scrypto_type;
-use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
@@ -29,20 +25,25 @@ impl SerializableInvocation for BucketTakeInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for BucketTakeInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::Take(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketTakeInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::Take(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: Bucket,
+}
+
+impl Clone for BucketPutInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            bucket: Bucket(self.bucket.0),
+        }
+    }
 }
 
 impl Invocation for BucketPutInvocation {
@@ -53,20 +54,16 @@ impl SerializableInvocation for BucketPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for BucketPutInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(BucketMethodInvocation::Put(
-            self,
-        )))
-        .into()
+impl Into<CallTableInvocation> for BucketPutInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::Put(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
-    pub ids: BTreeSet<NonFungibleId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for BucketTakeNonFungiblesInvocation {
@@ -77,40 +74,32 @@ impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::TakeNonFungibles(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketTakeNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::TakeNonFungibles(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInvocation {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct BucketGetNonFungibleLocalIdsInvocation {
     pub receiver: BucketId,
 }
 
-impl Invocation for BucketGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
+impl Invocation for BucketGetNonFungibleLocalIdsInvocation {
+    type Output = BTreeSet<NonFungibleLocalId>;
 }
 
-impl SerializableInvocation for BucketGetNonFungibleIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleId>;
+impl SerializableInvocation for BucketGetNonFungibleLocalIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
 }
 
-impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetNonFungibleIds(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketGetNonFungibleLocalIdsInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::GetNonFungibleLocalIds(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
@@ -123,17 +112,13 @@ impl SerializableInvocation for BucketGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<SerializedInvocation> for BucketGetAmountInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetAmount(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketGetAmountInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::GetAmount(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
@@ -146,17 +131,13 @@ impl SerializableInvocation for BucketGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetResourceAddress(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketGetResourceAddressInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::GetResourceAddress(self)).into()
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }
@@ -169,58 +150,53 @@ impl SerializableInvocation for BucketCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for BucketCreateProofInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::CreateProof(self),
-        ))
-        .into()
+impl Into<CallTableInvocation> for BucketCreateProofInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Bucket(BucketInvocation::CreateProof(self)).into()
     }
 }
 
-/// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub BucketId);
-
-//========
-// error
-//========
-
-/// Represents an error when decoding bucket.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseBucketError {
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseBucketError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseBucketError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
+pub struct Bucket(pub BucketId); // scrypto stub
 
 //========
 // binary
 //========
 
-impl TryFrom<&[u8]> for Bucket {
-    type Error = ParseBucketError;
+impl Categorize<ScryptoCustomValueKind> for Bucket {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
+    }
+}
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseBucketError::InvalidLength(slice.len())),
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Bucket {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Bucket(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Bucket {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
+        match o {
+            Own::Bucket(bucket_id) => Ok(Self(bucket_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Bucket {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+impl scrypto_abi::LegacyDescribe for Bucket {
+    fn describe() -> scrypto_abi::Type {
+        Type::Bucket
     }
 }
-
-scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);

@@ -1,4 +1,3 @@
-mod auth_module;
 mod executable;
 mod instruction;
 mod manifest;
@@ -7,11 +6,10 @@ mod preview_transaction;
 mod system_transaction;
 mod test_transaction;
 
-pub use self::notarized_transaction::*;
-pub use auth_module::*;
 pub use executable::*;
 pub use instruction::*;
 pub use manifest::*;
+pub use notarized_transaction::*;
 pub use preview_transaction::*;
 pub use system_transaction::*;
 pub use test_transaction::*;

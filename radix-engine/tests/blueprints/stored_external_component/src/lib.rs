@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod external_component {
     struct ExternalComponent {
         external_component: Option<ComponentAddress>,
     }

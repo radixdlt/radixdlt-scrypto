@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod royalty_test {
     struct RoyaltyTest {}
 
     impl RoyaltyTest {
@@ -21,7 +22,7 @@ blueprint! {
 
         pub fn enable_royalty_for_package(address: PackageAddress, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(HashMap::from([(
+                borrow_package!(address).set_royalty_config(BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
                     RoyaltyConfigBuilder::new()
                         .add_rule("paid_method", 2)
@@ -32,7 +33,7 @@ blueprint! {
         }
 
         pub fn create_component_with_royalty_enabled(
-            badge: NonFungibleAddress,
+            badge: NonFungibleGlobalId,
         ) -> ComponentAddress {
             let mut local_component = Self {}.instantiate();
 
@@ -48,7 +49,7 @@ blueprint! {
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(HashMap::from([]));
+                borrow_package!(address).set_royalty_config(BTreeMap::from([]));
             })
         }
 

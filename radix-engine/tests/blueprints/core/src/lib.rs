@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
-blueprint! {
+#[blueprint]
+mod move_test {
     struct MoveTest {
         vaults: Vec<Vault>,
     }
@@ -10,7 +11,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(amount)
+                .mint_initial_supply(amount)
         }
 
         pub fn receive_bucket(&mut self, t: Bucket) {
@@ -43,7 +44,8 @@ blueprint! {
     }
 }
 
-blueprint! {
+#[blueprint]
+mod core_test {
     struct CoreTest;
 
     impl CoreTest {

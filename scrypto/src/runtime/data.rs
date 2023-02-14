@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;

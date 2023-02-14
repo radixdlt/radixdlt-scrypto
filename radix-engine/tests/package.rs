@@ -1,18 +1,14 @@
-use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::engine::{ApplicationError, InterpreterError, KernelError, RuntimeError};
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(
@@ -24,14 +20,14 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -52,12 +48,11 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "LargeReturnSize", "f", args!())
         .build();
@@ -65,8 +60,8 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
-            matches!(*b, WasmError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -76,12 +71,11 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "MaxReturnSize", "f", args!())
         .build();
@@ -89,8 +83,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
-            matches!(*b, WasmError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -100,12 +94,11 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
@@ -114,26 +107,28 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+        matches!(
+            e,
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(..))
+        )
     });
 }
 
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::builder().build();
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            generate_single_function_abi("Test", "f", Type::Any),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -145,18 +140,23 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let mut blueprints = HashMap::new();
+    let mut test_runner = TestRunner::builder().build();
+    let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "some_blueprint".to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: "f".to_string(),
                 mutability: Option::None,
-                input: Type::Unit,
-                output: Type::Unit,
+                input: Type::Tuple {
+                    element_types: vec![],
+                },
+                output: Type::Tuple {
+                    element_types: vec![],
+                },
                 export_name: "f".to_string(),
             }],
         },
@@ -164,14 +164,14 @@ fn test_basic_package_missing_export() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
             blueprints,
-            HashMap::new(),
-            HashMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

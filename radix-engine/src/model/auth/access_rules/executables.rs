@@ -1,19 +1,17 @@
 use crate::engine::{
-    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    LockFlags, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, ResolverApi, RuntimeError,
-    SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor,
+    InterpreterError, LockFlags, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
-    AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
+    AccessRulesChainFn, GlobalAddress, NativeFn, PackageOffset, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
@@ -21,13 +19,13 @@ pub enum AccessRulesChainError {
     ProtectedMethod(AccessRuleKey),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -39,35 +37,32 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::AddAccessCheck,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::AddAccessCheck),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
+impl Executor for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
-        system_api: &mut Y,
-    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // Abi checks
         {
             let offset = SubstateOffset::Component(ComponentOffset::Info);
-            let handle = system_api.lock_substate(self.receiver, offset, LockFlags::read_only())?;
+            let handle = api.lock_substate(self.receiver, offset, LockFlags::read_only())?;
 
             let (package_id, blueprint_name) = {
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let component_info = substate_ref.component_info();
                 let package_address = component_info.package_address;
                 let blueprint_name = component_info.blueprint_name.to_owned();
@@ -78,9 +73,8 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
             };
 
             let package_offset = SubstateOffset::Package(PackageOffset::Info);
-            let handle =
-                system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
-            let substate_ref = system_api.get_ref(handle)?;
+            let handle = api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(handle)?;
             let package = substate_ref.package_info();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
                 panic!(
@@ -88,7 +82,7 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
                     blueprint_name, package_id
                 )
             });
-            for (key, _) in self.access_rules.iter() {
+            for (key, _) in self.access_rules.get_all_method_auth() {
                 if let AccessRuleKey::ScryptoMethod(func_name) = key {
                     if !blueprint_abi.contains_fn(func_name.as_str()) {
                         return Err(RuntimeError::ApplicationError(
@@ -104,9 +98,9 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
         }
 
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let substate = substate_ref_mut.access_rules_chain();
         substate.access_rules_chain.push(self.access_rules);
 
@@ -114,18 +108,22 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
         match resolved_receiver.receiver {
-            RENodeId::Component(..) | RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            RENodeId::Component(..)
+            | RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::Validator(..)
+            | RENodeId::AccessController(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
@@ -134,22 +132,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodAccessRule),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
+impl Executor for AccessRulesSetMethodAccessRuleInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -158,21 +153,19 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            ))),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength)),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupMutability,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodMutability,
+            )),
         ]
         .iter()
         .any(|x| self.key == *x)
@@ -234,18 +227,21 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
         match resolved_receiver.receiver {
-            RENodeId::Component(..) | RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            RENodeId::Component(..)
+            | RENodeId::Package(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::AccessController(..) => {}
             _ => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
@@ -254,22 +250,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetGroupAccessRule),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
+impl Executor for AccessRulesSetGroupAccessRuleInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -326,13 +319,13 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -346,22 +339,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodMutability),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
+impl Executor for AccessRulesSetMethodMutabilityInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -370,21 +360,19 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            ))),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength)),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupMutability,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodMutability,
+            )),
         ]
         .iter()
         .any(|x| self.key == *x)
@@ -446,13 +434,13 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesSetGroupMutabilityInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -466,22 +454,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetGroupMutability),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
+impl Executor for AccessRulesSetGroupMutabilityInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -538,13 +523,13 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for AccessRulesGetLengthInvocation {
+    type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -558,22 +543,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            )),
+        let actor = ResolvedActor::method(
+            NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength),
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesGetLengthInvocation {
+impl Executor for AccessRulesGetLengthInvocation {
     type Output = u32;
 
-    fn main<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
