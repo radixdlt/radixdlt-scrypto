@@ -8,31 +8,22 @@ pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
-    // Global address types
+    Reference, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
 
-    // Other Engine types
-    Own,
+    Own, /* any */
     NonFungibleGlobalId,
     KeyValueStore { key_type: L, value_type: L },
 
-    // Manifest types
-    Blob,
-    Bucket,
-    Proof,
-    Expression,
-
-    // Uninterpreted
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+
+    PublicKey, /* any */
+    EcdsaSecp256k1PublicKey,
+    EddsaEd25519PublicKey,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {

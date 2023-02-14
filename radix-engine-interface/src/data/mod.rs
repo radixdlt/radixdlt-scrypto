@@ -10,13 +10,13 @@ mod indexed_value;
 mod schema_matcher;
 /// Defines a way to uniquely identify an element within a Scrypto schema type.
 mod schema_path;
-/// Scrypto custom types
-pub mod types;
 /// Format any Scrypto value using the Manifest syntax.
 mod value_formatter;
 #[cfg(feature = "serde")]
 /// One-way serialize any Scrypto value.
 mod value_serializer;
+
+pub mod model;
 
 pub use crate::args;
 

@@ -1,25 +1,12 @@
 use sbor::*;
 
-pub const TYPE_PACKAGE_ADDRESS: u8 = 0x80;
-pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
-pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
-pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
+pub const TYPE_REFERENCE: u8 = 0xf0;
+pub const TYPE_OWN: u8 = 0xf1;
 
-pub const TYPE_OWN: u8 = 0x90;
-pub const TYPE_BLOB: u8 = 0x91;
-
-pub const TYPE_BUCKET: u8 = 0xa0;
-pub const TYPE_PROOF: u8 = 0xa1;
-pub const TYPE_EXPRESSION: u8 = 0xa2;
-
-pub const TYPE_HASH: u8 = 0xb0;
-pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
-pub const TYPE_ECDSA_SECP256K1_SIGNATURE: u8 = 0xb2;
-pub const TYPE_EDDSA_ED25519_PUBIC_KEY: u8 = 0xb3;
-pub const TYPE_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
-pub const TYPE_DECIMAL: u8 = 0xb5;
-pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
-pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
+pub const TYPE_DECIMAL: u8 = 0x85;
+pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
+pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
+pub const TYPE_PUBLIC_KEY: u8 = 0x88;
 
 #[cfg_attr(
     feature = "serde",
