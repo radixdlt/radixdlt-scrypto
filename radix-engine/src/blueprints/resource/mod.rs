@@ -2,6 +2,7 @@ mod executables;
 mod package;
 mod resource_manager;
 mod substates;
+mod vault;
 mod worktop;
 
 pub use executables::*;
