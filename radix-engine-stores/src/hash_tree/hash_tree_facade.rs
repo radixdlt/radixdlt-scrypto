@@ -1,15 +1,14 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
-use crate::hash_tree::types::StorageError;
-use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
 
 use super::tree_store::{
-    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    Payload, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
 };
 use super::types::{
-    Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, TreeReader,
+    Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, StorageError,
+    TreeReader,
 };
 
 impl TreeInternalNode {
@@ -27,28 +26,40 @@ impl TreeInternalNode {
     }
 }
 
-impl TreeLeafNode {
-    fn from(key: &NodeKey, leaf_node: &LeafNode<SubstateId>) -> Self {
+impl<P: Clone> TreeLeafNode<P> {
+    fn from(key: &NodeKey, leaf_node: &LeafNode<P>) -> Self {
         TreeLeafNode {
             key_suffix: NibblePath::from_iter(
                 NibblePath::new_even(leaf_node.account_key().to_vec())
                     .nibbles()
                     .skip(key.nibble_path().num_nibbles()),
             ),
-            substate_id: leaf_node.value_index().0.clone(),
+            payload: leaf_node.value_index().0.clone(),
             value_hash: leaf_node.value_hash(),
         }
     }
 }
 
-impl TreeNode {
-    pub fn from(key: &NodeKey, node: &Node<SubstateId>) -> Self {
+impl<P: Clone> TreeNode<P> {
+    pub fn from(key: &NodeKey, node: &Node<P>) -> Self {
         match node {
             Node::Internal(internal_node) => {
                 TreeNode::Internal(TreeInternalNode::from(internal_node))
             }
             Node::Leaf(leaf_node) => TreeNode::Leaf(TreeLeafNode::from(key, leaf_node)),
             Node::Null => TreeNode::Null,
+        }
+    }
+
+    pub fn map_payload<R, F: FnOnce(P) -> R>(self, mapper: F) -> TreeNode<R> {
+        match self {
+            TreeNode::Internal(internal) => TreeNode::Internal(internal),
+            TreeNode::Leaf(leaf) => TreeNode::Leaf(TreeLeafNode {
+                key_suffix: leaf.key_suffix,
+                payload: mapper(leaf.payload),
+                value_hash: leaf.value_hash,
+            }),
+            TreeNode::Null => TreeNode::Null,
         }
     }
 }
@@ -78,23 +89,8 @@ impl InternalNode {
     }
 }
 
-impl LeafNode<SubstateId> {
-    fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
-        let full_key = NibblePath::from_iter(
-            key.nibble_path()
-                .nibbles()
-                .chain(leaf_node.key_suffix.nibbles()),
-        );
-        LeafNode::new(
-            Hash::try_from(full_key.bytes()).unwrap(),
-            leaf_node.value_hash,
-            (leaf_node.substate_id.clone(), key.version()),
-        )
-    }
-}
-
-impl Node<SubstateId> {
-    fn from(key: &NodeKey, tree_node: &TreeNode) -> Self {
+impl<P: Clone> Node<P> {
+    fn from(key: &NodeKey, tree_node: &TreeNode<P>) -> Self {
         match tree_node {
             TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
             TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, leaf_node)),
@@ -103,11 +99,23 @@ impl Node<SubstateId> {
     }
 }
 
-impl<R: ReadableTreeStore> TreeReader<SubstateId> for R {
-    fn get_node_option(
-        &self,
-        node_key: &NodeKey,
-    ) -> Result<Option<Node<SubstateId>>, StorageError> {
+impl<P: Clone> LeafNode<P> {
+    fn from(key: &NodeKey, leaf_node: &TreeLeafNode<P>) -> Self {
+        let full_key = NibblePath::from_iter(
+            key.nibble_path()
+                .nibbles()
+                .chain(leaf_node.key_suffix.nibbles()),
+        );
+        LeafNode::new(
+            Hash::try_from(full_key.bytes()).unwrap(),
+            leaf_node.value_hash,
+            (leaf_node.payload.clone(), key.version()),
+        )
+    }
+}
+
+impl<R: ReadableTreeStore> TreeReader<Payload> for R {
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<Payload>>, StorageError> {
         Ok(self
             .get_node(node_key)
             .map(|tree_node| Node::from(node_key, &tree_node)))
