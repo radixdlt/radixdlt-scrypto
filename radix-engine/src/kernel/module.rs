@@ -9,11 +9,12 @@ pub trait KernelModule {
     //======================
     // Kernel module setup
     //======================
-
+    #[inline(always)]
     fn on_init<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -29,6 +30,7 @@ pub trait KernelModule {
     // -> AfterInvoke
     //======================
 
+    #[inline(always)]
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _fn_identifier: &FnIdentifier,
@@ -37,6 +39,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &ResolvedActor,
@@ -45,6 +48,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &ResolvedActor,
@@ -52,6 +56,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &ResolvedActor,
@@ -60,10 +65,12 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
+    #[inline(always)]
     fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _output_size: usize,
@@ -75,6 +82,7 @@ pub trait KernelModule {
     // RENode events
     //======================
 
+    #[inline(always)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_type: &RENodeType,
@@ -82,6 +90,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
@@ -91,6 +100,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
@@ -98,6 +108,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
@@ -105,6 +116,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -113,6 +125,7 @@ pub trait KernelModule {
     // Substate events
     //======================
 
+    #[inline(always)]
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
@@ -123,6 +136,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
@@ -131,6 +145,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
@@ -139,6 +154,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
@@ -147,6 +163,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
@@ -158,6 +175,7 @@ pub trait KernelModule {
     // WASM interpreter events
     //======================
 
+    #[inline(always)]
     fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _code: &[u8],
@@ -169,6 +187,7 @@ pub trait KernelModule {
     // Other events
     //======================
 
+    #[inline(always)]
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _units: u32,
@@ -176,6 +195,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _new_index: usize,
@@ -183,6 +203,7 @@ pub trait KernelModule {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _vault_id: VaultId,
