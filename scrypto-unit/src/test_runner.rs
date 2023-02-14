@@ -33,8 +33,8 @@ use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
+use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
@@ -1123,7 +1123,12 @@ impl StateHashSupport {
     pub fn update_with(&mut self, transaction_outputs: Vec<OutputId>) {
         let hash_changes = transaction_outputs
             .iter()
-            .map(|output_id| SubstateHashChange::new(output_id.substate_id.clone(), Some(output_id.substate_hash)))
+            .map(|output_id| {
+                SubstateHashChange::new(
+                    output_id.substate_id.clone(),
+                    Some(output_id.substate_hash),
+                )
+            })
             .collect::<Vec<_>>();
         self.current_hash = put_at_next_version(
             &mut self.tree_store,
