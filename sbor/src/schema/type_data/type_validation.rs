@@ -3,7 +3,7 @@ use crate::*;
 /// Additional validation to apply to a payload of the given type, beyond validation from the [`TypeKind`]'s type structure.
 ///
 /// Each [`TypeKind`] typically can have either `None` or its type-specific validation.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum TypeValidation<V: CustomTypeValidation> {
     None,
 
@@ -25,7 +25,7 @@ pub enum TypeValidation<V: CustomTypeValidation> {
 }
 
 /// Represents additional validation that should be performed on the size.
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub struct LengthValidation {
     pub min: Option<u32>,
     pub max: Option<u32>,
@@ -41,7 +41,7 @@ impl LengthValidation {
 }
 
 /// Represents additional validation that should be performed on the numeric value.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub struct NumericValidation<T> {
     pub min: Option<T>,
     pub max: Option<T>,

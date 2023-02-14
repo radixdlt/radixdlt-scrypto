@@ -56,12 +56,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound + ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > >
+                impl<T: Bound>
                     ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > for MyEnum<T>
+                where
+                    T: ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >,
+                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>::CustomValueKind >
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(MyEnum),
-                        &[T::TYPE_ID,],
+                        &[<T>::TYPE_ID,],
                         &[
                             202u8 , 64u8 , 77u8 , 129u8 , 131u8 , 173u8 , 166u8 , 2u8 , 101u8 , 2u8 , 106u8 , 141u8 , 244u8 , 11u8 , 198u8 , 78u8 , 18u8 , 157u8 , 25u8 , 72u8
                         ]

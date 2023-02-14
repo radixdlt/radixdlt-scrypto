@@ -22,6 +22,7 @@ pub mod prelude {
     pub use super::iter::FromIterator;
 
     // And some extra useful additions we use a lot:
+    pub use super::borrow::Cow;
     pub use super::collections::*;
     pub use super::fmt::{Debug, Display};
     pub use super::format;
@@ -152,6 +153,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! btreemap {
+            ( ) => ({
+                $crate::rust::collections::btree_map::BTreeMap::new()
+            });
             ( $($key:expr => $value:expr),* ) => ({
                 let mut temp = $crate::rust::collections::btree_map::BTreeMap::new();
                 $(
@@ -182,6 +186,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! btreeset {
+            ( ) => ({
+                $crate::rust::collections::btree_set::BTreeSet::new()
+            });
             ( $($value:expr),* ) => ({
                 let mut temp = $crate::rust::collections::btree_set::BTreeSet::new();
                 $(
@@ -210,6 +217,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! hashmap {
+            ( ) => ({
+                $crate::rust::collections::hash_map::HashMap::default()
+            });
             ( $($key:expr => $value:expr),* ) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
                 // but we throw away that string literal during constant evaluation.
@@ -241,6 +251,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! hashset {
+            ( ) => ({
+                $crate::rust::collections::hash_set::HashSet::default()
+            });
             ( $($key:expr),* ) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
                 // but we throw away that string literal during constant evaluation.
@@ -305,6 +318,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! indexmap {
+            ( ) => ({
+                $crate::rust::collections::index_map::index_map_new()
+            });
             ($($key:expr => $value:expr,)+) => ( $crate::rust::collections::index_map::indexmap!{$($key => $value),*} );
             ($($key:expr => $value:expr),*) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
@@ -362,6 +378,9 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! indexset {
+            ( ) => ({
+                $crate::rust::collections::index_set_new()
+            });
             ($($key:expr,)+) => ( $crate::rust::collections::index_set::indexset!{$($key),*} );
             ($($key:expr),*) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,

@@ -46,7 +46,7 @@ fn handle_transparent_describe(
         generics,
         ..
     } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+    let (impl_generics, ty_generics, where_clause, _, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
     let output = match data {
@@ -99,13 +99,8 @@ fn handle_normal_describe(
         generics,
         ..
     } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+    let (impl_generics, ty_generics, where_clause, child_types, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
-
-    let generic_type_idents = ty_generics
-        .type_params()
-        .map(|t| &t.ident)
-        .collect::<Vec<_>>();
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -137,7 +132,7 @@ fn handle_normal_describe(
                             // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
                             // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
                             // which the compiler will throw out for other reasons.
-                            &[#(<#generic_type_idents>::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -176,7 +171,7 @@ fn handle_normal_describe(
                             // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
                             // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
                             // which the compiler will throw out for other reasons.
-                            &[#(#generic_type_idents::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -200,7 +195,7 @@ fn handle_normal_describe(
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
-                            &[#(#generic_type_idents::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -280,7 +275,7 @@ fn handle_normal_describe(
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(#ident),
-                        &[#(#generic_type_idents::TYPE_ID,)*],
+                        &[#(<#child_types>::TYPE_ID,)*],
                         &#code_hash
                     );
 
@@ -331,7 +326,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8]
+                        &[159u8, 209u8, 242u8, 94u8, 4u8, 85u8, 29u8, 88u8, 103u8, 42u8, 6u8, 107u8, 55u8, 82u8, 41u8, 37u8, 138u8, 251u8, 115u8, 188u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -373,7 +368,7 @@ mod tests {
                         stringify!(Test),
                         &[],
                         &[
-                            159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8
+                            159u8, 209u8, 242u8, 94u8, 4u8, 85u8, 29u8, 88u8, 103u8, 42u8, 6u8, 107u8, 55u8, 82u8, 41u8, 37u8, 138u8, 251u8, 115u8, 188u8
                         ]
                     );
                     fn type_data() -> Option<
@@ -429,7 +424,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[34u8 , 114u8 , 203u8 , 221u8 , 124u8 , 31u8 , 95u8 , 225u8 , 232u8 , 133u8 , 214u8 , 82u8 , 163u8 , 166u8 , 47u8 , 94u8 , 1u8 , 45u8 , 24u8 , 85u8]
+                        &[34u8, 114u8, 203u8, 221u8, 124u8, 31u8, 95u8, 225u8, 232u8, 133u8, 214u8, 82u8, 163u8, 166u8, 47u8, 94u8, 1u8, 45u8, 24u8, 85u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -464,7 +459,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[191u8 , 160u8 , 163u8 , 134u8 , 72u8 , 226u8 , 165u8 , 105u8 , 145u8 , 247u8 , 102u8 , 49u8 , 49u8 , 92u8 , 177u8 , 109u8 , 66u8 , 111u8 , 153u8 , 93u8]
+                        &[191u8, 160u8, 163u8, 134u8, 72u8, 226u8, 165u8, 105u8, 145u8, 247u8, 102u8, 49u8, 49u8, 92u8, 177u8, 109u8, 66u8, 111u8, 153u8, 93u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -478,17 +473,22 @@ mod tests {
     #[test]
     fn test_complex_enum_schema() {
         let input =
-            TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
+            TokenStream::from_str("#[sbor(categorize_types = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
         let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::Categorize<C::CustomValueKind>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
+                impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2>
+                where
+                    T: ::sbor::Describe<C>,
+                    T2: ::sbor::Describe<C>,
+                    T2: ::sbor::Categorize<C::CustomValueKind>
+                {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
-                        &[T::TYPE_ID, T2::TYPE_ID,],
-                        &[128u8 , 130u8 , 11u8 , 0u8 , 197u8 , 86u8 , 125u8 , 186u8 , 15u8 , 144u8 , 196u8 , 61u8 , 236u8 , 39u8 , 235u8 , 228u8 , 7u8 , 225u8 , 251u8 , 25u8]
+                        &[<T>::TYPE_ID, <T2>::TYPE_ID,],
+                        &[53u8, 102u8, 114u8, 88u8, 176u8, 193u8, 133u8, 184u8, 140u8, 124u8, 151u8, 120u8, 108u8, 184u8, 217u8, 14u8, 89u8, 95u8, 159u8, 189u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {

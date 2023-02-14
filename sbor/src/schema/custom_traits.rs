@@ -1,7 +1,5 @@
-use super::*;
-use crate::rust::collections::*;
-use crate::rust::fmt::Debug;
-use crate::CustomValueKind;
+use crate::rust::prelude::*;
+use crate::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
