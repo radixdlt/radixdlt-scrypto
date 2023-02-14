@@ -7,40 +7,18 @@ use sbor::rust::fmt::Debug;
 
 pub const VAULT_BLUEPRINT: &str = "Vault";
 
+pub const VAULT_PUT_IDENT: &str = "put";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultPutInvocation {
-    pub receiver: VaultId,
+pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
-impl Clone for VaultPutInvocation {
+impl Clone for VaultPutInput {
     fn clone(&self) -> Self {
         Self {
-            receiver: self.receiver,
             bucket: Bucket(self.bucket.0),
         }
-    }
-}
-
-impl Invocation for VaultPutInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::Put))
-    }
-}
-
-impl SerializableInvocation for VaultPutInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::Put)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultPutInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::Put(self)).into()
     }
 }
 
@@ -80,85 +58,22 @@ pub struct VaultRecallNonFungiblesInput {
     pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetAmountInvocation {
-    pub receiver: VaultId,
-}
-
-impl Invocation for VaultGetAmountInvocation {
-    type Output = Decimal;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetAmount))
-    }
-}
-
-impl SerializableInvocation for VaultGetAmountInvocation {
-    type ScryptoOutput = Decimal;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::GetAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultGetAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::GetAmount(self)).into()
-    }
-}
+pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetResourceAddressInvocation {
-    pub receiver: VaultId,
+pub struct VaultGetAmountInput {
 }
 
-impl Invocation for VaultGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetResourceAddress))
-    }
-}
-
-impl SerializableInvocation for VaultGetResourceAddressInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::GetResourceAddress)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultGetResourceAddressInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::GetResourceAddress(self)).into()
-    }
-}
+pub const VAULT_GET_RESOURCE_ADDRESS_IDENT: &str = "get_resource_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct VaultGetNonFungibleLocalIdsInvocation {
-    pub receiver: VaultId,
+pub struct VaultGetResourceAddressInput {
 }
 
-impl Invocation for VaultGetNonFungibleLocalIdsInvocation {
-    type Output = BTreeSet<NonFungibleLocalId>;
+pub const VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Vault(VaultFn::GetNonFungibleLocalIds))
-    }
-}
-
-impl SerializableInvocation for VaultGetNonFungibleLocalIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Vault(VaultFn::GetNonFungibleLocalIds)
-    }
-}
-
-impl Into<CallTableInvocation> for VaultGetNonFungibleLocalIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Vault(VaultInvocation::GetNonFungibleLocalIds(self)).into()
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VaultGetNonFungibleLocalIdsInput {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -334,22 +334,22 @@ fn build_substates(
     );
 
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put)),
+        AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string()),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetAmount)),
+        AccessRuleKey::ScryptoMethod(VAULT_GET_AMOUNT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetResourceAddress)),
+        AccessRuleKey::ScryptoMethod(VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetNonFungibleLocalIds)),
+        AccessRuleKey::ScryptoMethod(VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -1262,7 +1262,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                    let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1281,7 +1281,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
             }
             Withdraw => {
@@ -1327,7 +1327,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                    let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1346,7 +1346,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
+                let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_mutability(key, input.mutability);
             }
             Withdraw => {

@@ -38,12 +38,15 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(VaultPutInvocation {
-            receiver: self.0,
-            bucket,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_PUT_IDENT,
+            scrypto_encode(&VaultPutInput { bucket }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_take<Y, E: Debug + ScryptoDecode>(
@@ -107,17 +110,25 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        sys_calls.call_native(VaultGetAmountInvocation { receiver: self.0 })
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_GET_AMOUNT_IDENT,
+            scrypto_encode(&VaultGetAmountInput {
+            })
+                .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
         let amount = self.sys_amount(api)?;
         api.call_native(VaultCreateProofByAmountInvocation {
@@ -205,8 +216,17 @@ impl Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
     {
-        api.call_native(VaultGetResourceAddressInvocation { receiver: self.0 })
+
+        let rtn = api.call_method(
+            ScryptoReceiver::Vault(self.0),
+            VAULT_GET_RESOURCE_ADDRESS_IDENT,
+            scrypto_encode(&VaultGetResourceAddressInput {
+            })
+                .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }

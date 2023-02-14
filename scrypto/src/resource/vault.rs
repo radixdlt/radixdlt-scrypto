@@ -98,8 +98,14 @@ impl ScryptoVault for Vault {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
-        env.call_native(VaultGetAmountInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_AMOUNT_IDENT,
+                scrypto_encode(&VaultGetAmountInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
@@ -174,26 +180,50 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
+    fn put(&mut self, bucket: Bucket) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_PUT_IDENT,
+                scrypto_encode(&VaultPutInput {
+                    bucket,
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_RESOURCE_ADDRESS_IDENT,
+                scrypto_encode(&VaultGetResourceAddressInput {
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
     scrypto_env_native_fn! {
-        fn put(&mut self, bucket: Bucket) -> () {
-            VaultPutInvocation {
-                receiver: self.0,
-                bucket: Bucket(bucket.0),
-            }
-        }
-
-        fn resource_address(&self) -> ResourceAddress {
-            VaultGetResourceAddressInvocation {
-                receiver: self.0,
-            }
-        }
-
-        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-            VaultGetNonFungibleLocalIdsInvocation {
-                receiver: self.0,
-            }
-        }
-
         fn create_proof(&self) -> Proof {
             VaultCreateProofInvocation {
                 receiver: self.0,

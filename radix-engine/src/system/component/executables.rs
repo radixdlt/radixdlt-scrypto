@@ -231,12 +231,8 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
-        let amount = api.call_native(VaultGetAmountInvocation {
-            receiver: royalty_vault.vault_id(),
-        })?;
-
         let mut vault = Vault(royalty_vault.vault_id());
-        let bucket = vault.sys_take(amount, api)?;
+        let bucket = vault.sys_take_all(api)?;
         let bucket_id = bucket.0;
 
         api.drop_lock(handle)?;

@@ -70,9 +70,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // Proofs can only be created when the primary role is unlocked - regardless of whether the
         // controller is in recovery or normal operations.

@@ -138,10 +138,6 @@ pub enum BucketInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultInvocation {
-    Put(VaultPutInvocation),
-    GetAmount(VaultGetAmountInvocation),
-    GetResourceAddress(VaultGetResourceAddressInvocation),
-    GetNonFungibleLocalIds(VaultGetNonFungibleLocalIdsInvocation),
     CreateProof(VaultCreateProofInvocation),
     CreateProofByAmount(VaultCreateProofByAmountInvocation),
     CreateProofByIds(VaultCreateProofByIdsInvocation),
@@ -221,10 +217,6 @@ impl NativeInvocation {
                 ProofInvocation::Clone(..) => {}
             },
             NativeInvocation::Vault(vault_method) => match vault_method {
-                VaultInvocation::Put(..) => {}
-                VaultInvocation::GetAmount(..) => {}
-                VaultInvocation::GetResourceAddress(..) => {}
-                VaultInvocation::GetNonFungibleLocalIds(..) => {}
                 VaultInvocation::CreateProof(..) => {}
                 VaultInvocation::CreateProofByAmount(..) => {}
                 VaultInvocation::CreateProofByIds(..) => {}
@@ -354,10 +346,6 @@ impl NativeInvocation {
                 BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Vault(i) => match i {
-                VaultInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
-                VaultInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProofByAmount(i) => (get_native_fn(i), scrypto_encode(i)),
                 VaultInvocation::CreateProofByIds(i) => (get_native_fn(i), scrypto_encode(i)),

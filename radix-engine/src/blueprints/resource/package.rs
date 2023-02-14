@@ -202,6 +202,30 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::recall_non_fungibles(receiver, input, api)
             }
+            VAULT_PUT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::put(receiver, input, api)
+            }
+            VAULT_GET_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::get_amount(receiver, input, api)
+            }
+            VAULT_GET_RESOURCE_ADDRESS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::get_resource_address(receiver, input, api)
+            }
+            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::get_non_fungible_local_ids(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

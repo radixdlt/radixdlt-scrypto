@@ -15,7 +15,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
 use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi};
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
-use radix_engine_interface::blueprints::resource::{Bucket, VaultGetAmountInvocation};
+use radix_engine_interface::blueprints::resource::Bucket;
 
 pub struct Package;
 
@@ -318,13 +318,8 @@ impl Executor for PackageClaimRoyaltyExecutable {
 
         let mut substate_mut = api.get_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
-
-        let amount = api.call_native(VaultGetAmountInvocation {
-            receiver: royalty_vault.vault_id(),
-        })?;
-
         let mut vault = Vault(royalty_vault.vault_id());
-        let bucket = vault.sys_take(amount, api)?;
+        let bucket = vault.sys_take_all(api)?;
         let bucket_id = bucket.0;
 
         api.drop_lock(handle)?;

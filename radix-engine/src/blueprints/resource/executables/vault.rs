@@ -13,7 +13,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
+    NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
@@ -148,6 +148,137 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
+    pub(crate) fn put<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let input: VaultPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle =
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::MUTABLE,
+            )?;
+
+        let bucket = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
+
+        let mut substate_mut = api.get_ref_mut(vault_handle)?;
+        let vault = substate_mut.vault();
+        vault.put(bucket).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::ResourceOperationError(e),
+            ))
+        })?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub(crate) fn get_amount<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let _input: VaultGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle =
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::read_only(),
+            )?;
+
+        let substate_ref = api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let amount = vault.total_amount();
+
+        Ok(IndexedScryptoValue::from_typed(&amount))
+    }
+
+    pub(crate) fn get_resource_address<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let _input: VaultGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle =
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::read_only(),
+            )?;
+
+        let substate_ref = api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let resource_address = vault.resource_address();
+
+        Ok(IndexedScryptoValue::from_typed(&resource_address))
+    }
+
+    pub(crate) fn get_non_fungible_local_ids<Y>(
+        receiver: VaultId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
+    {
+        let _input: VaultGetNonFungibleLocalIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let vault_handle =
+            api.lock_substate(
+                RENodeId::Vault(receiver),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Vault),
+                LockFlags::read_only(),
+            )?;
+
+        let substate_ref = api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let ids = vault.total_ids().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::ResourceOperationError(e),
+            ))
+        })?;
+
+        Ok(IndexedScryptoValue::from_typed(&ids))
+    }
+
+
     pub(crate) fn lock_fee<Y>(
         receiver: VaultId,
         input: ScryptoValue,
@@ -246,182 +377,6 @@ impl VaultBlueprint {
             Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
-    }
-}
-
-impl ExecutableInvocation for VaultPutInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.bucket.0));
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::Put),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultPutInvocation {
-    type Output = ();
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-
-        let bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
-
-        let mut substate_mut = api.get_ref_mut(vault_handle)?;
-        let vault = substate_mut.vault();
-        vault.put(bucket).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceOperationError(e),
-            ))
-        })?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for VaultGetAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetAmount),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultGetAmountInvocation {
-    type Output = Decimal;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-
-        let substate_ref = api.get_ref(vault_handle)?;
-        let vault = substate_ref.vault();
-        let amount = vault.total_amount();
-
-        Ok((amount, CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for VaultGetResourceAddressInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetResourceAddress),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-
-        let substate_ref = api.get_ref(vault_handle)?;
-        let vault = substate_ref.vault();
-        let resource_address = vault.resource_address();
-
-        Ok((
-            resource_address,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
-        ))
-    }
-}
-
-impl ExecutableInvocation for VaultGetNonFungibleLocalIdsInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::Vault(self.receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = ResolvedActor::method(
-            NativeFn::Vault(VaultFn::GetNonFungibleLocalIds),
-            ResolvedReceiver::new(receiver),
-        );
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for VaultGetNonFungibleLocalIdsInvocation {
-    type Output = BTreeSet<NonFungibleLocalId>;
-
-    fn execute<'a, Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(BTreeSet<NonFungibleLocalId>, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        let node_id = RENodeId::Vault(self.receiver);
-        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-
-        let substate_ref = api.get_ref(vault_handle)?;
-        let vault = substate_ref.vault();
-        let ids = vault.total_ids().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceOperationError(e),
-            ))
-        })?;
-
-        Ok((ids, CallFrameUpdate::empty()))
     }
 }
 

@@ -112,6 +112,10 @@ impl FeeTable {
                 VAULT_LOCK_FEE_IDENT => self.fixed_medium,
                 VAULT_RECALL_IDENT => self.fixed_medium,
                 VAULT_RECALL_NON_FUNGIBLES_IDENT => self.fixed_medium,
+                VAULT_PUT_IDENT => self.fixed_medium,
+                VAULT_GET_AMOUNT_IDENT => self.fixed_low,
+                VAULT_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
+                VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
@@ -256,10 +260,6 @@ impl FeeTable {
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Vault(vault_ident) => match vault_ident {
-                VaultFn::Put => self.fixed_medium,
-                VaultFn::GetAmount => self.fixed_low,
-                VaultFn::GetResourceAddress => self.fixed_low,
-                VaultFn::GetNonFungibleLocalIds => self.fixed_medium,
                 VaultFn::CreateProof => self.fixed_high,
                 VaultFn::CreateProofByAmount => self.fixed_high,
                 VaultFn::CreateProofByIds => self.fixed_high,

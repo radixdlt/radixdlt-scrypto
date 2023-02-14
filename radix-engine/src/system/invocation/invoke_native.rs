@@ -133,22 +133,6 @@ where
             }
         },
         NativeInvocation::Vault(vault_invocation) => match vault_invocation {
-            VaultInvocation::Put(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::GetAmount(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::GetResourceAddress(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            VaultInvocation::GetNonFungibleLocalIds(invocation) => {
-                let rtn = api.invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             VaultInvocation::CreateProof(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
