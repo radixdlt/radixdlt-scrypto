@@ -14,7 +14,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_runtime::*;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
@@ -152,8 +151,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
     + Invokable<PackagePublishNativeInvocation, E>
-    + Invokable<TransactionRuntimeGetHashInvocation, E>
-    + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
 {
 }
 

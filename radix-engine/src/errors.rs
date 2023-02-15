@@ -199,6 +199,7 @@ pub enum InterpreterError {
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
+    NativeInvalidCodeId(u8),
 
     InvalidInvocation,
     DisallowedInvocation(NativeFn),

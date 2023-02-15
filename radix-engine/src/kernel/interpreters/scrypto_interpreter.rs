@@ -6,6 +6,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
@@ -76,6 +77,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
                 ScryptoReceiver::Worktop => RENodeId::Worktop,
                 ScryptoReceiver::Logger => RENodeId::Logger,
+                ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
             };
 
             // Type Check
@@ -434,8 +436,11 @@ impl NativeVm {
             LOGGER_CODE_ID => {
                 LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
+            TRANSACTION_RUNTIME_CODE_ID => {
+                TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeInvalidCodeId(native_package_code_id),
             )),
         }
     }

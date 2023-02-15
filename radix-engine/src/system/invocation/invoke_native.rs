@@ -2,7 +2,7 @@ use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
     AccessRulesChainInvocation, AuthZoneStackInvocation, ComponentInvocation, MetadataInvocation,
-    NativeInvocation, PackageInvocation, TransactionRuntimeInvocation,
+    NativeInvocation, PackageInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -117,16 +117,6 @@ where
                 Ok(Box::new(rtn))
             }
             MetadataInvocation::Get(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::TransactionRuntime(method) => match method {
-            TransactionRuntimeInvocation::GetHash(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            TransactionRuntimeInvocation::GenerateUuid(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

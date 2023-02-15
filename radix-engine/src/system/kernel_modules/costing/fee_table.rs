@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_runtime::*;
 
 pub enum CostingEntry {
     /* invoke */
@@ -73,6 +74,13 @@ impl FeeTable {
                 LOGGER_LOG_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
+            (TRANSACTION_RUNTIME_PACKAGE, TRANSACTION_RUNTIME_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    TRANSACTION_RUNTIME_GET_HASH_IDENT => self.fixed_low,
+                    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
             (RESOURCE_MANAGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => self.fixed_high,
@@ -260,10 +268,6 @@ impl FeeTable {
                 PackageFn::PublishNative => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
-            },
-            NativeFn::TransactionRuntime(ident) => match ident {
-                TransactionRuntimeFn::GetHash => self.fixed_low,
-                TransactionRuntimeFn::GenerateUuid => self.fixed_low,
             },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {

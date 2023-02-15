@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IdentityAbi;
 use radix_engine_interface::blueprints::logger::LoggerAbi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
@@ -218,10 +219,29 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
+                abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: LOGGER_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+            }),
+        )));
+    }
+
+    // TransactionRuntime Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            TRANSACTION_RUNTIME_PACKAGE,
+        )));
+        let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
             }),

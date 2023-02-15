@@ -11,4 +11,5 @@ pub enum ScryptoReceiver {
     Bucket(BucketId),
     Worktop,
     Logger,
+    TransactionRuntime,
 }

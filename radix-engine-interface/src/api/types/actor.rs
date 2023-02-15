@@ -16,7 +16,6 @@ pub enum NativePackage {
     Package,
     Metadata,
     KeyValueStore,
-    TransactionRuntime,
     TransactionProcessor,
     Root,
 }
@@ -87,10 +86,9 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageFn),
-    AuthZoneStack(AuthZoneStackFn),
-    TransactionRuntime(TransactionRuntimeFn),
-    TransactionProcessor(TransactionProcessorFn),
     Metadata(MetadataFn),
+    TransactionProcessor(TransactionProcessorFn),
+    AuthZoneStack(AuthZoneStackFn),
     Root,
 }
 
@@ -101,7 +99,6 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
         }
@@ -251,31 +248,6 @@ pub enum AuthZoneStackFn {
     Clear,
     Drain,
     AssertAccessRule,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum TransactionRuntimeFn {
-    GetHash,
-    GenerateUuid,
 }
 
 #[derive(

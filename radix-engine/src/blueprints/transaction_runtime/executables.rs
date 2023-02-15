@@ -1,53 +1,63 @@
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::ResolvedActor;
-use crate::kernel::actor::ResolvedReceiver;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+    KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_runtime::*;
+use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
-impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::method(
-            NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash),
-            ResolvedReceiver::new(RENodeId::TransactionRuntime),
-        );
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for TransactionRuntimeGetHashInvocation {
-    type Output = Hash;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+pub struct TransactionRuntimeNativePackage;
+impl TransactionRuntimeNativePackage {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        receiver: Option<ComponentId>,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        match export_name {
+            TRANSACTION_RUNTIME_GET_HASH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                Self::get_hash(receiver, input, api)
+            }
+            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                Self::generate_uuid(receiver, input, api)
+            }
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            )),
+        }
+    }
+
+    pub(crate) fn get_hash<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let _input: TransactionRuntimeGetHashInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
@@ -56,44 +66,23 @@ impl Executor for TransactionRuntimeGetHashInvocation {
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
-        Ok((
-            transaction_runtime_substate.hash.clone(),
-            CallFrameUpdate::empty(),
+        Ok(IndexedScryptoValue::from_typed(
+            &transaction_runtime_substate.hash,
         ))
     }
-}
 
-impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::method(
-            NativeFn::TransactionRuntime(TransactionRuntimeFn::GenerateUuid),
-            ResolvedReceiver::new(RENodeId::TransactionRuntime),
-        );
-
-        let call_frame_update = CallFrameUpdate::empty();
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for TransactionRuntimeGenerateUuidInvocation {
-    type Output = u128;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn generate_uuid<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let _input: TransactionRuntimeGenerateUuid =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
@@ -112,7 +101,7 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
         let uuid = generate_uuid(&tx_hash_substate.hash, tx_hash_substate.next_id);
         tx_hash_substate.next_id = tx_hash_substate.next_id + 1;
 
-        Ok((uuid, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&uuid))
     }
 }
 

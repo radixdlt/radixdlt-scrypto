@@ -1,7 +1,5 @@
-use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
-use radix_engine_interface::api::{
-    ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -71,11 +69,14 @@ impl Runtime {
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.call_native(TransactionRuntimeGenerateUuidInvocation {
-            receiver: RENodeId::TransactionRuntime.into(),
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::TransactionRuntime,
+            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
+            scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }

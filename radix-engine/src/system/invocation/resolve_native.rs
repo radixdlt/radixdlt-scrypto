@@ -3,7 +3,6 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::blueprints::transaction_runtime::*;
 
 pub fn resolve_native(
     native_fn: NativeFn,
@@ -143,19 +142,6 @@ pub fn resolve_native(
             MetadataFn::Get => {
                 let invocation = scrypto_decode::<MetadataGetInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::TransactionRuntime(tx_runtime_fn) => match tx_runtime_fn {
-            TransactionRuntimeFn::GetHash => {
-                let invocation = scrypto_decode::<TransactionRuntimeGetHashInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            TransactionRuntimeFn::GenerateUuid => {
-                let invocation =
-                    scrypto_decode::<TransactionRuntimeGenerateUuidInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
         },

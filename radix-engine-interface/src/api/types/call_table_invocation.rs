@@ -4,7 +4,6 @@ use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
 use crate::*;
@@ -54,19 +53,12 @@ pub enum NativeInvocation {
     Package(PackageInvocation),
     Component(ComponentInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
-    TransactionRuntime(TransactionRuntimeInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
     fn into(self) -> CallTableInvocation {
         CallTableInvocation::Native(self)
     }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum TransactionRuntimeInvocation {
-    GetHash(TransactionRuntimeGetHashInvocation),
-    GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -179,12 +171,6 @@ impl NativeInvocation {
                     refs.insert(invocation.receiver);
                 }
             },
-            NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::GetHash(..)
-                | TransactionRuntimeInvocation::GenerateUuid(..) => {
-                    refs.insert(RENodeId::TransactionRuntime);
-                }
-            },
         }
 
         refs
@@ -245,12 +231,6 @@ impl NativeInvocation {
                 AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::TransactionRuntime(i) => match i {
-                TransactionRuntimeInvocation::GetHash(i) => (get_native_fn(i), scrypto_encode(i)),
-                TransactionRuntimeInvocation::GenerateUuid(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
             },
         };
 

@@ -25,6 +25,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
         ScryptoReceiver::Worktop => RENodeId::Worktop,
         ScryptoReceiver::Logger => RENodeId::Logger,
+        ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
     };
 
     let component_info = {
