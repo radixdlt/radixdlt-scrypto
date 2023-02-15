@@ -349,7 +349,7 @@ impl KernelModule for AuthModule {
             // Add Package Actor Auth
             let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
             let non_fungible_global_id =
-                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::Bytes(id));
+                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
             let mut virtual_non_fungibles = BTreeSet::new();
             virtual_non_fungibles.insert(non_fungible_global_id);
 

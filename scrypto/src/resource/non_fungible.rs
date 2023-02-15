@@ -12,7 +12,7 @@ pub trait ScryptoNonFungibleLocalId {
 impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
     fn random() -> Self {
         let uuid = crate::runtime::Runtime::generate_uuid();
-        Self::UUID(uuid)
+        Self::uuid(uuid).unwrap()
     }
 }
 
