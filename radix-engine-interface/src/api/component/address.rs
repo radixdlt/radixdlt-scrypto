@@ -7,8 +7,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
+use crate::data::model::Reference;
 use crate::data::ScryptoCustomValueKind;
-use crate::scrypto_type;
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -25,10 +25,6 @@ pub enum ComponentAddress {
     EddsaEd25519VirtualIdentity([u8; 26]),
     AccessController([u8; 26]),
 }
-
-//========
-// binary
-//========
 
 impl TryFrom<&[u8]> for ComponentAddress {
     type Error = AddressError;
@@ -145,12 +141,47 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(
-    ComponentAddress,
-    ScryptoCustomValueKind::ComponentAddress,
-    Type::ComponentAddress,
-    27
-);
+//========
+// binary
+//========
+
+impl Categorize<ScryptoCustomValueKind> for ComponentAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Reference)
+    }
+}
+
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ComponentAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Reference::Component(self.clone()).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for ComponentAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let a = Reference::decode_body_with_value_kind(decoder, value_kind)?;
+        match a {
+            Reference::Component(x) => Ok(x),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl scrypto_abi::LegacyDescribe for ComponentAddress {
+    fn describe() -> scrypto_abi::Type {
+        Type::ComponentAddress
+    }
+}
 
 //======
 // text

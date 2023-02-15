@@ -3,21 +3,11 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
-
-// TODO: Remove this and replace with a macro/function making it easy
-// TODO: to use manifest buckets for any input struct
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ManifestValidatorInit {
-    pub validator_account_address: ComponentAddress,
-    pub initial_stake: ManifestBucket,
-    pub stake_account_address: ComponentAddress,
-}
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorInit {

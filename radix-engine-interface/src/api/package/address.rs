@@ -6,18 +6,14 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
+use crate::data::model::Reference;
 use crate::data::ScryptoCustomValueKind;
-use crate::scrypto_type;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageAddress {
     Normal([u8; 26]),
 }
-
-//========
-// binary
-//========
 
 impl TryFrom<&[u8]> for PackageAddress {
     type Error = AddressError;
@@ -62,12 +58,47 @@ impl PackageAddress {
     }
 }
 
-scrypto_type!(
-    PackageAddress,
-    ScryptoCustomValueKind::PackageAddress,
-    Type::PackageAddress,
-    27
-);
+//========
+// binary
+//========
+
+impl Categorize<ScryptoCustomValueKind> for PackageAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Reference)
+    }
+}
+
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for PackageAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Reference::Package(self.clone()).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for PackageAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let a = Reference::decode_body_with_value_kind(decoder, value_kind)?;
+        match a {
+            Reference::Package(x) => Ok(x),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl scrypto_abi::LegacyDescribe for PackageAddress {
+    fn describe() -> scrypto_abi::Type {
+        Type::PackageAddress
+    }
+}
 
 //======
 // text

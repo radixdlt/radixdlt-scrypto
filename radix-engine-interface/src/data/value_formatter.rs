@@ -226,7 +226,7 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoCustomValue {
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    context: &ValueFormattingContext,
+    _context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
         ScryptoCustomValue::Reference(value) => {

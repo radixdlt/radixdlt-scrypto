@@ -6,7 +6,7 @@ use utils::copy_u8_array;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct EcdsaSecp256k1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
@@ -63,7 +63,7 @@ impl scrypto_abi::LegacyDescribe for EcdsaSecp256k1PublicKey {
 
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct EddsaEd25519PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
@@ -124,7 +124,7 @@ impl scrypto_abi::LegacyDescribe for EddsaEd25519PublicKey {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),

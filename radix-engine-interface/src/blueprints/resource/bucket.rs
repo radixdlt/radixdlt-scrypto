@@ -1,7 +1,7 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::types::Own;
+use crate::data::model::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
