@@ -24,11 +24,7 @@ serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
 
 [[bench]]
-name = "radix_engine"
-harness = false
-
-[[bench]]
-name = "transaction"
+name = "validation"
 harness = false
 
 [[bench]]
@@ -37,6 +33,14 @@ harness = false
 
 [[bench]]
 name = "radiswap"
+harness = false
+
+[[bench]]
+name = "transfer"
+harness = false
+
+[[bench]]
+name = "spin_loop"
 harness = false
 
 [[bench]]

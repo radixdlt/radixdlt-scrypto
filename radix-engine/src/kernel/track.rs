@@ -67,7 +67,7 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
-    loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
+    loaded_substates: HashMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<GlobalAddress>,
 }
 
@@ -96,7 +96,7 @@ impl<'s> Track<'s> {
         Self {
             application_logs: Vec::new(),
             substate_store,
-            loaded_substates: BTreeMap::new(),
+            loaded_substates: HashMap::new(),
             new_global_addresses: Vec::new(),
         }
     }
@@ -256,7 +256,7 @@ impl<'s> Track<'s> {
                 &self
                     .loaded_substates
                     .get(&substate_id)
-                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .unwrap_or_else(|| panic!("Substate {:?} was never locked", substate_id))
                     .substate
             }
         };
@@ -285,7 +285,7 @@ impl<'s> Track<'s> {
                 &mut self
                     .loaded_substates
                     .get_mut(&substate_id)
-                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .unwrap_or_else(|| panic!("Substate {:?} was never locked", substate_id))
                     .substate
             }
         };
@@ -480,7 +480,7 @@ impl<'s> Track<'s> {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
-                    loaded_substates: self.loaded_substates,
+                    loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
                 finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary, vault_ops)
             }
