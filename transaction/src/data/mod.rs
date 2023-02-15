@@ -93,7 +93,7 @@ mod tests {
             g: ManifestBlobRef([6u8; 32]),
             h: ManifestDecimal(Decimal::from(7u32)),
             i: ManifestPreciseDecimal(PreciseDecimal::from(8u32)),
-            j: ManifestNonFungibleLocalId(NonFungibleLocalId::String("abc".to_owned())),
+            j: ManifestNonFungibleLocalId(NonFungibleLocalId::string("abc".to_owned()).unwrap()),
             k: ManifestPublicKey(PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
                 [10u8; 33],
             ))),

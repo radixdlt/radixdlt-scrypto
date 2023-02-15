@@ -82,6 +82,12 @@ impl TryFrom<&[u8]> for Hash {
     }
 }
 
+impl From<Hash> for Vec<u8> {
+    fn from(value: Hash) -> Self {
+        value.to_vec()
+    }
+}
+
 impl Hash {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()

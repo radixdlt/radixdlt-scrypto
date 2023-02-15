@@ -194,8 +194,8 @@ mod tests {
         let values = (
             Decimal::ONE,
             PreciseDecimal::ONE,
-            NonFungibleLocalId::Integer(1),
-            NonFungibleLocalId::Bytes(vec![2, 3]),
+            NonFungibleLocalId::integer(1),
+            NonFungibleLocalId::bytes(vec![2, 3]).unwrap(),
             EcdsaSecp256k1PublicKey([1u8; 33]),
             EddsaEd25519PublicKey([3u8; 32]),
         );
@@ -230,14 +230,14 @@ mod tests {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Integer(
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::integer(
                             1
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(
-                            vec![2, 3]
-                        )),
+                        value: ScryptoCustomValue::NonFungibleLocalId(
+                            NonFungibleLocalId::bytes(vec![2, 3]).unwrap()
+                        ),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::PublicKey(PublicKey::EcdsaSecp256k1(

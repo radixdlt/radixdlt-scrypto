@@ -664,22 +664,23 @@ mod tests {
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::String("hello".to_string()),
+                                NonFungibleLocalId::string("hello").unwrap(),
                             ),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::Integer(123),
+                                NonFungibleLocalId::integer(123),
                             ),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::Bytes(vec![0x23, 0x45]),
+                                NonFungibleLocalId::bytes(vec![0x23, 0x45]).unwrap(),
                             ),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleLocalId(
-                                NonFungibleLocalId::UUID(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd),
+                                NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd)
+                                    .unwrap(),
                             ),
                         },
                         Value::Custom {

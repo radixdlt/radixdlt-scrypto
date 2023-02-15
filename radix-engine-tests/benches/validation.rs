@@ -97,9 +97,9 @@ fn bench_transaction_validation(c: &mut Criterion) {
 }
 
 criterion_group!(
-    transaction,
+    validation,
     bench_ecdsa_secp256k1_validation,
     bench_eddsa_ed25519_validation,
     bench_transaction_validation,
 );
-criterion_main!(transaction);
+criterion_main!(validation);

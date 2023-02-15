@@ -13,7 +13,7 @@ mod fee {
         pub fn new(xrd: Bucket) -> ComponentAddress {
             let doge_tokens = ResourceBuilder::new_fungible()
                 .metadata("name", "DogeCoin")
-                .initial_supply(100);
+                .mint_initial_supply(100);
 
             Self {
                 xrd: Vault::with_bucket(xrd),

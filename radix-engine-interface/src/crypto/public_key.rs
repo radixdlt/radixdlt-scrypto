@@ -1,7 +1,8 @@
+use crate::crypto::*;
 use crate::data::*;
 use crate::*;
 use sbor::*;
-use scrypto_abi::Type;use crate::crypto::*;
+use scrypto_abi::Type;
 use utils::copy_u8_array;
 
 /// Represents any natively supported public key.

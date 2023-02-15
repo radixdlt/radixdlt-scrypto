@@ -92,26 +92,29 @@ where
         })
     }
 
-    pub fn teardown(mut self) -> (KernelModuleMixer, Option<RuntimeError>) {
-        // Rewind call stack
-        loop {
-            if let Some(f) = self.prev_frame_stack.pop() {
-                self.current_frame = f;
-            } else {
-                break;
+    // TODO: Josh holds some concern about this interface; will look into this again.
+    pub fn teardown<T>(
+        mut self,
+        previous_result: Result<T, RuntimeError>,
+    ) -> (KernelModuleMixer, Result<T, RuntimeError>) {
+        let new_result = match previous_result {
+            Ok(output) => {
+                // Sanity check call frame
+                assert!(self.prev_frame_stack.is_empty());
+
+                // Tear down kernel modules
+                match self
+                    .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+                        KernelModuleMixer::on_teardown(api)
+                    }) {
+                    Ok(_) => Ok(output),
+                    Err(error) => Err(error),
+                }
             }
-        }
+            Err(error) => Err(error),
+        };
 
-        // Tear down kernel modules
-        let result = self
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_teardown(api)
-            });
-
-        match result {
-            Ok(_) => (self.module, None),
-            Err(e) => (self.module, Some(e)),
-        }
+        (self.module, new_result)
     }
 
     fn create_virtual_account(
@@ -225,28 +228,28 @@ where
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::Bytes(address.into()),
+                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
                         );
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::Bytes(address.into()),
+                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
                         );
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::Bytes(address.into()),
+                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
                         );
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::Bytes(address.into()),
+                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
                         );
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
@@ -399,6 +402,10 @@ where
                 KernelModuleMixer::on_execution_start(api, &caller)
             })?;
 
+            // Auto drop locks
+            self.current_frame
+                .drop_all_locks(&mut self.heap, &mut self.track)?;
+
             // Run
             let (output, mut update) =
                 self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
@@ -407,10 +414,6 @@ where
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
             })?;
-
-            // Auto drop locks
-            self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
