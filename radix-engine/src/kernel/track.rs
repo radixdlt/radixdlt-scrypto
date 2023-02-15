@@ -3,7 +3,6 @@ use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
@@ -26,6 +25,9 @@ use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
+
+use super::actor::ResolvedActor;
+use super::event::TrackedEvent;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {

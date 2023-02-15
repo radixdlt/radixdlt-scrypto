@@ -1,6 +1,9 @@
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::LockFlags;
 use crate::{
     errors::RuntimeError,
-    kernel::*,
+    kernel::{kernel_api::KernelModuleApi, module::KernelModule},
     system::node::{RENodeInit, RENodeModuleInit},
 };
 use radix_engine_interface::api::types::{
@@ -15,7 +18,7 @@ pub struct KernelDebugModule {}
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($api.get_current_depth()), $api.get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 

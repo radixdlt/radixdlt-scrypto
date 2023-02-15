@@ -1,9 +1,13 @@
 use crate::errors::RuntimeError;
-use crate::kernel::*;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::BTreeMap;
+
+use super::actor::ResolvedActor;
+use super::call_frame::CallFrameUpdate;
+use super::kernel_api::{KernelModuleApi, LockFlags};
 
 pub trait KernelModule {
     //======================
@@ -155,30 +159,13 @@ pub trait KernelModule {
     }
 
     //======================
-    // WASM interpreter events
-    //======================
-
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _code: &[u8],
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    //======================
     // Other events
     //======================
 
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _units: u32,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _new_index: usize,
+        _reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -190,5 +177,12 @@ pub trait KernelModule {
         _contingent: bool,
     ) -> Result<Resource, RuntimeError> {
         Ok(locked_fee)
+    }
+
+    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _new_index: usize,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
     }
 }

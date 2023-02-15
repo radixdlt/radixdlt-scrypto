@@ -1,11 +1,11 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -56,9 +56,9 @@ impl Executor for BucketTakeInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take(self.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -66,8 +66,8 @@ impl Executor for BucketTakeInvocation {
             ))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -110,9 +110,9 @@ impl Executor for BucketCreateProofInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let proof = bucket.create_proof(self.receiver).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
@@ -120,8 +120,8 @@ impl Executor for BucketCreateProofInvocation {
             )))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((
@@ -161,9 +161,9 @@ impl Executor for BucketTakeNonFungiblesInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take_non_fungibles(&self.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -171,8 +171,8 @@ impl Executor for BucketTakeNonFungiblesInvocation {
             ))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -215,8 +215,8 @@ impl Executor for BucketGetNonFungibleLocalIdsInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(bucket_handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -258,9 +258,9 @@ impl Executor for BucketGetAmountInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate = api.get_ref(bucket_handle)?;
+        let substate = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok((bucket.total_amount(), CallFrameUpdate::empty()))
     }
@@ -296,10 +296,12 @@ impl Executor for BucketPutInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let other_bucket = api.drop_node(RENodeId::Bucket(self.bucket.0))?.into();
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let other_bucket = api
+            .kernel_drop_node(RENodeId::Bucket(self.bucket.0))?
+            .into();
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -341,9 +343,9 @@ impl Executor for BucketGetResourceAddressInvocation {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate = api.get_ref(bucket_handle)?;
+        let substate = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok((
             bucket.resource_address(),

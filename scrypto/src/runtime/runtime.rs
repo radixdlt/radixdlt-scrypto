@@ -39,7 +39,7 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.fn_identifier().unwrap() {
+        match ScryptoEnv.get_fn_identifier().unwrap() {
             FnIdentifier::Scrypto(identifier) => identifier,
             _ => panic!("Unexpected actor"),
         }
