@@ -1,6 +1,10 @@
 use crate::errors::*;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::interpreters::deref_and_update;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -89,18 +93,18 @@ impl Executor for PackagePublishNativeInvocation {
         };
 
         // Create package node
-        let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
+        api.kernel_create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
         let global_node_id = if let Some(address) = self.package_address {
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
         } else {
-            api.allocate_node_id(RENodeType::GlobalPackage)?
+            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
             BTreeMap::new(),
@@ -185,18 +189,18 @@ impl Executor for PackagePublishInvocation {
         );
 
         // Create package node
-        let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(node_id, RENodeInit::Package(package), node_modules)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
+        api.kernel_create_node(node_id, RENodeInit::Package(package), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
         let global_node_id = if let Some(address) = self.package_address {
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
         } else {
-            api.allocate_node_id(RENodeType::GlobalPackage)?
+            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
             BTreeMap::new(),
@@ -243,17 +247,17 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate = api.get_ref_mut(handle)?;
+        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
         substate.package_royalty_config().royalty_config = self.royalty_config;
 
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -294,14 +298,14 @@ impl Executor for PackageClaimRoyaltyExecutable {
     {
         // TODO: auth check
         let node_id = self.receiver;
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
 
         let amount = api.call_native(VaultGetAmountInvocation {
@@ -314,7 +318,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         })?;
         let bucket_id = bucket.0;
 
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok((
             Bucket(bucket_id),

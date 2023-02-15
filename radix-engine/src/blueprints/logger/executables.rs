@@ -1,7 +1,12 @@
 use crate::errors::RuntimeError;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::ExecutableInvocation;
+use crate::kernel::kernel_api::Executor;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientDerefApi;
@@ -40,8 +45,9 @@ impl Executor for LoggerLogInvocation {
     {
         let offset = SubstateOffset::Logger(LoggerOffset::Logger);
         let node_id = RENodeId::Logger;
-        let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate = api.get_ref_mut(handle)?;
+        let handle =
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
         let logger = substate.logger();
         logger.logs.push((self.level, self.message));
 

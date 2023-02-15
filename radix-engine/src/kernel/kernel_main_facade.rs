@@ -415,12 +415,6 @@ where
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
-
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_wasm_instantiation(self, code)?;
-
-        Ok(())
-    }
 }
 
 impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>

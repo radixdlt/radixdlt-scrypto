@@ -15,12 +15,12 @@ impl BorrowedPackage {
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &self,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&Self, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(PackageSetRoyaltyConfigInvocation {
+        api.call_native(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
         })?;

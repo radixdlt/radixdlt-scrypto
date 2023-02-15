@@ -1,7 +1,7 @@
 use crate::blueprints::epoch_manager::Validator;
 use crate::blueprints::transaction_processor::InstructionOutput;
 use crate::errors::*;
-use crate::kernel::TrackedEvent;
+use crate::kernel::event::TrackedEvent;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::execution_trace::ResourceChange;

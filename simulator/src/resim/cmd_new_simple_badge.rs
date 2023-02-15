@@ -87,7 +87,7 @@ impl NewSimpleBadge {
             (rule!(allow_all), rule!(deny_all)),
         );
         let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleLocalId::Integer(1), EmptyStruct {});
+        initial_supply.insert(NonFungibleLocalId::integer(1), EmptyStruct {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
@@ -101,7 +101,7 @@ impl NewSimpleBadge {
                     metadata,
                     access_rules: resource_auth,
                     entries: BTreeMap::from([(
-                        NonFungibleLocalId::Integer(1),
+                        NonFungibleLocalId::integer(1),
                         (
                             scrypto_encode(&EmptyStruct).unwrap(),
                             scrypto_encode(&EmptyStruct).unwrap(),
@@ -138,7 +138,7 @@ impl NewSimpleBadge {
             writeln!(
                 out,
                 "NonFungibleGlobalId: {}",
-                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::Integer(1))
+                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1))
                     // This should be the opposite of parse_args in the manifest builder
                     .to_canonical_string(&bech32_encoder)
                     .green()
@@ -147,7 +147,7 @@ impl NewSimpleBadge {
 
             Ok(Some(NonFungibleGlobalId::new(
                 resource_address,
-                NonFungibleLocalId::Integer(1),
+                NonFungibleLocalId::integer(1),
             )))
         } else {
             Ok(None)

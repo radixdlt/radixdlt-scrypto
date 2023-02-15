@@ -1,8 +1,11 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::interpreters::deref_and_update;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -85,9 +88,9 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -115,17 +118,17 @@ impl AccountNativePackage {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
-            let node_id = api.allocate_node_id(RENodeType::Account)?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, node_modules)?;
             node_id
         };
 
         // Creating the account's global address
         let global_node_id = {
             let node = RENodeInit::Global(GlobalAddressSubstate::Account(node_id.into()));
-            let node_id = api.allocate_node_id(RENodeType::GlobalAccount)?;
-            api.create_node(node_id, node, BTreeMap::new())?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccount)?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -151,9 +154,9 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.allocate_node_id(RENodeType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
@@ -180,9 +183,9 @@ impl AccountNativePackage {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
-            let node_id = api.allocate_node_id(RENodeType::Account)?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, node_modules)?;
             node_id
         };
 
@@ -246,24 +249,28 @@ impl Executor for AccountLockFeeExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -282,8 +289,8 @@ impl Executor for AccountLockFeeExecutable {
         vault.sys_lock_fee(api, self.amount)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -346,24 +353,28 @@ impl Executor for AccountLockContingentFeeExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -382,8 +393,8 @@ impl Executor for AccountLockContingentFeeExecutable {
         vault.sys_lock_contingent_fee(api, self.amount)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -446,25 +457,25 @@ impl Executor for AccountDepositExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
             let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+                api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -478,7 +489,8 @@ impl Executor for AccountDepositExecutable {
                     let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                    let mut substate = api.get_ref_mut(kv_store_entry_lock_handle)?;
+                    let mut substate =
+                        api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
                     let entry = substate.kv_store_entry();
                     *entry =
                         KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
@@ -492,8 +504,8 @@ impl Executor for AccountDepositExecutable {
         vault.sys_put(Bucket(self.bucket), api)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -570,7 +582,7 @@ impl Executor for AccountDepositBatchExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
         // KV-store entries again and again because of buckets that have the same resource address.
@@ -582,21 +594,25 @@ impl Executor for AccountDepositBatchExecutable {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let substate = api.get_ref(handle)?;
+                let substate = api.kernel_get_substate_ref(handle)?;
                 let account = substate.account();
                 let kv_store_id = account.vaults.key_value_store_id();
 
                 let node_id = RENodeId::KeyValueStore(kv_store_id);
                 let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle =
-                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+                let handle = api.kernel_lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::MUTABLE,
+                )?;
                 handle
             };
 
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let substate = api.get_ref(kv_store_entry_lock_handle)?;
+                let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
                 let entry = substate.kv_store_entry();
 
                 match entry {
@@ -610,7 +626,8 @@ impl Executor for AccountDepositBatchExecutable {
                         let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                        let mut substate = api.get_ref_mut(kv_store_entry_lock_handle)?;
+                        let mut substate =
+                            api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
                         let entry = substate.kv_store_entry();
                         *entry = KeyValueStoreEntrySubstate::Some(
                             encoded_key.into(),
@@ -625,10 +642,10 @@ impl Executor for AccountDepositBatchExecutable {
             // Put the bucket in the vault
             vault.sys_put(Bucket(bucket), api)?;
 
-            api.drop_lock(kv_store_entry_lock_handle)?;
+            api.kernel_drop_lock(kv_store_entry_lock_handle)?;
         }
 
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -689,24 +706,28 @@ impl Executor for AccountWithdrawAllExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -725,8 +746,8 @@ impl Executor for AccountWithdrawAllExecutable {
         let bucket = vault.sys_take_all(api)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
         Ok((bucket, call_frame_update))
@@ -790,24 +811,28 @@ impl Executor for AccountWithdrawExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -826,8 +851,8 @@ impl Executor for AccountWithdrawExecutable {
         let bucket = vault.sys_take(self.amount, api)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
         Ok((bucket, call_frame_update))
@@ -893,24 +918,28 @@ impl Executor for AccountWithdrawNonFungiblesExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -929,8 +958,8 @@ impl Executor for AccountWithdrawNonFungiblesExecutable {
         let bucket = vault.sys_take_ids(self.ids, api)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
         Ok((bucket, call_frame_update))
@@ -1161,7 +1190,7 @@ impl Executor for AccountCreateProofExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::SELF,
             offset,
@@ -1170,20 +1199,24 @@ impl Executor for AccountCreateProofExecutable {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -1202,8 +1235,8 @@ impl Executor for AccountCreateProofExecutable {
         let proof = vault.sys_create_proof(api)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
         Ok((proof, call_frame_update))
@@ -1268,7 +1301,7 @@ impl Executor for AccountCreateProofByAmountExecutable {
 
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::SELF,
             offset,
@@ -1277,20 +1310,24 @@ impl Executor for AccountCreateProofByAmountExecutable {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -1309,8 +1346,8 @@ impl Executor for AccountCreateProofByAmountExecutable {
         let proof = vault.sys_create_proof_by_amount(api, self.amount)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
         Ok((proof, call_frame_update))
@@ -1376,24 +1413,28 @@ impl Executor for AccountCreateProofByIdsExecutable {
         let node_id = self.receiver;
         let offset = SubstateOffset::Account(AccountOffset::Account);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let account = substate.account();
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let vault = {
-            let substate = api.get_ref(kv_store_entry_lock_handle)?;
+            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
             let entry = substate.kv_store_entry();
 
             match entry {
@@ -1412,8 +1453,8 @@ impl Executor for AccountCreateProofByIdsExecutable {
         let proof = vault.sys_create_proof_by_ids(api, self.ids)?;
 
         // Drop locks (LIFO)
-        api.drop_lock(kv_store_entry_lock_handle)?;
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Proof(proof.0));
         Ok((proof, call_frame_update))
@@ -1451,10 +1492,11 @@ where
 {
     let node_id = RENodeId::Bucket(bucket);
     let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-    let handle = api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-    let substate = api.get_ref(handle)?;
+    let handle =
+        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+    let substate = api.kernel_get_substate_ref(handle)?;
     let bucket = substate.bucket();
     let resource_address = bucket.resource_address();
-    api.drop_lock(handle)?;
+    api.kernel_drop_lock(handle)?;
     Ok(resource_address)
 }

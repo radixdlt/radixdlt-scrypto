@@ -1,5 +1,6 @@
 use crate::errors::*;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientDerefApi;
 

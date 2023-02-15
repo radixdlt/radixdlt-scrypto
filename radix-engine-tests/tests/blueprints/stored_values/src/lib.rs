@@ -11,7 +11,7 @@ mod invalid_init_stored_bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))
-                .initial_supply(Decimal::from(5));
+                .mint_initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
             component.globalize()
@@ -34,7 +34,7 @@ mod invalid_stored_bucket_in_owned_component {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))
-                .initial_supply(Decimal::from(5));
+                .mint_initial_supply(Decimal::from(5));
 
             let component = InvalidStoredBucketInOwnedComponent {
                 bucket: Option::None,

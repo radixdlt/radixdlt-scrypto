@@ -1,8 +1,7 @@
-use crate::system::node::RENodeModuleInit;
-use crate::{
-    errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
-};
+use super::node::{RENodeInit, RENodeModuleInit};
+use crate::errors::{KernelError, RuntimeError};
+use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
@@ -18,8 +17,6 @@ use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::constants::*;
 use sbor::rust::collections::BTreeMap;
-
-use super::node::RENodeInit;
 
 pub struct VisibilityProperties;
 
@@ -146,17 +143,16 @@ impl VisibilityProperties {
 
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
-            (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Kernel, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
+                _ => false, // Protect ourselves!
+            },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::PackageTypeInfo => read_only,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Deref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {

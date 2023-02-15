@@ -1,6 +1,11 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::interpreters::deref_and_update;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -73,7 +78,7 @@ impl Executor for ValidatorRegisterExecutable {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             self.0,
             NodeModuleId::SELF,
             offset.clone(),
@@ -82,7 +87,7 @@ impl Executor for ValidatorRegisterExecutable {
 
         // Update state
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
 
             if validator.is_registered {
@@ -94,12 +99,12 @@ impl Executor for ValidatorRegisterExecutable {
 
         // Update EpochManager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
-                let substate = api.get_ref(handle)?;
+                let substate = api.kernel_get_substate_ref(handle)?;
                 let validator = substate.validator();
                 let invocation = EpochManagerUpdateValidatorInvocation {
                     receiver: validator.manager,
@@ -146,7 +151,7 @@ impl Executor for ValidatorUnregisterExecutable {
         Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             self.0,
             NodeModuleId::SELF,
             offset.clone(),
@@ -155,7 +160,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
         // Update state
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
             if !validator.is_registered {
                 return Ok(((), CallFrameUpdate::empty()));
@@ -165,7 +170,7 @@ impl Executor for ValidatorUnregisterExecutable {
 
         // Update EpochManager
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
             let invocation = EpochManagerUpdateValidatorInvocation {
                 receiver: validator.manager,
@@ -220,11 +225,11 @@ impl Executor for ValidatorStakeExecutable {
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         // Stake
         let lp_token_bucket = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
@@ -246,7 +251,7 @@ impl Executor for ValidatorStakeExecutable {
 
         // Update EpochManager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             if validator.is_registered {
                 let receiver = validator.manager;
@@ -315,11 +320,11 @@ impl Executor for ValidatorUnstakeExecutable {
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
         // Unstake
         let unstake_bucket = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
 
             let manager = validator.manager;
@@ -340,17 +345,17 @@ impl Executor for ValidatorUnstakeExecutable {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.lock_substate(
+            let manager_handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let manager_substate = api.get_ref(manager_handle)?;
+            let manager_substate = api.kernel_get_substate_ref(manager_handle)?;
             let epoch_manager = manager_substate.epoch_manager();
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
-            api.drop_lock(manager_handle)?;
+            api.kernel_drop_lock(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -364,12 +369,12 @@ impl Executor for ValidatorUnstakeExecutable {
 
         // Update Epoch Manager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
-                let substate = api.get_ref(handle)?;
+                let substate = api.kernel_get_substate_ref(handle)?;
                 let validator = substate.validator();
                 let update = if stake_amount.is_zero() {
                     UpdateValidator::Unregister
@@ -434,8 +439,8 @@ impl Executor for ValidatorClaimXrdExecutable {
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate = api.get_ref(handle)?;
+            api.kernel_lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let validator = substate.validator();
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -451,15 +456,15 @@ impl Executor for ValidatorClaimXrdExecutable {
         }
 
         let current_epoch = {
-            let mgr_handle = api.lock_substate(
+            let mgr_handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate = api.get_ref(mgr_handle)?;
+            let mgr_substate = api.kernel_get_substate_ref(mgr_handle)?;
             let epoch = mgr_substate.epoch_manager().epoch;
-            api.drop_lock(mgr_handle)?;
+            api.kernel_drop_lock(mgr_handle)?;
             epoch
         };
 
@@ -517,8 +522,9 @@ impl Executor for ValidatorUpdateKeyExecutable {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate = api.get_ref_mut(handle)?;
+        let handle =
+            api.kernel_lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
         let mut validator = substate.validator();
         validator.key = self.1;
         let key = validator.key;
@@ -616,9 +622,10 @@ impl ValidatorCreator {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleLocalId::Bytes(
+        let non_fungible_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
+        )
+        .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
         liquidity_token_auth.insert(
             Mint,
@@ -634,15 +641,16 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let (unstake_resource_manager, bucket) = ResourceManager::new_fungible_with_initial_supply(
-            0,
-            amount,
-            BTreeMap::new(),
-            liquidity_token_auth,
-            api,
-        )?;
+        let (liquidity_token_resource_manager, bucket) =
+            ResourceManager::new_fungible_with_initial_supply(
+                18,
+                amount,
+                BTreeMap::new(),
+                liquidity_token_auth,
+                api,
+            )?;
 
-        Ok((unstake_resource_manager.0, bucket))
+        Ok((liquidity_token_resource_manager.0, bucket))
     }
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
@@ -653,9 +661,10 @@ impl ValidatorCreator {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
+        )
+        .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         liquidity_token_auth.insert(
             Mint,
@@ -671,10 +680,10 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager =
-            ResourceManager::new_fungible(0, BTreeMap::new(), liquidity_token_auth, api)?;
+        let liquidity_token_resource_manager =
+            ResourceManager::new_fungible(18, BTreeMap::new(), liquidity_token_auth, api)?;
 
-        Ok(unstake_resource_manager.0)
+        Ok(liquidity_token_resource_manager.0)
     }
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
@@ -685,9 +694,10 @@ impl ValidatorCreator {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
+        )
+        .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         unstake_token_auth.insert(
             Mint,
@@ -741,9 +751,10 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
 
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
+        )
+        .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
@@ -781,8 +792,8 @@ impl ValidatorCreator {
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let initial_liquidity_amount = initial_stake.sys_amount(api)?;
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -817,8 +828,8 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.create_node(node_id, node, node_modules)?;
-        api.create_node(
+        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
             BTreeMap::new(),
@@ -840,8 +851,8 @@ impl ValidatorCreator {
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -872,8 +883,8 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.create_node(node_id, node, node_modules)?;
-        api.create_node(
+        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
             BTreeMap::new(),

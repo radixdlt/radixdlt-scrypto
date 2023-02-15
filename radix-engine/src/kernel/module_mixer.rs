@@ -1,6 +1,9 @@
-use super::KernelModule;
+use super::actor::ResolvedActor;
+use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
-use crate::kernel::*;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
 use crate::system::kernel_modules::costing::FeeTable;
@@ -12,6 +15,7 @@ use crate::system::kernel_modules::node_move::NodeMoveModule;
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
+use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::types::LockHandle;
@@ -99,7 +103,7 @@ impl KernelModuleMixer {
 
 impl KernelModule for KernelModuleMixer {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         // Enable execution trace
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             ExecutionTraceModule::on_init(api)?;
@@ -139,7 +143,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_teardown(api)?;
         }
@@ -169,7 +173,7 @@ impl KernelModule for KernelModuleMixer {
         fn_identifier: &FnIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::before_invoke(api, fn_identifier, input_size)?;
         }
@@ -199,7 +203,7 @@ impl KernelModule for KernelModuleMixer {
         actor: &ResolvedActor,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::before_push_frame(api, actor, update)?;
         }
@@ -228,7 +232,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         caller: &ResolvedActor,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_execution_start(api, caller)?;
         }
@@ -258,7 +262,7 @@ impl KernelModule for KernelModuleMixer {
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_execution_finish(api, caller, update)?;
         }
@@ -284,7 +288,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::after_pop_frame(api)?;
         }
@@ -313,7 +317,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::after_invoke(api, output_size)?;
         }
@@ -342,7 +346,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_type: &RENodeType,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_allocate_node_id(api, node_type)?;
         }
@@ -373,7 +377,7 @@ impl KernelModule for KernelModuleMixer {
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::before_create_node(api, node_id, node_init, node_module_init)?;
         }
@@ -407,7 +411,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::after_create_node(api, node_id)?;
         }
@@ -436,7 +440,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::before_drop_node(api, node_id)?;
         }
@@ -462,7 +466,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::after_drop_node(api)?;
         }
@@ -494,7 +498,7 @@ impl KernelModule for KernelModuleMixer {
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
@@ -524,7 +528,7 @@ impl KernelModule for KernelModuleMixer {
         handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::after_lock_substate(api, handle, size)?;
         }
@@ -554,7 +558,7 @@ impl KernelModule for KernelModuleMixer {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_read_substate(api, lock_handle, size)?;
         }
@@ -584,7 +588,7 @@ impl KernelModule for KernelModuleMixer {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_write_substate(api, lock_handle, size)?;
         }
@@ -613,7 +617,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_drop_lock(api, lock_handle)?;
         }
@@ -638,60 +642,32 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn on_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        code: &[u8],
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_wasm_instantiation(api, code)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_wasm_instantiation(api, code)?;
-        }
-        Ok(())
-    }
-
     fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         units: u32,
+        reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::on_consume_cost_units(api, units)?;
+            KernelDebugModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_consume_cost_units(api, units)?;
+            CostingModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_consume_cost_units(api, units)?;
+            NodeMoveModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_consume_cost_units(api, units)?;
+            AuthModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_consume_cost_units(api, units)?;
+            LoggerModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_consume_cost_units(api, units)?;
+            TransactionRuntimeModule::on_consume_cost_units(api, units, reason)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_consume_cost_units(api, units)?;
+            ExecutionTraceModule::on_consume_cost_units(api, units, reason)?;
         }
         Ok(())
     }
@@ -702,7 +678,7 @@ impl KernelModule for KernelModuleMixer {
         mut fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         }
@@ -732,7 +708,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         new_index: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelDebugModule::on_update_instruction_index(api, new_index)?;
         }
