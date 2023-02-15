@@ -1,7 +1,11 @@
 use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
 use crate::errors::*;
-use crate::kernel::Track;
-use crate::kernel::*;
+use crate::kernel::id_allocator::IdAllocator;
+use crate::kernel::interpreters::ScryptoInterpreter;
+use crate::kernel::kernel::Kernel;
+use crate::kernel::kernel_api::Invokable;
+use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
@@ -195,7 +199,8 @@ where
 
         // Start resources usage measurement
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker = ResourcesTracker::start_measurement();
+        let mut resources_tracker =
+            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Apply pre execution costing
         let pre_execution_result =
@@ -249,7 +254,7 @@ where
             kernel.initialize().expect("Failed to initialize kernel");
 
             // Invoke transaction processor
-            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+            let invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {

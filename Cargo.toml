@@ -23,6 +23,7 @@ members = [
     "scrypto-tests",
     "scrypto-unit",
     "transaction",
+    "transaction-derive",
     "native-sdk",
     "radix-engine",
     "radix-engine-interface",
@@ -32,3 +33,10 @@ members = [
     "radix-engine-constants",
     "utils",
 ]
+
+# Recommended settings for wasmi for best performance
+#  see: https://github.com/paritytech/wasmi/blob/master/CHANGELOG.md#0140---2022-07-26
+[profile.release]
+lto = "fat"
+codegen-units = 1
+

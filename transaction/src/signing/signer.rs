@@ -1,6 +1,5 @@
-use radix_engine_interface::crypto::SignatureWithPublicKey;
-
 use super::{EcdsaSecp256k1PrivateKey, EddsaEd25519PrivateKey};
+use crate::model::SignatureWithPublicKey;
 
 pub trait Signer {
     fn sign(&self, message: &[u8]) -> SignatureWithPublicKey;

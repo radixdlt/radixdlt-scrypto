@@ -1,32 +1,13 @@
+pub mod actor;
+pub mod call_frame;
+pub mod event;
+pub mod heap;
+pub mod id_allocator;
+pub mod interpreters;
+pub mod kernel;
 pub mod kernel_api;
-
-mod actor;
-mod call_frame;
-mod event;
-mod heap;
-mod id_allocator;
-mod interpreters;
-mod kernel;
-mod kernel_client_facade;
-mod kernel_main_facade;
-mod module;
-mod module_mixer;
+pub mod module;
+pub mod module_mixer;
 #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-mod resources_tracker;
-mod track;
-
-pub use actor::*;
-pub use call_frame::*;
-pub use event::*;
-pub use heap::*;
-pub use id_allocator::*;
-pub use interpreters::*;
-pub use kernel::*;
-pub use kernel_api::*;
-pub use kernel_client_facade::*;
-pub use kernel_main_facade::*;
-pub use module::*;
-pub use module_mixer::*;
-#[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-pub use resources_tracker::*;
-pub use track::*;
+pub mod resources_tracker;
+pub mod track;

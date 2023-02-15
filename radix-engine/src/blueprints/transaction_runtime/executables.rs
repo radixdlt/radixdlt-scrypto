@@ -1,8 +1,11 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::*;
@@ -45,13 +48,13 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
         )?;
-        let substate = api.get_ref(handle)?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
             transaction_runtime_substate.hash.clone(),
@@ -91,13 +94,13 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::TransactionRuntime,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let tx_hash_substate = substate_mut.transaction_runtime();
 
         if tx_hash_substate.next_id == u32::MAX {
@@ -137,19 +140,19 @@ mod tests {
             5,
         );
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
         );
 
         let id = generate_uuid(&Hash([0u8; 32]), 5);
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{00000000-0000-4000-8000-000000000005}"
         );
 
         let id = generate_uuid(&Hash([255u8; 32]), 5);
         assert_eq!(
-            NonFungibleLocalId::UUID(id).to_string(),
+            NonFungibleLocalId::uuid(id).unwrap().to_string(),
             "{ffffffff-ffff-4fff-bfff-ffff00000005}"
         );
     }

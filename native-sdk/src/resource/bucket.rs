@@ -8,7 +8,7 @@ use sbor::rust::fmt::Debug;
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Bucket, E>
     where
         Y: ClientNativeInvokeApi<E>;
@@ -65,14 +65,14 @@ pub trait SysBucket {
 
     fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: ClientNativeInvokeApi<E>;
 
     fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<bool, E>
     where
         Y: ClientNativeInvokeApi<E>;

@@ -1,8 +1,9 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -13,7 +14,7 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::api::{
     ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi,
@@ -277,14 +278,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
+            + ClientUnsafeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let worktop_node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        api.create_node(
+        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Worktop)?;
+        api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Worktop(WorktopSubstate::new()),
             BTreeMap::new(),
@@ -690,7 +691,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        api.drop_node(worktop_node_id)?;
+        api.kernel_drop_node(worktop_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

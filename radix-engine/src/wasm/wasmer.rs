@@ -541,9 +541,7 @@ impl WasmInstance for WasmerInstance {
         if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
             read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
         } else {
-            Err(InvokeError::SelfError(
-                WasmRuntimeError::InvalidExportReturn,
-            ))
+            Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
         }
     }
 

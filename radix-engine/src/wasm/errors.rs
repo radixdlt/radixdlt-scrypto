@@ -93,8 +93,8 @@ pub enum WasmRuntimeError {
     /// WASM interpreter error, such as traps.
     InterpreterError(String),
 
-    /// WASM function return is not a `u64`, which points to a valid memory range.
-    InvalidExportReturn,
+    /// WASM function return is not a `u64` fat pointer which points to a valid memory range.
+    InvalidWasmPointer,
 
     //=============
     // SHIM ERRORS

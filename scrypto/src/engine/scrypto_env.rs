@@ -295,7 +295,7 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
         let actor = copy_buffer(unsafe { get_actor() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

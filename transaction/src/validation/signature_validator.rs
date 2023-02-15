@@ -1,5 +1,7 @@
 use radix_engine_interface::crypto::*;
 
+use crate::model::{Signature, SignatureWithPublicKey};
+
 pub fn recover(message: &[u8], signature: &SignatureWithPublicKey) -> Option<PublicKey> {
     match signature {
         SignatureWithPublicKey::EcdsaSecp256k1 { signature } => {

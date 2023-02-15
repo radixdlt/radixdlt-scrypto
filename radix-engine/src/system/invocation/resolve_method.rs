@@ -1,8 +1,7 @@
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},
-    kernel::kernel_api::LockFlags,
-    kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
     types::*,
 };
 use radix_engine_interface::api::{
@@ -82,15 +81,15 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
                 let component_node_id =
                     RENodeId::Global(GlobalAddress::Component(component_address));
                 let component_info = {
-                    let handle = api.lock_substate(
+                    let handle = api.kernel_lock_substate(
                         component_node_id,
                         NodeModuleId::ComponentTypeInfo,
                         SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = api.get_ref(handle)?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                    api.drop_lock(handle)?;
+                    api.kernel_drop_lock(handle)?;
 
                     component_info
                 };
@@ -108,15 +107,15 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         ScryptoReceiver::Component(component_id) => {
             let component_node_id = RENodeId::Component(component_id);
             let component_info = {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     component_node_id,
                     NodeModuleId::ComponentTypeInfo,
                     SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
 
                 component_info
             };

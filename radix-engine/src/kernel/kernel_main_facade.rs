@@ -193,6 +193,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[inline(always)]
     fn get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
@@ -417,17 +418,6 @@ where
 {
     fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
-    }
-
-    fn emit_wasm_pre_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_wasm_instantiation(self, code)
-    }
-
-    fn emit_wasm_post_instantiation_event(
-        &mut self,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::after_wasm_instantiation(self, consumed_memory)
     }
 }
 

@@ -6,7 +6,7 @@ use std::process::Command;
 
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
-use radix_engine::kernel::ScryptoInterpreter;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
@@ -913,9 +913,9 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::Integer(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Integer(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::Integer(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())

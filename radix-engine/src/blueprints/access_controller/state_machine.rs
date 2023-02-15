@@ -1,7 +1,6 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use native_sdk::resource::Vault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
