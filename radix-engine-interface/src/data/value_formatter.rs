@@ -1,70 +1,35 @@
-use super::types::ManifestBucket;
-use super::types::ManifestExpression;
-use super::types::ManifestProof;
 use crate::address::Bech32Encoder;
 use crate::api::types::*;
-use crate::blueprints::resource::*;
 use crate::data::*;
-use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ValueFormattingContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub bucket_names: Option<&'a HashMap<ManifestBucket, String>>,
-    pub proof_names: Option<&'a HashMap<ManifestProof, String>>,
 }
 
 impl<'a> ValueFormattingContext<'a> {
     pub fn no_context() -> Self {
         Self {
             bech32_encoder: None,
-            bucket_names: None,
-            proof_names: None,
         }
     }
 
-    pub fn no_manifest_context(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
-        Self {
-            bech32_encoder,
-            bucket_names: None,
-            proof_names: None,
-        }
-    }
-
-    pub fn with_manifest_context(
-        bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_names: &'a HashMap<ManifestBucket, String>,
-        proof_names: &'a HashMap<ManifestProof, String>,
-    ) -> Self {
-        Self {
-            bech32_encoder,
-            bucket_names: Some(bucket_names),
-            proof_names: Some(proof_names),
-        }
-    }
-
-    pub fn get_bucket_name(&self, bucket_id: &ManifestBucket) -> Option<&str> {
-        self.bucket_names
-            .and_then(|names| names.get(bucket_id).map(|s| s.as_str()))
-    }
-
-    pub fn get_proof_name(&self, proof_id: &ManifestProof) -> Option<&str> {
-        self.proof_names
-            .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    pub fn with_bench32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self { bech32_encoder }
     }
 }
 
 impl<'a> Into<ValueFormattingContext<'a>> for &'a Bech32Encoder {
     fn into(self) -> ValueFormattingContext<'a> {
-        ValueFormattingContext::no_manifest_context(Some(self))
+        ValueFormattingContext::with_bench32(Some(self))
     }
 }
 
 impl<'a> Into<ValueFormattingContext<'a>> for Option<&'a Bech32Encoder> {
     fn into(self) -> ValueFormattingContext<'a> {
-        ValueFormattingContext::no_manifest_context(self)
+        ValueFormattingContext::with_bench32(self)
     }
 }
 
@@ -100,25 +65,6 @@ pub fn format_scrypto_value<F: fmt::Write>(
         Value::U128 { value } => write!(f, "{}u128", value)?,
         Value::String { value } => write!(f, "\"{}\"", value)?,
         Value::Tuple { fields } => {
-            if fields.len() == 2 {
-                if let (
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::ResourceAddress(address),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(id),
-                    },
-                ) = (&fields[0], &fields[1])
-                {
-                    let global_id = NonFungibleGlobalId::new(address.clone(), id.clone());
-                    return write!(
-                        f,
-                        "NonFungibleGlobalId(\"{}\")",
-                        global_id.display(context.bech32_encoder)
-                    );
-                }
-            }
-
             f.write_str("Tuple(")?;
             format_elements(f, fields, context)?;
             f.write_str(")")?;
@@ -213,26 +159,12 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Tuple => f.write_str("Tuple"),
         ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
-            ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
-            ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
-            ScryptoCustomValueKind::ResourceAddress => f.write_str("ResourceAddress"),
+            ScryptoCustomValueKind::Reference => f.write_str("Reference"),
             ScryptoCustomValueKind::Own => f.write_str("Own"),
-            ScryptoCustomValueKind::Bucket => f.write_str("Bucket"),
-            ScryptoCustomValueKind::Proof => f.write_str("Proof"),
-            ScryptoCustomValueKind::Expression => f.write_str("Expression"),
-            ScryptoCustomValueKind::Blob => f.write_str("Blob"),
-            ScryptoCustomValueKind::Hash => f.write_str("Hash"),
-            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey => {
-                f.write_str("EcdsaSecp256k1PublicKey")
-            }
-            ScryptoCustomValueKind::EcdsaSecp256k1Signature => {
-                f.write_str("EcdsaSecp256k1Signature")
-            }
-            ScryptoCustomValueKind::EddsaEd25519PublicKey => f.write_str("EddsaEd25519PublicKey"),
-            ScryptoCustomValueKind::EddsaEd25519Signature => f.write_str("EddsaEd25519Signature"),
             ScryptoCustomValueKind::Decimal => f.write_str("Decimal"),
             ScryptoCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
             ScryptoCustomValueKind::NonFungibleLocalId => f.write_str("NonFungibleLocalId"),
+            ScryptoCustomValueKind::PublicKey => f.write_str("PublicKey"),
         },
     }
 }
@@ -297,74 +229,11 @@ pub fn format_custom_value<F: fmt::Write>(
     context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
-        // RE interpreted
-        ScryptoCustomValue::PackageAddress(value) => {
-            f.write_str("PackageAddress(\"")?;
-            value
-                .format(f, context.bech32_encoder)
-                .expect("Failed to format address");
-            f.write_str("\")")?;
-        }
-        ScryptoCustomValue::ComponentAddress(value) => {
-            f.write_str("ComponentAddress(\"")?;
-            value
-                .format(f, context.bech32_encoder)
-                .expect("Failed to format address");
-            f.write_str("\")")?;
-        }
-        ScryptoCustomValue::ResourceAddress(value) => {
-            f.write_str("ResourceAddress(\"")?;
-            value
-                .format(f, context.bech32_encoder)
-                .expect("Failed to format address");
-            f.write_str("\")")?;
+        ScryptoCustomValue::Reference(value) => {
+            write!(f, "Reference(\"{:?}\")", value)?; // TODO: fix syntax
         }
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
-        }
-        // TX interpreted
-        ScryptoCustomValue::Bucket(value) => {
-            if let Some(name) = context.get_bucket_name(&value) {
-                write!(f, "Bucket(\"{}\")", name)?;
-            } else {
-                write!(f, "Bucket({}u32)", value.0)?;
-            }
-        }
-        ScryptoCustomValue::Proof(value) => {
-            if let Some(name) = context.get_proof_name(&value) {
-                write!(f, "Proof(\"{}\")", name)?;
-            } else {
-                write!(f, "Proof({}u32)", value.0)?;
-            }
-        }
-        ScryptoCustomValue::Expression(value) => {
-            write!(
-                f,
-                "Expression(\"{}\")",
-                match value {
-                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
-                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
-                }
-            )?;
-        }
-        ScryptoCustomValue::Blob(value) => {
-            write!(f, "Blob(\"{}\")", hex::encode(&value.0 .0))?;
-        }
-        // Uninterpreted
-        ScryptoCustomValue::Hash(value) => {
-            write!(f, "Hash(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::EcdsaSecp256k1PublicKey(value) => {
-            write!(f, "EcdsaSecp256k1PublicKey(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::EcdsaSecp256k1Signature(value) => {
-            write!(f, "EcdsaSecp256k1Signature(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::EddsaEd25519PublicKey(value) => {
-            write!(f, "EddsaEd25519PublicKey(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::EddsaEd25519Signature(value) => {
-            write!(f, "EddsaEd25519Signature(\"{}\")", value)?;
         }
         ScryptoCustomValue::Decimal(value) => {
             write!(f, "Decimal(\"{}\")", value)?;
@@ -375,18 +244,9 @@ pub fn format_custom_value<F: fmt::Write>(
         ScryptoCustomValue::NonFungibleLocalId(value) => {
             write!(f, "NonFungibleLocalId(\"{}\")", value)?;
         }
+        ScryptoCustomValue::PublicKey(value) => {
+            write!(f, "PublicKey(\"{:?}\")", value)?; // TODO: fix syntax
+        }
     }
     Ok(())
-}
-
-pub fn format_non_fungible_local_id_contents<F: fmt::Write>(
-    f: &mut F,
-    value: &NonFungibleLocalId,
-) -> fmt::Result {
-    match value {
-        NonFungibleLocalId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
-        NonFungibleLocalId::String(s) => write!(f, "\"{}\"", s),
-        NonFungibleLocalId::Integer(n) => write!(f, "{}u64", n),
-        NonFungibleLocalId::UUID(u) => write!(f, "{}u128", u),
-    }
 }

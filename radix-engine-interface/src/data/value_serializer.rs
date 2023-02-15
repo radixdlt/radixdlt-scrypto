@@ -1,4 +1,3 @@
-use super::types::ManifestExpression;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::*;
@@ -368,144 +367,19 @@ pub fn serialize_custom_value<S: Serializer>(
     context: &ScryptoValueFormattingContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
-        // RE interpreted types
-        ScryptoCustomValue::PackageAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::PackageAddress,
-                &string_address,
-            )
-        }
-        ScryptoCustomValue::ComponentAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                // The fact it's an address is obvious, so favour simplicity over verbosity
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::ComponentAddress,
-                &string_address,
-            )
-        }
-        ScryptoCustomValue::ResourceAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                // The fact it's an address is obvious, so favour simplicity over verbosity
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::ResourceAddress,
-                &string_address,
-            )
-        }
+        ScryptoCustomValue::Reference(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomValueKind::Reference,
+            &format!("{:?}", value), // TODO: fix syntax
+        ),
         ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
             ScryptoCustomValueKind::Own,
             &format!("{:?}", value), // TODO: fix syntax
-        ),
-        // TX interpreted types
-        ScryptoCustomValue::Bucket(value) => {
-            if let Some(name) = context.display_context.get_bucket_name(&value) {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Bucket,
-                    name,
-                )
-            } else {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Bucket,
-                    &value.0,
-                )
-            }
-        }
-        ScryptoCustomValue::Proof(value) => {
-            if let Some(name) = context.display_context.get_proof_name(&value) {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Proof,
-                    name,
-                )
-            } else {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Proof,
-                    &value.0,
-                )
-            }
-        }
-        ScryptoCustomValue::Expression(value) => serialize_value(
-            // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
-            ValueEncoding::NoType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Expression,
-            &format!(
-                "{}",
-                match value {
-                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
-                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
-                }
-            ),
-        ),
-        ScryptoCustomValue::Blob(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Blob,
-            &format!("{}", hex::encode(&value.0 .0)),
-        ),
-        // Uninterpreted
-        ScryptoCustomValue::Hash(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Hash,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EcdsaSecp256k1PublicKey(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EcdsaSecp256k1Signature(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EcdsaSecp256k1Signature,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EddsaEd25519PublicKey(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EddsaEd25519PublicKey,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EddsaEd25519Signature(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EddsaEd25519Signature,
-            &format!("{}", value),
         ),
         ScryptoCustomValue::Decimal(value) => serialize_value(
             // The fact it's a decimal number will be obvious from context, so favour simplicity over verbosity
@@ -529,6 +403,13 @@ pub fn serialize_custom_value<S: Serializer>(
             context,
             ScryptoCustomValueKind::NonFungibleLocalId,
             &format!("{}", value),
+        ),
+        ScryptoCustomValue::PublicKey(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomValueKind::PublicKey,
+            &format!("{:?}", value), // TODO: fix syntax
         ),
     }
 }
@@ -646,7 +527,6 @@ mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
     use radix_engine_derive::*;
-    use sbor::rust::collections::HashMap;
     use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
@@ -713,13 +593,8 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::{
             constants::{EPOCH_MANAGER, FAUCET_COMPONENT},
-            crypto::{
-                EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-                EddsaEd25519Signature,
-            },
-            data::types::{
-                ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof, Own,
-            },
+            crypto::{EddsaEd25519PublicKey, PublicKey},
+            data::model::*,
             math::{Decimal, PreciseDecimal},
         };
 
@@ -771,56 +646,12 @@ mod tests {
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
-                            value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::ComponentAddress(EPOCH_MANAGER),
+                            value: ScryptoCustomValue::Reference(Reference::ResourceManager(
+                                RADIX_TOKEN,
+                            )),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Bucket(ManifestBucket(1)), // Will be mapped by context to "Hello"
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Bucket(ManifestBucket(10)),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Proof(ManifestProof(2)),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Expression(
-                                ManifestExpression::EntireWorktop,
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([0; 32]))),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Hash(Hash([0; 32])),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
-                                EcdsaSecp256k1PublicKey([0; 33]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EcdsaSecp256k1Signature(
-                                EcdsaSecp256k1Signature([0; 65]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EddsaEd25519PublicKey(
-                                EddsaEd25519PublicKey([0; 32]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EddsaEd25519Signature(
-                                EddsaEd25519Signature([0; 64]),
-                            ),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -850,6 +681,11 @@ mod tests {
                             value: ScryptoCustomValue::NonFungibleLocalId(
                                 NonFungibleLocalId::UUID(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd),
                             ),
+                        },
+                        Value::Custom {
+                            value: ScryptoCustomValue::PublicKey(PublicKey::EddsaEd25519(
+                                EddsaEd25519PublicKey([0; 32]),
+                            )),
                         },
                     ],
                 },
@@ -955,15 +791,7 @@ mod tests {
             ]
         });
 
-        let mut bucket_names = HashMap::new();
-        bucket_names.insert(ManifestBucket(1), "Hello".to_owned());
-        let proof_names = HashMap::new();
-
-        let context = ValueFormattingContext::with_manifest_context(
-            Some(&encoder),
-            &bucket_names,
-            &proof_names,
-        );
+        let context = ValueFormattingContext::with_bench32(Some(&encoder));
 
         assert_simple_json_matches(&value, context, expected_simple);
         assert_invertible_json_matches(&value, context, expected_invertible);
