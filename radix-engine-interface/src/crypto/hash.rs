@@ -7,12 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::abi::*;
-use crate::data::*;
-use crate::scrypto_type;
-
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {
@@ -88,8 +84,6 @@ impl Hash {
         self.0.to_vec()
     }
 }
-
-scrypto_type!(Hash, ScryptoCustomValueKind::Hash, Type::Hash, 32);
 
 //======
 // text
