@@ -8,7 +8,7 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
     DEFAULT_MAX_WASM_MEM_PER_TRANSACTION, DEFAULT_SYSTEM_LOAN,
 };
 use sbor::rust::borrow::Cow;
@@ -57,7 +57,7 @@ impl ExecutionConfig {
             max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
-            max_wasm_mem_per_instance: DEFAULT_MAX_WASM_MEM_PER_INSTANCE,
+            max_wasm_mem_per_instance: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
         }
     }
 

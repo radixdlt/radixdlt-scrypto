@@ -46,5 +46,5 @@ pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
 /// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
 pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
 
-/// The default maximum WASM memory per WASM instance.
-pub const DEFAULT_MAX_WASM_MEM_PER_INSTANCE: usize = 3 * 1024 * 1024;
+/// The default maximum WASM memory per WASM call frame.
+pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 3 * 1024 * 1024;

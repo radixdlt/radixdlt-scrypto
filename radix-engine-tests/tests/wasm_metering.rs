@@ -4,7 +4,8 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_constants::{
-    DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_INSTANCE, DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
+    DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
+    DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
 };
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -139,7 +140,7 @@ fn test_grow_memory() {
     let mut test_runner = TestRunner::builder().build();
 
     // Calculate how much we can grow the memory (by wasm pages), subtract 1 to be below limit.
-    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_INSTANCE / (1024 * 64) - 1;
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / (1024 * 64) - 1;
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
@@ -202,7 +203,7 @@ fn test_max_instance_memory_exceeded() {
     let mut test_runner = TestRunner::builder().build();
 
     // Grow memory (wasm pages) to exceed default max wasm memory per instance.
-    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_INSTANCE / (1024 * 64);
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / (1024 * 64);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
@@ -250,7 +251,7 @@ fn test_max_transaction_memory_exceeded() {
     let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / DEFAULT_MAX_CALL_DEPTH;
 
     // Ensure calculated wasm instance grow value is lower than instance limit.
-    assert!(grow_value <= DEFAULT_MAX_WASM_MEM_PER_INSTANCE);
+    assert!(grow_value <= DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME);
 
     // Act
     let manifest = ManifestBuilder::new()

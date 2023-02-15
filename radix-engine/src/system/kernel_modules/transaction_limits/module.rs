@@ -23,17 +23,17 @@ pub struct TransactionLimitsModule {
     /// Maximum WASM memory which can be consumed during transaction execution.
     max_wasm_memory: usize,
     /// Maximum WASM memory which can be consumed during transaction execution.
-    max_wasm_instance_memory: usize,
+    max_wasm_memory_per_call_frame: usize,
     /// Consumed WASM memory for each invocation call.
-    wasm_memory: Vec<usize>,
+    wasm_memory_usage_stack: Vec<usize>,
 }
 
 impl TransactionLimitsModule {
     pub fn new(max_wasm_memory: usize, max_wasm_instance_memory: usize) -> Self {
         TransactionLimitsModule {
             max_wasm_memory,
-            max_wasm_instance_memory,
-            wasm_memory: Vec::with_capacity(8),
+            max_wasm_memory_per_call_frame: max_wasm_instance_memory,
+            wasm_memory_usage_stack: Vec::with_capacity(8),
         }
     }
 
@@ -41,8 +41,11 @@ impl TransactionLimitsModule {
     /// checks if memory limit for all instances was exceeded.
     fn validate(&self) -> Result<(), RuntimeError> {
         // check last (current) call frame
-        let current_instance_memory = *self.wasm_memory.last().unwrap();
-        if current_instance_memory > self.max_wasm_instance_memory {
+        let current_instance_memory = *self
+            .wasm_memory_usage_stack
+            .last()
+            .expect("Wasm memory usage stack should not be empty.");
+        if current_instance_memory > self.max_wasm_memory_per_call_frame {
             return Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxWasmInstanceMemoryExceeded(current_instance_memory),
@@ -52,7 +55,7 @@ impl TransactionLimitsModule {
 
         // calculate current maximum consumed memory
         // sum all call stack values
-        let max_value = self.wasm_memory.iter().sum();
+        let max_value = self.wasm_memory_usage_stack.iter().sum();
 
         // validate if limit was exceeded
         if max_value > self.max_wasm_memory {
@@ -79,7 +82,7 @@ impl KernelModule for TransactionLimitsModule {
         let memory = api.get_current_wasm_memory_consumption();
         api.get_module_state()
             .transaction_limits
-            .wasm_memory
+            .wasm_memory_usage_stack
             .push(memory);
 
         api.get_module_state().transaction_limits.validate()
@@ -87,7 +90,10 @@ impl KernelModule for TransactionLimitsModule {
 
     fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from stack
-        api.get_module_state().transaction_limits.wasm_memory.pop();
+        api.get_module_state()
+            .transaction_limits
+            .wasm_memory_usage_stack
+            .pop();
 
         Ok(())
     }
@@ -100,13 +106,13 @@ impl KernelModule for TransactionLimitsModule {
         let tlimit = &mut api.get_module_state().transaction_limits;
 
         // update current frame consumed memory value after WASM invokation is done
-        if let Some(val) = tlimit.wasm_memory.get_mut(depth) {
+        if let Some(val) = tlimit.wasm_memory_usage_stack.get_mut(depth) {
             *val = consumed_memory;
         } else {
             // When kernel pops the call frame there are some nested calls which
             // are not aligned with before_push_frame() which requires pushing
             // new value on a stack instead of updating it.
-            tlimit.wasm_memory.push(consumed_memory)
+            tlimit.wasm_memory_usage_stack.push(consumed_memory)
         }
 
         tlimit.validate()
