@@ -13,7 +13,7 @@ use transaction::validation::ValidationConfig;
 use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
 
 fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
-    let message_hash = hash("This is a long message".repeat(100)).0;
+    let message_hash = hash("This is a long message".repeat(100));
     let signer = EcdsaSecp256k1PrivateKey::from_u64(123123123123).unwrap();
     let signature = signer.sign(&message_hash);
 
@@ -26,7 +26,7 @@ fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
 }
 
 fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
-    let message_hash = hash("This is a long message".repeat(100)).0;
+    let message_hash = hash("This is a long message".repeat(100));
     let signer = EddsaEd25519PrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
     let signature = signer.sign(&message_hash);
