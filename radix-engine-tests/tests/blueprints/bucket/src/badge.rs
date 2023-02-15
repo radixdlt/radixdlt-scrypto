@@ -10,7 +10,7 @@ mod badge_test {
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "TestBadge")
-                .initial_supply(amount)
+                .mint_initial_supply(amount)
         }
 
         pub fn combine() -> Bucket {

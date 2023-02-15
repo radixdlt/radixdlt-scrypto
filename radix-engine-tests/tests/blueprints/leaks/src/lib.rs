@@ -13,14 +13,14 @@ mod leaks {
             let _bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
         }
 
         pub fn dangling_vault() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
         }
 
@@ -28,7 +28,7 @@ mod leaks {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             bucket
         }
 
@@ -42,7 +42,7 @@ mod leaks {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
 
             bucket.create_proof()
         }

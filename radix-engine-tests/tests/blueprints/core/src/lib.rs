@@ -11,7 +11,7 @@ mod move_test {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(amount)
+                .mint_initial_supply(amount)
         }
 
         pub fn receive_bucket(&mut self, t: Bucket) {

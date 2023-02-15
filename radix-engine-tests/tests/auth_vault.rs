@@ -44,10 +44,10 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             account,
             10u32.into(),
             auth_resource_address,
-            BTreeSet::from([NonFungibleLocalId::Integer(1)]),
+            BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleLocalId::Integer(1)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {

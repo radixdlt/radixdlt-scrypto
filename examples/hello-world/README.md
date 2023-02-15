@@ -61,7 +61,7 @@ To define a new resource, we use the `ResourceBuilder`, specifying the metadata 
 let my_bucket: Bucket = ResourceBuilder::new_fungible()
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
-    .initial_supply(1000);
+    .mint_initial_supply(1000);
 ```
 
 Once created, the 1000 resource-based `HelloToken` tokens are held in transient container `my_bucket`. To permanently store the created resources, we need to put them into a `Vault` like this:

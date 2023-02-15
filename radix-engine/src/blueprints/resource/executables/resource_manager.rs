@@ -627,7 +627,7 @@ impl ResourceManagerNativePackage {
         let mut entries = BTreeMap::new();
         for entry in input.entries {
             let uuid = Runtime::generate_uuid(api)?;
-            entries.insert(NonFungibleLocalId::UUID(uuid), entry);
+            entries.insert(NonFungibleLocalId::uuid(uuid).unwrap(), entry);
         }
 
         let (resource_manager_substate, bucket) =
@@ -1481,7 +1481,7 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
                 // TODO: Is this enough bits to prevent hash collisions?
                 // TODO: Possibly use an always incrementing timestamp
                 let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleLocalId::UUID(uuid);
+                let id = NonFungibleLocalId::uuid(uuid).unwrap();
                 ids.insert(id.clone());
 
                 {

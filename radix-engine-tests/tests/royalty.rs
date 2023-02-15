@@ -59,7 +59,7 @@ fn set_up_package_and_component() -> (
     // Publish package
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Integer(1));
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
         test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 

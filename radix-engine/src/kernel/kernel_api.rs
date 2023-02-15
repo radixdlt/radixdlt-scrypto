@@ -264,6 +264,8 @@ pub trait KernelInternalApi {
     ) -> Option<RENodeVisibilityOrigin>;
     fn kernel_get_current_depth(&self) -> usize;
     fn kernel_get_current_actor(&self) -> ResolvedActor;
+
+    /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
