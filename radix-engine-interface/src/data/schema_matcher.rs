@@ -1,8 +1,7 @@
+use crate::data::model::Own;
 use crate::data::*;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
-
-use super::types::Own;
 
 pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
     match ty {

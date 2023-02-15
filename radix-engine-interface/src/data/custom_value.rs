@@ -38,9 +38,9 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
                 ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
             ),
-            ScryptoCustomValue::PublicKey(_) => encoder.write_value_kind(
-                ValueKind::Custom(ScryptoCustomValueKind::PublicKey),
-            ),
+            ScryptoCustomValue::PublicKey(_) => {
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PublicKey))
+            }
         }
     }
 
@@ -95,14 +95,15 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::types::*;
 
     #[test]
     fn test_custom_types_group1() {
         let values = (
-            PackageAddress::Normal([1u8; 26]),
-            ComponentAddress::Normal([2u8; 26]),
-            ResourceAddress::Normal([3u8; 26]),
-            ComponentAddress::EpochManager([4u8; 26]),
+            Reference::Package(PackageAddress::Normal([1u8; 26])),
+            Reference::Component(ComponentAddress::Normal([2u8; 26])),
+            Reference::ResourceManager(ResourceAddress::Normal([3u8; 26])),
+            Reference::Component(ComponentAddress::EpochManager([4u8; 26])),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -120,24 +121,24 @@ mod tests {
             ScryptoValue::Tuple {
                 fields: vec![
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::PackageAddress(PackageAddress::Normal(
-                            [1u8; 26]
+                        value: ScryptoCustomValue::Reference(Reference::Package(
+                            PackageAddress::Normal([1u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::ComponentAddress(ComponentAddress::Normal(
-                            [2u8; 26]
+                        value: ScryptoCustomValue::Reference(Reference::Component(
+                            ComponentAddress::Normal([2u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::ResourceAddress(ResourceAddress::Normal(
-                            [3u8; 26]
+                        value: ScryptoCustomValue::Reference(Reference::ResourceManager(
+                            ResourceAddress::Normal([3u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::ComponentAddress(
+                        value: ScryptoCustomValue::Reference(Reference::Component(
                             ComponentAddress::EpochManager([4u8; 26])
-                        ),
+                        )),
                     },
                 ]
             }
@@ -189,54 +190,14 @@ mod tests {
     }
 
     #[test]
-    fn test_custom_types_group3() {
-        let values = (
-            ManifestBucket(1u32),
-            ManifestProof(2u32),
-            ManifestExpression::EntireWorktop,
-            ManifestBlobRef(Hash([3u8; 32])),
-        );
-        let bytes = scrypto_encode(&values).unwrap();
-        assert_eq!(
-            bytes,
-            vec![
-                92, 33, 4, 160, 1, 0, 0, 0, 161, 2, 0, 0, 0, 162, 0, 163, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-            ]
-        );
-        assert_eq!(
-            scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
-            ScryptoValue::Tuple {
-                fields: vec![
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Bucket(ManifestBucket(1u32)),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Proof(ManifestProof(2u32)),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([3u8; 32]))),
-                    },
-                ]
-            }
-        );
-    }
-
-    #[test]
     fn test_custom_types_group4() {
         let values = (
-            Hash([0u8; 32]),
-            EcdsaSecp256k1PublicKey([1u8; 33]),
-            EcdsaSecp256k1Signature([2u8; 65]),
-            EddsaEd25519PublicKey([3u8; 32]),
-            EddsaEd25519Signature([4u8; 64]),
             Decimal::ONE,
             PreciseDecimal::ONE,
             NonFungibleLocalId::Integer(1),
             NonFungibleLocalId::Bytes(vec![2, 3]),
+            EcdsaSecp256k1PublicKey([1u8; 33]),
+            EddsaEd25519PublicKey([3u8; 32]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -263,29 +224,6 @@ mod tests {
             ScryptoValue::Tuple {
                 fields: vec![
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Hash(Hash([0u8; 32])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
-                            EcdsaSecp256k1PublicKey([1u8; 33],)
-                        ),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::EcdsaSecp256k1Signature(
-                            EcdsaSecp256k1Signature([2u8; 65],)
-                        ),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::EddsaEd25519PublicKey(EddsaEd25519PublicKey(
-                            [3u8; 32]
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::EddsaEd25519Signature(EddsaEd25519Signature(
-                            [4u8; 64]
-                        )),
-                    },
-                    ScryptoValue::Custom {
                         value: ScryptoCustomValue::Decimal(Decimal::ONE),
                     },
                     ScryptoValue::Custom {
@@ -299,6 +237,16 @@ mod tests {
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(
                             vec![2, 3]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::PublicKey(PublicKey::EcdsaSecp256k1(
+                            EcdsaSecp256k1PublicKey([1u8; 33],)
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::PublicKey(PublicKey::EddsaEd25519(
+                            EddsaEd25519PublicKey([3u8; 32])
                         )),
                     },
                 ]
