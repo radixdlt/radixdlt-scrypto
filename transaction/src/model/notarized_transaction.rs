@@ -4,38 +4,40 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use sbor::*;
 
+use crate::data::model::ManifestPublicKey;
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;
+use crate::*;
 
 // TODO: add versioning of transaction schema
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
     pub nonce: u64,
-    pub notary_public_key: PublicKey,
+    pub notary_public_key: ManifestPublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
     pub tip_percentage: u16,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionIntent {
     pub header: TransactionHeader,
     pub manifest: TransactionManifest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
     pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
@@ -62,7 +64,18 @@ pub enum Signature {
     serde(tag = "type")
 )]
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {

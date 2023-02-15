@@ -6,11 +6,12 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
+use crate::data::*;
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub trait TransactionValidator<T: ScryptoDecode> {
+pub trait TransactionValidator<T: ManifestDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
@@ -19,7 +20,7 @@ pub trait TransactionValidator<T: ScryptoDecode> {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction = scrypto_decode(transaction)
+        let transaction = manifest_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)

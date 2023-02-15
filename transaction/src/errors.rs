@@ -1,4 +1,4 @@
-use radix_engine_interface::data::types::*;
+use radix_engine_interface::data::model::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

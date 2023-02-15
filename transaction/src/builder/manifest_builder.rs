@@ -1,3 +1,4 @@
+use crate::data::model::*;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
@@ -14,7 +15,6 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;

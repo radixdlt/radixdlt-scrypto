@@ -3,7 +3,10 @@ use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
 use sbor::*;
 
+use crate::data::model::ManifestPublicKey;
+use crate::data::*;
 use crate::model::TransactionIntent;
+use crate::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -13,10 +16,10 @@ pub struct PreviewFlags {
     pub permit_invalid_header_epoch: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
-    pub signer_public_keys: Vec<PublicKey>,
+    pub signer_public_keys: Vec<ManifestPublicKey>,
     pub flags: PreviewFlags,
 }
 
@@ -26,6 +29,6 @@ impl PreviewIntent {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }

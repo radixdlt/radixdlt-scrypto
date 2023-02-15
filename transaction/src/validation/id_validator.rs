@@ -1,5 +1,5 @@
-use radix_engine_interface::data::types::ManifestBucket;
-use radix_engine_interface::data::types::ManifestProof;
+use radix_engine_interface::data::model::ManifestBucket;
+use radix_engine_interface::data::model::ManifestProof;
 use sbor::rust::collections::*;
 use sbor::SborPath;
 

@@ -26,7 +26,7 @@ use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
 };
-use radix_engine_interface::data::types::*;
+use radix_engine_interface::data::model::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
     ScryptoValue, ScryptoValueKind,
