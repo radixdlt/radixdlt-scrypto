@@ -8,14 +8,14 @@ pub trait Signer {
 
 impl Signer for EcdsaSecp256k1PrivateKey {
     fn sign(&self, message: &[u8]) -> SignatureWithPublicKey {
-        let message_hash = hash(message).0;
+        let message_hash = hash(message);
         self.sign(&message_hash).into()
     }
 }
 
 impl Signer for EddsaEd25519PrivateKey {
     fn sign(&self, message: &[u8]) -> SignatureWithPublicKey {
-        let message_hash = hash(message).0;
+        let message_hash = hash(message);
         (self.public_key(), self.sign(&message_hash)).into()
     }
 }
