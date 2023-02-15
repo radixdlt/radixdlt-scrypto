@@ -23,6 +23,7 @@ use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use crate::wasm::WasmValidator;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
@@ -174,48 +175,45 @@ where
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
-        // Validate code
-        let abi = scrypto_decode(&abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
+
+        let blueprint_abis =
+            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidAbi(e),
+                ))
+            })?;
         WasmValidator::default()
-            .validate(&code, &abi)
+            .validate(&code, &blueprint_abis)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
                 ))
             })?;
-
-        // Allocate node id
-        let node_id = self.kernel_allocate_node_id(RENodeType::Package)?;
-
-        // Create a royalty vault
-        let royalty_vault_id = self
-            .kernel_invoke(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
-
-        // Create royalty substates
+        let wasm_code_substate = WasmCodeSubstate { code };
+        let package_info_substate = PackageInfoSubstate {
+            blueprint_abis,
+            dependent_resources: BTreeSet::new(),
+            dependent_components: BTreeSet::new(),
+        };
         let royalty_config_substate = PackageRoyaltyConfigSubstate { royalty_config };
         let royalty_accumulator_substate = PackageRoyaltyAccumulatorSubstate {
-            royalty: Own::Vault(royalty_vault_id.into()),
+            royalty: Own::Vault(royalty_vault_id),
         };
-
-        // Create metadata substates
         let metadata_substate = MetadataSubstate { metadata };
-
-        // Create auth substates
         let auth_substate = AccessRulesChainSubstate { access_rules_chain };
 
+        // TODO: Can we trust developers enough to add protection for
+        // - `metadata::set`
+        // - `access_rules_chain::add_access_rules`
+        // - `royalty::set_royalty_config`
+        // - `royalty::claim_royalty`
+
+        // Create package node
+        let node_id = self.kernel_allocate_node_id(RENodeType::Package)?;
         self.kernel_create_node(
             node_id,
-            RENodeInit::Package(PackageInfoSubstate {
-                code,
-                blueprint_abis: abi,
-            }),
+            RENodeInit::WasmPackage(package_info_substate, wasm_code_substate),
             btreemap!(
                 NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
                     royalty_config_substate,
@@ -225,8 +223,17 @@ where
                 NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(auth_substate),
             ),
         )?;
+        let package_id: PackageId = node_id.into();
 
-        Ok(node_id.into())
+        // Globalize
+        let global_node_id = self.kernel_allocate_node_id(RENodeType::GlobalPackage)?;
+        self.kernel_create_node(
+            global_node_id,
+            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            BTreeMap::new(),
+        )?;
+
+        Ok(global_node_id.into())
     }
 
     fn call_function(
@@ -260,11 +267,11 @@ where
         let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
+            SubstateOffset::Package(PackageOffset::WasmCode),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.package_info();
+        let package = substate_ref.wasm_code();
         let code = package.code().to_vec();
         self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
@@ -320,11 +327,7 @@ where
         let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
 
         // Create a royalty vault
-        let royalty_vault_id = self
-            .kernel_invoke(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
 
         // Create royalty substates
         let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
@@ -392,15 +395,8 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        match invocation {
-            CallTableInvocation::Native(native_invocation) => Ok(scrypto_encode(
-                invoke_native_fn(native_invocation, self)?.as_ref(),
-            )
-            .expect("Failed to encode native fn return")),
-            CallTableInvocation::Scrypto(scrypto_invocation) => self
-                .kernel_invoke(scrypto_invocation)
-                .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
-        }
+        self.kernel_invoke(invocation)
+            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 
     fn get_component_type_info(

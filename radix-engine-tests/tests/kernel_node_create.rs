@@ -26,7 +26,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidCreateNodeAccess {
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
                         package_address: addr,

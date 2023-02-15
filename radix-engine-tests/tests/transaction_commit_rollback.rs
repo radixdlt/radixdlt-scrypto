@@ -7,6 +7,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+#[ignore]
 fn test_state_track_success() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

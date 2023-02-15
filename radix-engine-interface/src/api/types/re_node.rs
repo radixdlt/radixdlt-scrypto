@@ -247,6 +247,8 @@ pub enum ComponentOffset {
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
+    NativeCode,
+    WasmCode,
     Info,
 }
 

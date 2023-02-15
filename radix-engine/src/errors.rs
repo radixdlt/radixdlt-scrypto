@@ -152,16 +152,16 @@ pub enum KernelError {
     InvalidId(RENodeId),
 
     // Actor Constraints
-    InvalidDropNodeVisibility {
+    InvalidDropNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,
     },
-    InvalidCreateNodeVisibility {
+    InvalidCreateNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
     },
-    InvalidSubstateVisibility {
+    InvalidSubstateAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,
@@ -196,6 +196,10 @@ pub enum ScryptoFnResolvingError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
+    NativeUnexpectedReceiver(String),
+    NativeExpectedReceiver(String),
+    NativeExportDoesNotExist(String),
+
     InvalidInvocation,
     DisallowedInvocation(NativeFn),
 

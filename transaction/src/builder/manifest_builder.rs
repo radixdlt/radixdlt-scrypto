@@ -5,13 +5,19 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+    VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
+    VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
+};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
@@ -376,9 +382,14 @@ impl ManifestBuilder {
         key: EcdsaSecp256k1PublicKey,
         owner_access_rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateValidator {
-            key,
-            owner_access_rule,
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                key,
+                owner_access_rule,
+            })
+            .unwrap(),
         });
         self
     }
@@ -386,7 +397,7 @@ impl ManifestBuilder {
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "register".to_string(),
+            method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: args!(),
         });
         self
@@ -395,7 +406,7 @@ impl ManifestBuilder {
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "unregister".to_string(),
+            method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: args!(),
         });
         self
@@ -408,7 +419,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "stake".to_string(),
+            method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: args!(bucket),
         });
         self
@@ -421,7 +432,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "unstake".to_string(),
+            method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: args!(bucket),
         });
         self
@@ -434,7 +445,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
-            method_name: "claim_xrd".to_string(),
+            method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: args!(bucket),
         });
         self
@@ -752,27 +763,6 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn lock_fee_and_withdraw_all(
-        &mut self,
-        account: ComponentAddress,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdrawAll;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawAllMethodArgs {
-            amount_to_lock: amount,
-            resource_address,
-        })
-        .unwrap();
-
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: account,
-            method_name: method_ident.to_string(),
-            args,
-        })
-        .0
-    }
-
     pub fn lock_fee_and_withdraw(
         &mut self,
         account: ComponentAddress,
@@ -780,8 +770,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdraw;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawMethodArgs {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawInput {
             resource_address,
             amount,
             amount_to_lock,
@@ -790,7 +779,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args: args,
         })
         .0
@@ -803,8 +792,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::LockFeeAndWithdrawNonFungibles;
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawNonFungiblesMethodArgs {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
             ids,
@@ -813,7 +801,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
         .0
@@ -821,41 +809,22 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let method_ident = AccountFn::LockFee;
-        let args = scrypto_encode(&AccountLockFeeMethodArgs { amount }).unwrap();
+        let args = scrypto_encode(&AccountLockFeeInput { amount }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
         })
         .0
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let method_ident = AccountFn::LockContingentFee;
-        let args = scrypto_encode(&AccountLockContingentFeeMethodArgs { amount }).unwrap();
+        let args = scrypto_encode(&AccountLockContingentFeeInput { amount }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
-            args,
-        })
-        .0
-    }
-
-    /// Withdraws resource from an account.
-    pub fn withdraw_all_from_account(
-        &mut self,
-        account: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let method_ident = AccountFn::WithdrawAll;
-        let args = scrypto_encode(&AccountWithdrawAllMethodArgs { resource_address }).unwrap();
-
-        self.add_instruction(BasicInstruction::CallMethod {
-            component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
         })
         .0
@@ -868,8 +837,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let method_ident = AccountFn::Withdraw;
-        let args = scrypto_encode(&AccountWithdrawMethodArgs {
+        let args = scrypto_encode(&AccountWithdrawInput {
             resource_address,
             amount,
         })
@@ -877,7 +845,23 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
+            args,
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn withdraw_all_from_account(
+        &mut self,
+        account: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        let args = scrypto_encode(&AccountWithdrawAllInput { resource_address }).unwrap();
+
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
             args,
         })
         .0
@@ -890,8 +874,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::WithdrawNonFungibles;
-        let args = scrypto_encode(&AccountWithdrawNonFungiblesMethodArgs {
+        let args = scrypto_encode(&AccountWithdrawNonFungiblesInput {
             ids: ids.clone(),
             resource_address,
         })
@@ -899,7 +882,27 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            args,
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_all(
+        &mut self,
+        account: ComponentAddress,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        let args = scrypto_encode(&AccountLockFeeAndWithdrawAllInput {
+            amount_to_lock: amount,
+            resource_address,
+        })
+        .unwrap();
+
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
             args,
         })
         .0
@@ -911,12 +914,11 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let method_ident = AccountFn::CreateProof;
-        let args = scrypto_encode(&AccountCreateProofMethodArgs { resource_address }).unwrap();
+        let args = scrypto_encode(&AccountCreateProofInput { resource_address }).unwrap();
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             args,
         })
         .0
@@ -929,8 +931,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let method_ident = AccountFn::CreateProofByAmount;
-        let args = scrypto_encode(&AccountCreateProofByAmountMethodArgs {
+        let args = scrypto_encode(&AccountCreateProofByAmountInput {
             resource_address,
             amount,
         })
@@ -938,7 +939,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             args,
         })
         .0
@@ -951,8 +952,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let method_ident = AccountFn::CreateProofByIds;
-        let args = scrypto_encode(&AccountCreateProofByIdsMethodArgs {
+        let args = scrypto_encode(&AccountCreateProofByIdsInput {
             resource_address,
             ids: ids.clone(),
         })
@@ -960,7 +960,7 @@ impl ManifestBuilder {
 
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: account,
-            method_name: method_ident.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
             args,
         })
         .0
