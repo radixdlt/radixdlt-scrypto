@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoCustomValueKind;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;

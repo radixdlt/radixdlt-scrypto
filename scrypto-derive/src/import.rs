@@ -324,6 +324,9 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
 
         // RE
+        SchemaType::Reference => {
+            parse_quote! { ::scrypto::radix_engine_interface::data::model::Reference }
+        }
         SchemaType::PackageAddress => {
             parse_quote! { ::scrypto::model::PackageAddress }
         }
@@ -333,7 +336,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::ResourceAddress => {
             parse_quote! {::scrypto::model::ResourceAddress }
         }
-        SchemaType::Own => parse_quote! { ::scrypto::radix_engine_interface::data::types::Own },
+        SchemaType::Own => parse_quote! { ::scrypto::radix_engine_interface::data::model::Own },
         SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
         SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},
         SchemaType::Vault => parse_quote! { ::scrypto::model::Vault},
@@ -350,22 +353,18 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
 
         // Misc
-        SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
+        SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
+        SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
+        SchemaType::NonFungibleLocalId => parse_quote! {::scrypto::model::NonFungibleLocalId },
+        SchemaType::PublicKey => {
+            parse_quote! {::scrypto::crypto::PublicKey }
+        }
         SchemaType::EcdsaSecp256k1PublicKey => {
             parse_quote! {::scrypto::crypto::EcdsaSecp256k1PublicKey }
-        }
-        SchemaType::EcdsaSecp256k1Signature => {
-            parse_quote! { ::scrypto::crypto::EcdsaSecp256k1Signature}
         }
         SchemaType::EddsaEd25519PublicKey => {
             parse_quote! { ::scrypto::crypto::EddsaEd25519PublicKey}
         }
-        SchemaType::EddsaEd25519Signature => {
-            parse_quote! {::scrypto::crypto::EddsaEd25519Signature }
-        }
-        SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
-        SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
-        SchemaType::NonFungibleLocalId => parse_quote! {::scrypto::model::NonFungibleLocalId },
 
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");

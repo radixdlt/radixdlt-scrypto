@@ -1,3 +1,4 @@
+use crate::LegacyDescribe;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
@@ -8,7 +9,9 @@ use sbor::*;
 use utils::copy_u8_array;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, LegacyDescribe,
+)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {
