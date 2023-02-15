@@ -93,6 +93,12 @@ impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
     }
 }
 
+impl From<EddsaEd25519PublicKey> for Vec<u8> {
+    fn from(value: EddsaEd25519PublicKey) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EddsaEd25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -115,6 +121,12 @@ impl TryFrom<&[u8]> for EddsaEd25519Signature {
         }
 
         Ok(EddsaEd25519Signature(copy_u8_array(slice)))
+    }
+}
+
+impl From<EddsaEd25519Signature> for Vec<u8> {
+    fn from(value: EddsaEd25519Signature) -> Self {
+        value.to_vec()
     }
 }
 

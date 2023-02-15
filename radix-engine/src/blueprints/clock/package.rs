@@ -1,7 +1,5 @@
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::*;
 use crate::system::node::RENodeInit;
@@ -96,7 +94,7 @@ impl ClockNativePackage {
         let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let underlying_node_id = api.allocate_node_id(RENodeType::Clock)?;
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -120,7 +118,7 @@ impl ClockNativePackage {
             }),
         );
 
-        api.create_node(
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
@@ -131,7 +129,7 @@ impl ClockNativePackage {
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
             input.component_address,
         )));
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
@@ -161,13 +159,13 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Clock(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.get_ref_mut(handle)?;
+        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
         substate_ref
             .current_time_rounded_to_minutes()
             .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
@@ -192,13 +190,13 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     RENodeId::Clock(receiver),
                     NodeModuleId::SELF,
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
@@ -225,13 +223,13 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     RENodeId::Clock(receiver),
                     NodeModuleId::SELF,
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,

@@ -44,7 +44,7 @@ mod radiswap {
             let lp_mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "LP Token Mint Auth")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let lp_resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("symbol", lp_symbol)
@@ -52,7 +52,7 @@ mod radiswap {
                 .metadata("url", lp_url)
                 .mintable(rule!(require(lp_mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(require(lp_mint_badge.resource_address())), LOCKED)
-                .no_initial_supply();
+                .create_with_no_initial_supply();
 
             let lp_tokens = lp_mint_badge.authorize(|| {
                 borrow_resource_manager!(lp_resource_address).mint(lp_initial_supply)

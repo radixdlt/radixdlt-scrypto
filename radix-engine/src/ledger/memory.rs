@@ -1,4 +1,4 @@
-use crate::kernel::ScryptoInterpreter;
+use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 use crate::system::node_substates::PersistedSubstate;

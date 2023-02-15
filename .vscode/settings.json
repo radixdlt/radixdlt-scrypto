@@ -9,10 +9,12 @@
         "decompile",
         "decompiled",
         "eddsa",
+        "flamegraph",
         "instantiatable",
         "Instrumenter",
         "Invokable",
         "persistable",
+        "radiswap",
         "repr",
         "Sbor",
         "Scrypto",
@@ -23,7 +25,6 @@
         "Untimed",
         "virtualizable",
         "Wasmer",
-        "Wasmi",
-        "radiswap"
+        "Wasmi"
     ]
 }

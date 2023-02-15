@@ -1,9 +1,5 @@
-use crate::{
-    errors::RuntimeError,
-    kernel::kernel_api::LockFlags,
-    kernel::{kernel_api::KernelSubstateApi, KernelNodeApi},
-    types::*,
-};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::{errors::RuntimeError, types::*};
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
@@ -28,15 +24,15 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     };
 
     let component_info = {
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             node_id,
             NodeModuleId::ComponentTypeInfo,
             SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         component_info
     };

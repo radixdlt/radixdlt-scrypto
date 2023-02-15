@@ -1,5 +1,4 @@
 use crate::errors::*;
-use crate::kernel::*;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -17,6 +16,13 @@ use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
+
+use super::actor::ResolvedActor;
+use super::call_frame::CallFrameUpdate;
+use super::call_frame::RENodeVisibilityOrigin;
+use super::heap::HeapRENode;
+use super::interpreters::ScryptoInterpreter;
+use super::module_mixer::KernelModuleMixer;
 
 bitflags! {
     #[derive(Encode, Decode, Categorize)]
@@ -43,25 +49,23 @@ pub struct LockInfo {
     pub offset: SubstateOffset,
 }
 
+// Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
+// all methods are prefixed by the subsystem of kernel.
+
 pub trait KernelActorApi<E> {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, E>;
 }
 
 pub trait KernelNodeApi {
-    fn get_visible_node_data(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<RENodeVisibilityOrigin, RuntimeError>;
-
     /// Removes an RENode and all of it's children from the Heap
-    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
     /// Allocates a new node id useable for create_node
-    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
+    fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(
+    fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
         init: RENodeInit,
@@ -69,32 +73,9 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 }
 
-/// Internal API for kernel modules.
-/// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
-pub trait KernelInternalApi {
-    fn get_module_state(&mut self) -> &mut KernelModuleMixer;
-    fn get_current_depth(&self) -> usize;
-    fn get_current_actor(&self) -> ResolvedActor;
-
-    /* Temporary interface, specifically for `ExecutionTrace` kernel module */
-    fn read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
-    fn read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
-}
-
-#[repr(u8)]
-pub enum KernelModuleId {
-    KernelDebug,
-    Costing,
-    NodeMove,
-    Auth,
-    Logger,
-    TransactionRuntime,
-    ExecutionTrace,
-}
-
 pub trait KernelSubstateApi {
     /// Locks a visible substate
-    fn lock_substate(
+    fn kernel_lock_substate(
         &mut self,
         node_id: RENodeId,
         module_id: NodeModuleId,
@@ -102,26 +83,30 @@ pub trait KernelSubstateApi {
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
 
-    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
     /// Drops a lock
-    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
     /// Get a non-mutable reference to a locked substate
-    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
+    fn kernel_get_substate_ref(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<SubstateRef, RuntimeError>;
 
     /// Get a mutable reference to a locked substate
-    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
+    fn kernel_get_substate_ref_mut(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<SubstateRefMut, RuntimeError>;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
-    fn scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
-
-    fn emit_wasm_instantiation_event(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn kernel_get_scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
 }
 
 pub trait Invokable<I: Invocation, E> {
-    fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
+    fn kernel_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
 pub trait Executor {
@@ -198,6 +183,22 @@ pub trait KernelInvokeApi<E>:
 pub trait KernelApi<W: WasmEngine, E>:
     KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
 {
+}
+
+/// Internal API for kernel modules.
+/// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
+pub trait KernelInternalApi {
+    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
+    fn kernel_get_node_visibility_origin(
+        &self,
+        node_id: RENodeId,
+    ) -> Option<RENodeVisibilityOrigin>;
+    fn kernel_get_current_depth(&self) -> usize;
+    fn kernel_get_current_actor(&self) -> ResolvedActor;
+
+    /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}

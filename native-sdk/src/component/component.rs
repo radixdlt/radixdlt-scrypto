@@ -13,12 +13,12 @@ impl Component {
     pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
         &mut self,
         access_rules: AccessRules,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&mut Self, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(AccessRulesAddAccessCheckInvocation {
+        api.call_native(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })?;
@@ -29,12 +29,12 @@ impl Component {
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &mut self,
         royalty_config: RoyaltyConfig,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&mut Self, E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.call_native(ComponentSetRoyaltyConfigInvocation {
+        api.call_native(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),
             royalty_config,
         })?;

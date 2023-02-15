@@ -1,8 +1,7 @@
 use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };

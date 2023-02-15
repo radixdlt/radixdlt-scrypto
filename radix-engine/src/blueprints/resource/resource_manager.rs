@@ -2,9 +2,8 @@ use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -95,8 +94,8 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi,
 {
-    let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-    api.create_node(
+    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
+    api.kernel_create_node(
         nf_store_node_id,
         RENodeInit::NonFungibleStore(NonFungibleStore::new()),
         BTreeMap::new(),
@@ -125,24 +124,24 @@ where
             let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                 non_fungible_local_id.clone(),
             ));
-            let non_fungible_handle = api.lock_substate(
+            let non_fungible_handle = api.kernel_lock_substate(
                 nf_store_node_id,
                 NodeModuleId::SELF,
                 offset,
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
             let non_fungible_mut = substate_mut.non_fungible();
             *non_fungible_mut = NonFungibleSubstate(Some(
                 NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
             ));
-            api.drop_lock(non_fungible_handle)?;
+            api.kernel_drop_lock(non_fungible_handle)?;
         }
         resource_manager.total_supply = entries.len().into();
         let ids = entries.into_keys().collect();
         let container = Resource::new_non_fungible(resource_address, ids, id_type);
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -179,8 +178,8 @@ where
         }
         resource_manager.total_supply = initial_supply;
         let container = Resource::new_fungible(resource_address, divisibility, initial_supply);
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -388,8 +387,8 @@ where
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-    api.create_node(
+    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
+    api.kernel_create_node(
         nf_store_node_id,
         RENodeInit::NonFungibleStore(NonFungibleStore::new()),
         BTreeMap::new(),
@@ -417,13 +416,13 @@ where
         RENodeModuleInit::AccessRulesChain(vault_substate),
     );
 
-    let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-    api.create_node(
+    let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+    api.kernel_create_node(
         underlying_node_id,
         RENodeInit::ResourceManager(resource_manager_substate),
         node_modules,
     )?;
-    api.create_node(
+    api.kernel_create_node(
         global_node_id,
         RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),
@@ -451,7 +450,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_non_fungible_resource_manager(
             global_node_id,
             input.id_type,
@@ -510,7 +509,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
@@ -548,14 +547,14 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::ResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
@@ -580,13 +579,14 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         let mut entries = BTreeMap::new();
         for entry in input.entries {
             let uuid = Runtime::generate_uuid(api)?;
-            entries.insert(NonFungibleLocalId::UUID(uuid), entry);
+            let id = NonFungibleLocalId::uuid(uuid).unwrap();
+            entries.insert(id, entry);
         }
 
         let (resource_manager_substate, bucket) =
@@ -615,14 +615,14 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::ResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
@@ -647,7 +647,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_fungible_resource_manager(
             global_node_id,
             input.divisibility,
@@ -673,7 +673,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =
@@ -702,14 +702,14 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::ResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
@@ -765,14 +765,14 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::AccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(
+        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+        api.kernel_create_node(
             underlying_node_id,
             RENodeInit::ResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
-        api.create_node(
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
@@ -817,7 +817,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -825,7 +825,7 @@ impl ResourceManagerBlueprint {
         )?;
 
         let (resource, non_fungibles) = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
 
             let id_type = match resource_manager.resource_type {
@@ -875,8 +875,8 @@ impl ResourceManagerBlueprint {
             )
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(resource)),
             BTreeMap::new(),
@@ -884,7 +884,7 @@ impl ResourceManagerBlueprint {
         let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
-            let substate_ref = api.get_ref(resman_handle)?;
+            let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
             let resource_manager = substate_ref.resource_manager();
             (
                 resource_manager.nf_store_id.clone(),
@@ -897,10 +897,10 @@ impl ResourceManagerBlueprint {
             let offset =
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
             let non_fungible_handle =
-                api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+                api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
             {
-                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
                 if non_fungible_mut.0.is_some() {
@@ -916,7 +916,7 @@ impl ResourceManagerBlueprint {
                 *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
             }
 
-            api.drop_lock(non_fungible_handle)?;
+            api.kernel_drop_lock(non_fungible_handle)?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -938,7 +938,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -946,7 +946,7 @@ impl ResourceManagerBlueprint {
         )?;
 
         let bucket_id = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let resource_address = resource_manager.resource_address;
             let id_type = match resource_manager.resource_type {
@@ -977,25 +977,29 @@ impl ResourceManagerBlueprint {
                 // TODO: Is this enough bits to prevent hash collisions?
                 // TODO: Possibly use an always incrementing timestamp
                 let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleLocalId::UUID(uuid);
+                let id = NonFungibleLocalId::uuid(uuid).unwrap();
                 ids.insert(id.clone());
 
                 {
                     let node_id = RENodeId::NonFungibleStore(nf_store_id);
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                    let non_fungible_handle =
-                        api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+                    let non_fungible_handle = api.kernel_lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::MUTABLE,
+                    )?;
                     let non_fungible = NonFungible::new(data.0, data.1);
-                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                    let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
                     let non_fungible_mut = substate_mut.non_fungible();
                     *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
-                    api.drop_lock(non_fungible_handle)?;
+                    api.kernel_drop_lock(non_fungible_handle)?;
                 }
             }
 
-            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            api.create_node(
+            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+            api.kernel_create_node(
                 node_id,
                 RENodeInit::Bucket(BucketSubstate::new(Resource::new_non_fungible(
                     resource_address,
@@ -1027,7 +1031,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -1035,7 +1039,7 @@ impl ResourceManagerBlueprint {
         )?;
 
         let resource = {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
 
             if let ResourceType::Fungible { divisibility } = resource_manager.resource_type {
@@ -1067,8 +1071,8 @@ impl ResourceManagerBlueprint {
             }
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(resource)),
             BTreeMap::new(),
@@ -1093,19 +1097,21 @@ impl ResourceManagerBlueprint {
         let input: ResourceManagerBurnInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let bucket: BucketSubstate = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
+        let bucket: BucketSubstate = api
+            .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
+            .into();
 
         // Check if resource matches
         // TODO: Move this check into actor check
         {
-            let substate_ref = api.get_ref(resman_handle)?;
+            let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
             let resource_manager = substate_ref.resource_manager();
             if bucket.resource_address() != resource_manager.resource_address {
                 return Err(RuntimeError::ApplicationError(
@@ -1121,13 +1127,13 @@ impl ResourceManagerBlueprint {
 
         // Update total supply
         {
-            let mut substate_mut = api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             resource_manager.total_supply -= bucket.total_amount();
         }
 
         // Burn non-fungible
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         if let Some(nf_store_id) = resource_manager.nf_store_id {
             let node_id = RENodeId::NonFungibleStore(nf_store_id);
@@ -1137,13 +1143,17 @@ impl ResourceManagerBlueprint {
                 .expect("Failed to list non-fungible IDs on non-fungible Bucket")
             {
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                let non_fungible_handle =
-                    api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                let non_fungible_handle = api.kernel_lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
                 *non_fungible_mut = NonFungibleSubstate(None);
-                api.drop_lock(non_fungible_handle)?;
+                api.kernel_drop_lock(non_fungible_handle)?;
             }
         }
 
@@ -1166,22 +1176,22 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let container = Resource::new_empty(
             resource_manager.resource_address,
             resource_manager.resource_type,
         );
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -1207,22 +1217,22 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let resource = Resource::new_empty(
             resource_manager.resource_address,
             resource_manager.resource_type,
         );
 
-        let node_id = api.allocate_node_id(RENodeType::Vault)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Vault)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
             BTreeMap::new(),
@@ -1248,7 +1258,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
@@ -1257,7 +1267,7 @@ impl ResourceManagerBlueprint {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let substate_ref = api.get_ref(handle)?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
             let substate = substate_ref.access_rules_chain();
 
             let access_rule = match input.method {
@@ -1276,7 +1286,7 @@ impl ResourceManagerBlueprint {
             })?;
         }
 
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let substate = substate_mut.access_rules_chain();
 
         match input.method {
@@ -1313,7 +1323,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
@@ -1322,7 +1332,7 @@ impl ResourceManagerBlueprint {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let substate_ref = api.get_ref(handle)?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
             let substate = substate_ref.access_rules_chain();
 
             let access_rule = match input.method {
@@ -1341,7 +1351,7 @@ impl ResourceManagerBlueprint {
             })?;
         }
 
-        let mut substate_mut = api.get_ref_mut(handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let substate = substate_mut.access_rules_chain();
 
         match input.method {
@@ -1378,14 +1388,14 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
@@ -1397,8 +1407,8 @@ impl ResourceManagerBlueprint {
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone()));
 
         let non_fungible_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
         let non_fungible_mut = substate_mut.non_fungible();
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
             non_fungible.set_mutable_data(input.data);
@@ -1411,7 +1421,7 @@ impl ResourceManagerBlueprint {
             ));
         }
 
-        api.drop_lock(non_fungible_handle)?;
+        api.kernel_drop_lock(non_fungible_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1432,14 +1442,14 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
@@ -1448,8 +1458,8 @@ impl ResourceManagerBlueprint {
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
         let non_fungible_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate = api.get_ref(non_fungible_handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate = api.kernel_get_substate_ref(non_fungible_handle)?;
         let exists = substate.non_fungible().0.is_some();
 
         Ok(IndexedScryptoValue::from_typed(&exists))
@@ -1471,14 +1481,14 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_type = substate_ref.resource_manager().resource_type;
 
         Ok(IndexedScryptoValue::from_typed(&resource_type))
@@ -1499,13 +1509,13 @@ impl ResourceManagerBlueprint {
         let _input: ResourceManagerGetTotalSupplyInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let total_supply = substate_ref.resource_manager().total_supply;
         Ok(IndexedScryptoValue::from_typed(&total_supply))
     }
@@ -1526,14 +1536,14 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let resman_handle = api.lock_substate(
+        let resman_handle = api.kernel_lock_substate(
             RENodeId::ResourceManager(receiver),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.get_ref(resman_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
@@ -1542,13 +1552,13 @@ impl ResourceManagerBlueprint {
         let non_fungible_global_id =
             NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());
 
-        let non_fungible_handle = api.lock_substate(
+        let non_fungible_handle = api.kernel_lock_substate(
             RENodeId::NonFungibleStore(nf_store_id),
             NodeModuleId::SELF,
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id)),
             LockFlags::read_only(),
         )?;
-        let non_fungible_ref = api.get_ref(non_fungible_handle)?;
+        let non_fungible_ref = api.kernel_get_substate_ref(non_fungible_handle)?;
         let wrapper = non_fungible_ref.non_fungible();
         if let Some(non_fungible) = wrapper.0.as_ref() {
             Ok(IndexedScryptoValue::from_typed(&[
@@ -1599,13 +1609,13 @@ where
         RENodeModuleInit::AccessRulesChain(vault_substate),
     );
 
-    let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-    api.create_node(
+    let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
+    api.kernel_create_node(
         underlying_node_id,
         RENodeInit::ResourceManager(resource_manager_substate),
         node_modules,
     )?;
-    api.create_node(
+    api.kernel_create_node(
         global_node_id,
         RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),

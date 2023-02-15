@@ -7,8 +7,11 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::kernel_api::{KernelSubstateApi, KernelWasmApi, LockFlags};
-use crate::kernel::*;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
+};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -16,12 +19,14 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientEventApi, ClientNativeInvokeApi,
-    ClientNodeApi, ClientSubstateApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi,
+    ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+
+use super::ScryptoRuntime;
 
 impl ExecutableInvocation for ScryptoInvocation {
     type Exec = ScryptoExecutor;
@@ -70,13 +75,13 @@ impl ExecutableInvocation for ScryptoInvocation {
 
             // Type Check
             {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     original_node_id,
                     NodeModuleId::ComponentTypeInfo,
                     SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let component_info = substate_ref.component_info(); // TODO: Remove clone()
 
                 // Type check
@@ -91,7 +96,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                     ));
                 }
 
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
             }
 
             // Deref if global
@@ -117,15 +122,15 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
             NodeModuleId::PackageTypeInfo,
             SubstateOffset::PackageTypeInfo,
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let type_info = substate_ref.type_info().clone();
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
@@ -146,13 +151,13 @@ impl ExecutableInvocation for ScryptoInvocation {
                 )));
 
                 let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     package_global,
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let info = substate_ref.package_info(); // TODO: Remove clone()
                 for dependent_resource in &info.dependent_resources {
                     node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
@@ -198,7 +203,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 }
 
                 let export_name = fn_abi.export_name.clone();
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
 
                 export_name
             }
@@ -249,42 +254,42 @@ impl Executor for ScryptoExecutor {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
-            + ClientEventApi<RuntimeError>
+            + ClientUnsafeApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
         // Make dependent resources/components visible
         {
-            let handle = api.lock_substate(
+            let handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Package(self.package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
-            api.drop_lock(handle)?;
+            api.kernel_drop_lock(handle)?;
         }
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Global(GlobalAddress::Package(self.package_address)),
             NodeModuleId::PackageTypeInfo,
             SubstateOffset::PackageTypeInfo,
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let type_info = substate_ref.type_info().clone();
-        api.drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         let output = match type_info {
             TypeInfoSubstate::NativePackage => {
-                let handle = api.lock_substate(
+                let handle = api.kernel_lock_substate(
                     RENodeId::Global(GlobalAddress::Package(self.package_address)),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::NativeCode),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.get_ref(handle)?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let native_package_code_id = substate_ref.native_code().native_package_code_id;
-                api.drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
                 NativeVm::invoke_native_package(
                     native_package_code_id,
                     self.component_id,
@@ -295,40 +300,39 @@ impl Executor for ScryptoExecutor {
             }
             TypeInfoSubstate::WasmPackage => {
                 let rtn_type = {
-                    let handle = api.lock_substate(
+                    let handle = api.kernel_lock_substate(
                         RENodeId::Global(GlobalAddress::Package(self.package_address)),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Info),
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = api.get_ref(handle)?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let package_info = substate_ref.package_info();
                     let fn_abi = package_info
                         .fn_abi(&self.export_name)
                         .expect("TODO: Remove this expect");
                     let rtn_type = fn_abi.output.clone();
-                    api.drop_lock(handle)?;
+                    api.kernel_drop_lock(handle)?;
                     rtn_type
                 };
 
                 let wasm_code = {
-                    let handle = api.lock_substate(
+                    let handle = api.kernel_lock_substate(
                         RENodeId::Global(GlobalAddress::Package(self.package_address)),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::WasmCode),
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = api.get_ref(handle)?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let package = substate_ref.wasm_code().clone(); // TODO: Remove clone()
-                    api.drop_lock(handle)?;
+                    api.kernel_drop_lock(handle)?;
 
                     package
                 };
 
                 // Emit event
-                api.emit_wasm_instantiation_event(wasm_code.code())?;
                 let mut instance = api
-                    .scrypto_interpreter()
+                    .kernel_get_scrypto_interpreter()
                     .create_instance(self.package_address, &wasm_code.code);
 
                 let output = {
@@ -468,7 +472,9 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<crate::kernel::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>>();
+            assert_sync::<
+                crate::kernel::interpreters::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>,
+            >();
         }
     };
 }
