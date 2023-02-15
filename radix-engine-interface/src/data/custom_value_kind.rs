@@ -19,10 +19,10 @@ pub enum ScryptoCustomValueKind {
     Own,
 
     /* Uninterpreted, but so common; consistent with manifest model */
-    PublicKey,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    PublicKey,
 }
 
 impl From<ScryptoCustomValueKind> for ValueKind<ScryptoCustomValueKind> {

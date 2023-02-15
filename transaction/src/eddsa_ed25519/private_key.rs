@@ -1,6 +1,8 @@
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
-use radix_engine_interface::crypto::{EddsaEd25519PublicKey, EddsaEd25519Signature};
+use radix_engine_interface::crypto::EddsaEd25519PublicKey;
 use sbor::rust::vec::Vec;
+
+use super::EddsaEd25519Signature;
 
 pub struct EddsaEd25519PrivateKey(SecretKey);
 

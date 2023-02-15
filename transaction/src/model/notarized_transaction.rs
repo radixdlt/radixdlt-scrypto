@@ -5,6 +5,8 @@ use radix_engine_interface::*;
 use sbor::*;
 
 use crate::data::model::ManifestPublicKey;
+use crate::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+use crate::eddsa_ed25519::EddsaEd25519Signature;
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;
 use crate::*;
@@ -50,7 +52,7 @@ pub struct NotarizedTransaction {
     serde(tag = "type", content = "signature")
 )]
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),

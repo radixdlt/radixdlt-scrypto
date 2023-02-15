@@ -1,5 +1,6 @@
-use crate::{model::*, signing::Signer};
-use radix_engine_interface::data::scrypto_encode;
+use crate::data::manifest_encode;
+use crate::model::*;
+use crate::signing::Signer;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
@@ -30,7 +31,7 @@ impl TransactionBuilder {
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = scrypto_encode(&intent).unwrap();
+        let intent_payload = manifest_encode(&intent).unwrap();
         self.intent_signatures.push(signer.sign(&intent_payload));
         self
     }
@@ -42,7 +43,7 @@ impl TransactionBuilder {
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = scrypto_encode(&signed_intent).unwrap();
+        let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
         self.notary_signature = Some(signer.sign(&signed_intent_payload).signature());
         self
     }
@@ -81,7 +82,8 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
-    use crate::signing::*;
+    use crate::data::model::ManifestPublicKey;
+    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn notary_as_signatory() {
@@ -94,7 +96,7 @@ mod tests {
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
-                notary_public_key: private_key.public_key().into(),
+                notary_public_key: ManifestPublicKey(private_key.public_key().into()),
                 notary_as_signatory: true,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,

@@ -1,10 +1,9 @@
-use radix_engine_interface::data::model::ManifestBucket;
-use radix_engine_interface::data::model::ManifestProof;
-use sbor::rust::collections::*;
-use sbor::SborPath;
-
+use crate::data::model::ManifestBucket;
+use crate::data::model::ManifestProof;
 use crate::errors::*;
 use crate::validation::*;
+use sbor::rust::collections::*;
+use sbor::SborPath;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {

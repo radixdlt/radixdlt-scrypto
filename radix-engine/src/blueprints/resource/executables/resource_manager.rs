@@ -30,7 +30,7 @@ use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;

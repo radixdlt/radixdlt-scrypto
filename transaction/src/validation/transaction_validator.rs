@@ -411,7 +411,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaSecp256k1PrivateKey,
+        builder::ManifestBuilder, builder::TransactionBuilder,
+        ecdsa_secp256k1::EcdsaSecp256k1PrivateKey,
     };
 
     macro_rules! assert_invalid_tx {

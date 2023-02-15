@@ -1,5 +1,5 @@
+use crate::data::model::{ManifestBucket, ManifestProof};
 use crate::errors::*;
-use radix_engine_interface::data::model::{ManifestBucket, ManifestProof};
 use sbor::rust::ops::Range;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
