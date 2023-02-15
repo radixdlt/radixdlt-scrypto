@@ -9,13 +9,13 @@ use sbor::rust::fmt::Debug;
 pub trait SysProof {
     fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: ClientNodeApi<E> + ClientComponentApi<E>;
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E>;
@@ -37,13 +37,10 @@ impl SysProof for Proof {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<(), E>
+    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E>,
     {
-        sys_calls.sys_drop_node(RENodeId::Proof(self.0))
+        api.sys_drop_node(RENodeId::Proof(self.0))
     }
 }

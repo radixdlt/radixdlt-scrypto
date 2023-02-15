@@ -1,5 +1,9 @@
 use crate::errors::*;
-use crate::kernel::*;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::event::TrackedEvent;
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::PersistedSubstate;
@@ -114,12 +118,12 @@ impl ResourceSummary {
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
                 RENodeId::Bucket(bucket_id) => {
-                    if let Some(x) = api.read_bucket(*bucket_id) {
+                    if let Some(x) = api.kernel_read_bucket(*bucket_id) {
                         buckets.insert(*bucket_id, x);
                     }
                 }
                 RENodeId::Proof(proof_id) => {
-                    if let Some(x) = api.read_proof(*proof_id) {
+                    if let Some(x) = api.kernel_read_proof(*proof_id) {
                         proofs.insert(*proof_id, x);
                     }
                 }
@@ -134,12 +138,12 @@ impl ResourceSummary {
         let mut proofs = HashMap::new();
         match node_id {
             RENodeId::Bucket(bucket_id) => {
-                if let Some(x) = api.read_bucket(*bucket_id) {
+                if let Some(x) = api.kernel_read_bucket(*bucket_id) {
                     buckets.insert(*bucket_id, x);
                 }
             }
             RENodeId::Proof(proof_id) => {
-                if let Some(x) = api.read_proof(*proof_id) {
+                if let Some(x) = api.kernel_read_proof(*proof_id) {
                     proofs.insert(*proof_id, x);
                 }
             }
@@ -156,7 +160,7 @@ impl KernelModule for ExecutionTraceModule {
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .handle_before_create_node();
         Ok(())
@@ -166,10 +170,10 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.get_current_actor();
-        let current_depth = api.get_current_depth();
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .handle_after_create_node(current_actor, current_depth, resource_summary);
         Ok(())
@@ -180,16 +184,16 @@ impl KernelModule for ExecutionTraceModule {
         node_id: &RENodeId,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .handle_before_drop_node(resource_summary);
         Ok(())
     }
 
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let current_actor = api.get_current_actor();
-        let current_depth = api.get_current_depth();
-        api.get_module_state()
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
+        api.kernel_get_module_state()
             .execution_trace
             .handle_after_drop_node(current_actor, current_depth);
         Ok(())
@@ -200,9 +204,9 @@ impl KernelModule for ExecutionTraceModule {
         callee: &ResolvedActor,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.get_current_actor();
+        let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .handle_before_push_frame(current_actor, callee, resource_summary);
         Ok(())
@@ -213,10 +217,10 @@ impl KernelModule for ExecutionTraceModule {
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.get_current_actor();
-        let current_depth = api.get_current_depth();
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())
@@ -226,7 +230,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         new_index: usize,
     ) -> Result<(), RuntimeError> {
-        api.get_module_state()
+        api.kernel_get_module_state()
             .execution_trace
             .current_transaction_index = new_index;
         Ok(())

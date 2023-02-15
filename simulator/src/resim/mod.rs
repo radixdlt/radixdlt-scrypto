@@ -53,7 +53,7 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::kernel::ScryptoInterpreter;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;

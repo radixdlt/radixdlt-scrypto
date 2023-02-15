@@ -36,15 +36,16 @@ impl Runtime {
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
-        );
+        )
+        .unwrap();
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.fn_identifier().unwrap() {
+        match ScryptoEnv.get_fn_identifier().unwrap() {
             FnIdentifier::Scrypto(identifier) => identifier,
             _ => panic!("Unexpected actor"),
         }

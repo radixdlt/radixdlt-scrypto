@@ -1,8 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;

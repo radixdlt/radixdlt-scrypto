@@ -1,3 +1,4 @@
+pub mod client_api_impl;
 pub mod component;
 pub mod global;
 pub mod invocation;

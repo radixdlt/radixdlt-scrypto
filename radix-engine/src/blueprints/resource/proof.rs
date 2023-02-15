@@ -1,7 +1,6 @@
 use crate::errors::{InterpreterError, InvokeError, RuntimeError};
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -357,18 +356,18 @@ impl ProofBlueprint {
         let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Proof(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         let cloned_proof = proof.clone();
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -390,13 +389,13 @@ impl ProofBlueprint {
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Proof(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         Ok(IndexedScryptoValue::from_typed(&proof.total_amount()))
     }
@@ -418,13 +417,13 @@ impl ProofBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Proof(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids()?;
         Ok(IndexedScryptoValue::from_typed(&ids))
@@ -446,13 +445,13 @@ impl ProofBlueprint {
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.lock_substate(
+        let handle = api.kernel_lock_substate(
             RENodeId::Proof(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(handle)?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         Ok(IndexedScryptoValue::from_typed(&proof.resource_address))
     }

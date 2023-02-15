@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::*;
 use crate::types::*;
 use radix_engine_interface::api::types::ScryptoInvocation;
 

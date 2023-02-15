@@ -13,7 +13,7 @@ mod ref_check {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -34,7 +34,7 @@ mod ref_check {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -60,7 +60,7 @@ mod ref_check {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);

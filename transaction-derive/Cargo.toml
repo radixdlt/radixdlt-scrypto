@@ -1,0 +1,31 @@
+[package]
+name = "transaction-derive"
+version = "0.8.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { version = "1.0.38" }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+quote = { version = "1.0.18" }
+sbor-derive-common = { path = "../sbor-derive-common" }
+
+[features]
+# Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
+# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-abi`.
+# 
+# To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even
+# though it only works under `std` environment.
+#
+# See:
+# - https://github.com/rust-lang/cargo/issues/5730
+# - https://github.com/rust-lang/cargo/issues/7915
+#
+default = ["std"]
+std = []
+alloc = []
+
+# Enable trace
+trace = ["sbor-derive-common/trace"]

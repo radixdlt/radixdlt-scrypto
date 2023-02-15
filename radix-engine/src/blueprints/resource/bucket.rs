@@ -1,9 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -175,14 +174,14 @@ impl BucketBlueprint {
         let input: BucketTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -190,8 +189,8 @@ impl BucketBlueprint {
             ))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -214,14 +213,14 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -229,8 +228,8 @@ impl BucketBlueprint {
             ))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        api.create_node(
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
             node_id,
             RENodeInit::Bucket(BucketSubstate::new(container)),
             BTreeMap::new(),
@@ -252,15 +251,17 @@ impl BucketBlueprint {
         let input: BucketPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let other_bucket = api.drop_node(RENodeId::Bucket(input.bucket.0))?.into();
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let other_bucket = api
+            .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
+            .into();
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -283,14 +284,14 @@ impl BucketBlueprint {
         let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let proof = bucket.create_proof(receiver).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
@@ -298,8 +299,8 @@ impl BucketBlueprint {
             )))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -318,13 +319,13 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.get_ref(bucket_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -347,14 +348,14 @@ impl BucketBlueprint {
         let _input: BucketGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
 
-        let substate = api.get_ref(bucket_handle)?;
+        let substate = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate.bucket();
         Ok(IndexedScryptoValue::from_typed(&bucket.total_amount()))
     }
@@ -372,14 +373,14 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.lock_substate(
+        let bucket_handle = api.kernel_lock_substate(
             RENodeId::Bucket(receiver),
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
 
-        let substate = api.get_ref(bucket_handle)?;
+        let substate = api.kernel_get_substate_ref(bucket_handle)?;
         let bucket = substate.bucket();
 
         Ok(IndexedScryptoValue::from_typed(&bucket.resource_address()))

@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::ResolvedActor;
+use radix_engine::kernel::actor::ResolvedActor;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
