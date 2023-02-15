@@ -191,6 +191,12 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
             let buffer = runtime
                 .call_method(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -216,9 +222,10 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            // Get current memory consumption and set it in current call frame through api.
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
             runtime
-                .set_wasm_memory_consumption(get_memory_size(&instance)?)
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
