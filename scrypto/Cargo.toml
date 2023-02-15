@@ -4,8 +4,6 @@ version = "0.9.0"
 edition = "2021"
 
 [dependencies]
-sha2 = { version = "0.10.6", default-features = false, features = ["asm"] }
-sha3 = { version = "0.10.1", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
