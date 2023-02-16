@@ -68,7 +68,7 @@ impl KernelModuleMixer {
         max_call_depth: usize,
         max_kernel_call_depth_traced: Option<usize>,
         max_wasm_memory: usize,
-        max_wasm_call_frame_memory: usize,
+        max_wasm_instance_memory: usize,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -100,7 +100,7 @@ impl KernelModuleMixer {
             transaction_runtime: TransactionRuntimeModule { tx_hash },
             transaction_limits: TransactionLimitsModule::new(
                 max_wasm_memory,
-                max_wasm_call_frame_memory,
+                max_wasm_instance_memory,
             ),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
         }
@@ -114,12 +114,6 @@ impl KernelModuleMixer {
 impl KernelModule for KernelModuleMixer {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-
-        // Enable transaction limits
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_init(api)?;
-        }
-
         // Enable execution trace
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             ExecutionTraceModule::on_init(api)?;
@@ -155,6 +149,11 @@ impl KernelModule for KernelModuleMixer {
             KernelDebugModule::on_init(api)?;
         }
 
+        // Enable transaction limits
+        if api.get_module_state().transaction_limits_enabled {
+            TransactionLimitsModule::on_init(api)?;
+        }
+
         Ok(())
     }
 
@@ -181,7 +180,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_teardown(api)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_teardown(api)?;
         }
         Ok(())
@@ -214,7 +213,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_invoke(api, fn_identifier, input_size)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::before_invoke(api, fn_identifier, input_size)?;
         }
         Ok(())
@@ -247,7 +246,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_push_frame(api, actor, update)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::before_push_frame(api, actor, update)?;
         }
         Ok(())
@@ -279,7 +278,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_execution_start(api, caller)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_execution_start(api, caller)?;
         }
         Ok(())
@@ -312,7 +311,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_execution_finish(api, caller, update)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_execution_finish(api, caller, update)?;
         }
         Ok(())
@@ -341,7 +340,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::after_pop_frame(api)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::after_pop_frame(api)?;
         }
         Ok(())
@@ -373,7 +372,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::after_invoke(api, output_size)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::after_invoke(api, output_size)?;
         }
         Ok(())
@@ -405,7 +404,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_allocate_node_id(api, node_type)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_allocate_node_id(api, node_type)?;
         }
         Ok(())
@@ -444,7 +443,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_create_node(api, node_id, node_init, node_module_init)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::before_create_node(api, node_id, node_init, node_module_init)?;
         }
         Ok(())
@@ -476,7 +475,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::after_create_node(api, node_id)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::after_create_node(api, node_id)?;
         }
         Ok(())
@@ -508,7 +507,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_drop_node(api, node_id)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::before_drop_node(api, node_id)?;
         }
         Ok(())
@@ -537,7 +536,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::after_drop_node(api)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::after_drop_node(api)?;
         }
         Ok(())
@@ -572,7 +571,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         Ok(())
@@ -605,7 +604,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::after_lock_substate(api, handle, size)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::after_lock_substate(api, handle, size)?;
         }
         Ok(())
@@ -638,7 +637,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_read_substate(api, lock_handle, size)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_read_substate(api, lock_handle, size)?;
         }
         Ok(())
@@ -671,7 +670,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_write_substate(api, lock_handle, size)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_write_substate(api, lock_handle, size)?;
         }
         Ok(())
@@ -703,7 +702,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_drop_lock(api, lock_handle)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_drop_lock(api, lock_handle)?;
         }
         Ok(())
@@ -736,8 +735,8 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_consume_cost_units(api, units, reason)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_consume_cost_units(api, units, reason)?;
+        if api.get_module_state().transaction_limits_enabled {
+            TransactionLimitsModule::on_consume_cost_units(api, units)?;
         }
         Ok(())
     }
@@ -770,7 +769,7 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             fee = ExecutionTraceModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             fee = TransactionLimitsModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
         }
         Ok(fee)
@@ -802,40 +801,8 @@ impl KernelModule for KernelModuleMixer {
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_update_instruction_index(api, new_index)?;
         }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+        if api.get_module_state().transaction_limits_enabled {
             TransactionLimitsModule::on_update_instruction_index(api, new_index)?;
-        }
-        Ok(())
-    }
-
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_update_wasm_memory_usage(api, consumed_memory)?;
         }
         Ok(())
     }

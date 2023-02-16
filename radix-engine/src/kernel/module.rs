@@ -205,12 +205,4 @@ pub trait KernelModule {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
-
-    #[inline(always)]
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
 }

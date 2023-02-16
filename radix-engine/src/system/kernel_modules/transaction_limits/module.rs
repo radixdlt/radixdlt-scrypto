@@ -1,13 +1,10 @@
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{
-        actor::ResolvedActor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
-        module::KernelModule,
-    },
+    kernel::*,
+    kernel::{KernelModule, KernelModuleApi},
     types::Vec,
 };
-
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -74,39 +71,41 @@ impl TransactionLimitsModule {
 }
 
 impl KernelModule for TransactionLimitsModule {
+    /// If there is a nested call of WASM instance, api.get_current_wasm_memory_consumption()
+    /// returns currently alocated memory by WASM instance which invokes
+    /// nested call (call frame references that instance).
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _actor: &ResolvedActor,
         _down_movement: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        // push new empty wasm memory value refencing current call frame to internal stack
-        api.kernel_get_module_state()
+        let memory = api.get_current_wasm_memory_consumption();
+        api.get_module_state()
             .transaction_limits
             .wasm_memory_usage_stack
-            .push(0);
-        Ok(())
+            .push(memory);
+
+        api.get_module_state().transaction_limits.validate()
     }
 
     fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // pop from internal stack
-        api.kernel_get_module_state()
+        // pop from stack
+        api.get_module_state()
             .transaction_limits
             .wasm_memory_usage_stack
             .pop();
+
         Ok(())
     }
 
-    // This event handler is called from two places:
-    //  1. Before wasm nested function call
-    //  2. After wasm invocation
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
+    fn after_wasm_instantiation<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         consumed_memory: usize,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let tlimit = &mut api.kernel_get_module_state().transaction_limits;
+        let depth = api.get_current_depth();
+        let tlimit = &mut api.get_module_state().transaction_limits;
 
-        // update current frame consumed memory
+        // update current frame consumed memory value after WASM invokation is done
         if let Some(val) = tlimit.wasm_memory_usage_stack.get_mut(depth) {
             *val = consumed_memory;
         } else {

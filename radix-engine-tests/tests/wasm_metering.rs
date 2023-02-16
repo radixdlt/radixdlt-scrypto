@@ -212,7 +212,7 @@ fn test_grow_memory_out_of_cost_unit() {
 }
 
 #[test]
-fn test_max_call_frame_memory_exceeded() {
+fn test_max_instance_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 

@@ -301,9 +301,8 @@ where
         &mut self,
         size: usize,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .wasm_memory_consumption(size)
-            .map_err(InvokeError::downstream)
+        self.api.wasm_memory_consumption(size);
+        Ok(())
     }
 }
 
