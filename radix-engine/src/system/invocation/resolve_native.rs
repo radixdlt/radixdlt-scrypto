@@ -2,6 +2,7 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation};
 use radix_engine_interface::api::package::*;
 
 pub fn resolve_native(

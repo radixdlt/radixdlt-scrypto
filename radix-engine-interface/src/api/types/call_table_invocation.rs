@@ -1,3 +1,4 @@
+use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
 use crate::api::component::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
@@ -11,6 +12,7 @@ use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 
 // TODO: Remove enum
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -2,9 +2,6 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::component::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
-};
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
@@ -12,6 +9,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
 };

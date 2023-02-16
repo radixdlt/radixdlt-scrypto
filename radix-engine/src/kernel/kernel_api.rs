@@ -13,6 +13,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation};
 use radix_engine_interface::blueprints::resource::*;
 
 use super::actor::ResolvedActor;
