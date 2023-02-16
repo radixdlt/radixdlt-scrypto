@@ -134,9 +134,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
     + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
     + Invokable<AccessRulesGetLengthInvocation, E>
-    + Invokable<AuthZoneClearInvocation, E>
-    + Invokable<AuthZoneDrainInvocation, E>
-    + Invokable<AuthZoneAssertAccessRuleInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
     + Invokable<ComponentGlobalizeInvocation, E>
     + Invokable<ComponentGlobalizeWithOwnerInvocation, E>

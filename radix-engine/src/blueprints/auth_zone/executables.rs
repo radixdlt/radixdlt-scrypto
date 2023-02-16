@@ -1,21 +1,16 @@
 use crate::blueprints::resource::ProofError;
 use crate::errors::*;
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
-};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::auth::*;
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackFn, AuthZoneStackOffset, GlobalAddress, NativeFn, ProofOffset, RENodeId,
-    ResourceManagerOffset, SubstateOffset,
+    AuthZoneStackOffset, GlobalAddress, ProofOffset, RENodeId, ResourceManagerOffset,
+    SubstateOffset,
 };
-use radix_engine_interface::api::{ClientApi, ClientDerefApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::vec::Vec;
@@ -75,6 +70,24 @@ impl AuthZoneNativePackage {
                 ))?;
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
+            AUTH_ZONE_CLEAR_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::clear(receiver, input, api)
+            }
+            AUTH_ZONE_DRAIN_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::drain(receiver, input, api)
+            }
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::assert_access_rule(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -90,8 +103,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZonePopInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -122,8 +135,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZonePushInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -160,8 +173,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -207,11 +220,12 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: AuthZoneCreateProofByAmountInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
@@ -257,8 +271,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -301,35 +315,18 @@ impl AuthZoneBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for AuthZoneClearInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::Clear),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneClearInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub(crate) fn clear<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let _input: AuthZoneClearInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -340,40 +337,20 @@ impl Executor for AuthZoneClearInvocation {
         let auth_zone_stack = substate_mut.auth_zone_stack();
         auth_zone_stack.cur_auth_zone_mut().clear();
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-impl ExecutableInvocation for AuthZoneDrainInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::Drain),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneDrainInvocation {
-    type Output = Vec<Proof>;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn drain<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let _input: AuthZoneDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -398,43 +375,20 @@ impl Executor for AuthZoneDrainInvocation {
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }
 
-        Ok((
-            proof_ids,
-            CallFrameUpdate {
-                nodes_to_move,
-                node_refs_to_copy: HashSet::new(),
-            },
-        ))
+        Ok(IndexedScryptoValue::from_typed(&proof_ids))
     }
-}
 
-impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::AssertAccessRule),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneAssertAccessRuleInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub(crate) fn assert_access_rule<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: AuthZoneAssertAccessRuleInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -443,7 +397,7 @@ impl Executor for AuthZoneAssertAccessRuleInvocation {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
-        let authorization = convert_contextless(&self.access_rule);
+        let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check
         auth_zone_stack
@@ -456,6 +410,6 @@ impl Executor for AuthZoneAssertAccessRuleInvocation {
 
         api.kernel_drop_lock(handle)?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

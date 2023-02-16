@@ -233,6 +233,9 @@ impl FeeTable {
                 AUTH_ZONE_CREATE_PROOF_IDENT => self.fixed_high,
                 AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => self.fixed_high,
                 AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_high,
+                AUTH_ZONE_CLEAR_IDENT => self.fixed_high,
+                AUTH_ZONE_DRAIN_IDENT => self.fixed_high,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => self.fixed_high,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -242,13 +245,6 @@ impl FeeTable {
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
-            NativeFn::AuthZoneStack(auth_zone_ident) => {
-                match auth_zone_ident {
-                    AuthZoneStackFn::Clear => self.fixed_high,
-                    AuthZoneStackFn::Drain => self.fixed_high,
-                    AuthZoneStackFn::AssertAccessRule => self.fixed_high,
-                }
-            }
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,

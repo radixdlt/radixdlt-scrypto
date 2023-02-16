@@ -52,7 +52,6 @@ pub enum NativeInvocation {
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
     Component(ComponentInvocation),
-    AuthZoneStack(AuthZoneStackInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -93,13 +92,6 @@ pub enum PackageInvocation {
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum AuthZoneStackInvocation {
-    Clear(AuthZoneClearInvocation),
-    Drain(AuthZoneDrainInvocation),
-    AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
-}
-
 impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
         let mut refs = HashSet::new();
@@ -127,11 +119,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-            },
-            NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                AuthZoneStackInvocation::Clear(..) => {}
-                AuthZoneStackInvocation::Drain(..) => {}
-                AuthZoneStackInvocation::AssertAuthRule(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -207,11 +194,6 @@ impl NativeInvocation {
                 ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::AuthZoneStack(i) => match i {
-                AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 

@@ -54,23 +54,6 @@ pub fn resolve_native(
                 Ok(invocation.into())
             }
         },
-        NativeFn::AuthZoneStack(auth_zone_fn) => match auth_zone_fn {
-            AuthZoneStackFn::Clear => {
-                let invocation = scrypto_decode::<AuthZoneClearInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AuthZoneStackFn::Drain => {
-                let invocation = scrypto_decode::<AuthZoneDrainInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AuthZoneStackFn::AssertAccessRule => {
-                let invocation = scrypto_decode::<AuthZoneAssertAccessRuleInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
             AccessRulesChainFn::AddAccessCheck => {
                 let invocation = scrypto_decode::<AccessRulesAddAccessCheckInvocation>(&invocation)

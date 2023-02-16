@@ -88,14 +88,13 @@ pub enum NativeFn {
     Package(PackageFn),
     Metadata(MetadataFn),
     TransactionProcessor(TransactionProcessorFn),
-    AuthZoneStack(AuthZoneStackFn),
     Root,
 }
 
 impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
-            NativeFn::AccessRulesChain(..) | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
+            NativeFn::AccessRulesChain(..) => NativePackage::Auth,
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
@@ -217,32 +216,6 @@ pub enum PackageFn {
 pub enum ResolveError {
     DecodeError(DecodeError),
     NotAMethod,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum AuthZoneStackFn {
-    Clear,
-    Drain,
-    AssertAccessRule,
 }
 
 #[derive(

@@ -1,8 +1,8 @@
 use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, AuthZoneStackInvocation, ComponentInvocation, MetadataInvocation,
-    NativeInvocation, PackageInvocation,
+    AccessRulesChainInvocation, ComponentInvocation, MetadataInvocation, NativeInvocation,
+    PackageInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -45,20 +45,6 @@ where
                 Ok(Box::new(rtn))
             }
             PackageInvocation::ClaimRoyalty(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
-        NativeInvocation::AuthZoneStack(auth_zone_invocation) => match auth_zone_invocation {
-            AuthZoneStackInvocation::Clear(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AuthZoneStackInvocation::Drain(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AuthZoneStackInvocation::AssertAuthRule(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

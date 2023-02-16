@@ -56,9 +56,8 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::AuthZoneStack(..)) => true,
                     FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        package_address: RESOURCE_MANAGER_PACKAGE | AUTH_ZONE_PACKAGE,
                         ..
                     }) => true,
                     FnIdentifier::Native(NativeFn::TransactionProcessor(

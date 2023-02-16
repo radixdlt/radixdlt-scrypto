@@ -4,7 +4,6 @@ use crate::math::Decimal;
 use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use scrypto_abi::BlueprintAbi;
 
 pub struct AuthZoneAbi;
@@ -60,79 +59,19 @@ pub struct AuthZoneCreateProofByIdsInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneClearInvocation {}
-
-impl Invocation for AuthZoneClearInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::Clear))
-    }
-}
-
-impl SerializableInvocation for AuthZoneClearInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::Clear)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneClearInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Clear(self)).into()
-    }
-}
+pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneDrainInvocation {}
+pub struct AuthZoneClearInput {}
 
-impl Invocation for AuthZoneDrainInvocation {
-    type Output = Vec<Proof>;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::Drain))
-    }
-}
-
-impl SerializableInvocation for AuthZoneDrainInvocation {
-    type ScryptoOutput = Vec<Proof>;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::Drain)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneDrainInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Drain(self)).into()
-    }
-}
+pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneAssertAccessRuleInvocation {
+pub struct AuthZoneDrainInput {}
+
+pub const AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT: &str = "assert_access_rule";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AuthZoneAssertAccessRuleInput {
     pub access_rule: AccessRule,
-}
-
-impl Invocation for AuthZoneAssertAccessRuleInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::AssertAccessRule))
-    }
-}
-
-impl SerializableInvocation for AuthZoneAssertAccessRuleInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::AssertAccessRule)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneAssertAccessRuleInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::AssertAuthRule(self)).into()
-    }
 }

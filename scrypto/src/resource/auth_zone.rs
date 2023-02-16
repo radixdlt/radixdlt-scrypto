@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -58,7 +58,11 @@ impl ComponentAuthZone {
             .call_method(
                 ScryptoReceiver::AuthZoneStack,
                 AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
-                scrypto_encode(&AuthZoneCreateProofByAmountInput { resource_address, amount }).unwrap(),
+                scrypto_encode(&AuthZoneCreateProofByAmountInput {
+                    resource_address,
+                    amount,
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -73,7 +77,11 @@ impl ComponentAuthZone {
             .call_method(
                 ScryptoReceiver::AuthZoneStack,
                 AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
-                scrypto_encode(&AuthZoneCreateProofByIdsInput { resource_address, ids: ids.clone() }).unwrap(),
+                scrypto_encode(&AuthZoneCreateProofByIdsInput {
+                    resource_address,
+                    ids: ids.clone(),
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -81,7 +89,11 @@ impl ComponentAuthZone {
 
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })
-            .unwrap()
+        env.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+        )
+        .unwrap();
     }
 }

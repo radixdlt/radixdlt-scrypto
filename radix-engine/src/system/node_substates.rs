@@ -1244,6 +1244,10 @@ impl<'a> SubstateRef<'a> {
                 owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
+            SubstateRef::AccessRulesChain(substate) => {
+                let indexed = IndexedScryptoValue::from_typed(&substate);
+                (indexed.global_references(), HashSet::new())
+            }
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = HashSet::new();
                 owned_nodes.insert(RENodeId::Vault(substate.controlled_asset));

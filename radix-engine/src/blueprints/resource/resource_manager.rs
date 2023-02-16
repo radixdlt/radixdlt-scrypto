@@ -12,7 +12,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
@@ -21,6 +21,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
@@ -1280,7 +1281,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })?;
+            api.call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1342,7 +1347,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })?;
+            api.call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
