@@ -130,17 +130,17 @@ impl IndexedScryptoValue {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(f, &self.value, &ValueFormattingContext::no_context())
+        format_scrypto_value(f, &self.value, &ScryptoValueDisplayContext::no_context())
     }
 }
 
-impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ValueFormattingContext<'a>,
+        context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_scrypto_value(f, &self.value, context)
     }

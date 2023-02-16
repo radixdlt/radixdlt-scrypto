@@ -8,13 +8,13 @@ use sbor::rust::fmt;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ValueFormattingContext<'a> {
+pub struct ScryptoValueDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a HashMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a HashMap<ManifestProof, String>>,
 }
 
-impl<'a> ValueFormattingContext<'a> {
+impl<'a> ScryptoValueDisplayContext<'a> {
     pub fn no_context() -> Self {
         Self {
             bech32_encoder: None,
@@ -54,25 +54,25 @@ impl<'a> ValueFormattingContext<'a> {
     }
 }
 
-impl<'a> Into<ValueFormattingContext<'a>> for &'a Bech32Encoder {
-    fn into(self) -> ValueFormattingContext<'a> {
-        ValueFormattingContext::with_bench32(Some(self))
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_bench32(Some(self))
     }
 }
 
-impl<'a> Into<ValueFormattingContext<'a>> for Option<&'a Bech32Encoder> {
-    fn into(self) -> ValueFormattingContext<'a> {
-        ValueFormattingContext::with_bench32(self)
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_bench32(self)
     }
 }
 
-impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoValue {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for ScryptoValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ValueFormattingContext<'a>,
+        context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_scrypto_value(f, self, context)
     }
@@ -81,7 +81,7 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoValue {
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoValue,
-    context: &ValueFormattingContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     match value {
         // primitive types
@@ -183,7 +183,7 @@ pub fn format_tuple<F: fmt::Write>(
     f: &mut F,
     name: &'static str,
     fields: &[ScryptoValue],
-    context: &ValueFormattingContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     f.write_str(name)?;
     f.write_str("(")?;
@@ -250,7 +250,7 @@ impl<'a> fmt::Display for DisplayableScryptoValueKind<'a> {
 pub fn format_elements<F: fmt::Write>(
     f: &mut F,
     values: &[ScryptoValue],
-    context: &ValueFormattingContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
@@ -264,7 +264,7 @@ pub fn format_elements<F: fmt::Write>(
 pub fn format_kv_entries<F: fmt::Write>(
     f: &mut F,
     entries: &[(ScryptoValue, ScryptoValue)],
-    context: &ValueFormattingContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     for (i, x) in entries.iter().enumerate() {
         if i != 0 {
@@ -277,13 +277,13 @@ pub fn format_kv_entries<F: fmt::Write>(
     Ok(())
 }
 
-impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoCustomValue {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for ScryptoCustomValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ValueFormattingContext<'a>,
+        context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_custom_value(f, self, context)
     }
@@ -292,7 +292,7 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoCustomValue {
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    context: &ValueFormattingContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     match value {
         // RE interpreted
