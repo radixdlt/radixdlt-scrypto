@@ -1,3 +1,6 @@
+use crate::errors::*;
+use crate::model::*;
+use crate::validation::*;
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
@@ -20,11 +23,9 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
+use transaction_data::model::*;
+use transaction_data::*;
 use utils::ContextualDisplay;
-
-use crate::errors::*;
-use crate::model::*;
-use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {

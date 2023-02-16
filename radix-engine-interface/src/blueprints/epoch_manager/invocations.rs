@@ -7,6 +7,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use scrypto_abi::BlueprintAbi;
+use transaction_data::*;
 
 pub struct EpochManagerAbi;
 
@@ -84,7 +85,18 @@ pub struct EpochManagerNextRoundInput {
 
 pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
@@ -92,13 +104,35 @@ pub struct EpochManagerCreateValidatorInput {
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
     Unregister,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,
