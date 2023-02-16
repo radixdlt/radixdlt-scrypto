@@ -68,7 +68,6 @@ impl KernelModuleMixer {
         max_call_depth: usize,
         max_kernel_call_depth_traced: Option<usize>,
         max_wasm_memory: usize,
-        max_wasm_call_frame_memory: usize,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -100,7 +99,6 @@ impl KernelModuleMixer {
             transaction_runtime: TransactionRuntimeModule { tx_hash },
             transaction_limits: TransactionLimitsModule::new(
                 max_wasm_memory,
-                max_wasm_call_frame_memory,
             ),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
         }

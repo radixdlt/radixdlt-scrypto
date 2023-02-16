@@ -64,14 +64,14 @@ pub enum InvalidMemory {
     EmptyMemorySection,
     /// The memory section contains too many memory definitions.
     TooManyMemories,
-    /// The initial memory size is too large.
-    InitialMemorySizeLimitExceeded,
+    /// The initial memory size is too large - providing current value.
+    InitialMemorySizeLimitExceeded(u32),
     /// The wasm module does not have the `memory` export.
     MemoryNotExported,
     /// The maximum memory size is not set.
     MaximumMemorySizeLimitNotSet,
-    /// The maximum memory size is too large.
-    MaximumMemorySizeLimitExceeded,
+    /// The maximum memory size is too large - providing current value.
+    MaximumMemorySizeLimitExceeded(u32),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]

@@ -15,9 +15,6 @@ pub enum TransactionLimitsError {
     /// Used when WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter current memory value is returned.
     MaxWasmMemoryExceeded(usize),
-    /// Used when one instance WASM memory consumed during transaction execution exceeds defined limit,
-    /// as parameter memory consumed by that instave is returned.
-    MaxWasmInstanceMemoryExceeded(usize),
 }
 
 /// Tracks and verifies transaction limits during transactino execution,
@@ -25,37 +22,20 @@ pub enum TransactionLimitsError {
 pub struct TransactionLimitsModule {
     /// Maximum WASM memory which can be consumed during transaction execution.
     max_wasm_memory: usize,
-    /// Maximum WASM memory which can be consumed during transaction execution.
-    max_wasm_memory_per_call_frame: usize,
     /// Consumed WASM memory for each invocation call.
     wasm_memory_usage_stack: Vec<usize>,
 }
 
 impl TransactionLimitsModule {
-    pub fn new(max_wasm_memory: usize, max_wasm_instance_memory: usize) -> Self {
+    pub fn new(max_wasm_memory: usize) -> Self {
         TransactionLimitsModule {
             max_wasm_memory,
-            max_wasm_memory_per_call_frame: max_wasm_instance_memory,
             wasm_memory_usage_stack: Vec::with_capacity(8),
         }
     }
 
-    /// Checks if maximum WASM memory limit for one instance was exceeded and then
     /// checks if memory limit for all instances was exceeded.
     fn validate(&self) -> Result<(), RuntimeError> {
-        // check last (current) call frame
-        let current_instance_memory = *self
-            .wasm_memory_usage_stack
-            .last()
-            .expect("Wasm memory usage stack should not be empty.");
-        if current_instance_memory > self.max_wasm_memory_per_call_frame {
-            return Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxWasmInstanceMemoryExceeded(current_instance_memory),
-                ),
-            ));
-        };
-
         // calculate current maximum consumed memory
         // sum all call stack values
         let max_value = self.wasm_memory_usage_stack.iter().sum();

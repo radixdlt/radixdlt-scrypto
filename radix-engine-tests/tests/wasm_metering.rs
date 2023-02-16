@@ -293,42 +293,36 @@ fn test_max_transaction_memory_exceeded() {
     })
 }
 
-// #[test]
-// fn test_memory_consumption() {
-//     // Arrange
-//     let mut test_runner = TestRunner::builder().build();
+#[test]
+fn test_max_call_frame_memory_exceeded_blueprint() {
+    // Test recursive instantiation of WASM with memory allocation of 1 MiB
+    // for each call (+additional memory for transaction execution).
 
-//     // Grow memory (wasm pages) to exceed default max wasm memory per instance.
-//     let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / (1024 * 64);
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/recursion");
 
-//     // Act
-//     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
-//     let package_address = test_runner.publish_package(
-//         code,
-//         generate_single_function_abi(
-//             "Test",
-//             "f",
-//             Type::Tuple {
-//                 element_types: vec![],
-//             },
-//         ),
-//         BTreeMap::new(),
-//         BTreeMap::new(),
-//         AccessRules::new(),
-//     );
-//     let manifest = ManifestBuilder::new()
-//         .lock_fee(FAUCET_COMPONENT, 10.into())
-//         .call_function(package_address, "Test", "f", args!())
-//         .build();
-//     let receipt = test_runner.execute_manifest(manifest, vec![]);
+    // Calculate value of additional bytes to allocate per call to exceed
+    // max wasm memory per transaction limit.
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 
-//     // Assert
-//     receipt.expect_specific_failure(|e| {
-//         matches!(
-//             e,
-//             RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-//                 TransactionLimitsError::MaxWasmInstanceMemoryExceeded(_)
-//             ))
-//         )
-//     })
-// }
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "Caller",
+            "recursive_with_memory",
+            args!(1u32, grow_value),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
+        )
+    })
+}

@@ -3,7 +3,6 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -430,8 +429,8 @@ impl WasmModule {
     pub fn enforce_memory_limit(
         self,
         max_initial_memory_size_pages: u32,
+        max_grow_memory_size_pages: u32,
     ) -> Result<Self, PrepareError> {
-        const WASM_MEMORY_PAGE_SIZE: usize = 64 * 1024;
         // Must have exactly 1 internal, exported memory definition
         // TODO: consider if we can benefit from shared external memory.
         let memory_section = self
@@ -448,13 +447,13 @@ impl WasmModule {
         }?;
         if memory.limits().initial() > max_initial_memory_size_pages {
             return Err(PrepareError::InvalidMemory(
-                InvalidMemory::InitialMemorySizeLimitExceeded,
+                InvalidMemory::InitialMemorySizeLimitExceeded(memory.limits().initial()),
             ));
         }
         if let Some(max) = memory.limits().maximum() {
-            if max as usize > DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE {
+            if max > max_grow_memory_size_pages {
                 return Err(PrepareError::InvalidMemory(
-                    InvalidMemory::MaximumMemorySizeLimitExceeded,
+                    InvalidMemory::MaximumMemorySizeLimitExceeded(max),
                 ));
             }
         } else {
@@ -785,7 +784,7 @@ mod tests {
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::NoMemorySection),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            |x| WasmModule::enforce_memory_limit(x, 5, 5)
         );
         // NOTE: Disabled as MVP only allow 1 memory definition
         // assert_invalid_wasm!(
@@ -801,11 +800,20 @@ mod tests {
         assert_invalid_wasm!(
             r#"
             (module
-                (memory 6)
+                (memory 6 7)
             )
             "#,
-            PrepareError::InvalidMemory(InvalidMemory::InitialMemorySizeLimitExceeded),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            PrepareError::InvalidMemory(InvalidMemory::InitialMemorySizeLimitExceeded(6)),
+            |x| WasmModule::enforce_memory_limit(x, 5, 6)
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 2 2)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
+            |x| WasmModule::enforce_memory_limit(x, 5, 5)
         );
         assert_invalid_wasm!(
             r#"
@@ -813,8 +821,17 @@ mod tests {
                 (memory 2)
             )
             "#,
-            PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            PrepareError::InvalidMemory(InvalidMemory::MaximumMemorySizeLimitNotSet),
+            |x| WasmModule::enforce_memory_limit(x, 5, 5)
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 2 5)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MaximumMemorySizeLimitExceeded(5)),
+            |x| WasmModule::enforce_memory_limit(x, 2, 4)
         );
     }
 

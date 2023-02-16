@@ -205,7 +205,7 @@ fn test_radiswap() {
         + 2230000 /* LockSubstate */
         + 832500 /* ReadSubstate */
         + 26500 /* RunNative */
-        + 1566605 /* RunWasm */
+        + 1559900 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -225,13 +225,13 @@ fn test_publish_large_package() {
         r#"
             (module
                 (data (i32.const 0) "{}")
-                (memory $0 64)
+                (memory $0 64 64)
                 (export "memory" (memory $0))
             )
         "#,
         "i".repeat(4 * 1024 * 1024)
     ));
-    assert_eq!(4194343, code.len());
+    assert_eq!(4194344, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(

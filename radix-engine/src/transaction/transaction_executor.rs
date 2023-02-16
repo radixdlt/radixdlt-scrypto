@@ -238,7 +238,6 @@ where
                 execution_config.max_call_depth,
                 execution_config.max_kernel_call_depth_traced,
                 execution_config.max_wasm_mem_per_transaction,
-                execution_config.max_wasm_mem_per_instance,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
