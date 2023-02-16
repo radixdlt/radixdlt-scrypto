@@ -297,12 +297,12 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn update_wasm_memory_usage(
+    fn set_wasm_memory_consumption(
         &mut self,
         size: usize,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
-            .update_wasm_memory_usage(size)
+            .wasm_memory_consumption(size)
             .map_err(InvokeError::downstream)
     }
 }
@@ -447,7 +447,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn update_wasm_memory_usage(
+    fn set_wasm_memory_consumption(
         &mut self,
         size: usize,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {

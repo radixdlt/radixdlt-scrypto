@@ -21,5 +21,5 @@ pub trait ClientUnsafeApi<E> {
 
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
 
-    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), E>;
+    fn wasm_memory_consumption(&mut self, size: usize) -> Result<(), E>;
 }
