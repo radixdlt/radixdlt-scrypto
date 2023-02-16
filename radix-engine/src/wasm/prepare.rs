@@ -3,7 +3,6 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -431,7 +430,6 @@ impl WasmModule {
         self,
         max_initial_memory_size_pages: u32,
     ) -> Result<Self, PrepareError> {
-        const WASM_MEMORY_PAGE_SIZE: usize = 64 * 1024;
         // Must have exactly 1 internal, exported memory definition
         // TODO: consider if we can benefit from shared external memory.
         let memory_section = self
@@ -449,17 +447,6 @@ impl WasmModule {
         if memory.limits().initial() > max_initial_memory_size_pages {
             return Err(PrepareError::InvalidMemory(
                 InvalidMemory::InitialMemorySizeLimitExceeded,
-            ));
-        }
-        if let Some(max) = memory.limits().maximum() {
-            if max as usize > DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE {
-                return Err(PrepareError::InvalidMemory(
-                    InvalidMemory::MaximumMemorySizeLimitExceeded,
-                ));
-            }
-        } else {
-            return Err(PrepareError::InvalidMemory(
-                InvalidMemory::MaximumMemorySizeLimitNotSet,
             ));
         }
 

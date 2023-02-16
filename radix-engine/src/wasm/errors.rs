@@ -68,10 +68,6 @@ pub enum InvalidMemory {
     InitialMemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     MemoryNotExported,
-    /// The maximum memory size is not set.
-    MaximumMemorySizeLimitNotSet,
-    /// The maximum memory size is too large.
-    MaximumMemorySizeLimitExceeded,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]

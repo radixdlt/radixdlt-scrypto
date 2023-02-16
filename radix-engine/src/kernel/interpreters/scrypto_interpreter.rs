@@ -369,7 +369,7 @@ impl Executor for ScryptoExecutor {
                     ));
                 }
 
-                api.emit_wasm_post_instantiation_event(instance.consumed_memory()?)?;
+                api.update_wasm_memory_usage(instance.consumed_memory()?)?;
 
                 output
             }

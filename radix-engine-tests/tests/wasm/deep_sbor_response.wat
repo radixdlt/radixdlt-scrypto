@@ -61,7 +61,7 @@
     (i64.extend_i32_s (local.get $return_length))
   )
 
-  (memory $0 1 1)
+  (memory $0 1)
   (export "memory" (memory $0))
   (export "Test_f" (func $Test_f))
 )

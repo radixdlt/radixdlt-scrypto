@@ -11,10 +11,7 @@ use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
-    DEFAULT_MAX_WASM_MEM_PER_TRANSACTION, DEFAULT_SYSTEM_LOAN,
-};
+use radix_engine_constants::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 

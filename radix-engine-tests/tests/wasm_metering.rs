@@ -1,7 +1,8 @@
 use radix_engine::{
-    errors::{KernelError, ModuleError, RuntimeError},
+    errors::{ModuleError, RuntimeError},
     system::kernel_modules::transaction_limits::TransactionLimitsError,
     types::*,
+    wasm::WASM_MEMORY_PAGE_SIZE,
 };
 use radix_engine_constants::{
     DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
@@ -10,8 +11,6 @@ use radix_engine_constants::{
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-
-const WASM_MEMORY_PAGE_SIZE: usize = 64 * 1024;
 
 #[test]
 fn test_loop() {
@@ -141,17 +140,12 @@ fn test_grow_memory() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    let max_mem_pages: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE;
-
     // Calculate how much we can grow the memory (by wasm pages), subtract 1 to be below limit.
-    let grow_value: usize = max_mem_pages - 1;
+    let grow_value: usize =
+        DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE as usize - 1;
 
     // Act
-    let code = wat2wasm(
-        &include_str!("wasm/memory.wat")
-            .replace("${n}", &grow_value.to_string())
-            .replace("${m}", &max_mem_pages.to_string()),
-    );
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -180,14 +174,8 @@ fn test_grow_memory_out_of_cost_unit() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    let max_mem_pages: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE;
-
     // Act
-    let code = wat2wasm(
-        &include_str!("wasm/memory.wat")
-            .replace("${n}", "100000")
-            .replace("${m}", &max_mem_pages.to_string()),
-    );
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -212,20 +200,15 @@ fn test_grow_memory_out_of_cost_unit() {
 }
 
 #[test]
-fn test_max_instance_memory_exceeded() {
+fn test_max_call_frame_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    let max_mem_pages: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE;
     // Grow memory (wasm pages) to exceed default max wasm memory per instance.
-    let grow_value: usize = max_mem_pages;
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE as usize;
 
     // Act
-    let code = wat2wasm(
-        &include_str!("wasm/memory.wat")
-            .replace("${n}", &grow_value.to_string())
-            .replace("${m}", &max_mem_pages.to_string()),
-    );
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi(
@@ -249,7 +232,9 @@ fn test_max_instance_memory_exceeded() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxWasmInstanceMemoryExceeded(_)
+            ))
         )
     })
 }
@@ -292,43 +277,3 @@ fn test_max_transaction_memory_exceeded() {
         )
     })
 }
-
-// #[test]
-// fn test_memory_consumption() {
-//     // Arrange
-//     let mut test_runner = TestRunner::builder().build();
-
-//     // Grow memory (wasm pages) to exceed default max wasm memory per instance.
-//     let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / (1024 * 64);
-
-//     // Act
-//     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
-//     let package_address = test_runner.publish_package(
-//         code,
-//         generate_single_function_abi(
-//             "Test",
-//             "f",
-//             Type::Tuple {
-//                 element_types: vec![],
-//             },
-//         ),
-//         BTreeMap::new(),
-//         BTreeMap::new(),
-//         AccessRules::new(),
-//     );
-//     let manifest = ManifestBuilder::new()
-//         .lock_fee(FAUCET_COMPONENT, 10.into())
-//         .call_function(package_address, "Test", "f", args!())
-//         .build();
-//     let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-//     // Assert
-//     receipt.expect_specific_failure(|e| {
-//         matches!(
-//             e,
-//             RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-//                 TransactionLimitsError::MaxWasmInstanceMemoryExceeded(_)
-//             ))
-//         )
-//     })
-// }

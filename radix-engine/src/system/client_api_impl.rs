@@ -452,8 +452,8 @@ where
         KernelModuleMixer::on_update_instruction_index(self, new_index)
     }
 
-    fn wasm_memory_consumption(&mut self, size: usize) {
-        self.current_frame.consumed_wasm_memory = size;
+    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
+        KernelModuleMixer::on_update_wasm_memory_usage(self, size)
     }
 }
 
