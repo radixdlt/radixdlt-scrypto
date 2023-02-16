@@ -6,7 +6,6 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
-use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::package::*;
@@ -136,7 +135,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
     + Invokable<AccessRulesGetLengthInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<ComponentGlobalizeWithOwnerInvocation, E>
     + Invokable<ComponentSetRoyaltyConfigInvocation, E>
     + Invokable<ComponentClaimRoyaltyInvocation, E>
     + Invokable<PackageSetRoyaltyConfigInvocation, E>

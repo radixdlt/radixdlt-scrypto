@@ -91,7 +91,7 @@ lazy_static! {
             m,
             enum NativeFn {
                 AccessRulesChain = 0;
-                Component = 1;
+                ComponentRoyalty = 1;
                 Package = 2;
                 Metadata = 3;
                 TransactionProcessor = 4;

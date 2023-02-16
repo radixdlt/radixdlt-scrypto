@@ -257,10 +257,9 @@ impl FeeTable {
                 MetadataFn::Set => self.fixed_low,
                 MetadataFn::Get => self.fixed_low,
             },
-            NativeFn::Component(method_ident) => match method_ident {
-                ComponentFn::GlobalizeWithOwner => self.fixed_high,
-                ComponentFn::SetRoyaltyConfig => self.fixed_medium,
-                ComponentFn::ClaimRoyalty => self.fixed_medium,
+            NativeFn::ComponentRoyalty(method_ident) => match method_ident {
+                ComponentRoyaltyFn::SetRoyaltyConfig => self.fixed_medium,
+                ComponentRoyaltyFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,

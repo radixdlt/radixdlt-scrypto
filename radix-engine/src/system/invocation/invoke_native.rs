@@ -14,10 +14,6 @@ where
 {
     match invocation {
         NativeInvocation::Component(component_invocation) => match component_invocation {
-            ComponentInvocation::GlobalizeWithOwner(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ComponentInvocation::SetRoyaltyConfig(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))

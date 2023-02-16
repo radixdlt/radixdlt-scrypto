@@ -1,5 +1,4 @@
 use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
-use crate::api::component::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
 use crate::api::package::PackageAddress;
@@ -80,7 +79,6 @@ pub enum MetadataInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ComponentInvocation {
-    GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
@@ -98,7 +96,6 @@ impl NativeInvocation {
         let mut refs = HashSet::new();
         match self {
             NativeInvocation::Component(invocation) => match invocation {
-                ComponentInvocation::GlobalizeWithOwner(..) => {}
                 ComponentInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -190,7 +187,6 @@ impl NativeInvocation {
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Component(i) => match i {
-                ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },

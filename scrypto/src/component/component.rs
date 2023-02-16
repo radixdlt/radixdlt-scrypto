@@ -61,12 +61,12 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
+            AccessRuleKey::Native(NativeFn::ComponentRoyalty(ComponentRoyaltyFn::SetRoyaltyConfig)),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
+            AccessRuleKey::Native(NativeFn::ComponentRoyalty(ComponentRoyaltyFn::ClaimRoyalty)),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );

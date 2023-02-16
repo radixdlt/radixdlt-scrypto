@@ -12,10 +12,9 @@ pub enum PackageIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
-    Component,
+    Royalty,
     Package,
     Metadata,
-    KeyValueStore,
     TransactionProcessor,
     Root,
 }
@@ -84,7 +83,7 @@ impl ScryptoFnIdentifier {
 )]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
-    Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
+    ComponentRoyalty(ComponentRoyaltyFn),
     Package(PackageFn),
     Metadata(MetadataFn),
     TransactionProcessor(TransactionProcessorFn),
@@ -95,7 +94,7 @@ impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
             NativeFn::AccessRulesChain(..) => NativePackage::Auth,
-            NativeFn::Component(..) => NativePackage::Component,
+            NativeFn::ComponentRoyalty(..) => NativePackage::Royalty,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
@@ -178,10 +177,9 @@ pub enum MetadataFn {
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum ComponentFn {
+pub enum ComponentRoyaltyFn {
     SetRoyaltyConfig,
     ClaimRoyalty,
-    GlobalizeWithOwner,
 }
 
 #[derive(
@@ -209,12 +207,6 @@ pub enum PackageFn {
     PublishNative,
     SetRoyaltyConfig,
     ClaimRoyalty,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ResolveError {
-    DecodeError(DecodeError),
-    NotAMethod,
 }
 
 #[derive(

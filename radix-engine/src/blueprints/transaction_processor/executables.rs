@@ -50,7 +50,6 @@ pub enum TransactionProcessorError {
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
     ReplaceManifestValuesError(ReplaceManifestValuesError),
-    ResolveError(ResolveError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
