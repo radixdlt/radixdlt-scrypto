@@ -29,11 +29,13 @@ for each.
 In order to allow us to compile aggregated update instructions across PRs, please tag the PR
 with 0+ of the relevant labels:
 * scrypto-lib - Any change to the scrypto library
-* sbor - 
+* sbor - Any breaking change to SBOR encoding/decoding
 * manifest - Any change to manifest display, compilation/decompilation
 * transaction - Any change which affects the compiled manifest, or transaction semantics
 * substate - Any change to substates, the state model, or what's stored in the DB
 * native-blueprint-interface - Any change to the interface of native blueprints
+* files-moved - Any change to where engine types have moved, which will require
+  internal integrators to update their imports
 
 If you have a breaking change which doesn't fix into a category above, then tag it with
 the closest label, and discuss in slack/discord.
