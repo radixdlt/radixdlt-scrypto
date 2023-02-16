@@ -57,6 +57,24 @@ impl AuthZoneNativePackage {
                 ))?;
                 AuthZoneBlueprint::push(receiver, input, api)
             }
+            AUTH_ZONE_CREATE_PROOF_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof(receiver, input, api)
+            }
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
+            }
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -72,8 +90,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZonePopInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -104,8 +122,8 @@ impl AuthZoneBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZonePushInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -136,43 +154,18 @@ impl AuthZoneBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-impl ExecutableInvocation for AuthZoneCreateProofInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProof),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneCreateProofInvocation {
-    type Output = Proof;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: AuthZoneCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -181,7 +174,7 @@ impl Executor for AuthZoneCreateProofInvocation {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,
@@ -198,7 +191,7 @@ impl Executor for AuthZoneCreateProofInvocation {
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack
                 .cur_auth_zone()
-                .create_proof(self.resource_address, resource_type)?;
+                .create_proof(input.resource_address, resource_type)?;
             proof
         };
 
@@ -206,48 +199,20 @@ impl Executor for AuthZoneCreateProofInvocation {
         api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByAmount),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof_by_amount<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -256,7 +221,7 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,
@@ -272,8 +237,8 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
-                self.amount,
-                self.resource_address,
+                input.amount,
+                input.resource_address,
                 resource_type,
             )?;
 
@@ -284,48 +249,20 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
         api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            )));
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByIds),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZoneCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub(crate) fn create_proof_by_ids<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -334,7 +271,7 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,
@@ -350,8 +287,8 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
             let substate_ref = api.kernel_get_substate_ref(auth_zone_handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
-                &self.ids,
-                self.resource_address,
+                &input.ids,
+                input.resource_address,
                 resource_type,
             )?;
 
@@ -362,10 +299,7 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
         api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 }
 

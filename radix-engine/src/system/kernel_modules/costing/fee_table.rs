@@ -230,6 +230,9 @@ impl FeeTable {
             (AUTH_ZONE_PACKAGE, AUTH_ZONE_BLUEPRINT) => match identifier.ident.as_str() {
                 AUTH_ZONE_PUSH_IDENT => self.fixed_low,
                 AUTH_ZONE_POP_IDENT => self.fixed_low,
+                AUTH_ZONE_CREATE_PROOF_IDENT => self.fixed_high,
+                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => self.fixed_high,
+                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_high,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -241,9 +244,6 @@ impl FeeTable {
             NativeFn::Root => panic!("Should not get here"),
             NativeFn::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneStackFn::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneStackFn::CreateProofByAmount => self.fixed_high,
-                    AuthZoneStackFn::CreateProofByIds => self.fixed_high,
                     AuthZoneStackFn::Clear => self.fixed_high,
                     AuthZoneStackFn::Drain => self.fixed_high,
                     AuthZoneStackFn::AssertAccessRule => self.fixed_high,

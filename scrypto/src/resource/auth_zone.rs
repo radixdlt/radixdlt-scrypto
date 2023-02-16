@@ -42,17 +42,26 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofInvocation { resource_address })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_IDENT,
+                scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofByAmountInvocation {
-            amount,
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByAmountInput { resource_address, amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_ids(
@@ -60,11 +69,14 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofByIdsInvocation {
-            ids: ids.clone(),
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByIdsInput { resource_address, ids: ids.clone() }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn assert_access_rule(access_rule: AccessRule) {

@@ -37,89 +37,27 @@ impl Clone for AuthZonePushInput {
     }
 }
 
+pub const AUTH_ZONE_CREATE_PROOF_IDENT: &str = "create_proof";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneCreateProofInvocation {
+pub struct AuthZoneCreateProofInput {
     pub resource_address: ResourceAddress,
 }
 
-impl Invocation for AuthZoneCreateProofInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProof))
-    }
-}
-
-impl SerializableInvocation for AuthZoneCreateProofInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProof)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneCreateProofInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProof(self)).into()
-    }
-}
+pub const AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneCreateProofByAmountInvocation {
+pub struct AuthZoneCreateProofByAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-impl Invocation for AuthZoneCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(
-            AuthZoneStackFn::CreateProofByAmount,
-        ))
-    }
-}
-
-impl SerializableInvocation for AuthZoneCreateProofByAmountInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneCreateProofByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByAmount(self)).into()
-    }
-}
+pub const AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneCreateProofByIdsInvocation {
+pub struct AuthZoneCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AuthZoneCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByIds))
-    }
-}
-
-impl SerializableInvocation for AuthZoneCreateProofByIdsInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZoneCreateProofByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByIds(self)).into()
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

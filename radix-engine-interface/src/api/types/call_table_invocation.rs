@@ -95,9 +95,6 @@ pub enum PackageInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthZoneStackInvocation {
-    CreateProof(AuthZoneCreateProofInvocation),
-    CreateProofByAmount(AuthZoneCreateProofByAmountInvocation),
-    CreateProofByIds(AuthZoneCreateProofByIdsInvocation),
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
@@ -132,9 +129,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                AuthZoneStackInvocation::CreateProof(..) => {}
-                AuthZoneStackInvocation::CreateProofByAmount(..) => {}
-                AuthZoneStackInvocation::CreateProofByIds(..) => {}
                 AuthZoneStackInvocation::Clear(..) => {}
                 AuthZoneStackInvocation::Drain(..) => {}
                 AuthZoneStackInvocation::AssertAuthRule(..) => {}
@@ -215,13 +209,6 @@ impl NativeInvocation {
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::AuthZoneStack(i) => match i {
-                AuthZoneStackInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::CreateProofByAmount(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AuthZoneStackInvocation::CreateProofByIds(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
                 AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),

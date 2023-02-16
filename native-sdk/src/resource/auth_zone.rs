@@ -46,40 +46,52 @@ impl ComponentAuthZone {
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        env.call_native(AuthZoneCreateProofInvocation { resource_address })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_IDENT,
+            scrypto_encode(&AuthZoneCreateProofInput { resource_address, }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         amount: Decimal,
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        env.call_native(AuthZoneCreateProofByAmountInvocation {
-            amount,
-            resource_address,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+            scrypto_encode(&AuthZoneCreateProofByAmountInput { resource_address, amount, }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        env.call_native(AuthZoneCreateProofByIdsInvocation {
-            ids: ids.clone(),
-            resource_address,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+            scrypto_encode(&AuthZoneCreateProofByIdsInput { resource_address, ids: ids.clone(), }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

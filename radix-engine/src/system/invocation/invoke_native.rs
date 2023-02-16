@@ -50,18 +50,6 @@ where
             }
         },
         NativeInvocation::AuthZoneStack(auth_zone_invocation) => match auth_zone_invocation {
-            AuthZoneStackInvocation::CreateProof(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AuthZoneStackInvocation::CreateProofByAmount(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-            AuthZoneStackInvocation::CreateProofByIds(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             AuthZoneStackInvocation::Clear(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
