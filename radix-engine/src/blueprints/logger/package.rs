@@ -1,12 +1,18 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
 };
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LoggerSubstate {
+    pub logs: Vec<(Level, String)>,
+}
 
 pub struct LoggerNativePackage;
 impl LoggerNativePackage {

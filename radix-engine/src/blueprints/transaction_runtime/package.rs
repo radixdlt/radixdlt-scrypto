@@ -12,6 +12,12 @@ pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TransactionRuntimeSubstate {
+    pub hash: Hash,
+    pub next_id: u32,
+}
+
 pub struct TransactionRuntimeNativePackage;
 impl TransactionRuntimeNativePackage {
     pub fn invoke_export<Y>(

@@ -95,8 +95,7 @@ lazy_static! {
                 Package = 2;
                 Metadata = 3;
                 TransactionProcessor = 4;
-                AuthZoneStack = 5;
-                Root = 6;
+                Root = 5;
             }
         );
 
