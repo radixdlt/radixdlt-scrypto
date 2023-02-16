@@ -80,7 +80,6 @@ pub enum MetadataInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ComponentInvocation {
-    Globalize(ComponentGlobalizeInvocation),
     GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
@@ -99,7 +98,6 @@ impl NativeInvocation {
         let mut refs = HashSet::new();
         match self {
             NativeInvocation::Component(invocation) => match invocation {
-                ComponentInvocation::Globalize(..) => {}
                 ComponentInvocation::GlobalizeWithOwner(..) => {}
                 ComponentInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(invocation.receiver);
@@ -192,7 +190,6 @@ impl NativeInvocation {
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Component(i) => match i {
-                ComponentInvocation::Globalize(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),

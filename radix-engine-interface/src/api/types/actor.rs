@@ -181,7 +181,6 @@ pub enum MetadataFn {
 pub enum ComponentFn {
     SetRoyaltyConfig,
     ClaimRoyalty,
-    Globalize,
     GlobalizeWithOwner,
 }
 

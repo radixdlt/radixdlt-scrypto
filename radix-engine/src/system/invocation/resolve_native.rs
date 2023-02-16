@@ -11,11 +11,6 @@ pub fn resolve_native(
 ) -> Result<CallTableInvocation, RuntimeError> {
     match native_fn {
         NativeFn::Component(component_fn) => match component_fn {
-            ComponentFn::Globalize => {
-                let invocation = scrypto_decode::<ComponentGlobalizeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ComponentFn::GlobalizeWithOwner => {
                 let invocation =
                     scrypto_decode::<ComponentGlobalizeWithOwnerInvocation>(&invocation)

@@ -16,50 +16,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::collections::BTreeMap;
 
-impl ExecutableInvocation for ComponentGlobalizeInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
-        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for ComponentGlobalizeInvocation {
-    type Output = ComponentAddress;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
-    {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
-        let component_address: ComponentAddress = global_node_id.into();
-
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Component(self.component_id)),
-            BTreeMap::new(),
-        )?;
-
-        let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
-            GlobalAddress::Component(component_address),
-        ));
-
-        Ok((component_address, call_frame_update))
-    }
-}
-
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
@@ -70,7 +26,7 @@ impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     where
         Self: Sized,
     {
-        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
+        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::GlobalizeWithOwner));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
 
         Ok((actor, call_frame_update, self))
