@@ -67,7 +67,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
                         ::scrypto::model::PackageAddress::try_from_hex(#package_address).unwrap(),
                         #blueprint_name,
                         #func_name,
-                        args!(#(#func_args),*)
+                        scrypto_args!(#(#func_args),*)
                     )
                 }
             });
@@ -77,7 +77,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
                     ::scrypto::runtime::Runtime::call_method(
                         self.component_address,
                         #func_name,
-                        args!(#(#func_args),*)
+                        scrypto_args!(#(#func_args),*)
                     )
                 }
             });
@@ -457,14 +457,14 @@ mod tests {
                             ::scrypto::model::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
-                            args!()
+                            scrypto_args!()
                         )
                     }
                     pub fn free_token(&self) -> ::scrypto::model::Bucket {
                         ::scrypto::runtime::Runtime::call_method(
                             self.component_address,
                             "free_token",
-                            args!()
+                            scrypto_args!()
                         )
                     }
                 }

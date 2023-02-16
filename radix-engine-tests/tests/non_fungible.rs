@@ -18,12 +18,12 @@ fn create_non_fungible_mutable() {
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -47,12 +47,12 @@ fn can_burn_non_fungible() {
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -76,12 +76,12 @@ fn can_burn_non_fungible() {
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
-            args!(non_fungible_global_id),
+            manifest_args!(non_fungible_global_id),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -107,12 +107,12 @@ fn test_take_non_fungible() {
             package_address,
             "NonFungibleTest",
             "take_non_fungible_and_put_bucket",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -135,12 +135,12 @@ fn test_take_non_fungibles() {
             package_address,
             "NonFungibleTest",
             "take_non_fungibles_and_put_bucket",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -161,48 +161,48 @@ fn test_non_fungible() {
             package_address,
             "NonFungibleTest",
             "create_non_fungible_fixed",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "non_fungible_exists",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_bucket",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_vault",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_local_ids_bucket",
-            args!(),
+            manifest_args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_local_ids_vault",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -224,12 +224,12 @@ fn test_singleton_non_fungible() {
             package_address,
             "NonFungibleTest",
             "singleton_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -254,12 +254,12 @@ fn test_mint_update_and_withdraw() {
             package_address,
             "NonFungibleTest",
             "create_non_fungible_mutable",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -287,14 +287,14 @@ fn test_mint_update_and_withdraw() {
                     package_address,
                     "NonFungibleTest",
                     "update_nft",
-                    args!(bucket_id, proof_id),
+                    manifest_args!(bucket_id, proof_id),
                 )
             })
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -310,7 +310,7 @@ fn test_mint_update_and_withdraw() {
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -334,12 +334,12 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
             package,
             "NonFungibleTest",
             "create_wrong_non_fungible_local_id_type",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -365,12 +365,12 @@ fn create_bytes_non_fungible() {
             package,
             "NonFungibleTest",
             "create_bytes_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -393,12 +393,12 @@ fn create_string_non_fungible() {
             package,
             "NonFungibleTest",
             "create_string_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -421,12 +421,12 @@ fn create_uuid_non_fungible() {
             package,
             "NonFungibleTest",
             "create_uuid_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -452,12 +452,12 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
             package,
             "NonFungibleTest",
             "create_uuid_non_fungible_and_mint",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -488,7 +488,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
             package,
             "NonFungibleTest",
             "create_mintable_uuid_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -508,7 +508,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -529,12 +529,12 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -85,3 +85,13 @@ pub use transaction_derive::{ManifestCategorize, ManifestDecode, ManifestEncode}
 // Make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as transaction_data;
+
+// TODO: re-enable "any-free" encoding
+#[macro_export]
+macro_rules! manifest_args {
+    ($($args: expr),*) => {
+        {
+            transaction_data::manifest_encode(&($($args),*)).unwrap()
+        }
+    };
+}

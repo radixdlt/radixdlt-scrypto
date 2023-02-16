@@ -165,7 +165,7 @@ fn test_invalid_access_rule_methods() {
             package_address,
             "AbiComponent",
             "create_invalid_abi_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

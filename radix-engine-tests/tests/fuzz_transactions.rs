@@ -69,7 +69,7 @@ impl TransactionFuzzer {
                     builder.new_account(AccessRule::AllowAll);
                 }
                 3 => {
-                    builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
+                    builder.call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }

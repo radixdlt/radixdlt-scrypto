@@ -46,7 +46,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::UpdateMetadata => "lock_metadata_updateable",
         };
 
-        let args = args!(token_address);
+        let args = manifest_args!(token_address);
         (function, args)
     } else {
         let function = match action {
@@ -57,7 +57,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::Recall => "set_recallable",
             ResourceAuth::UpdateMetadata => "set_updateable_metadata",
         };
-        let args = args!(token_address, updated_auth);
+        let args = manifest_args!(token_address, updated_auth);
         (function, args)
     };
 
@@ -69,7 +69,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

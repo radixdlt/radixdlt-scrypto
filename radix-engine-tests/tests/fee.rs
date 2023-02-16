@@ -32,7 +32,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", args!(bucket_id));
+                builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })
             .build(),
@@ -52,9 +52,13 @@ fn should_be_aborted_when_loan_repaid() {
 
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
-        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        .call_method(
+            component_address,
+            "lock_fee",
+            manifest_args!(Decimal::from(10)),
+        )
         // Now spin-loop to wait for the fee loan to burn through
-        .call_method(component_address, "spin_loop", args!())
+        .call_method(component_address, "spin_loop", manifest_args!())
         .build();
 
     let start = std::time::Instant::now();
@@ -69,7 +73,11 @@ fn should_be_aborted_when_loan_repaid() {
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
-            .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+            .call_method(
+                component_address,
+                "lock_fee",
+                manifest_args!(Decimal::from(10)),
+            )
             .build()
     });
 
@@ -90,7 +98,7 @@ fn should_be_rejected_when_insufficient_balance() {
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -105,7 +113,7 @@ fn should_be_rejected_when_non_xrd() {
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -120,7 +128,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
             .call_method(
                 component_address,
                 "lock_fee",
-                args!(Decimal::from_str("0.001").unwrap()), // = 1000 cost units
+                manifest_args!(Decimal::from_str("0.001").unwrap()), // = 1000 cost units
             )
             .build()
     });
@@ -135,7 +143,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -156,7 +164,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -171,7 +179,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
             .call_method(
                 component_address,
                 "update_vault_and_lock_fee",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -193,7 +201,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
-                args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(10)),
             )
             .build()
     });
@@ -225,7 +233,7 @@ fn test_fee_accounting_success() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -280,7 +288,7 @@ fn test_fee_accounting_failure() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();

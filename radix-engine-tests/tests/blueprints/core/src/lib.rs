@@ -26,7 +26,7 @@ mod move_test {
             let bucket = Self::create_test_token(1000);
             let component_address = MoveTest { vaults: Vec::new() }.instantiate().globalize();
 
-            Runtime::call_method(component_address, "receive_bucket", args!(bucket))
+            Runtime::call_method(component_address, "receive_bucket", scrypto_args!(bucket))
         }
 
         pub fn move_proof() -> Bucket {
@@ -36,7 +36,7 @@ mod move_test {
             let _: () = Runtime::call_method(
                 component_address,
                 "receive_proof",
-                args!(bucket.create_proof()),
+                scrypto_args!(bucket.create_proof()),
             );
 
             bucket

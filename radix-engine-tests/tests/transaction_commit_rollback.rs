@@ -21,7 +21,7 @@ fn test_state_track_success() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -72,7 +72,7 @@ fn test_state_track_failure() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains_by_amount(Decimal::from(5u32), RADIX_TOKEN)
         .build();

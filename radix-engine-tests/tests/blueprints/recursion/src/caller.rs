@@ -11,7 +11,7 @@ mod caller {
                     Runtime::package_address(),
                     "Caller",
                     "recursive",
-                    args!(n - 1),
+                    scrypto_args!(n - 1),
                 );
             }
         }

@@ -71,7 +71,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
         )

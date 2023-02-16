@@ -16,7 +16,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
             package_address,
             "DataAccess",
             "create_component_and_read_state",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -43,7 +43,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
             package_address,
             "DataAccess",
             "create_component_and_write_state",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -70,7 +70,7 @@ fn should_be_able_to_read_component_info() {
             package_address,
             "DataAccess",
             "create_component_and_read_info",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -398,9 +398,9 @@ impl TestRunner {
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(account_address, "deposit", args!(bucket))
+                builder.call_method(account_address, "deposit", manifest_args!(bucket))
             })
             .build();
 
@@ -419,11 +419,11 @@ impl TestRunner {
             .new_component_addresses[0];
 
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
             .call_method(
                 account_component,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -632,7 +632,7 @@ impl TestRunner {
             transaction::model::BasicInstruction::CallMethod {
                 component_address: FAUCET_COMPONENT,
                 method_name: "lock_fee".to_string(),
-                args: args!(dec!("100")),
+                args: manifest_args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -737,7 +737,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, args!(token))
+            .call_function(package, "ResourceCreator", function, manifest_args!(token))
             .build();
         self.execute_manifest(
             manifest,
@@ -759,11 +759,16 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
+            .call_function(
+                package,
+                "ResourceCreator",
+                function,
+                manifest_args!(token, set_auth),
+            )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
@@ -784,7 +789,7 @@ impl TestRunner {
             .call_method(
                 to,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -930,7 +935,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -956,7 +961,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -983,7 +988,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1003,7 +1008,7 @@ impl TestRunner {
         F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
     {
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("10")))
+            .call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("10")))
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
             .build();

@@ -4,8 +4,20 @@ use crate::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use transaction_data::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackagePublishInvocation {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
@@ -37,7 +49,18 @@ impl Into<CallTableInvocation> for PackagePublishInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackagePublishNativeInvocation {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
@@ -70,7 +93,18 @@ impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
@@ -98,13 +132,35 @@ impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
 }
@@ -131,7 +187,15 @@ impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub struct PackageClaimRoyaltyExecutable {
     pub receiver: RENodeId,
 }

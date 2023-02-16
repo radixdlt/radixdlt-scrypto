@@ -58,7 +58,7 @@ fn bench_radiswap(c: &mut Criterion) {
                             package_address,
                             "Radiswap",
                             "instantiate_pool",
-                            args!(
+                            manifest_args!(
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
@@ -73,7 +73,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -90,7 +90,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .call_method(
                     account3,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -102,12 +102,12 @@ fn bench_radiswap(c: &mut Criterion) {
         .lock_fee(account3, 10u32.into())
         .withdraw_from_account(account3, btc, dec!(1))
         .take_from_worktop(btc, |builder, bucket| {
-            builder.call_method(component_address, "swap", args!(bucket))
+            builder.call_method(component_address, "swap", manifest_args!(bucket))
         })
         .call_method(
             account3,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

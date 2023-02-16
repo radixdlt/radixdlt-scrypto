@@ -21,7 +21,7 @@ fn test_external_bridges() {
             target_package_address,
             "ExternalBlueprintTarget",
             "create",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -39,7 +39,7 @@ fn test_external_bridges() {
             caller_package_address,
             "ExternalBlueprintCaller",
             "create",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
@@ -56,7 +56,7 @@ fn test_external_bridges() {
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
-            args!(target_package_address),
+            manifest_args!(target_package_address),
         )
         .build();
     let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
@@ -70,7 +70,7 @@ fn test_external_bridges() {
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",
-            args!(target_component_address),
+            manifest_args!(target_component_address),
         )
         .build();
     let receipt4 = test_runner.execute_manifest(manifest4, vec![]);

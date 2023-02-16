@@ -58,12 +58,12 @@ fn set_up_package_and_component() -> (
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty_enabled",
-                args!(owner_badge_addr),
+                manifest_args!(owner_badge_addr),
             )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -147,7 +147,7 @@ fn test_only_package_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -162,7 +162,7 @@ fn test_only_package_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -221,7 +221,7 @@ fn test_only_component_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -236,7 +236,7 @@ fn test_only_component_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

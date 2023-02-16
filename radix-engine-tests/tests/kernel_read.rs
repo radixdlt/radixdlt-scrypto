@@ -20,7 +20,7 @@ fn should_not_be_able_to_read_global_substate() {
             package_address,
             "Read",
             "read_global_substate",
-            args!(account),
+            manifest_args!(account),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

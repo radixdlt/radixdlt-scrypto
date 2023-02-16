@@ -21,7 +21,7 @@ fn test_component_royalty() {
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty_enabled",
-                args!(),
+                manifest_args!(),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -32,7 +32,7 @@ fn test_component_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(component_address, "paid_method", args!())
+            .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![],
     );
@@ -72,7 +72,7 @@ fn set_up_package_and_component() -> (
                 package_address,
                 "RoyaltyTest",
                 "enable_royalty_for_this_package",
-                args!(),
+                manifest_args!(),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -87,7 +87,7 @@ fn set_up_package_and_component() -> (
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty_enabled",
-                args!(),
+                manifest_args!(),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -118,7 +118,7 @@ fn test_package_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_method(component_address, "paid_method", args!())
+            .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -144,7 +144,7 @@ fn test_royalty_accumulation_when_success() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_method(component_address, "paid_method", args!())
+            .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -174,7 +174,7 @@ fn test_royalty_accumulation_when_failure() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_method(component_address, "paid_method_panic", args!())
+            .call_method(component_address, "paid_method_panic", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -204,7 +204,7 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_method(component_address, "paid_method", args!())
+            .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -228,12 +228,12 @@ fn test_claim_royalty() {
                 package_address,
                 "RoyaltyTest",
                 "claim_package_royalty",
-                args!(package_address),
+                manifest_args!(package_address),
             )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -248,12 +248,12 @@ fn test_claim_royalty() {
                 package_address,
                 "RoyaltyTest",
                 "claim_component_royalty",
-                args!(component_address),
+                manifest_args!(component_address),
             )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

@@ -597,7 +597,7 @@ pub fn generate_instruction(
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: args!(
+            args: manifest_args!(
                 generate_typed_value::<ManifestBucket>(
                     controlled_asset,
                     resolver,
@@ -1673,7 +1673,7 @@ mod tests {
                     .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
-                args: args!(500u32, pdec!("120"))
+                args: manifest_args!(500u32, pdec!("120"))
             },
         );
         generate_instruction_ok!(
@@ -1681,7 +1681,7 @@ mod tests {
             BasicInstruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
-                args: args!()
+                args: manifest_args!()
             },
         );
         generate_instruction_ok!(
@@ -1737,8 +1737,8 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
+                        manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                        manifest_args!(12u8, 19u128)
                     )
                 )])
             },
@@ -1797,8 +1797,8 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            args!(String::from("Hello World"), Decimal::from("12")),
-                            args!(12u8, 19u128)
+                            manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                            manifest_args!(12u8, 19u128)
                         )
                     )]),
                 })
@@ -1885,8 +1885,8 @@ mod tests {
             BasicInstruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    args!(String::from("Hello World"), Decimal::from("12")),
-                    args!(12u8, 19u128)
+                    manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                    manifest_args!(12u8, 19u128)
                 )])
             },
         );

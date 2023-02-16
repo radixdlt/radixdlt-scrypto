@@ -20,7 +20,12 @@ fn get_epoch_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "EpochManagerTest", "get_epoch", args![])
+        .call_function(
+            package_address,
+            "EpochManagerTest",
+            "get_epoch",
+            manifest_args![],
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -43,9 +48,14 @@ fn next_round_without_supervisor_auth_fails() {
             package_address,
             "EpochManagerTest",
             "next_round",
-            args!(EPOCH_MANAGER, round),
+            manifest_args!(EPOCH_MANAGER, round),
         )
-        .call_function(package_address, "EpochManagerTest", "get_epoch", args!())
+        .call_function(
+            package_address,
+            "EpochManagerTest",
+            "get_epoch",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -319,7 +329,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .call_method(
             validator_address,
             "update_accept_delegated_stake",
-            args!(false),
+            manifest_args!(false),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -337,14 +347,14 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     }
 
     let manifest = builder
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(validator_address, "stake", args!(bucket))
+            builder.call_method(validator_address, "stake", manifest_args!(bucket))
         })
         .call_method(
             validator_account_address,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -453,7 +463,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
         .call_method(
             account_address,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -592,7 +602,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .call_method(
             validator_address,
             "update_key",
-            args!(next_validator_pub_key),
+            manifest_args!(next_validator_pub_key),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -670,7 +680,7 @@ fn cannot_claim_unstake_immediately() {
         .call_method(
             account_with_lp,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -722,7 +732,7 @@ fn can_claim_unstake_after_epochs() {
         .call_method(
             account_with_lp,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -742,7 +752,7 @@ fn can_claim_unstake_after_epochs() {
         .call_method(
             account_with_lp,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -792,7 +802,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .call_method(
             account_with_lp,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -850,7 +860,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: args!(
+        args: manifest_args!(
             OLYMPIA_VALIDATOR_TOKEN.raw(),
             EPOCH_MANAGER.raw(),
             validator_set,
@@ -893,7 +903,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: "create".to_string(),
-        args: args!(
+        args: manifest_args!(
             OLYMPIA_VALIDATOR_TOKEN.raw(),
             EPOCH_MANAGER.raw(),
             validator_set,

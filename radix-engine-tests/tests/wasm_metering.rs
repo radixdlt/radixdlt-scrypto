@@ -25,7 +25,7 @@ fn test_loop() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
 
@@ -57,7 +57,7 @@ fn test_loop_out_of_cost_unit() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 450.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
 
@@ -88,7 +88,7 @@ fn test_recursion() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -118,7 +118,7 @@ fn test_recursion_stack_overflow() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -148,7 +148,7 @@ fn test_grow_memory() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -178,7 +178,7 @@ fn test_grow_memory_out_of_cost_unit() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

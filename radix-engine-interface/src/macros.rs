@@ -241,3 +241,13 @@ macro_rules! rule {
         radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }
+
+// TODO: re-enable "any-free" encoding
+#[macro_export]
+macro_rules! scrypto_args {
+    ($($args: expr),*) => {
+        {
+            radix_engine_interface::data::scrypto_encode(&($($args),*)).unwrap()
+        }
+    };
+}

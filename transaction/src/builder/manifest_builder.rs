@@ -28,7 +28,7 @@ use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use transaction_data::model::*;
+use transaction_data::{manifest_args, model::*};
 
 use crate::model::*;
 use crate::validation::*;
@@ -398,7 +398,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: VALIDATOR_REGISTER_IDENT.to_string(),
-            args: args!(),
+            args: manifest_args!(),
         });
         self
     }
@@ -407,7 +407,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
-            args: args!(),
+            args: manifest_args!(),
         });
         self
     }
@@ -420,7 +420,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: VALIDATOR_STAKE_IDENT.to_string(),
-            args: args!(bucket),
+            args: manifest_args!(bucket),
         });
         self
     }
@@ -433,7 +433,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
-            args: args!(bucket),
+            args: manifest_args!(bucket),
         });
         self
     }
@@ -446,7 +446,7 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: validator_address,
             method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
-            args: args!(bucket),
+            args: manifest_args!(bucket),
         });
         self
     }
@@ -564,8 +564,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackage {
-            code: ManifestBlobRef(code_hash),
-            abi: ManifestBlobRef(abi_hash),
+            code: ManifestBlobRef(code_hash.0),
+            abi: ManifestBlobRef(abi_hash.0),
             royalty_config,
             metadata,
             access_rules,
@@ -588,8 +588,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackageWithOwner {
-            code: ManifestBlobRef(code_hash),
-            abi: ManifestBlobRef(abi_hash),
+            code: ManifestBlobRef(code_hash.0),
+            abi: ManifestBlobRef(abi_hash.0),
             owner_badge,
         });
         self
@@ -978,7 +978,7 @@ impl ManifestBuilder {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: args!(
+            args: manifest_args!(
                 controlled_asset,
                 RuleSet {
                     primary_role,

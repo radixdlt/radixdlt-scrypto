@@ -87,7 +87,6 @@ mod tests {
     use super::*;
     use crate::builder::*;
     use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-    use transaction_data::model::ManifestPublicKey;
 
     #[test]
     fn notary_as_signatory() {
@@ -100,7 +99,7 @@ mod tests {
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
-                notary_public_key: ManifestPublicKey(private_key.public_key().into()),
+                notary_public_key: private_key.public_key().into(),
                 notary_as_signatory: true,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,

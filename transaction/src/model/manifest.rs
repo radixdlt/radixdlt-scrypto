@@ -1,6 +1,4 @@
 use crate::model::BasicInstruction;
-use crate::*;
-use radix_engine_interface::*;
 use transaction_data::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]

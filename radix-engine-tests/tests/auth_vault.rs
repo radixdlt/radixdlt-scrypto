@@ -17,7 +17,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -62,7 +62,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

@@ -81,7 +81,7 @@ impl CallFunction {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         handle_manifest(

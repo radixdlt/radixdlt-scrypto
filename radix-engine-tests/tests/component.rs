@@ -13,7 +13,12 @@ fn test_component() {
     // Create component
     let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "ComponentTest", "create_component", args!())
+        .call_function(
+            package,
+            "ComponentTest",
+            "create_component",
+            manifest_args!(),
+        )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -31,14 +36,14 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            args!(component),
+            manifest_args!(component),
         )
-        .call_method(component, "get_component_state", args!())
-        .call_method(component, "put_component_state", args!())
+        .call_method(component, "get_component_state", manifest_args!())
+        .call_method(component, "put_component_state", manifest_args!())
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(
@@ -61,7 +66,7 @@ fn invalid_blueprint_name_should_cause_error() {
             package_addr,
             "NonExistentBlueprint",
             "create_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

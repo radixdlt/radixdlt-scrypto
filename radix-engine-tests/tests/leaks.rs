@@ -14,7 +14,12 @@ fn dangling_component_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Leaks", "dangling_component", args!())
+        .call_function(
+            package_address,
+            "Leaks",
+            "dangling_component",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -43,7 +48,12 @@ fn dangling_bucket_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Leaks", "dangling_bucket", args!())
+        .call_function(
+            package_address,
+            "Leaks",
+            "dangling_bucket",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -72,7 +82,7 @@ fn dangling_vault_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Leaks", "dangling_vault", args!())
+        .call_function(package_address, "Leaks", "dangling_vault", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -101,7 +111,7 @@ fn dangling_worktop_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Leaks", "get_bucket", args!())
+        .call_function(package_address, "Leaks", "get_bucket", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -123,7 +133,12 @@ fn dangling_kv_store_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Leaks", "dangling_kv_store", args!())
+        .call_function(
+            package_address,
+            "Leaks",
+            "dangling_kv_store",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -156,7 +171,7 @@ fn dangling_bucket_with_proof_should_fail() {
             package_address,
             "Leaks",
             "dangling_bucket_with_proof",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

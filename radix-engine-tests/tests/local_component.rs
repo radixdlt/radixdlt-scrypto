@@ -18,7 +18,7 @@ fn local_component_should_return_correct_info() {
             package_address,
             "Secret",
             "check_info_of_local_component",
-            args!(package_address, "Secret".to_string()),
+            manifest_args!(package_address, "Secret".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -36,7 +36,12 @@ fn local_component_should_be_callable_read_only() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Secret", "read_local_component", args!())
+        .call_function(
+            package_address,
+            "Secret",
+            "read_local_component",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -53,7 +58,12 @@ fn local_component_should_be_callable_with_write() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Secret", "write_local_component", args!())
+        .call_function(
+            package_address,
+            "Secret",
+            "write_local_component",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -78,7 +88,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            args!(auth_global_id),
+            manifest_args!(auth_global_id),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -108,13 +118,13 @@ fn local_component_with_access_rules_should_be_callable() {
         .call_method(
             account,
             "create_proof_by_ids",
-            args!(auth_resource_address, BTreeSet::from([auth_local_id])),
+            manifest_args!(auth_resource_address, BTreeSet::from([auth_local_id])),
         )
         .call_function(
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            args!(auth_global_id),
+            manifest_args!(auth_global_id),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -143,13 +153,13 @@ fn recursion_bomb() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -177,13 +187,13 @@ fn recursion_bomb_to_failure() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -219,13 +229,13 @@ fn recursion_bomb_2() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -253,13 +263,13 @@ fn recursion_bomb_2_to_failure() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

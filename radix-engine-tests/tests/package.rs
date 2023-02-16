@@ -55,7 +55,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "LargeReturnSize", "f", args!())
+        .call_function(package, "LargeReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -78,7 +78,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "MaxReturnSize", "f", args!())
+        .call_function(package, "MaxReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -101,7 +101,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "ZeroReturnSize", "f", args!())
+        .call_function(package, "ZeroReturnSize", "f", manifest_args!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);

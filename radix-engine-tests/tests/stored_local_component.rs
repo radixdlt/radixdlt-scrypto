@@ -14,7 +14,7 @@ fn should_not_be_able_call_owned_components_directly() {
             package_address,
             "StoredSecret",
             "new_global",
-            args!(34567u32),
+            manifest_args!(34567u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -27,7 +27,7 @@ fn should_not_be_able_call_owned_components_directly() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "get_secret", args!())
+        .call_method(component_address, "get_secret", manifest_args!())
         .build();
 
     // Assert
@@ -48,7 +48,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
             package_address,
             "StoredSecret",
             "call_read_on_stored_component_in_owned_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -70,7 +70,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
             package_address,
             "StoredSecret",
             "call_write_on_stored_component_in_owned_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -90,7 +90,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
             package_address,
             "StoredSecret",
             "new_global",
-            args!(34567u32),
+            manifest_args!(34567u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -103,7 +103,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "parent_get_secret", args!())
+        .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -124,7 +124,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
             package_address,
             "StoredSecret",
             "new_global",
-            args!(34567u32),
+            manifest_args!(34567u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -137,8 +137,12 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "parent_set_secret", args!(8888u32))
-        .call_method(component_address, "parent_get_secret", args!())
+        .call_method(
+            component_address,
+            "parent_set_secret",
+            manifest_args!(8888u32),
+        )
+        .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -161,7 +165,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
             package_address,
             "StoredKVLocal",
             "call_read_on_stored_component_in_owned_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -183,7 +187,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
             package_address,
             "StoredKVLocal",
             "call_write_on_stored_component_in_owned_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -203,7 +207,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
             package_address,
             "StoredKVLocal",
             "new_global",
-            args!(34567u32),
+            manifest_args!(34567u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -216,7 +220,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "parent_get_secret", args!())
+        .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -237,7 +241,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
             package_address,
             "StoredKVLocal",
             "new_global",
-            args!(34567u32),
+            manifest_args!(34567u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -250,8 +254,12 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "parent_set_secret", args!(8888u32))
-        .call_method(component_address, "parent_get_secret", args!())
+        .call_method(
+            component_address,
+            "parent_set_secret",
+            manifest_args!(8888u32),
+        )
+        .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -18,7 +18,7 @@ fn vector_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "vector_argument",
-                    args!(vec![bucket_id1, bucket_id2,]),
+                    manifest_args!(vec![bucket_id1, bucket_id2,]),
                 )
             })
         })
@@ -44,7 +44,7 @@ fn tuple_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "tuple_argument",
-                    args!((bucket_id1, bucket_id2,)),
+                    manifest_args!((bucket_id1, bucket_id2,)),
                 )
             })
         })
@@ -70,7 +70,12 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), bucket_id1);
                 map.insert("second".to_string(), bucket_id2);
 
-                builder.call_function(package_address, "Arguments", "treemap_argument", args!(map))
+                builder.call_function(
+                    package_address,
+                    "Arguments",
+                    "treemap_argument",
+                    manifest_args!(map),
+                )
             })
         })
         .build();
@@ -95,7 +100,12 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), bucket_id1);
                 map.insert("second".to_string(), bucket_id2);
 
-                builder.call_function(package_address, "Arguments", "hashmap_argument", args!(map))
+                builder.call_function(
+                    package_address,
+                    "Arguments",
+                    "hashmap_argument",
+                    manifest_args!(map),
+                )
             })
         })
         .build();
@@ -119,7 +129,7 @@ fn some_optional_bucket_argument_should_succeed() {
                 package_address,
                 "Arguments",
                 "option_argument",
-                args!(Some(bucket_id)),
+                manifest_args!(Some(bucket_id)),
             )
         })
         .build();
@@ -142,7 +152,7 @@ fn none_optional_bucket_argument_should_succeed() {
             package_address,
             "Arguments",
             "option_argument",
-            args!(Option::<Bucket>::None),
+            manifest_args!(Option::<Bucket>::None),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -283,7 +283,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                args!($($func_args),*)
+                scrypto_args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -298,7 +298,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                args!($($func_args),*)
+                scrypto_args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -387,7 +387,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -400,7 +400,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -413,7 +413,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -426,7 +426,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);

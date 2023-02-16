@@ -67,7 +67,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
             package_address,
             "VaultProof",
             "receive_proofs",
-            args!(proof_ids),
+            manifest_args!(proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(

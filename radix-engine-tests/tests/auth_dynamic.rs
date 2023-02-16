@@ -39,7 +39,7 @@ fn test_dynamic_auth(
             package,
             "AuthComponent",
             "create_component",
-            args!(addresses.get(initial_auth).unwrap().clone()),
+            manifest_args!(addresses.get(initial_auth).unwrap().clone()),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -55,7 +55,7 @@ fn test_dynamic_auth(
             .call_method(
                 component,
                 "update_auth",
-                args!(addresses.get(next_auth).unwrap().clone()),
+                manifest_args!(addresses.get(next_auth).unwrap().clone()),
             )
             .build();
         test_runner
@@ -66,7 +66,7 @@ fn test_dynamic_auth(
     // Act
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component, "get_secret", args!())
+        .call_method(component, "get_secret", manifest_args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs.to_vec());
 
@@ -112,7 +112,7 @@ fn test_dynamic_authlist(
             package,
             "AuthListComponent",
             "create_component",
-            args!(2u8, list, authorization),
+            manifest_args!(2u8, list, authorization),
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
@@ -125,7 +125,7 @@ fn test_dynamic_authlist(
     // Act
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component, "get_secret", args!())
+        .call_method(component, "get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, initial_proofs);
 
@@ -239,7 +239,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_global_id, other_non_fungible_global_id.clone()];
     let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "Chess", "create_game", args!(players))
+        .call_function(package, "Chess", "create_game", manifest_args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -251,7 +251,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Act
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component, "make_move", args!())
+        .call_method(component, "make_move", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_non_fungible_global_id]);
 
@@ -274,7 +274,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     ];
     let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_function(package, "Chess", "create_game", args!(players))
+        .call_function(package, "Chess", "create_game", manifest_args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -284,7 +284,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .new_component_addresses[0];
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component, "make_move", args!())
+        .call_method(component, "make_move", manifest_args!())
         .build();
     test_runner
         .execute_manifest(manifest2, vec![non_fungible_global_id])
@@ -293,7 +293,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Act
     let manifest3 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component, "make_move", args!())
+        .call_method(component, "make_move", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_non_fungible_global_id]);
 

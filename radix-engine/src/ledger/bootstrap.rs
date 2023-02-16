@@ -395,7 +395,7 @@ pub fn create_genesis(
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
             function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-            args: args!(
+            args: manifest_args!(
                 olympia_validator_token_address,
                 component_address,
                 validators,
@@ -422,7 +422,7 @@ pub fn create_genesis(
             BasicInstruction::CallMethod {
                 component_address: component_address,
                 method_name: "deposit".to_string(),
-                args: args!(bucket_id),
+                args: manifest_args!(bucket_id),
             }
             .into(),
         );
@@ -442,7 +442,7 @@ pub fn create_genesis(
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
-            args: args!(bucket),
+            args: manifest_args!(bucket),
         }));
     };
 

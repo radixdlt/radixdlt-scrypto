@@ -12,7 +12,12 @@ fn can_set_component_metadata() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "MetadataComponent", "new", args!())
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "new",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
