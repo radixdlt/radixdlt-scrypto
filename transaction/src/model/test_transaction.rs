@@ -1,13 +1,11 @@
+use crate::model::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
+use transaction_data::*;
 
-use crate::model::*;
-
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,
@@ -27,7 +25,7 @@ impl TestTransaction {
         &'a self,
         initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        let payload = scrypto_encode(self).unwrap();
+        let payload = manifest_encode(self).unwrap();
         let payload_size = payload.len();
         let transaction_hash = hash(payload);
 

@@ -9,6 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Fields, Type, Variant};
+use transaction_data::*;
 
 #[derive(
     Debug,
@@ -21,6 +22,9 @@ use scrypto_abi::{Fields, Type, Variant};
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftDecimal {
@@ -58,6 +62,9 @@ impl From<&str> for SoftDecimal {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftCount {
@@ -95,6 +102,9 @@ impl From<&str> for SoftCount {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResource {
@@ -132,6 +142,9 @@ impl From<&str> for SoftResource {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungible {
@@ -176,6 +189,9 @@ impl From<&str> for SoftResourceOrNonFungible {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungibleList {
@@ -217,6 +233,9 @@ where
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum ProofRule {
@@ -244,6 +263,9 @@ impl From<ResourceAddress> for ProofRule {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
@@ -354,6 +376,9 @@ where
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum AccessRule {

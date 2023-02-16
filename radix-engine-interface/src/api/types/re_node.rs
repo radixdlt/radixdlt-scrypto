@@ -4,6 +4,7 @@ use crate::api::package::PackageAddress;
 use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
+use transaction_data::*;
 
 // TODO: Remove when better type system implemented
 #[derive(
@@ -61,6 +62,9 @@ pub enum RENodeType {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum RENodeId {
     Bucket(BucketId),
@@ -155,6 +159,9 @@ impl Into<ResourceAddress> for RENodeId {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum GlobalAddress {
     Component(ComponentAddress),
