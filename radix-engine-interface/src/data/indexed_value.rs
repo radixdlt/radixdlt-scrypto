@@ -20,7 +20,7 @@ pub struct IndexedScryptoValue {
     raw: Vec<u8>,
     value: ScryptoValue,
 
-    references: Vec<(Reference, SborPath)>,
+    references: Vec<(Address, SborPath)>,
     owned_nodes: Vec<(Own, SborPath)>,
 }
 
@@ -112,13 +112,13 @@ impl IndexedScryptoValue {
         let mut references = HashSet::new();
         for (reference, _) in &self.references {
             match reference {
-                Reference::Package(address) => {
+                Address::Package(address) => {
                     references.insert(GlobalAddress::Package(*address));
                 }
-                Reference::Component(address) => {
+                Address::Component(address) => {
                     references.insert(GlobalAddress::Component(*address));
                 }
-                Reference::ResourceManager(address) => {
+                Address::ResourceManager(address) => {
                     references.insert(GlobalAddress::Resource(*address));
                 }
             }
@@ -148,7 +148,7 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
 
 /// A visitor the indexes scrypto custom values.
 pub struct ScryptoValueVisitor {
-    pub references: Vec<(Reference, SborPath)>,
+    pub references: Vec<(Address, SborPath)>,
     pub owned_nodes: Vec<(Own, SborPath)>,
 }
 
@@ -170,7 +170,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
-            ScryptoCustomValue::Reference(value) => {
+            ScryptoCustomValue::Address(value) => {
                 self.references.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::Own(value) => {

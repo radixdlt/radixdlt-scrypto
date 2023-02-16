@@ -1,4 +1,3 @@
-use crate::data::model::*;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
@@ -23,6 +22,7 @@ use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use transaction_data::model::*;
 
 use crate::model::*;
 use crate::validation::*;

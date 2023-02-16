@@ -1,6 +1,6 @@
-use crate::data::manifest_encode;
 use crate::model::*;
 use crate::signing::Signer;
+use transaction_data::manifest_encode;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
@@ -82,8 +82,8 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
-    use crate::data::model::ManifestPublicKey;
     use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+    use transaction_data::model::ManifestPublicKey;
 
     #[test]
     fn notary_as_signatory() {

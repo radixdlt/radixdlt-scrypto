@@ -1,5 +1,5 @@
-use crate::data::model::*;
 use sbor::*;
+use transaction_data::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {

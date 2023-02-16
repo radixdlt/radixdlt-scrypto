@@ -159,7 +159,7 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Tuple => f.write_str("Tuple"),
         ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
-            ScryptoCustomValueKind::Reference => f.write_str("Reference"),
+            ScryptoCustomValueKind::Address => f.write_str("Address"),
             ScryptoCustomValueKind::Own => f.write_str("Own"),
             ScryptoCustomValueKind::Decimal => f.write_str("Decimal"),
             ScryptoCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
@@ -229,8 +229,8 @@ pub fn format_custom_value<F: fmt::Write>(
     _context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
-        ScryptoCustomValue::Reference(value) => {
-            write!(f, "Reference(\"{:?}\")", value)?; // TODO: fix syntax
+        ScryptoCustomValue::Address(value) => {
+            write!(f, "Address(\"{:?}\")", value)?; // TODO: fix syntax
         }
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax

@@ -1,12 +1,8 @@
+use crate::model::TransactionIntent;
 use radix_engine_interface::crypto::{hash, Hash, PublicKey};
-use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::*;
 use sbor::*;
-
-use crate::data::model::ManifestPublicKey;
-use crate::data::*;
-use crate::model::TransactionIntent;
-use crate::*;
+use transaction_data::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -19,7 +15,7 @@ pub struct PreviewFlags {
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
-    pub signer_public_keys: Vec<ManifestPublicKey>,
+    pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
 }
 

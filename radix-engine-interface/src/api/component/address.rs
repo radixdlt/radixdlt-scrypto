@@ -7,8 +7,9 @@ use utils::{copy_u8_array, ContextualDisplay};
 use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
-use crate::data::model::Reference;
+use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use transaction_data::*;
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -148,7 +149,7 @@ impl ComponentAddress {
 impl Categorize<ScryptoCustomValueKind> for ComponentAddress {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Reference)
+        ValueKind::Custom(ScryptoCustomValueKind::Address)
     }
 }
 
@@ -160,7 +161,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for C
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Reference::Component(self.clone()).encode_body(encoder)
+        Address::Component(self.clone()).encode_body(encoder)
     }
 }
 
@@ -169,9 +170,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for C
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let a = Reference::decode_body_with_value_kind(decoder, value_kind)?;
+        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
         match a {
-            Reference::Component(x) => Ok(x),
+            Address::Component(x) => Ok(x),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
@@ -180,6 +181,42 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for C
 impl scrypto_abi::LegacyDescribe for ComponentAddress {
     fn describe() -> scrypto_abi::Type {
         Type::ComponentAddress
+    }
+}
+
+//===================
+// binary (manifest)
+//===================
+
+impl Categorize<ManifestCustomValueKind> for ComponentAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for ComponentAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Address::Component(self.clone()).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for ComponentAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
+        match a {
+            Address::Component(x) => Ok(x),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
     }
 }
 

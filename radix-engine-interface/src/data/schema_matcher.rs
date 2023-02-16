@@ -3,7 +3,7 @@ use crate::{crypto::PublicKey, data::model::Own};
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
-use super::model::Reference;
+use super::model::Address;
 
 pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
     match ty {
@@ -35,8 +35,8 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         Type::Option { .. } => Some(ValueKind::Enum),
         Type::Result { .. } => Some(ValueKind::Enum),
 
-        Type::Reference | Type::PackageAddress | Type::ComponentAddress | Type::ResourceAddress => {
-            Some(ValueKind::Custom(ScryptoCustomValueKind::Reference))
+        Type::Address | Type::PackageAddress | Type::ComponentAddress | Type::ResourceAddress => {
+            Some(ValueKind::Custom(ScryptoCustomValueKind::Address))
         }
 
         Type::Own
@@ -270,26 +270,23 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
 
         // custom
-        Type::Reference => {
+        Type::Address => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Reference(_))
+                matches!(value, ScryptoCustomValue::Address(_))
             } else {
                 false
             }
         }
         Type::PackageAddress => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Reference(Reference::Package(_)))
+                matches!(value, ScryptoCustomValue::Address(Address::Package(_)))
             } else {
                 false
             }
         }
         Type::ComponentAddress => {
             if let Value::Custom { value } = value {
-                matches!(
-                    value,
-                    ScryptoCustomValue::Reference(Reference::Component(_))
-                )
+                matches!(value, ScryptoCustomValue::Address(Address::Component(_)))
             } else {
                 false
             }
@@ -298,7 +295,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             if let Value::Custom { value } = value {
                 matches!(
                     value,
-                    ScryptoCustomValue::Reference(Reference::ResourceManager(_))
+                    ScryptoCustomValue::Address(Address::ResourceManager(_))
                 )
             } else {
                 false

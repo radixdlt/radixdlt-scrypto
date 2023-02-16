@@ -10,7 +10,7 @@ use crate::math::{Decimal, PreciseDecimal};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
     // RE interpreted types
-    Reference(Reference),
+    Address(Address),
     Own(Own),
 
     // Uninterpreted
@@ -23,8 +23,8 @@ pub enum ScryptoCustomValue {
 impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ScryptoCustomValue {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            ScryptoCustomValue::Reference(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Reference))
+            ScryptoCustomValue::Address(_) => {
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Address))
             }
             ScryptoCustomValue::Own(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Own))
@@ -47,7 +47,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
-            ScryptoCustomValue::Reference(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Address(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
@@ -64,8 +64,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
     ) -> Result<Self, DecodeError> {
         match value_kind {
             ValueKind::Custom(cti) => match cti {
-                ScryptoCustomValueKind::Reference => {
-                    Reference::decode_body_with_value_kind(decoder, value_kind).map(Self::Reference)
+                ScryptoCustomValueKind::Address => {
+                    Address::decode_body_with_value_kind(decoder, value_kind).map(Self::Address)
                 }
                 ScryptoCustomValueKind::Own => {
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
@@ -100,10 +100,10 @@ mod tests {
     #[test]
     fn test_custom_types_group1() {
         let values = (
-            Reference::Package(PackageAddress::Normal([1u8; 26])),
-            Reference::Component(ComponentAddress::Normal([2u8; 26])),
-            Reference::ResourceManager(ResourceAddress::Normal([3u8; 26])),
-            Reference::Component(ComponentAddress::EpochManager([4u8; 26])),
+            Address::Package(PackageAddress::Normal([1u8; 26])),
+            Address::Component(ComponentAddress::Normal([2u8; 26])),
+            Address::ResourceManager(ResourceAddress::Normal([3u8; 26])),
+            Address::Component(ComponentAddress::EpochManager([4u8; 26])),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -121,22 +121,22 @@ mod tests {
             ScryptoValue::Tuple {
                 fields: vec![
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Reference(Reference::Package(
+                        value: ScryptoCustomValue::Address(Address::Package(
                             PackageAddress::Normal([1u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Reference(Reference::Component(
+                        value: ScryptoCustomValue::Address(Address::Component(
                             ComponentAddress::Normal([2u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Reference(Reference::ResourceManager(
+                        value: ScryptoCustomValue::Address(Address::ResourceManager(
                             ResourceAddress::Normal([3u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Reference(Reference::Component(
+                        value: ScryptoCustomValue::Address(Address::Component(
                             ComponentAddress::EpochManager([4u8; 26])
                         )),
                     },

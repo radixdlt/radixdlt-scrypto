@@ -6,10 +6,10 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
-use crate::data::*;
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
+use transaction_data::*;
 
 pub trait TransactionValidator<T: ManifestDecode> {
     fn check_length_and_decode_from_slice(

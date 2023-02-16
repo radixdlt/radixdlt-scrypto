@@ -73,7 +73,7 @@ pub enum Type {
     },
 
     // RE interpreted
-    Reference, /* any */
+    Address, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,

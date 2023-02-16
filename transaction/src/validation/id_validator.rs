@@ -1,9 +1,9 @@
-use crate::data::model::ManifestBucket;
-use crate::data::model::ManifestProof;
 use crate::errors::*;
 use crate::validation::*;
 use sbor::rust::collections::*;
 use sbor::SborPath;
+use transaction_data::model::ManifestBucket;
+use transaction_data::model::ManifestProof;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {

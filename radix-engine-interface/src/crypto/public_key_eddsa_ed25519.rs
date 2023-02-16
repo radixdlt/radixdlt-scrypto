@@ -8,6 +8,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto_abi::Type;
+use transaction_data::*;
 use utils::copy_u8_array;
 
 /// Represents an ED25519 public key.
@@ -65,7 +66,7 @@ impl fmt::Display for ParseEddsaEd25519PublicKeyError {
 impl Categorize<ScryptoCustomValueKind> for EddsaEd25519PublicKey {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Own)
+        ValueKind::Custom(ScryptoCustomValueKind::PublicKey)
     }
 }
 
@@ -101,6 +102,46 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
 impl scrypto_abi::LegacyDescribe for EddsaEd25519PublicKey {
     fn describe() -> scrypto_abi::Type {
         Type::EddsaEd25519PublicKey
+    }
+}
+
+//==================
+// binary (manifest)
+//==================
+
+impl Categorize<ManifestCustomValueKind> for EddsaEd25519PublicKey {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::PublicKey)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for EddsaEd25519PublicKey
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        PublicKey::EddsaEd25519(self.clone()).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for EddsaEd25519PublicKey
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let o = PublicKey::decode_body_with_value_kind(decoder, value_kind)?;
+        match o {
+            PublicKey::EddsaEd25519(pk) => Ok(pk),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
     }
 }
 

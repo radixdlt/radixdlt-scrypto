@@ -1,14 +1,14 @@
 use crate::address::*;
 use crate::api::types::*;
-use crate::data::model::Reference;
+use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::*;
+use transaction_data::*;
 use utils::{copy_u8_array, ContextualDisplay};
-
-use crate::*;
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -66,7 +66,7 @@ impl ResourceAddress {
 impl Categorize<ScryptoCustomValueKind> for ResourceAddress {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Reference)
+        ValueKind::Custom(ScryptoCustomValueKind::Address)
     }
 }
 
@@ -78,7 +78,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for R
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Reference::ResourceManager(self.clone()).encode_body(encoder)
+        Address::ResourceManager(self.clone()).encode_body(encoder)
     }
 }
 
@@ -87,9 +87,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for R
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let a = Reference::decode_body_with_value_kind(decoder, value_kind)?;
+        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
         match a {
-            Reference::ResourceManager(x) => Ok(x),
+            Address::ResourceManager(x) => Ok(x),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
@@ -98,6 +98,42 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for R
 impl scrypto_abi::LegacyDescribe for ResourceAddress {
     fn describe() -> scrypto_abi::Type {
         Type::ResourceAddress
+    }
+}
+
+//===================
+// binary (manifest)
+//===================
+
+impl Categorize<ManifestCustomValueKind> for ResourceAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for ResourceAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Address::ResourceManager(self.clone()).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for ResourceAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
+        match a {
+            Address::ResourceManager(x) => Ok(x),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
     }
 }
 

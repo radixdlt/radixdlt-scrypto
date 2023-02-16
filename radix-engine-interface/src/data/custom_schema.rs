@@ -8,7 +8,7 @@ pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
-    Reference, /* any */
+    Address, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -48,7 +48,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_indices: &BTreeMap<TypeHash, usize>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
-            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
+            ScryptoCustomTypeKind::Address => ScryptoCustomTypeKind::Address,
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
@@ -79,7 +79,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         well_known_index: u8,
     ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
         let (name, custom_type_kind) = match well_known_index {
-            REFERENCE_ID => ("Reference", ScryptoCustomTypeKind::Reference),
+            ADDRESS_ID => ("Address", ScryptoCustomTypeKind::Address),
             OWN_ID => ("Own", ScryptoCustomTypeKind::Own),
 
             DECIMAL_ID => ("Decimal", ScryptoCustomTypeKind::Decimal),
@@ -104,7 +104,7 @@ use well_known_scrypto_types::*;
 mod well_known_scrypto_types {
     use super::*;
 
-    pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
+    pub const ADDRESS_ID: u8 = VALUE_KIND_ADDRESS;
     // TODO: add support for specific variants
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;

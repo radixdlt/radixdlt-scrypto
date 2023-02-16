@@ -367,11 +367,11 @@ pub fn serialize_custom_value<S: Serializer>(
     context: &ScryptoValueFormattingContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
-        ScryptoCustomValue::Reference(value) => serialize_value(
+        ScryptoCustomValue::Address(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomValueKind::Reference,
+            ScryptoCustomValueKind::Address,
             &format!("{:?}", value), // TODO: fix syntax
         ),
         ScryptoCustomValue::Own(value) => serialize_value(
@@ -646,7 +646,7 @@ mod tests {
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
-                            value: ScryptoCustomValue::Reference(Reference::ResourceManager(
+                            value: ScryptoCustomValue::Address(Address::ResourceManager(
                                 RADIX_TOKEN,
                             )),
                         },

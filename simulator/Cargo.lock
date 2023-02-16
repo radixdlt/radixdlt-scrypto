@@ -1091,6 +1091,7 @@ dependencies = [
  "sha2 0.10.6",
  "sha3",
  "strum",
+ "transaction-data",
  "utils",
 ]
 
@@ -1676,6 +1677,16 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "secp256k1",
+ "transaction-data",
+ "utils",
+]
+
+[[package]]
+name = "transaction-data"
+version = "0.9.0"
+dependencies = [
+ "hex",
+ "sbor",
  "transaction-derive",
  "utils",
 ]

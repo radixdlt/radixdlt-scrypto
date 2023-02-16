@@ -324,8 +324,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
 
         // RE
-        SchemaType::Reference => {
-            parse_quote! { ::scrypto::radix_engine_interface::data::model::Reference }
+        SchemaType::Address => {
+            parse_quote! { ::scrypto::radix_engine_interface::data::model::Address }
         }
         SchemaType::PackageAddress => {
             parse_quote! { ::scrypto::model::PackageAddress }

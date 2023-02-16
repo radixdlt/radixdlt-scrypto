@@ -1,6 +1,6 @@
-use crate::data::model::{ManifestBucket, ManifestProof};
 use crate::errors::*;
 use sbor::rust::ops::Range;
+use transaction_data::model::{ManifestBucket, ManifestProof};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestIdAllocator {
