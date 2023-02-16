@@ -52,7 +52,7 @@ pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
-    Component(ComponentInvocation),
+    ComponentRoyalty(ComponentRoyaltyInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -78,7 +78,7 @@ pub enum MetadataInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ComponentInvocation {
+pub enum ComponentRoyaltyInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
@@ -95,11 +95,11 @@ impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
         let mut refs = HashSet::new();
         match self {
-            NativeInvocation::Component(invocation) => match invocation {
-                ComponentInvocation::SetRoyaltyConfig(invocation) => {
+            NativeInvocation::ComponentRoyalty(invocation) => match invocation {
+                ComponentRoyaltyInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(invocation.receiver);
                 }
-                ComponentInvocation::ClaimRoyalty(invocation) => {
+                ComponentRoyaltyInvocation::ClaimRoyalty(invocation) => {
                     refs.insert(invocation.receiver);
                 }
             },
@@ -186,9 +186,9 @@ impl NativeInvocation {
                 PackageInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
-            NativeInvocation::Component(i) => match i {
-                ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
-                ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
+            NativeInvocation::ComponentRoyalty(i) => match i {
+                ComponentRoyaltyInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
+                ComponentRoyaltyInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 
