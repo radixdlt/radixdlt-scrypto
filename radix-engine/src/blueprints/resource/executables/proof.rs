@@ -1,9 +1,8 @@
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::system::node::RENodeInit;
 use crate::types::*;
@@ -61,8 +60,8 @@ impl Executor for ProofGetAmountInvocation {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
 
         Ok((proof.total_amount(), CallFrameUpdate::empty()))
@@ -99,8 +98,8 @@ impl Executor for ProofGetNonFungibleLocalIdsInvocation {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids()?;
 
@@ -138,8 +137,8 @@ impl Executor for ProofGetResourceAddressInvocation {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
 
         Ok((
@@ -181,13 +180,13 @@ impl Executor for ProofCloneInvocation {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate_ref = api.get_ref(handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         let cloned_proof = proof.clone();
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        api.create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok((

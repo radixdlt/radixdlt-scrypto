@@ -1,10 +1,10 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::{
-    CallFrameUpdate, ExecutableInvocation, Executor, ResolvedActor, ResolvedReceiver,
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::ResolvedReceiver;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -13,8 +13,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
@@ -65,11 +65,11 @@ impl Executor for WorktopPutInvocation {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
         let resource_address = self.bucket.sys_resource_address(api)?;
 
-        let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
@@ -115,14 +115,17 @@ impl Executor for WorktopTakeAmountInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
         let bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
             bucket
@@ -130,7 +133,7 @@ impl Executor for WorktopTakeAmountInvocation {
             let resman = ResourceManager(self.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             worktop.resources.insert(self.resource_address, bucket);
             worktop
@@ -177,13 +180,16 @@ impl Executor for WorktopTakeAllInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
         let rtn_bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address) {
@@ -231,13 +237,16 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
         let bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
@@ -246,7 +255,7 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
             let resman = ResourceManager(self.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             worktop.resources.insert(self.resource_address, bucket);
             worktop
@@ -295,9 +304,9 @@ impl Executor for WorktopAssertContainsInvocation {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(worktop_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
 
         let total_amount =
@@ -348,9 +357,9 @@ impl Executor for WorktopAssertContainsAmountInvocation {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(worktop_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
         let total_amount =
             if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
@@ -400,9 +409,9 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
-        let substate_ref = api.get_ref(worktop_handle)?;
+        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
 
         let ids = if let Some(bucket) = worktop.resources.get(&self.resource_address) {
@@ -451,10 +460,10 @@ impl Executor for WorktopDrainInvocation {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle =
-            api.lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut buckets = Vec::new();
         let mut nodes_to_move = Vec::new();
-        let mut substate_mut = api.get_ref_mut(worktop_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
         let bucket_ids: Vec<BucketId> = worktop
             .resources

@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::ResolvedActor;
+use radix_engine::kernel::actor::ResolvedActor;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -26,7 +26,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
+            RuntimeError::KernelError(KernelError::InvalidCreateNodeAccess {
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
                         package_address: addr,

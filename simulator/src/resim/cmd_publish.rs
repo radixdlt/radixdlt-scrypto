@@ -5,7 +5,9 @@ use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::package::PackageInfoSubstate;
+use radix_engine_interface::api::package::WasmCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -76,19 +78,16 @@ impl Publish {
             let substate_id = SubstateId(
                 global.node_deref(),
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
+                SubstateOffset::Package(PackageOffset::NativeCode),
             );
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = PackageInfoSubstate {
-                code,
-                blueprint_abis: abi,
-            };
+            let validated_package = WasmCodeSubstate { code };
             let output_value = OutputValue {
-                substate: PersistedSubstate::PackageInfo(validated_package),
+                substate: PersistedSubstate::WasmCode(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 
@@ -98,10 +97,31 @@ impl Publish {
                 SubstateId(
                     global.node_deref(),
                     NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::NativeCode),
+                ),
+                output_value,
+            );
+
+            let package_info = PackageInfoSubstate {
+                blueprint_abis: abi,
+                dependent_resources: BTreeSet::new(),
+                dependent_components: BTreeSet::new(),
+            };
+
+            let output_value = OutputValue {
+                substate: PersistedSubstate::PackageInfo(package_info),
+                version: previous_version.unwrap_or(0),
+            };
+
+            substate_store.put_substate(
+                SubstateId(
+                    global.node_deref(),
+                    NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,
             );
+
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let owner_badge_non_fungible_global_id = self

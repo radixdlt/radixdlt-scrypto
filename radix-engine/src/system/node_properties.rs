@@ -1,8 +1,7 @@
-use crate::system::node::RENodeModuleInit;
-use crate::{
-    errors::{KernelError, RuntimeError},
-    kernel::{ExecutionMode, LockFlags, ResolvedActor, ResolvedReceiver},
-};
+use super::node::{RENodeInit, RENodeModuleInit};
+use crate::errors::{KernelError, RuntimeError};
+use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
@@ -15,11 +14,8 @@ use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::constants::*;
 use sbor::rust::collections::BTreeMap;
-
-use super::node::RENodeInit;
 
 pub struct VisibilityProperties;
 
@@ -53,10 +49,12 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Bucket(..))
-                    | FnIdentifier::Native(NativeFn::Worktop(..))
-                    | FnIdentifier::Native(NativeFn::ResourceManager(..))
-                    | FnIdentifier::Native(NativeFn::Vault(..)) => true,
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        ..
+                    })
+                    | FnIdentifier::Native(NativeFn::Bucket(..))
+                    | FnIdentifier::Native(NativeFn::Worktop(..)) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
@@ -74,7 +72,7 @@ impl VisibilityProperties {
         }
     }
 
-    pub fn check_create_node_visibility(
+    pub fn check_create_node_access(
         mode: ExecutionMode,
         actor: &ResolvedActor,
         node: &RENodeInit,
@@ -101,11 +99,10 @@ impl VisibilityProperties {
                     }
                 }
                 RENodeInit::ResourceManager(..)
+                | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
-                | RENodeInit::NonFungibleStore(..) => {
-                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(RESOURCE_MANAGER_BLUEPRINT)
-                }
+                | RENodeInit::NonFungibleStore(..)
+                | RENodeInit::Proof(..) => package_address.eq(&RESOURCE_MANAGER_PACKAGE),
                 RENodeInit::Identity() => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }
@@ -135,7 +132,7 @@ impl VisibilityProperties {
         }
     }
 
-    pub fn check_substate_visibility(
+    pub fn check_substate_access(
         mode: ExecutionMode,
         actor: &ResolvedActor,
         node_id: RENodeId,
@@ -146,17 +143,16 @@ impl VisibilityProperties {
 
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
-            (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Kernel, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => read_only,
+                _ => false, // Protect ourselves!
+            },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::PackageTypeInfo => read_only,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                _ => false,
-            },
-            (ExecutionMode::Deref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
@@ -177,6 +173,8 @@ impl VisibilityProperties {
                 SubstateOffset::Vault(VaultOffset::Vault) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
+                SubstateOffset::Package(PackageOffset::NativeCode) => read_only,
+                SubstateOffset::Package(PackageOffset::WasmCode) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::ComponentTypeInfo(_) => read_only,
                 SubstateOffset::AccessRulesChain(_) => read_only,
@@ -186,6 +184,13 @@ impl VisibilityProperties {
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     if matches!(offset, SubstateOffset::PackageTypeInfo) {
+                        return true;
+                    }
+
+                    if matches!(
+                        offset,
+                        SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo)
+                    ) {
                         return true;
                     }
 
@@ -210,6 +215,10 @@ impl VisibilityProperties {
                                 (
                                     RENodeId::Package(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::Package(_),
+                                    SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
@@ -235,6 +244,10 @@ impl VisibilityProperties {
                                 (
                                     RENodeId::Package(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::Package(_),
+                                    SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
@@ -267,7 +280,10 @@ impl VisibilityProperties {
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
                         }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            || package_address.eq(&IDENTITY_PACKAGE) =>
+                            || package_address.eq(&IDENTITY_PACKAGE)
+                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                            || package_address.eq(&CLOCK_PACKAGE)
+                            || package_address.eq(&EPOCH_MANAGER_PACKAGE) =>
                         {
                             true
                         }
@@ -284,6 +300,10 @@ impl VisibilityProperties {
 
                             Some(ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),
+                                ..
+                            })
+                            | Some(ResolvedReceiver {
+                                receiver: RENodeId::Account(component_address),
                                 ..
                             }) => match (node_id, offset) {
                                 (

@@ -1,5 +1,5 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::package::PackageInfoSubstate;
+use radix_engine_interface::api::package::{PackageInfoSubstate, WasmCodeSubstate};
 use radix_engine_interface::api::{types::*, ClientNativeInvokeApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
@@ -156,11 +156,11 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
         let handle = self.sys_lock_substate(
             package_global,
-            SubstateOffset::Package(PackageOffset::Info),
+            SubstateOffset::Package(PackageOffset::WasmCode),
             false,
         )?;
         let substate = self.sys_read_substate(handle)?;
-        let package: PackageInfoSubstate =
+        let package: WasmCodeSubstate =
             scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
         self.sys_drop_lock(handle)?;
         Ok(PackageCode::Wasm(package.code))
@@ -295,7 +295,7 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
         let actor = copy_buffer(unsafe { get_actor() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

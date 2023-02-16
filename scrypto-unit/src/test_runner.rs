@@ -6,7 +6,7 @@ use std::process::Command;
 
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
-use radix_engine::kernel::ScryptoInterpreter;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
@@ -19,14 +19,14 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::types::{
-    ClockInvocation, EpochManagerInvocation, NativeInvocation, RENodeId, VaultOffset,
-};
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::blueprints::clock::{
-    ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, TimePrecision,
+    ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
+    CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
+    EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
+    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
@@ -39,7 +39,9 @@ use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::{
+    BasicInstruction, Executable, Instruction, SystemTransaction, TransactionManifest,
+};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -1011,12 +1013,11 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
-                receiver: EPOCH_MANAGER,
-                epoch,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
+        })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1033,11 +1034,12 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
-                receiver: EPOCH_MANAGER,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+        })];
+
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1061,12 +1063,11 @@ impl TestRunner {
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
-                current_time_ms,
-                receiver: CLOCK,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: CLOCK,
+            method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+            args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+        })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1083,12 +1084,11 @@ impl TestRunner {
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
-                precision,
-                receiver: CLOCK,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: CLOCK,
+            method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
+            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+        })];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

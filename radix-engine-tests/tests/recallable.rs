@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
-use radix_engine::kernel::{ResolvedActor, ResolvedReceiver};
+use radix_engine::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::kernel_modules::auth::MethodAuthorizationError;
 use radix_engine::types::*;
@@ -66,7 +66,10 @@ fn cannot_take_on_non_recallable_vault() {
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Recall)),
+                    identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        ..
+                    }),
                     receiver: Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(..),
                         ..

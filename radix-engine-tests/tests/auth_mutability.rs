@@ -88,7 +88,7 @@ fn locked_mint_auth_cannot_be_updated() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
+                AccessRulesChainError::UnauthorizedSetGroupAccessRules(..)
             ))
         )
     })
@@ -116,7 +116,7 @@ fn locked_burn_auth_cannot_be_updated() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
+                AccessRulesChainError::UnauthorizedSetMethodAccessRules(..)
             ))
         )
     })

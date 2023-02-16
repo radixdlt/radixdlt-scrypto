@@ -5,7 +5,9 @@ use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{
     types::*, ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi,
 };
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+};
 use radix_engine_interface::blueprints::transaction_runtime::{
     TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
 };
@@ -22,11 +24,15 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
-        ScryptoEnv
-            .call_native(EpochManagerGetCurrentEpochInvocation {
-                receiver: EPOCH_MANAGER,
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::Global(EPOCH_MANAGER),
+                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+                scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
@@ -39,7 +45,7 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.fn_identifier().unwrap() {
+        match ScryptoEnv.get_fn_identifier().unwrap() {
             FnIdentifier::Scrypto(identifier) => identifier,
             _ => panic!("Unexpected actor"),
         }

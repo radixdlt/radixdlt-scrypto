@@ -1,4 +1,4 @@
-use radix_engine_interface::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
+use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
@@ -39,6 +39,75 @@ pub struct SignedTransactionIntent {
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
+}
+
+/// Represents any natively supported signature.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type", content = "signature")
+)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub enum Signature {
+    EcdsaSecp256k1(EcdsaSecp256k1Signature),
+    EddsaEd25519(EddsaEd25519Signature),
+}
+
+/// Represents any natively supported signature, including public key.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub enum SignatureWithPublicKey {
+    EcdsaSecp256k1 {
+        signature: EcdsaSecp256k1Signature,
+    },
+    EddsaEd25519 {
+        public_key: EddsaEd25519PublicKey,
+        signature: EddsaEd25519Signature,
+    },
+}
+
+impl SignatureWithPublicKey {
+    pub fn signature(&self) -> Signature {
+        match &self {
+            SignatureWithPublicKey::EcdsaSecp256k1 { signature } => signature.clone().into(),
+            SignatureWithPublicKey::EddsaEd25519 { signature, .. } => signature.clone().into(),
+        }
+    }
+}
+
+impl From<EcdsaSecp256k1Signature> for Signature {
+    fn from(signature: EcdsaSecp256k1Signature) -> Self {
+        Self::EcdsaSecp256k1(signature)
+    }
+}
+
+impl From<EddsaEd25519Signature> for Signature {
+    fn from(signature: EddsaEd25519Signature) -> Self {
+        Self::EddsaEd25519(signature)
+    }
+}
+
+impl From<EcdsaSecp256k1Signature> for SignatureWithPublicKey {
+    fn from(signature: EcdsaSecp256k1Signature) -> Self {
+        Self::EcdsaSecp256k1 { signature }
+    }
+}
+
+impl From<(EddsaEd25519PublicKey, EddsaEd25519Signature)> for SignatureWithPublicKey {
+    fn from((public_key, signature): (EddsaEd25519PublicKey, EddsaEd25519Signature)) -> Self {
+        Self::EddsaEd25519 {
+            public_key,
+            signature,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

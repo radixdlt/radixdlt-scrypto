@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! sys_env_native_fn {
+macro_rules! native_env_native_fn {
     ($vis:vis $fn:ident $fn_name:ident ($($args:tt)+) -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
         $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
         where

@@ -1,4 +1,4 @@
-use crate::kernel::ScryptoInterpreter;
+use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
@@ -11,12 +11,15 @@ use radix_engine_interface::api::package::{
     PackagePublishInvocation, PackagePublishNativeInvocation,
 };
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
+use radix_engine_interface::blueprints::account::AccountAbi;
 use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+    ClockAbi, ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+    EpochManagerAbi, ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::identity::IdentityAbi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -56,10 +59,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                dependent_resources: vec![],
             }),
         )));
     }
@@ -123,10 +128,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
-                dependent_resources: vec![],
             }),
         )));
     }
@@ -140,10 +147,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
+                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -155,10 +164,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
+                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -170,10 +181,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
+                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
+                dependent_components: vec![],
             }),
         )));
     }
@@ -187,10 +200,12 @@ pub fn create_genesis(
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
+                dependent_components: vec![CLOCK],
             }),
         )));
     }

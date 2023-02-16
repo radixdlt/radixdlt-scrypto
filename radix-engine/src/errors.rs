@@ -6,8 +6,9 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
+use crate::kernel::actor::{ExecutionMode, ResolvedActor};
 use crate::kernel::kernel_api::LockFlags;
-use crate::kernel::{ExecutionMode, ResolvedActor, TrackError};
+use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
@@ -151,16 +152,16 @@ pub enum KernelError {
     InvalidId(RENodeId),
 
     // Actor Constraints
-    InvalidDropNodeVisibility {
+    InvalidDropNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,
     },
-    InvalidCreateNodeVisibility {
+    InvalidCreateNodeAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
     },
-    InvalidSubstateVisibility {
+    InvalidSubstateAccess {
         mode: ExecutionMode,
         actor: ResolvedActor,
         node_id: RENodeId,
@@ -195,6 +196,10 @@ pub enum ScryptoFnResolvingError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
+    NativeUnexpectedReceiver(String),
+    NativeExpectedReceiver(String),
+    NativeExportDoesNotExist(String),
+
     InvalidInvocation,
     DisallowedInvocation(NativeFn),
 

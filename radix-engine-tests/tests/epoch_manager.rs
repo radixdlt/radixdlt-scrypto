@@ -4,7 +4,6 @@ use radix_engine::ledger::create_genesis;
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::types::{EpochManagerInvocation, NativeInvocation};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -71,12 +70,14 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -109,12 +110,14 @@ fn next_epoch_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -398,12 +401,14 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -458,12 +463,14 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -525,12 +532,14 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -593,12 +602,14 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -791,12 +802,14 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-            receiver: EPOCH_MANAGER,
+    let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        }),
-    ))];
+        })
+        .unwrap(),
+    })];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,

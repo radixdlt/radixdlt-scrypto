@@ -1,7 +1,6 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::KernelNodeApi;
-use crate::kernel::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use native_sdk::resource::Vault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
@@ -24,6 +23,7 @@ pub(super) trait Transition<I> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>;
@@ -38,6 +38,7 @@ pub(super) trait TransitionMut<I> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>;
@@ -66,11 +67,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         _input: AccessControllerCreateProofStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Proofs can only be created when the primary role is unlocked - regardless of whether the
         // controller is in recovery or normal operations.
@@ -138,6 +135,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
@@ -289,6 +287,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientApi<RuntimeError>
             + ClientNodeApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,

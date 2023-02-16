@@ -1,21 +1,20 @@
-use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::*;
+use crate::errors::{ApplicationError, InterpreterError};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -32,49 +31,39 @@ pub struct ValidatorSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct UnstakeData {
+    epoch_unlocked: u64,
+    amount: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ValidatorError {
     InvalidClaimResource,
     EpochUnlockHasNotOccurredYet,
 }
 
-pub struct ValidatorRegisterExecutable(RENodeId);
+pub struct ValidatorBlueprint;
 
-impl ExecutableInvocation for ValidatorRegisterInvocation {
-    type Exec = ValidatorRegisterExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::Register),
-            resolved_receiver,
-        );
-        let executor = ValidatorRegisterExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorRegisterExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+impl ValidatorBlueprint {
+    pub fn register<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
+        // TODO: Remove decode/encode mess
+        let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(
-            self.0,
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -82,11 +71,11 @@ impl Executor for ValidatorRegisterExecutable {
 
         // Update state
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
 
             if validator.is_registered {
-                return Ok(((), CallFrameUpdate::empty()));
+                return Ok(IndexedScryptoValue::from_typed(&()));
             }
 
             validator.is_registered = true;
@@ -94,60 +83,50 @@ impl Executor for ValidatorRegisterExecutable {
 
         // Update EpochManager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
-                let substate = api.get_ref(handle)?;
+                let substate = api.kernel_get_substate_ref(handle)?;
                 let validator = substate.validator();
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver: validator.manager,
-                    validator_address: validator.address,
-                    update: UpdateValidator::Register(validator.key, stake_amount),
-                };
-                api.call_native(invocation)?;
+                let key = validator.key;
+                let validator_address = validator.address;
+                let manager = validator.manager;
+                api.call_method(
+                    ScryptoReceiver::Global(manager),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        update: UpdateValidator::Register(key, stake_amount),
+                        validator_address,
+                    })
+                    .unwrap(),
+                )?;
             }
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        return Ok(IndexedScryptoValue::from_typed(&()));
     }
-}
 
-pub struct ValidatorUnregisterExecutable(RENodeId);
-
-impl ExecutableInvocation for ValidatorUnregisterInvocation {
-    type Exec = ValidatorUnregisterExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    pub fn unregister<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Self: Sized,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>
+            + ClientNativeInvokeApi<RuntimeError>,
     {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::Unregister),
-            resolved_receiver,
-        );
-        let executor = ValidatorUnregisterExecutable(resolved_receiver.receiver);
-        Ok((actor, call_frame_update, executor))
-    }
-}
+        // TODO: Remove decode/encode mess
+        let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-impl Executor for ValidatorUnregisterExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
-    {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(
-            self.0,
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -155,83 +134,67 @@ impl Executor for ValidatorUnregisterExecutable {
 
         // Update state
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
             if !validator.is_registered {
-                return Ok(((), CallFrameUpdate::empty()));
+                return Ok(IndexedScryptoValue::from_typed(&()));
             }
             validator.is_registered = false;
         }
 
         // Update EpochManager
         {
-            let mut substate = api.get_ref_mut(handle)?;
+            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
             let validator = substate.validator();
-            let invocation = EpochManagerUpdateValidatorInvocation {
-                receiver: validator.manager,
-                validator_address: validator.address,
-                update: UpdateValidator::Unregister,
-            };
-            api.call_native(invocation)?;
+            let manager = validator.manager;
+            let validator_address = validator.address;
+            api.call_method(
+                ScryptoReceiver::Global(manager),
+                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                scrypto_encode(&EpochManagerUpdateValidatorInput {
+                    validator_address,
+                    update: UpdateValidator::Unregister,
+                })
+                .unwrap(),
+            )?;
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        return Ok(IndexedScryptoValue::from_typed(&()));
     }
-}
 
-pub struct ValidatorStakeExecutable(RENodeId, Bucket);
-
-impl ExecutableInvocation for ValidatorStakeInvocation {
-    type Exec = ValidatorStakeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.stake.0));
-
-        let actor =
-            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);
-        let executor = ValidatorStakeExecutable(resolved_receiver.receiver, self.stake);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorStakeExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub fn stake<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        // TODO: Remove decode/encode mess
+        let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
 
         // Stake
         let lp_token_bucket = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
             let total_lp_supply = lp_token_resman.total_supply(api)?;
             let active_stake_amount = xrd_vault.sys_amount(api)?;
-            let xrd_bucket = self.1;
+            let xrd_bucket = input.stake;
             let stake_amount = xrd_bucket.sys_amount(api)?;
             let lp_mint_amount = if active_stake_amount.is_zero() {
                 stake_amount
@@ -246,7 +209,7 @@ impl Executor for ValidatorStakeExecutable {
 
         // Update EpochManager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             if validator.is_registered {
                 let receiver = validator.manager;
@@ -254,72 +217,48 @@ impl Executor for ValidatorStakeExecutable {
                 let validator_address = validator.address;
                 let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver,
-                    validator_address,
-                    update: UpdateValidator::Register(key, xrd_amount),
-                };
-                api.call_native(invocation)?;
+
+                api.call_method(
+                    ScryptoReceiver::Global(receiver),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        validator_address,
+                        update: UpdateValidator::Register(key, xrd_amount),
+                    })
+                    .unwrap(),
+                )?;
             }
         }
 
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(lp_token_bucket.0));
-        Ok((lp_token_bucket, update))
+        Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
     }
-}
 
-pub struct ValidatorUnstakeExecutable(RENodeId, Bucket);
-
-impl ExecutableInvocation for ValidatorUnstakeInvocation {
-    type Exec = ValidatorUnstakeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.lp_tokens.0));
-
-        let actor =
-            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Unstake), resolved_receiver);
-        let executor = ValidatorUnstakeExecutable(resolved_receiver.receiver, self.lp_tokens);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct UnstakeData {
-    epoch_unlocked: u64,
-    amount: Decimal,
-}
-
-impl Executor for ValidatorUnstakeExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub fn unstake<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+        // TODO: Remove decode/encode mess
+        let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
 
         // Unstake
         let unstake_bucket = {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
 
             let manager = validator.manager;
@@ -330,7 +269,7 @@ impl Executor for ValidatorUnstakeExecutable {
 
             let active_stake_amount = stake_vault.sys_amount(api)?;
             let total_lp_supply = lp_token_resman.total_supply(api)?;
-            let lp_tokens = self.1;
+            let lp_tokens = input.lp_tokens;
             let lp_token_amount = lp_tokens.sys_amount(api)?;
             let xrd_amount = if total_lp_supply.is_zero() {
                 Decimal::zero()
@@ -340,17 +279,17 @@ impl Executor for ValidatorUnstakeExecutable {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.lock_substate(
+            let manager_handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let manager_substate = api.get_ref(manager_handle)?;
+            let manager_substate = api.kernel_get_substate_ref(manager_handle)?;
             let epoch_manager = manager_substate.epoch_manager();
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
-            api.drop_lock(manager_handle)?;
+            api.kernel_drop_lock(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -364,78 +303,59 @@ impl Executor for ValidatorUnstakeExecutable {
 
         // Update Epoch Manager
         {
-            let substate = api.get_ref(handle)?;
+            let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
-                let substate = api.get_ref(handle)?;
+                let substate = api.kernel_get_substate_ref(handle)?;
                 let validator = substate.validator();
+                let manager = validator.manager;
+                let validator_address = validator.address;
                 let update = if stake_amount.is_zero() {
                     UpdateValidator::Unregister
                 } else {
                     UpdateValidator::Register(validator.key, stake_amount)
                 };
 
-                let invocation = EpochManagerUpdateValidatorInvocation {
-                    receiver: validator.manager,
-                    validator_address: validator.address,
-                    update,
-                };
-                api.call_native(invocation)?;
+                api.call_method(
+                    ScryptoReceiver::Global(manager),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        validator_address,
+                        update,
+                    })
+                    .unwrap(),
+                )?;
             }
         };
 
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(unstake_bucket.0));
-        Ok((unstake_bucket, update))
+        Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
     }
-}
 
-pub struct ValidatorClaimXrdExecutable(RENodeId, Bucket);
-
-impl ExecutableInvocation for ValidatorClaimXrdInvocation {
-    type Exec = ValidatorClaimXrdExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Bucket(self.unstake_nft.0));
-
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::ClaimXrd),
-            resolved_receiver,
-        );
-        let executor = ValidatorClaimXrdExecutable(resolved_receiver.receiver, self.unstake_nft);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorClaimXrdExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
+    pub fn claim_xrd<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle =
-            api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate = api.get_ref(handle)?;
+        // TODO: Remove decode/encode mess
+        let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::read_only(),
+        )?;
+        let substate = api.kernel_get_substate_ref(handle)?;
         let validator = substate.validator();
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -443,7 +363,7 @@ impl Executor for ValidatorClaimXrdExecutable {
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
-        let bucket = Bucket(self.1 .0);
+        let bucket = input.bucket;
         if !resource_address.eq(&bucket.sys_resource_address(api)?) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),
@@ -451,15 +371,15 @@ impl Executor for ValidatorClaimXrdExecutable {
         }
 
         let current_epoch = {
-            let mgr_handle = api.lock_substate(
+            let mgr_handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate = api.get_ref(mgr_handle)?;
+            let mgr_substate = api.kernel_get_substate_ref(mgr_handle)?;
             let epoch = mgr_substate.epoch_manager().epoch;
-            api.drop_lock(mgr_handle)?;
+            api.kernel_drop_lock(mgr_handle)?;
             epoch
         };
 
@@ -477,50 +397,35 @@ impl Executor for ValidatorClaimXrdExecutable {
         nft_resman.burn(bucket, api)?;
 
         let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(claimed_bucket.0));
-        Ok((claimed_bucket, update))
+
+        Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
-}
 
-pub struct ValidatorUpdateKeyExecutable(RENodeId, EcdsaSecp256k1PublicKey);
-
-impl ExecutableInvocation for ValidatorUpdateKeyInvocation {
-    type Exec = ValidatorUpdateKeyExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::UpdateKey),
-            resolved_receiver,
-        );
-        let executor = ValidatorUpdateKeyExecutable(resolved_receiver.receiver, self.key);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorUpdateKeyExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub fn update_key<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
-        let mut substate = api.get_ref_mut(handle)?;
+        // TODO: Remove decode/encode mess
+        let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let handle = api.kernel_lock_substate(
+            RENodeId::Validator(receiver),
+            NodeModuleId::SELF,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
         let mut validator = substate.validator();
-        validator.key = self.1;
+        validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;
         let validator_address = validator.address;
@@ -532,73 +437,53 @@ impl Executor for ValidatorUpdateKeyExecutable {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
-                    let invocation = EpochManagerUpdateValidatorInvocation {
-                        receiver: manager,
-                        validator_address,
-                        update,
-                    };
-                    api.call_native(invocation)?;
+                    api.call_method(
+                        ScryptoReceiver::Global(manager),
+                        EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                        scrypto_encode(&EpochManagerUpdateValidatorInput {
+                            validator_address,
+                            update,
+                        })
+                        .unwrap(),
+                    )?;
                 }
             }
-        };
+        }
 
-        let update = CallFrameUpdate::empty();
-        Ok(((), update))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
-}
 
-pub struct ValidatorUpdateAcceptDelegatedStakeExecutable(RENodeId, bool);
-
-impl ExecutableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type Exec = ValidatorUpdateAcceptDelegatedStakeExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-        let actor = ResolvedActor::method(
-            NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake),
-            resolved_receiver,
-        );
-        let executor = ValidatorUpdateAcceptDelegatedStakeExecutable(
-            resolved_receiver.receiver,
-            self.accept_delegated_stake,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for ValidatorUpdateAcceptDelegatedStakeExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub fn update_accept_delegated_stake<Y>(
+        receiver: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let rule = if self.1 {
+        // TODO: Remove decode/encode mess
+        let input: ValidatorUpdateAcceptDelegatedStakeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)
         } else {
             AccessRuleEntry::Group("owner".to_string())
         };
 
         api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: self.0,
+            receiver: RENodeId::Validator(receiver),
             index: 0u32,
-            key: AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
+            key: AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
             rule,
         })?;
 
-        let update = CallFrameUpdate::empty();
-        Ok(((), update))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 
@@ -617,7 +502,7 @@ impl ValidatorCreator {
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         )
         .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
@@ -656,10 +541,11 @@ impl ValidatorCreator {
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         )
         .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+
         liquidity_token_auth.insert(
             Mint,
             (
@@ -689,10 +575,11 @@ impl ValidatorCreator {
     {
         let mut unstake_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         )
         .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+
         unstake_token_auth.insert(
             Mint,
             (
@@ -729,29 +616,29 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_REGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateKey)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
             "owner".to_string(),
         );
 
         let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
         )
         .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
             "owner".to_string(),
             rule!(require(non_fungible_global_id)),
         );
@@ -761,11 +648,11 @@ impl ValidatorCreator {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_UNSTAKE_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::ClaimXrd)),
+            AccessRuleKey::ScryptoMethod(VALIDATOR_CLAIM_XRD_IDENT.to_string()),
             rule!(allow_all),
         );
 
@@ -786,8 +673,8 @@ impl ValidatorCreator {
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let initial_liquidity_amount = initial_stake.sys_amount(api)?;
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -822,8 +709,8 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.create_node(node_id, node, node_modules)?;
-        api.create_node(
+        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
             BTreeMap::new(),
@@ -845,8 +732,8 @@ impl ValidatorCreator {
             + ClientApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>,
     {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -877,8 +764,8 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.create_node(node_id, node, node_modules)?;
-        api.create_node(
+        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(
             global_node_id,
             RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
             BTreeMap::new(),

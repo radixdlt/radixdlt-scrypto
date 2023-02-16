@@ -1,8 +1,9 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::*;
+use crate::kernel::actor::ResolvedActor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -13,12 +14,11 @@ use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessR
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::api::{
     ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi,
 };
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInvocation;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -131,9 +131,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 }
             }
 
-            BasicInstruction::CreateValidator { .. } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-            }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
                 update.add_ref(RENodeId::Global(*entity_address));
@@ -277,14 +274,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             + ClientComponentApi<RuntimeError>
             + ClientPackageApi<RuntimeError>
             + ClientNativeInvokeApi<RuntimeError>
-            + ClientEventApi<RuntimeError>,
+            + ClientUnsafeApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let worktop_node_id = api.allocate_node_id(RENodeType::Worktop)?;
-        api.create_node(
+        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Worktop)?;
+        api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Worktop(WorktopSubstate::new()),
             BTreeMap::new(),
@@ -535,55 +532,101 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
-                    let rtn = api.call_native(ResourceManagerBurnBucketInvocation { bucket })?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = api.call_function(
+                        RESOURCE_MANAGER_PACKAGE,
+                        RESOURCE_MANAGER_BLUEPRINT,
+                        RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                        scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintFungible {
                     resource_address,
                     amount,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        amount: amount.clone(),
-                    })?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintFungibleInput {
+                            amount: amount.clone(),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintNonFungible {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintNonFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        entries: entries.clone(),
-                    })?;
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintNonFungibleInput {
+                            entries: entries.clone(),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::MintUuidNonFungible {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.call_native(ResourceManagerMintUuidNonFungibleInvocation {
-                        receiver: resource_address.clone(),
-                        entries: entries.clone(),
-                    })?;
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Resource(*resource_address),
+                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                        scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
+                            entries: entries.clone(),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => {
-                    let rtn = api.call_native(VaultRecallInvocation {
-                        receiver: vault_id.clone(),
-                        amount: amount.clone(),
-                    })?;
+                    let result = api.call_method(
+                        ScryptoReceiver::Vault(*vault_id),
+                        VAULT_RECALL_IDENT,
+                        scrypto_encode(&VaultRecallInput {
+                            amount: amount.clone(),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::SetMetadata {
                     entity_address,
@@ -658,18 +701,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateValidator {
-                    key,
-                    owner_access_rule,
-                }) => {
-                    let rtn = api.call_native(EpochManagerCreateValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        key: key.clone(),
-                        owner_access_rule: owner_access_rule.clone(),
-                    })?;
-
-                    InstructionOutput::Native(Box::new(rtn))
-                }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
@@ -690,7 +721,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        api.drop_node(worktop_node_id)?;
+        api.kernel_drop_node(worktop_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }
@@ -850,7 +881,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientNativeInvokeApi<RuntimeError>,
+        Y: ClientComponentApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {
