@@ -1,5 +1,5 @@
-use radix_engine_interface::api::component::ComponentSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
+use radix_engine_interface::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::AccessRules;

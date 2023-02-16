@@ -195,7 +195,8 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_owned_buckets() {
-        let value = IndexedScryptoValue::from_typed(&vec![Own::Bucket(0), Own::Bucket(0)]);
+        let value =
+            IndexedScryptoValue::from_typed(&vec![Own::Bucket([0u8; 36]), Own::Bucket([0u8; 36])]);
         assert_eq!(
             value.owned_node_ids(),
             Err(ReadOwnedNodesError::DuplicateOwn)

@@ -1,15 +1,13 @@
-use crate::api::component::*;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
+use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
-use crate::blueprints::logger::*;
-use crate::blueprints::resource::*;
-use crate::blueprints::transaction_runtime::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
 use crate::*;
+use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -55,24 +53,12 @@ pub enum NativeInvocation {
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
     Component(ComponentInvocation),
-    Logger(LoggerInvocation),
-    AuthZoneStack(AuthZoneStackInvocation),
-    Bucket(BucketInvocation),
-    Proof(ProofInvocation),
-    Worktop(WorktopInvocation),
-    TransactionRuntime(TransactionRuntimeInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
     fn into(self) -> CallTableInvocation {
         CallTableInvocation::Native(self)
     }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum TransactionRuntimeInvocation {
-    GetHash(TransactionRuntimeGetHashInvocation),
-    GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -92,14 +78,7 @@ pub enum MetadataInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum LoggerInvocation {
-    Log(LoggerLogInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ComponentInvocation {
-    Globalize(ComponentGlobalizeInvocation),
-    GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
@@ -112,56 +91,11 @@ pub enum PackageInvocation {
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum AuthZoneStackInvocation {
-    Pop(AuthZonePopInvocation),
-    Push(AuthZonePushInvocation),
-    CreateProof(AuthZoneCreateProofInvocation),
-    CreateProofByAmount(AuthZoneCreateProofByAmountInvocation),
-    CreateProofByIds(AuthZoneCreateProofByIdsInvocation),
-    Clear(AuthZoneClearInvocation),
-    Drain(AuthZoneDrainInvocation),
-    AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum BucketInvocation {
-    Take(BucketTakeInvocation),
-    TakeNonFungibles(BucketTakeNonFungiblesInvocation),
-    Put(BucketPutInvocation),
-    GetNonFungibleLocalIds(BucketGetNonFungibleLocalIdsInvocation),
-    GetAmount(BucketGetAmountInvocation),
-    GetResourceAddress(BucketGetResourceAddressInvocation),
-    CreateProof(BucketCreateProofInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ProofInvocation {
-    Clone(ProofCloneInvocation),
-    GetAmount(ProofGetAmountInvocation),
-    GetNonFungibleLocalIds(ProofGetNonFungibleLocalIdsInvocation),
-    GetResourceAddress(ProofGetResourceAddressInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum WorktopInvocation {
-    TakeAll(WorktopTakeAllInvocation),
-    TakeAmount(WorktopTakeAmountInvocation),
-    TakeNonFungibles(WorktopTakeNonFungiblesInvocation),
-    Put(WorktopPutInvocation),
-    AssertContains(WorktopAssertContainsInvocation),
-    AssertContainsAmount(WorktopAssertContainsAmountInvocation),
-    AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
-    Drain(WorktopDrainInvocation),
-}
-
 impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
         let mut refs = HashSet::new();
         match self {
             NativeInvocation::Component(invocation) => match invocation {
-                ComponentInvocation::Globalize(..) => {}
-                ComponentInvocation::GlobalizeWithOwner(..) => {}
                 ComponentInvocation::SetRoyaltyConfig(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -182,31 +116,6 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-            },
-            NativeInvocation::Bucket(bucket_method) => match bucket_method {
-                BucketInvocation::Take(..) => {}
-                BucketInvocation::CreateProof(..) => {}
-                BucketInvocation::TakeNonFungibles(..) => {}
-                BucketInvocation::GetNonFungibleLocalIds(..) => {}
-                BucketInvocation::GetAmount(..) => {}
-                BucketInvocation::Put(..) => {}
-                BucketInvocation::GetResourceAddress(..) => {}
-            },
-            NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                AuthZoneStackInvocation::Pop(..) => {}
-                AuthZoneStackInvocation::Push(..) => {}
-                AuthZoneStackInvocation::CreateProof(..) => {}
-                AuthZoneStackInvocation::CreateProofByAmount(..) => {}
-                AuthZoneStackInvocation::CreateProofByIds(..) => {}
-                AuthZoneStackInvocation::Clear(..) => {}
-                AuthZoneStackInvocation::Drain(..) => {}
-                AuthZoneStackInvocation::AssertAuthRule(..) => {}
-            },
-            NativeInvocation::Proof(proof_method) => match proof_method {
-                ProofInvocation::GetAmount(..) => {}
-                ProofInvocation::GetNonFungibleLocalIds(..) => {}
-                ProofInvocation::GetResourceAddress(..) => {}
-                ProofInvocation::Clone(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
                 AccessRulesChainInvocation::AddAccessCheck(invocation) => {
@@ -234,27 +143,6 @@ impl NativeInvocation {
                 }
                 MetadataInvocation::Get(invocation) => {
                     refs.insert(invocation.receiver);
-                }
-            },
-            NativeInvocation::Logger(method) => match method {
-                LoggerInvocation::Log(..) => {
-                    refs.insert(RENodeId::Logger);
-                }
-            },
-            NativeInvocation::Worktop(worktop_method) => match worktop_method {
-                WorktopInvocation::TakeNonFungibles(..) => {}
-                WorktopInvocation::Put(..) => {}
-                WorktopInvocation::Drain(..) => {}
-                WorktopInvocation::AssertContainsNonFungibles(..) => {}
-                WorktopInvocation::AssertContains(..) => {}
-                WorktopInvocation::AssertContainsAmount(..) => {}
-                WorktopInvocation::TakeAll(..) => {}
-                WorktopInvocation::TakeAmount(..) => {}
-            },
-            NativeInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeInvocation::GetHash(..)
-                | TransactionRuntimeInvocation::GenerateUuid(..) => {
-                    refs.insert(RENodeId::TransactionRuntime);
                 }
             },
         }
@@ -299,62 +187,8 @@ impl NativeInvocation {
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Component(i) => match i {
-                ComponentInvocation::Globalize(i) => (get_native_fn(i), scrypto_encode(i)),
-                ComponentInvocation::GlobalizeWithOwner(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 ComponentInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Logger(i) => match i {
-                LoggerInvocation::Log(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::AuthZoneStack(i) => match i {
-                AuthZoneStackInvocation::Pop(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::Push(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::CreateProofByAmount(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AuthZoneStackInvocation::CreateProofByIds(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AuthZoneStackInvocation::Clear(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
-                AuthZoneStackInvocation::AssertAuthRule(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Bucket(i) => match i {
-                BucketInvocation::Take(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::GetNonFungibleLocalIds(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                BucketInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
-                BucketInvocation::CreateProof(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Proof(i) => match i {
-                ProofInvocation::Clone(i) => (get_native_fn(i), scrypto_encode(i)),
-                ProofInvocation::GetAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                ProofInvocation::GetNonFungibleLocalIds(i) => (get_native_fn(i), scrypto_encode(i)),
-                ProofInvocation::GetResourceAddress(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Worktop(i) => match i {
-                WorktopInvocation::TakeAll(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::TakeAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::TakeNonFungibles(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::Put(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::AssertContains(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::AssertContainsAmount(i) => (get_native_fn(i), scrypto_encode(i)),
-                WorktopInvocation::AssertContainsNonFungibles(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                WorktopInvocation::Drain(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::TransactionRuntime(i) => match i {
-                TransactionRuntimeInvocation::GetHash(i) => (get_native_fn(i), scrypto_encode(i)),
-                TransactionRuntimeInvocation::GenerateUuid(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
             },
         };
 

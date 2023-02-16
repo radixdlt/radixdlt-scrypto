@@ -91,20 +91,11 @@ lazy_static! {
             m,
             enum NativeFn {
                 AccessRulesChain = 0;
-                Component = 1;
+                ComponentRoyalty = 1;
                 Package = 2;
                 Metadata = 3;
-                EpochManager = 4;
-                AuthZoneStack = 5;
-                ResourceManager = 6;
-                Bucket = 7;
-                Vault = 8;
-                Proof = 9;
-                Worktop = 10;
-                Clock = 11;
-                Logger = 12;
-                TransactionRuntime = 13;
-                TransactionProcessor = 14;
+                TransactionProcessor = 4;
+                Root = 5;
             }
         );
 

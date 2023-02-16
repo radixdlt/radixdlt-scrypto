@@ -665,7 +665,8 @@ fn generate_typed_value<T: ScryptoDecode>(
 ) -> Result<T, GeneratorError> {
     let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
     let encoded = scrypto_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
-    let decoded: T = scrypto_decode(&encoded).map_err(GeneratorError::ArgumentDecodingError)?;
+    let decoded: T =
+        scrypto_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
     Ok(decoded)
 }
 

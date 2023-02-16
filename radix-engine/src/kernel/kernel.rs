@@ -23,15 +23,18 @@ use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLU
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource, RESOURCE_MANAGER_BLUEPRINT,
-    VAULT_BLUEPRINT,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource, BUCKET_BLUEPRINT,
+    PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
+use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -749,10 +752,63 @@ where
             ) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
-            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {}
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
-            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: AUTH_ZONE_PACKAGE,
+                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: TRANSACTION_RUNTIME_PACKAGE,
+                        blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: LOGGER_PACKAGE,
+                        blueprint_name: LOGGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: PROOF_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
@@ -762,9 +818,6 @@ where
                     }),
                 );
             }
-            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
@@ -777,8 +830,6 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
                 );
             }
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,

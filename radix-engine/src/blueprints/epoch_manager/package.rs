@@ -119,7 +119,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::update_accept_delegated_stake(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

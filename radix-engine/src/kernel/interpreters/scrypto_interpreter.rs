@@ -3,8 +3,10 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{ApplicationError, ScryptoFnResolvingError};
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
@@ -12,6 +14,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
+use crate::system::node_modules::auth::AuthZoneNativePackage;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -71,6 +74,12 @@ impl ExecutableInvocation for ScryptoInvocation {
                 }
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
                 ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
+                ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
+                ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
+                ScryptoReceiver::Worktop => RENodeId::Worktop,
+                ScryptoReceiver::Logger => RENodeId::Logger,
+                ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
+                ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
             };
 
             // Type Check
@@ -426,8 +435,17 @@ impl NativeVm {
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
+            LOGGER_CODE_ID => {
+                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            TRANSACTION_RUNTIME_CODE_ID => {
+                TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            AUTH_ZONE_CODE_ID => {
+                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeInvalidCodeId(native_package_code_id),
             )),
         }
     }

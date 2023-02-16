@@ -9,16 +9,15 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
+};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientUnsafeApi;
-use radix_engine_interface::api::{
-    ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi,
-};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -53,7 +52,6 @@ pub enum TransactionProcessorError {
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
     ReplaceManifestValuesError(ReplaceManifestValuesError),
-    ResolveError(ResolveError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
@@ -266,15 +264,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientPackageApi<RuntimeError>
-            + ClientComponentApi<RuntimeError>
-            + ClientPackageApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientUnsafeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
@@ -308,7 +298,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                     resource_address,
                 }) => {
-                    let bucket = Worktop::sys_take_amount(*resource_address, *amount, api)?;
+                    let bucket = Worktop::sys_take(*resource_address, *amount, api)?;
                     let bucket = processor.next_static_bucket(bucket)?;
                     InstructionOutput::Native(Box::new(bucket))
                 }
@@ -813,11 +803,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value
@@ -845,9 +831,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut expression_replacements = Vec::<Vec<Own>>::new();
         for (expression, _) in value.expressions() {

@@ -1,15 +1,12 @@
-use radix_engine_interface::api::types::{
-    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
-};
+use radix_engine_interface::api::types::{FnIdentifier, PackageIdentifier, ScryptoFnIdentifier};
 use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::{
-    types::*, ClientComponentApi, ClientNativeInvokeApi, ClientPackageApi,
-};
+use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::{
-    TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
+    TransactionRuntimeGenerateUuid, TransactionRuntimeGetHashInput,
+    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -92,19 +89,25 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        ScryptoEnv
-            .call_native(TransactionRuntimeGetHashInvocation {
-                receiver: RENodeId::TransactionRuntime.into(),
-            })
-            .unwrap()
+        let output = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::TransactionRuntime,
+                TRANSACTION_RUNTIME_GET_HASH_IDENT,
+                scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        ScryptoEnv
-            .call_native(TransactionRuntimeGenerateUuidInvocation {
-                receiver: RENodeId::TransactionRuntime.into(),
-            })
-            .unwrap()
+        let output = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::TransactionRuntime,
+                TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
+                scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 }

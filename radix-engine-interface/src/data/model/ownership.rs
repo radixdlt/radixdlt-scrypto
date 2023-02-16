@@ -106,11 +106,11 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
         match self {
             Own::Bucket(v) => {
                 encoder.write_byte(0)?;
-                encoder.write_slice(&v.to_le_bytes())?;
+                encoder.write_slice(v)?;
             }
             Own::Proof(v) => {
                 encoder.write_byte(1)?;
-                encoder.write_slice(&v.to_le_bytes())?;
+                encoder.write_slice(v)?;
             }
             Own::Vault(v) => {
                 encoder.write_byte(2)?;
@@ -140,12 +140,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_byte()? {
-            0 => Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(
-                decoder.read_slice(4)?,
-            )))),
-            1 => Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(
-                decoder.read_slice(4)?,
-            )))),
+            0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
+            1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
             3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
             4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
