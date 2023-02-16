@@ -2,9 +2,16 @@
 
   ;; Simple function that always returns `()`
   (func $Test_f (param $0 i64) (result i64)
-    ;; Grow memory
-    (drop
-      (memory.grow (i32.const ${n}))
+    (if
+      (i32.lt_s
+        ;; Grow memory
+        (memory.grow (i32.const ${n}))
+        (i32.const 0)
+      )
+      (then
+        ;; Never should get there if grow was successfull
+        unreachable
+      )
     )
 
     ;; Encode () in SBOR at address 0x0
@@ -22,7 +29,7 @@
     (i64.const 3)
   )
 
-  (memory $0 1)
+  (memory $0 1 ${m})
   (export "memory" (memory $0))
   (export "Test_f" (func $Test_f))
 )

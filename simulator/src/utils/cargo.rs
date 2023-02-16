@@ -9,6 +9,7 @@ use std::process::ExitStatus;
 use cargo_toml::Manifest;
 use radix_engine::system::package::*;
 use radix_engine::types::*;
+use radix_engine_constants::*;
 
 #[derive(Debug)]
 pub enum BuildError {
@@ -69,7 +70,7 @@ fn run_cargo_build(
     }
 
     let status = Command::new("cargo")
-        .arg("build")
+        .arg("rustc")
         .arg("--target")
         .arg("wasm32-unknown-unknown")
         .arg("--release")
@@ -78,6 +79,11 @@ fn run_cargo_build(
         .arg("--manifest-path")
         .arg(manifest_path.as_ref())
         .args(features)
+        .arg("--")
+        .arg(format!(
+            "-Clink-arg=--max-memory={}",
+            DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME
+        ))
         .status()
         .map_err(BuildError::IOError)?;
     if status.success() {

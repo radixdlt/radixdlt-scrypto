@@ -35,7 +35,7 @@
     (i64.const 3)
   )
 
-  (memory $0 1)
+  (memory $0 1 1)
   (export "memory" (memory $0))
   (export "Test_f" (func $Test_f))
 )

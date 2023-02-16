@@ -51,7 +51,17 @@ impl Compile {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
-            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+            .args([
+                "rustc",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--release",
+                "--",
+                &format!(
+                    "-Clink-arg=--max-memory={}",
+                    DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME
+                ),
+            ])
             .status()
             .unwrap();
         if !status.success() {
