@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateId, Sub
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 use tree_store::{
     Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore,
@@ -70,21 +70,23 @@ pub fn put_at_next_version<S: TreeStore>(
             put_substate_changes(store, current_version, &re_node_module, substate_changes);
         nested_root_changes.push(IdChange::new(re_node_module, nested_root));
     }
-    put_changes(
-        store,
-        current_version,
-        current_version.unwrap_or(0) + 1,
-        nested_root_changes
-            .into_iter()
-            .map(|change| to_re_node_change(change))
-            .collect(),
-    )
+    put_re_node_changes(store, current_version, nested_root_changes)
 }
 
 // only internals below
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
 )]
 struct ReNodeModule {
     re_node_id: RENodeId,
@@ -102,8 +104,9 @@ impl ReNodeModule {
 
 fn index_by_re_node_module(
     changes: Vec<SubstateHashChange>,
-) -> HashMap<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>> {
-    let mut by_re_node_module = HashMap::<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>>::new();
+) -> BTreeMap<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>> {
+    let mut by_re_node_module =
+        BTreeMap::<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>>::new();
     for change in changes {
         let substate_id = change.id;
         by_re_node_module
@@ -125,24 +128,25 @@ fn put_substate_changes<S: TreeStore>(
     re_node_module: &ReNodeModule,
     changes: Vec<IdChange<SubstateOffset, Hash>>,
 ) -> Option<TreeRoot<SubstateOffset>> {
-    let substate_entry = get_substate_entry(store, current_version, re_node_module);
-    let (substate_version, substate_root) = break_tuple(substate_entry);
-    let mut substate_tree_store = NestedTreeStore::new(store, re_node_module, substate_root);
+    let leaf_entry = get_re_node_module_leaf_entry(store, current_version, re_node_module);
+    let (subtree_last_update_state_version, subtree_root) = break_tuple(leaf_entry);
+    let mut subtree_store = NestedTreeStore::new(store, re_node_module, subtree_root);
     let substate_root_hash = put_changes(
-        &mut substate_tree_store,
-        substate_version,
+        &mut subtree_store,
+        subtree_last_update_state_version,
         current_version.unwrap_or(0) + 1,
         changes
             .into_iter()
             .map(|change| to_substate_change(change))
             .collect(),
     );
-    let substate_root_node = substate_tree_store
-        .extract_new_root()
-        .map_payload(|payload| match payload {
-            Payload::ReNodeModule(_) => panic!("unexpected payload in substate layer"),
-            Payload::Substate(substate_offset) => substate_offset,
-        });
+    let substate_root_node =
+        subtree_store
+            .extract_new_root()
+            .map_payload(|payload| match payload {
+                Payload::ReNodeModule(_) => panic!("unexpected payload in substate layer"),
+                Payload::Substate(substate_offset) => substate_offset,
+            });
     if matches!(substate_root_node, TreeNode::Null) {
         None
     } else {
@@ -153,7 +157,23 @@ fn put_substate_changes<S: TreeStore>(
     }
 }
 
-fn get_substate_entry<S: ReadableTreeStore>(
+fn put_re_node_changes<S: TreeStore>(
+    store: &mut S,
+    current_version: Option<Version>,
+    changes: Vec<IdChange<ReNodeModule, TreeRoot<SubstateOffset>>>,
+) -> Hash {
+    put_changes(
+        store,
+        current_version,
+        current_version.unwrap_or(0) + 1,
+        changes
+            .into_iter()
+            .map(|change| to_re_node_change(change))
+            .collect(),
+    )
+}
+
+fn get_re_node_module_leaf_entry<S: ReadableTreeStore>(
     store: &S,
     current_version: Option<Version>,
     re_node_module: &ReNodeModule,
@@ -189,7 +209,7 @@ fn put_changes<S: TreeStore>(
         .batch_put_value_set(
             changes
                 .iter()
-                .map(|change| (change.key_hash.clone(), change.new_payload.as_ref()))
+                .map(|change| (change.key_hash, change.new_payload.as_ref()))
                 .collect(),
             None,
             current_version,

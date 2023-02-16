@@ -51,6 +51,11 @@ pub struct TreeLeafNode<P> {
 }
 
 /// Payload of the leafs within the upper (ReNode+Module) layer.
+/// Please note that a ReNode leaf is conceptually identical to a root of the Substates' subtree
+/// (i.e. one exists if and only if the other exists). For this reason, this payload does _not_
+/// just reference the subtree root, but actually contains it inside.
+/// This design decision also brings minor space and runtime benefits, and avoids special-casing
+/// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
 pub struct ReNodeModulePayload {
     /// ReNode ID.
