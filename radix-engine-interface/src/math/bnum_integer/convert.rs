@@ -72,6 +72,25 @@ macro_rules! impl_from_builtin{
     };
 }
 
+macro_rules! impl_try_from_builtin{
+    ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
+        paste! {
+            $(
+                impl TryFrom<$o> for $t {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: $o) -> Result<Self, Self::Error> {
+                        match Self::[<from_$o>](val) {
+                            Some(val) => Ok(val),
+                            None => Err([<Parse $t Error>]::Overflow),
+                        }
+                    }
+                }
+            )*
+        }
+    };
+}
+
 macro_rules! impl_to_builtin{
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
@@ -89,11 +108,17 @@ macro_rules! impl_to_builtin{
 impl_from_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_from_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_from_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumI768, BInt::<12>,(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU256, BUint::<4>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU384, BUint::<6>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU512, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU768, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
+
+impl_try_from_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize)}
+
 impl_to_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
