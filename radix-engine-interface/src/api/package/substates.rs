@@ -14,29 +14,33 @@ pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct NativePackageInfoSubstate {
+pub struct NativeCodeSubstate {
     pub native_package_code_id: u8,
-    pub dependent_resources: BTreeSet<ResourceAddress>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct PackageInfoSubstate {
+pub struct WasmCodeSubstate {
     pub code: Vec<u8>,
-    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
+}
+
+impl WasmCodeSubstate {
+    pub fn code(&self) -> &[u8] {
+        &self.code
+    }
+}
+
+impl Debug for WasmCodeSubstate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WasmCodeSubstate").finish()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PackageRoyaltyConfigSubstate {
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-}
-
-impl Debug for PackageInfoSubstate {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageInfoSubstate")
-            .field("blueprint_abis", &self.blueprint_abis)
-            .finish()
-    }
+pub struct PackageInfoSubstate {
+    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
+    pub dependent_resources: BTreeSet<ResourceAddress>,
+    pub dependent_components: BTreeSet<ComponentAddress>,
 }
 
 impl PackageInfoSubstate {
@@ -56,10 +60,11 @@ impl PackageInfoSubstate {
 
         return None;
     }
+}
 
-    pub fn code(&self) -> &[u8] {
-        &self.code
-    }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PackageRoyaltyConfigSubstate {
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

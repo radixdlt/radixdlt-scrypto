@@ -13,14 +13,13 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::blueprints::resource::{
-    Bucket, ResourceManagerCreateVaultInvocation, VaultGetAmountInvocation, VaultTakeInvocation,
-};
+use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
+use radix_engine_interface::blueprints::resource::Bucket;
 
 pub struct Package;
 
@@ -37,14 +36,11 @@ pub enum PackageError {
 impl Package {
     fn new(
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
-    ) -> Result<PackageInfoSubstate, PrepareError> {
-        WasmValidator::default().validate(&code, &abi)?;
+        abi: &BTreeMap<String, BlueprintAbi>,
+    ) -> Result<WasmCodeSubstate, PrepareError> {
+        WasmValidator::default().validate(&code, abi)?;
 
-        Ok(PackageInfoSubstate {
-            code: code,
-            blueprint_abis: abi,
-        })
+        Ok(WasmCodeSubstate { code: code })
     }
 }
 
@@ -76,6 +72,12 @@ impl Executor for PackagePublishNativeInvocation {
         let access_rules = AccessRulesChainSubstate {
             access_rules_chain: vec![self.access_rules],
         };
+        let blueprint_abis =
+            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidAbi(e),
+                ))
+            })?;
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
@@ -87,14 +89,18 @@ impl Executor for PackagePublishNativeInvocation {
             RENodeModuleInit::AccessRulesChain(access_rules),
         );
 
-        let package = NativePackageInfoSubstate {
-            native_package_code_id: self.native_package_code_id,
+        let info = PackageInfoSubstate {
             dependent_resources: self.dependent_resources.into_iter().collect(),
+            dependent_components: self.dependent_components.into_iter().collect(),
+            blueprint_abis,
+        };
+        let code = NativeCodeSubstate {
+            native_package_code_id: self.native_package_code_id,
         };
 
         // Create package node
         let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
-        api.kernel_create_node(node_id, RENodeInit::NativePackage(package), node_modules)?;
+        api.kernel_create_node(node_id, RENodeInit::NativePackage(info, code), node_modules)?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -137,24 +143,29 @@ impl Executor for PackagePublishInvocation {
         api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientNativeInvokeApi<RuntimeError>
+            + ClientComponentApi<RuntimeError>,
     {
-        let royalty_vault_id = api
-            .call_native(ResourceManagerCreateVaultInvocation {
-                receiver: RADIX_TOKEN,
-            })?
-            .vault_id();
+        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
-        let package = Package::new(self.code, abi).map_err(|e| {
+        let blueprint_abis =
+            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidAbi(e),
+                ))
+            })?;
+        let wasm_code_substate = Package::new(self.code, &blueprint_abis).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(e),
             ))
         })?;
+        let package_info_substate = PackageInfoSubstate {
+            blueprint_abis,
+            dependent_resources: BTreeSet::new(),
+            dependent_components: BTreeSet::new(),
+        };
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: self.royalty_config,
         };
@@ -190,7 +201,11 @@ impl Executor for PackagePublishInvocation {
 
         // Create package node
         let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
-        api.kernel_create_node(node_id, RENodeInit::Package(package), node_modules)?;
+        api.kernel_create_node(
+            node_id,
+            RENodeInit::WasmPackage(package_info_substate, wasm_code_substate),
+            node_modules,
+        )?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -294,7 +309,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -307,15 +322,8 @@ impl Executor for PackageClaimRoyaltyExecutable {
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
-
-        let amount = api.call_native(VaultGetAmountInvocation {
-            receiver: royalty_vault.vault_id(),
-        })?;
-
-        let bucket = api.call_native(VaultTakeInvocation {
-            receiver: royalty_vault.vault_id(),
-            amount,
-        })?;
+        let mut vault = Vault(royalty_vault.vault_id());
+        let bucket = vault.sys_take_all(api)?;
         let bucket_id = bucket.0;
 
         api.kernel_drop_lock(handle)?;

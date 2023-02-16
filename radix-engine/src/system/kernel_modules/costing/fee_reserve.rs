@@ -112,7 +112,6 @@ pub enum CostingReason {
     TxPayloadCost,
     TxSignatureVerification,
     Invoke,
-    GetVisibleNodes,
     DropNode,
     CreateNode,
     LockSubstate,

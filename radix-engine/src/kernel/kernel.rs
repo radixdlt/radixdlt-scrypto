@@ -1,5 +1,6 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
+use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
@@ -11,13 +12,25 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysBucket; // TODO: clean this up!
+use native_sdk::resource::SysBucket;
+use radix_engine_interface::api::component::ComponentInfoSubstate;
+// TODO: clean this up!
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
 };
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
+};
+use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
+use radix_engine_interface::blueprints::epoch_manager::{
+    EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
+};
+use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource, RESOURCE_MANAGER_BLUEPRINT,
+    VAULT_BLUEPRINT,
 };
 use radix_engine_interface::rule;
 use sbor::rust::mem;
@@ -135,12 +148,12 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::Deposit)),
+                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Account(AccountFn::DepositBatch)),
+                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
@@ -654,7 +667,7 @@ where
             node_id,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeVisibility {
+                KernelError::InvalidDropNodeAccess {
                     mode: current_mode,
                     actor: self.current_frame.actor.clone(),
                     node_id,
@@ -691,14 +704,14 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_create_node_visibility(
+        if !VisibilityProperties::check_create_node_access(
             current_mode,
             &self.current_frame.actor,
             &re_node,
             &module_init,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidCreateNodeVisibility {
+                KernelError::InvalidCreateNodeAccess {
                     mode: current_mode,
                     actor: self.current_frame.actor.clone(),
                 },
@@ -740,7 +753,15 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {}
+            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: VAULT_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
@@ -750,7 +771,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
                 );
             }
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+            (RENodeId::Package(..), RENodeInit::WasmPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
@@ -758,13 +779,69 @@ where
             }
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {}
-            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
-            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
-            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
-            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
+            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: EPOCH_MANAGER_PACKAGE,
+                        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: EPOCH_MANAGER_PACKAGE,
+                        blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: CLOCK_PACKAGE,
+                        blueprint_name: CLOCK_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: IDENTITY_PACKAGE,
+                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: ACCESS_CONTROLLER_PACKAGE,
+                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
@@ -798,6 +875,14 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    fn kernel_get_node_visibility_origin(
+        &self,
+        node_id: RENodeId,
+    ) -> Option<RENodeVisibilityOrigin> {
+        let visibility = self.current_frame.get_node_visibility(node_id)?;
+        Some(visibility)
+    }
+
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
@@ -830,13 +915,6 @@ where
             )
             .and_then(|substate| Ok(substate.proof().snapshot()))
             .ok()
-    }
-
-    fn kernel_get_node_visibility_origin(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<RENodeVisibilityOrigin> {
-        self.current_frame.get_node_visibility(node_id)
     }
 }
 
@@ -878,7 +956,7 @@ where
 
         // Authorization
         let actor = &self.current_frame.actor;
-        if !VisibilityProperties::check_substate_visibility(
+        if !VisibilityProperties::check_substate_access(
             current_mode,
             actor,
             node_id,
@@ -886,7 +964,7 @@ where
             flags,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateVisibility {
+                KernelError::InvalidSubstateAccess {
                     mode: current_mode,
                     actor: actor.clone(),
                     node_id,
@@ -1046,6 +1124,7 @@ where
 impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
+
     N: ExecutableInvocation,
 {
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {

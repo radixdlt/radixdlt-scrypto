@@ -7,6 +7,9 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::{
     AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
 };
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
@@ -20,7 +23,8 @@ use radix_engine_interface::blueprints::resource::{
     RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -501,14 +505,19 @@ pub fn generate_instruction(
         ast::Instruction::CreateValidator {
             key,
             owner_access_rule,
-        } => BasicInstruction::CreateValidator {
-            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            owner_access_rule: generate_typed_value(
-                owner_access_rule,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+        } => BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+                owner_access_rule: generate_typed_value(
+                    owner_access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
         },
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -1675,15 +1684,15 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
+            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             BasicInstruction::PublishPackage {
                 code: ManifestBlobRef(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
                         .parse()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
                         .parse()
                         .unwrap()
                 ),
@@ -1691,26 +1700,26 @@ mod tests {
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new()
             },
-            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
-            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
             BasicInstruction::PublishPackageWithOwner {
                 code: ManifestBlobRef(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
                         .parse()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
                         .parse()
                         .unwrap()
                 ),
                 owner_badge: owner_badge.clone()
             },
-            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
-            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
 
         generate_instruction_ok!(
@@ -1888,11 +1897,16 @@ mod tests {
             r#"
             CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
-            BasicInstruction::CreateValidator {
-                key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
-                    .unwrap()
-                    .public_key(),
-                owner_access_rule: AccessRule::AllowAll,
+            BasicInstruction::CallMethod {
+                component_address: EPOCH_MANAGER,
+                method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                    key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
+                        .unwrap()
+                        .public_key(),
+                    owner_access_rule: AccessRule::AllowAll,
+                })
+                .unwrap(),
             },
         );
     }
