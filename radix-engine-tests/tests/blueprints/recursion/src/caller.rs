@@ -17,8 +17,8 @@ mod caller {
         }
 
         pub fn recursive_with_memory(n: u32, m: usize) {
-            let _v: Vec<u8> = Vec::with_capacity(m);
             if n > 1 {
+                let _v: Vec<u8> = Vec::with_capacity(m);
                 let _: () = Runtime::call_function(
                     Runtime::package_address(),
                     "Caller",

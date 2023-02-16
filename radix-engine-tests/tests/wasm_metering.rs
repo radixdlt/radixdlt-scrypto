@@ -228,32 +228,25 @@ fn test_max_call_frame_memory_exceeded() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxWasmInstanceMemoryExceeded(_)
-            ))
-        )
+    // Assert, exceeded memory should be larger by 1 memory page than the limit
+    let expected_mem = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME + WASM_MEMORY_PAGE_SIZE as usize;
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxWasmInstanceMemoryExceeded(x),
+        )) => *x == expected_mem,
+        _ => false,
     })
 }
 
 #[test]
 fn test_max_transaction_memory_exceeded() {
-    // Test recursive instantiation of WASM with memory allocation of 1 MiB
-    // for each call (+additional memory for transaction execution).
-
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/recursion");
 
     // Calculate value of additional bytes to allocate per call to exceed
-    // max wasm memory per transaction limit.
-    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / DEFAULT_MAX_CALL_DEPTH;
-
-    // Ensure calculated wasm instance grow value is lower than instance limit.
-    assert!(grow_value <= DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME);
+    // max wasm memory per transaction limit in nested calls.
+    let grow_value: usize = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / 2;
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -268,12 +261,25 @@ fn test_max_transaction_memory_exceeded() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxWasmMemoryExceeded(_)
-            ))
-        )
+
+    // One call frame mem:
+    //  => 18 pages from system
+    //  => grow value pages from execution of blueprint
+    //  => one aditional page from blueprint execution
+    let call_frame_mem =
+        (18 + grow_value / WASM_MEMORY_PAGE_SIZE as usize + 1) * WASM_MEMORY_PAGE_SIZE as usize;
+
+    // Expected memory equals how many call_frame_mem can fit in per transaction
+    // memory plus one, as the limit needs to be exceeded to break transaction.
+    let expected_mem = (DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / call_frame_mem + 1) * call_frame_mem;
+
+    // If this assert fails, then adjust grow_value variable.
+    assert!((DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / call_frame_mem + 1) < DEFAULT_MAX_CALL_DEPTH);
+
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxWasmMemoryExceeded(x),
+        )) => *x == expected_mem,
+        _ => false,
     })
 }
