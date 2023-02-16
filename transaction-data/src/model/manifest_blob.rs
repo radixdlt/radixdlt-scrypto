@@ -5,8 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::data::*;
-use crate::manifest_type;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBlobRef(pub [u8; 32]);

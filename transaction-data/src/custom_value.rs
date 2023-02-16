@@ -1,5 +1,5 @@
-use crate::data::model::*;
-use crate::data::ManifestCustomValueKind;
+use crate::model::*;
+use crate::ManifestCustomValueKind;
 use sbor::value_kind::*;
 use sbor::*;
 

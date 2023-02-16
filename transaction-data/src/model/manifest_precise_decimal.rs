@@ -1,16 +1,14 @@
-use radix_engine_interface::math::ParsePreciseDecimalError;
-use radix_engine_interface::math::PreciseDecimal;
 use sbor::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::copy_u8_array;
 
-use crate::data::*;
-use crate::manifest_type;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestPreciseDecimal(pub PreciseDecimal);
+pub struct ManifestPreciseDecimal(pub [u8; 64]);
 
 //========
 // error
@@ -19,7 +17,7 @@ pub struct ManifestPreciseDecimal(pub PreciseDecimal);
 /// Represents an error when parsing ManifestPreciseDecimal.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseManifestPreciseDecimalError {
-    InvalidPreciseDecimal(ParsePreciseDecimalError),
+    InvalidLength,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -40,9 +38,10 @@ impl TryFrom<&[u8]> for ManifestPreciseDecimal {
     type Error = ParseManifestPreciseDecimalError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let precise_decimal = PreciseDecimal::try_from(slice)
-            .map_err(ParseManifestPreciseDecimalError::InvalidPreciseDecimal)?;
-        Ok(Self(precise_decimal))
+        if slice.len() != 64 {
+            return Err(Self::Error::InvalidLength);
+        }
+        Ok(Self(copy_u8_array(slice)))
     }
 }
 

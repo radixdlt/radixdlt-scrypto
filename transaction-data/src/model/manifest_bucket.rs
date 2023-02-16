@@ -4,27 +4,26 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::data::*;
-use crate::manifest_type;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestProof(pub u32);
+pub struct ManifestBucket(pub u32);
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestProof.
+/// Represents an error when parsing ManifestBucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestProofError {
+pub enum ParseManifestBucketError {
     InvalidLength,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestProofError {}
+impl std::error::Error for ParseManifestBucketError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestProofError {
+impl fmt::Display for ParseManifestBucketError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -34,8 +33,8 @@ impl fmt::Display for ParseManifestProofError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestProof {
-    type Error = ParseManifestProofError;
+impl TryFrom<&[u8]> for ManifestBucket {
+    type Error = ParseManifestBucketError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 4 {
@@ -45,10 +44,10 @@ impl TryFrom<&[u8]> for ManifestProof {
     }
 }
 
-impl ManifestProof {
+impl ManifestBucket {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
 }
 
-manifest_type!(ManifestProof, ManifestCustomValueKind::Proof, 4);
+manifest_type!(ManifestBucket, ManifestCustomValueKind::Bucket, 4);

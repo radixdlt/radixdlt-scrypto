@@ -4,8 +4,7 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::data::*;
-use crate::manifest_type;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestExpression {

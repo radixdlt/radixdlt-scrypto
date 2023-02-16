@@ -1,15 +1,17 @@
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::crypto::EddsaEd25519PublicKey;
-use radix_engine_interface::crypto::PublicKey;
+use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::data::*;
+pub const ECDSA_SECP256K1_PUBLIC_KEY_LENGTH: usize = 33;
+pub const EDDSA_ED25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestPublicKey(pub PublicKey);
+pub enum ManifestPublicKey {
+    EcdsaSecp256k1([u8; ECDSA_SECP256K1_PUBLIC_KEY_LENGTH]),
+    EddsaEd25519([u8; EDDSA_ED25519_PUBLIC_KEY_LENGTH]),
+}
 
 //========
 // error
@@ -51,14 +53,14 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        match self.0 {
-            PublicKey::EcdsaSecp256k1(pk) => {
+        match self {
+            Self::EcdsaSecp256k1(pk) => {
                 encoder.write_discriminator(0)?;
-                encoder.write_slice(&pk.0)
+                encoder.write_slice(pk)
             }
-            PublicKey::EddsaEd25519(pk) => {
+            Self::EddsaEd25519(pk) => {
                 encoder.write_discriminator(1)?;
-                encoder.write_slice(&pk.0)
+                encoder.write_slice(pk)
             }
         }
     }
@@ -72,16 +74,12 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_discriminator()? {
             0 => {
-                let bytes = decoder.read_slice(EcdsaSecp256k1PublicKey::LENGTH)?;
-                Ok(Self(PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
-                    copy_u8_array(bytes),
-                ))))
+                let bytes = decoder.read_slice(ECDSA_SECP256K1_PUBLIC_KEY_LENGTH)?;
+                Ok(Self::EcdsaSecp256k1(copy_u8_array(bytes)))
             }
             1 => {
-                let bytes = decoder.read_slice(EddsaEd25519PublicKey::LENGTH)?;
-                Ok(Self(PublicKey::EddsaEd25519(EddsaEd25519PublicKey(
-                    copy_u8_array(bytes),
-                ))))
+                let bytes = decoder.read_slice(EDDSA_ED25519_PUBLIC_KEY_LENGTH)?;
+                Ok(Self::EddsaEd25519(copy_u8_array(bytes)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }

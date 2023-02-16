@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::encode::handle_encode(
         input,
-        Some("transaction::data::ManifestCustomValueKind"),
+        Some("transaction_data::ManifestCustomValueKind"),
     )
 }
 
@@ -27,8 +27,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<transaction::data::ManifestCustomValueKind> >
-                    ::sbor::Encode<transaction::data::ManifestCustomValueKind, E> for MyStruct
+                impl<E: ::sbor::Encoder<transaction_data::ManifestCustomValueKind> >
+                    ::sbor::Encode<transaction_data::ManifestCustomValueKind, E> for MyStruct
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
@@ -55,9 +55,9 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Encode<transaction::data::ManifestCustomValueKind, E>,
-                        E: ::sbor::Encoder<transaction::data::ManifestCustomValueKind>
-                    > ::sbor::Encode<transaction::data::ManifestCustomValueKind, E> for MyEnum<T>
+                        T: Bound + ::sbor::Encode<transaction_data::ManifestCustomValueKind, E>,
+                        E: ::sbor::Encoder<transaction_data::ManifestCustomValueKind>
+                    > ::sbor::Encode<transaction_data::ManifestCustomValueKind, E> for MyEnum<T>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

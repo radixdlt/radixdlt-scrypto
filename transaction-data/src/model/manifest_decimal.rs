@@ -1,4 +1,3 @@
-use radix_engine_interface::address::EntityType;
 use sbor::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -6,28 +5,26 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::data::*;
-use crate::manifest_type;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestAddress(pub [u8; 27]);
+pub struct ManifestDecimal(pub [u8; 32]);
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestAddress.
+/// Represents an error when parsing ManifestDecimal.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestAddressError {
+pub enum ParseManifestDecimalError {
     InvalidLength,
-    InvalidEntityTypeId,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestAddressError {}
+impl std::error::Error for ParseManifestDecimalError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestAddressError {
+impl fmt::Display for ParseManifestDecimalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -37,22 +34,21 @@ impl fmt::Display for ParseManifestAddressError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestAddress {
-    type Error = ParseManifestAddressError;
+impl TryFrom<&[u8]> for ManifestDecimal {
+    type Error = ParseManifestDecimalError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 27 {
+        if slice.len() != 32 {
             return Err(Self::Error::InvalidLength);
         }
-        EntityType::try_from(slice[0]).map_err(|_| Self::Error::InvalidEntityTypeId)?;
         Ok(Self(copy_u8_array(slice)))
     }
 }
 
-impl ManifestAddress {
+impl ManifestDecimal {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-manifest_type!(ManifestAddress, ManifestCustomValueKind::Address, 27);
+manifest_type!(ManifestDecimal, ManifestCustomValueKind::Decimal, 32);
