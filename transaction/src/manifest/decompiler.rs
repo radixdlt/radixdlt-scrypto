@@ -27,6 +27,8 @@ use transaction_data::model::*;
 use transaction_data::*;
 use utils::ContextualDisplay;
 
+use super::decompiler_value::ManifestValueDisplayContext;
+
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     InvalidAddress(AddressError),
@@ -81,8 +83,8 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn for_value_display(&'a self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_manifest_context(
+    pub fn for_value_display(&'a self) -> ManifestValueDisplayContext<'a> {
+        ManifestValueDisplayContext::with_bech32_and_names(
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,

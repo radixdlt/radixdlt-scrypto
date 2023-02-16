@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod compiler;
 pub mod decompiler;
+pub mod decompiler_value;
 pub mod e2e;
 pub mod enums;
 pub mod generator;

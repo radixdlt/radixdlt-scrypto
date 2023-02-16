@@ -9,11 +9,8 @@ use crate::math::{Decimal, PreciseDecimal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    // RE interpreted types
     Address(Address),
     Own(Own),
-
-    // Uninterpreted
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),

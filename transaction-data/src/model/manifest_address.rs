@@ -9,7 +9,11 @@ use crate::manifest_type;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestAddress(pub [u8; 27]);
+pub enum ManifestAddress {
+    Package([u8; 27]),
+    Component([u8; 27]),
+    ResourceManager([u8; 27]),
+}
 
 //========
 // error
@@ -44,17 +48,25 @@ impl TryFrom<&[u8]> for ManifestAddress {
             return Err(Self::Error::InvalidLength);
         }
         // FIXME: move HRP constants to `radix-engine-constants`, and remove hard-coded range here
-        if slice[0] > 0x0c {
-            Err(Self::Error::InvalidEntityTypeId)
+        if slice[0] == 0x00 {
+            Ok(Self::ResourceManager(copy_u8_array(slice)))
+        } else if slice[0] == 0x01 {
+            Ok(Self::Package(copy_u8_array(slice)))
+        } else if slice[0] <= 0x0c {
+            Ok(Self::Component(copy_u8_array(slice)))
         } else {
-            Ok(Self(copy_u8_array(slice)))
+            Err(Self::Error::InvalidEntityTypeId)
         }
     }
 }
 
 impl ManifestAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        match self {
+            ManifestAddress::Package(v) => v.to_vec(),
+            ManifestAddress::Component(v) => v.to_vec(),
+            ManifestAddress::ResourceManager(v) => v.to_vec(),
+        }
     }
 }
 
