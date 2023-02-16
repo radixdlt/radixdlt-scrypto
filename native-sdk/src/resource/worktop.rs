@@ -6,8 +6,8 @@ use radix_engine_interface::data::{
 };
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use std::fmt::Debug;
 
 pub struct Worktop;
 

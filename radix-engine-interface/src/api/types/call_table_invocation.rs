@@ -1,17 +1,17 @@
-use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
 use crate::api::node_modules::auth::*;
 use crate::api::node_modules::metadata::*;
+use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
 use crate::*;
+use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 
 // TODO: Remove enum
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
