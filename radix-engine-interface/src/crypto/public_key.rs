@@ -3,6 +3,7 @@ use crate::data::*;
 use crate::*;
 use sbor::*;
 use scrypto_abi::Type;
+use transaction_data::*;
 use utils::copy_u8_array;
 
 /// Represents any natively supported public key.
@@ -62,6 +63,10 @@ impl From<EddsaEd25519PublicKey> for PublicKey {
     }
 }
 
+//========
+// binary
+//========
+
 impl Categorize<ScryptoCustomValueKind> for PublicKey {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -94,5 +99,38 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
 impl scrypto_abi::LegacyDescribe for PublicKey {
     fn describe() -> scrypto_abi::Type {
         Type::PublicKey
+    }
+}
+
+//===================
+// binary (manifest)
+//===================
+
+impl Categorize<ManifestCustomValueKind> for PublicKey {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::PublicKey)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for PublicKey {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.encode_body_common(encoder)
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for PublicKey {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        Self::decode_body_common(decoder)
     }
 }

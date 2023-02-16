@@ -9,6 +9,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use transaction_data::*;
 use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
@@ -408,6 +409,43 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
 impl scrypto_abi::LegacyDescribe for NonFungibleLocalId {
     fn describe() -> scrypto_abi::Type {
         Type::NonFungibleLocalId
+    }
+}
+
+//====================
+// binary (manifest)
+//====================
+
+impl Categorize<ManifestCustomValueKind> for NonFungibleLocalId {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for NonFungibleLocalId
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.encode_body_common(encoder)
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for NonFungibleLocalId
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        Self::decode_body_common(decoder)
     }
 }
 
