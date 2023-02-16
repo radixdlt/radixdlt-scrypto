@@ -282,10 +282,10 @@ impl FeeTable {
             CostingEntry::CreateNode { size } => self.fixed_medium + (100 * size) as u32,
             CostingEntry::DropNode { size } => self.fixed_medium + (100 * size) as u32,
 
-            CostingEntry::LockSubstate => self.fixed_high,
-            CostingEntry::ReadSubstate { size } => self.fixed_medium + 100 * size,
-            CostingEntry::WriteSubstate { size } => self.fixed_medium + 1000 * size,
-            CostingEntry::DropLock => self.fixed_high,
+            CostingEntry::LockSubstate => self.fixed_low,
+            CostingEntry::ReadSubstate { size } => self.fixed_low + 100 * size,
+            CostingEntry::WriteSubstate { size } => self.fixed_low + 1000 * size,
+            CostingEntry::DropLock => self.fixed_low,
         }
     }
 }
