@@ -103,14 +103,19 @@ impl_to_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u1
 impl_to_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 
-macro_rules! impl_from_bigint {
+macro_rules! impl_try_from_bigint {
     ($($t:ident, $wrapped:ty),*) => {
         paste! {
             $(
-                impl From<BigInt> for $t {
-                    fn from(val: BigInt) -> Self {
+                impl TryFrom<BigInt> for $t {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: BigInt) -> Result<Self, Self::Error> {
                         let bytes = val.to_signed_bytes_le();
-                        Self(<$wrapped>::from_le_slice(&bytes).expect("Overflow"))
+                        match <$wrapped>::from_le_slice(&bytes) {
+                            Some(val) => Ok(Self(val)),
+                            None => Err([<Parse $t Error>]::Overflow),
+                        }
                     }
                 }
             )*
@@ -132,14 +137,14 @@ macro_rules! impl_to_bigint {
         }
     };
 }
-impl_from_bigint! { BnumI256, BInt::<4> }
-impl_from_bigint! { BnumI384, BInt::<6> }
-impl_from_bigint! { BnumI512, BInt::<8> }
-impl_from_bigint! { BnumI768, BInt::<12> }
-impl_from_bigint! { BnumU256, BUint::<4> }
-impl_from_bigint! { BnumU384, BUint::<6> }
-impl_from_bigint! { BnumU512, BUint::<8> }
-impl_from_bigint! { BnumU768, BUint::<12> }
+impl_try_from_bigint! { BnumI256, BInt::<4> }
+impl_try_from_bigint! { BnumI384, BInt::<6> }
+impl_try_from_bigint! { BnumI512, BInt::<8> }
+impl_try_from_bigint! { BnumI768, BInt::<12> }
+impl_try_from_bigint! { BnumU256, BUint::<4> }
+impl_try_from_bigint! { BnumU384, BUint::<6> }
+impl_try_from_bigint! { BnumU512, BUint::<8> }
+impl_try_from_bigint! { BnumU768, BUint::<12> }
 impl_to_bigint! { BnumI256, BInt::<4> }
 impl_to_bigint! { BnumI384, BInt::<6> }
 impl_to_bigint! { BnumI512, BInt::<8> }

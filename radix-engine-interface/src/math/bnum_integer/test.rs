@@ -281,38 +281,59 @@ fn test_string_to_bnum_panic_2() {
     );
 }
 
-#[test]
-fn test_bnum_to_bigint() {
-    assert_eq!(BnumI256::from(BigInt::from(147)), BnumI256::from(147));
-    assert_eq!(BnumI256::from(BigInt::from(-147)), BnumI256::from(-147));
-    assert_eq!(
-        BnumI256::from(BigInt::from(1470198230918_i128)),
-        BnumI256::from(1470198230918_i128)
-    );
-    assert_eq!(
-        BnumI256::from(BigInt::from(-1470198230918_i128)),
-        BnumI256::from(-1470198230918_i128)
-    );
+macro_rules! test_to_from_bigint {
+    ($($t: ident),*)  => {
+        paste!{
+            $(
+                #[test]
+                fn [<test_to_from_bigint_ $t:lower>]() {
+                    assert_eq!($t::try_from(BigInt::from(147)).unwrap(), $t::from(147));
 
-    assert_eq!(BigInt::from(BnumI256::from(123)), BigInt::from(123));
-    assert_eq!(BigInt::from(BnumI256::ONE), BigInt::from(1));
+                    assert_eq!(
+                        $t::try_from(BigInt::from(1470198230918_i128)).unwrap(),
+                        $t::from(1470198230918_i128)
+                    );
 
-    assert_eq!(
-        BigInt::from(BnumI256::MAX),
-        BigInt::from_str(
-            "57896044618658097711785492504343953926634992332820282019728792003956564819967"
-        )
-        .unwrap()
-    );
+                    let big = BigInt::from($t::MAX) + BigInt::from(1);
+                    let err = $t::try_from(big).unwrap_err();
+                    assert_eq!(err, [<Parse $t Error>]::Overflow);
 
-    assert_eq!(
-        BigInt::from(BnumI256::MIN),
-        BigInt::from_str(
-            "-57896044618658097711785492504343953926634992332820282019728792003956564819968"
-        )
-        .unwrap()
-    );
+                    assert_eq!(BigInt::try_from($t::from(123)).unwrap(), BigInt::from(123));
+                    assert_eq!(BigInt::from($t::ONE), BigInt::from(1));
+
+                    assert_eq!(
+                        BigInt::from($t::MAX),
+                        BigInt::from_str(
+                            &$t::MAX.to_string()
+                        )
+                        .unwrap()
+                    );
+
+                    assert_eq!(
+                        BigInt::from($t::MIN),
+                        BigInt::from_str(
+                            &$t::MIN.to_string()
+                        )
+                        .unwrap()
+                    );
+
+                    // test signed types
+                    if $t::MIN != $t::ZERO {
+                        assert_eq!($t::try_from(BigInt::from(-147)).unwrap(), $t::from(-147));
+                        assert_eq!(
+                            $t::try_from(BigInt::from(-1470198230918_i128)).unwrap(),
+                            $t::from(-1470198230918_i128)
+                        );
+                        let big = BigInt::from($t::MIN) - BigInt::from(1);
+                        let err = $t::try_from(big).unwrap_err();
+                        assert_eq!(err, [<Parse $t Error>]::Overflow);
+                    }
+                }
+            )*
+        }
+    }
 }
+test_to_from_bigint! { BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768 }
 
 #[test]
 fn test_bnum_to_bnum() {
