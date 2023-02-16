@@ -1,4 +1,4 @@
-use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, Hash};
+use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, Hash};
 use sbor::rust::vec::Vec;
 use secp256k1::{Message, PublicKey, SecretKey};
 

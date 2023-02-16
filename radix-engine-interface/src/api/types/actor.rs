@@ -80,9 +80,9 @@ impl ScryptoFnIdentifier {
     Hash,
     PartialOrd,
     Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 pub enum NativeFn {
@@ -132,9 +132,9 @@ impl NativeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -161,9 +161,9 @@ pub enum AccessRulesChainFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -186,9 +186,9 @@ pub enum MetadataFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -213,9 +213,9 @@ pub enum ComponentFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -246,9 +246,9 @@ pub enum ResolveError {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -277,9 +277,9 @@ pub enum AuthZoneStackFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -302,9 +302,9 @@ pub enum KeyValueStoreFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -332,9 +332,9 @@ pub enum BucketFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -359,9 +359,9 @@ pub enum ProofFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -390,9 +390,9 @@ pub enum WorktopFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -414,9 +414,9 @@ pub enum LoggerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -439,9 +439,9 @@ pub enum TransactionRuntimeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    Categorize,
+    Encode,
+    Decode,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]

@@ -1,3 +1,4 @@
+use super::AccessRule;
 use crate::api::types::MetadataFn;
 use crate::api::types::PackageFn;
 use crate::blueprints::resource::*;
@@ -8,8 +9,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-
-use super::AccessRule;
+use transaction_data::*;
 
 #[derive(
     Debug,
@@ -22,6 +22,9 @@ use super::AccessRule;
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum AccessRuleKey {
@@ -40,6 +43,9 @@ pub enum AccessRuleKey {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum AccessRuleEntry {
@@ -61,7 +67,17 @@ impl From<String> for AccessRuleEntry {
 
 /// Method authorization rules for a component
 #[derive(
-    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+    LegacyDescribe,
 )]
 pub struct AccessRules {
     method_auth: BTreeMap<AccessRuleKey, AccessRuleEntry>,
