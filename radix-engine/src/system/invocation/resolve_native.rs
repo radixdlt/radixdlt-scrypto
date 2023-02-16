@@ -55,16 +55,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AuthZoneStack(auth_zone_fn) => match auth_zone_fn {
-            AuthZoneStackFn::Pop => {
-                let invocation = scrypto_decode::<AuthZonePopInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AuthZoneStackFn::Push => {
-                let invocation = scrypto_decode::<AuthZonePushInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AuthZoneStackFn::CreateProof => {
                 let invocation = scrypto_decode::<AuthZoneCreateProofInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

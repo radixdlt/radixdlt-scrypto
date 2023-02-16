@@ -14,6 +14,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
+use crate::system::node_modules::auth::AuthZoneNativePackage;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -78,6 +79,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Worktop => RENodeId::Worktop,
                 ScryptoReceiver::Logger => RENodeId::Logger,
                 ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
+                ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
             };
 
             // Type Check
@@ -438,6 +440,9 @@ impl NativeVm {
             }
             TRANSACTION_RUNTIME_CODE_ID => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            AUTH_ZONE_CODE_ID => {
+                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeInvalidCodeId(native_package_code_id),

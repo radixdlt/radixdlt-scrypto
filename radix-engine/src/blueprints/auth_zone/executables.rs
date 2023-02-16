@@ -15,8 +15,9 @@ use radix_engine_interface::api::types::{
     AuthZoneStackFn, AuthZoneStackOffset, GlobalAddress, NativeFn, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::api::ClientDerefApi;
+use radix_engine_interface::api::{ClientApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -31,36 +32,52 @@ pub enum AuthZoneError {
     AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
 }
 
-impl ExecutableInvocation for AuthZonePopInvocation {
-    type Exec = Self;
+pub struct AuthZoneNativePackage;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::Pop),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
+impl AuthZoneNativePackage {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        receiver: Option<ComponentId>,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        match export_name {
+            AUTH_ZONE_POP_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::pop(receiver, input, api)
+            }
+            AUTH_ZONE_PUSH_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::push(receiver, input, api)
+            }
+            _ => Err(RuntimeError::InterpreterError(
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            )),
+        }
     }
 }
 
-impl Executor for AuthZonePopInvocation {
-    type Output = Proof;
+pub struct AuthZoneBlueprint;
 
-    fn execute<Y, W: WasmEngine>(
-        self,
+impl AuthZoneBlueprint {
+    pub(crate) fn pop<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
         api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let _input: AuthZonePopInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -79,43 +96,20 @@ impl Executor for AuthZonePopInvocation {
         api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
         let proof_id = node_id.into();
 
-        Ok((
-            Proof(proof_id),
-            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
-        ))
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
-}
 
-impl ExecutableInvocation for AuthZonePushInvocation {
-    type Exec = Self;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        _deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let receiver = RENodeId::AuthZoneStack;
-        let resolved_receiver = ResolvedReceiver::new(receiver);
-        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        call_frame_update
-            .nodes_to_move
-            .push(RENodeId::Proof(self.proof.0));
-
-        let actor = ResolvedActor::method(
-            NativeFn::AuthZoneStack(AuthZoneStackFn::Push),
-            resolved_receiver,
-        );
-
-        Ok((actor, call_frame_update, self))
-    }
-}
-
-impl Executor for AuthZonePushInvocation {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    pub(crate) fn push<Y>(
+        _ignored: ComponentId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: AuthZonePushInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
         let auth_zone_handle = api.kernel_lock_substate(
             RENodeId::AuthZoneStack,
             NodeModuleId::SELF,
@@ -123,9 +117,8 @@ impl Executor for AuthZonePushInvocation {
             LockFlags::MUTABLE,
         )?;
 
-        let node_id = RENodeId::Proof(self.proof.0);
         let handle = api.kernel_lock_substate(
-            node_id,
+            RENodeId::Proof(input.proof.0),
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
@@ -139,8 +132,9 @@ impl Executor for AuthZonePushInvocation {
         let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
         let auth_zone_stack = substate_mut.auth_zone_stack();
         auth_zone_stack.cur_auth_zone_mut().push(cloned_proof);
+        api.kernel_drop_lock(auth_zone_handle)?;
 
-        Ok(((), CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 

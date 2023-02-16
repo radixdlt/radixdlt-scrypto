@@ -240,8 +240,6 @@ pub enum ResolveError {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneStackFn {
-    Pop,
-    Push,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,

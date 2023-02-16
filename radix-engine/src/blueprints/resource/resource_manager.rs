@@ -1280,10 +1280,7 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1345,10 +1342,7 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;

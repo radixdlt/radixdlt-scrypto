@@ -1,8 +1,12 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{
+    ClientApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
+};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -17,27 +21,27 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        env.call_native(AuthZoneDrainInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        env.call_native(AuthZoneDrainInvocation {})
     }
 
     pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<(), E>
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        env.call_native(AuthZoneClearInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        env.call_native(AuthZoneClearInvocation {})
     }
 
-    pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
+    pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        env.call_native(AuthZonePopInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_POP_IDENT,
+            scrypto_encode(&AuthZonePopInput {}).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -47,10 +51,7 @@ impl ComponentAuthZone {
     where
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        env.call_native(AuthZoneCreateProofInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            resource_address,
-        })
+        env.call_native(AuthZoneCreateProofInvocation { resource_address })
     }
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -62,7 +63,6 @@ impl ComponentAuthZone {
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         env.call_native(AuthZoneCreateProofByAmountInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
             amount,
             resource_address,
         })
@@ -77,7 +77,6 @@ impl ComponentAuthZone {
         Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
         env.call_native(AuthZoneCreateProofByIdsInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
             ids: ids.clone(),
             resource_address,
         })
@@ -85,17 +84,20 @@ impl ComponentAuthZone {
 
     pub fn sys_push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         proof: P,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
         let proof: Proof = proof.into();
 
-        env.call_native(AuthZonePushInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            proof,
-        })
+        let _rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_PUSH_IDENT,
+            scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
+        )?;
+
+        Ok(())
     }
 
     pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, env: &mut Y) -> Result<(), E>
@@ -103,9 +105,6 @@ impl ComponentAuthZone {
         Y: ClientNodeApi<E> + ClientNativeInvokeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        env.call_native(AuthZoneAssertAccessRuleInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            access_rule,
-        })
+        env.call_native(AuthZoneAssertAccessRuleInvocation { access_rule })
     }
 }

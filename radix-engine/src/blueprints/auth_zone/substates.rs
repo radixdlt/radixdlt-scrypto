@@ -1,7 +1,7 @@
 use super::AuthZoneError;
 use crate::errors::InvokeError;
+use crate::system::kernel_modules::auth::MethodAuthorizationError::*;
 use crate::system::kernel_modules::auth::*;
-use crate::system::node_modules::auth::auth_zone::substates::MethodAuthorizationError::*;
 use crate::{blueprints::resource::ProofSubstate, types::*};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;

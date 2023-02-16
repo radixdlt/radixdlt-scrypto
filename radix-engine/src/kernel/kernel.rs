@@ -23,6 +23,7 @@ use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLU
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
@@ -751,10 +752,18 @@ where
             ) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Component(..))) => {}
             (RENodeId::Global(..), RENodeInit::Global(GlobalAddressSubstate::Account(..))) => {}
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
+                module_init.insert(
+                    NodeModuleId::ComponentTypeInfo,
+                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                        package_address: AUTH_ZONE_PACKAGE,
+                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+                    }),
+                );
+            }
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,

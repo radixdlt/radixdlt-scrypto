@@ -12,4 +12,5 @@ pub enum ScryptoReceiver {
     Worktop,
     Logger,
     TransactionRuntime,
+    AuthZoneStack,
 }

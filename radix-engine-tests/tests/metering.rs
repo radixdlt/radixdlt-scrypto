@@ -205,7 +205,7 @@ fn test_radiswap() {
         + 3180000 /* LockSubstate */
         + 1260000 /* ReadSubstate */
         + 5000 /* RunNative */
-        + 1613015 /* RunWasm */
+        + 1613665 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

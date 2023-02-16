@@ -1,8 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::{
-    KernelNodeApi, KernelSubstateApi, LockFlags,
-};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;

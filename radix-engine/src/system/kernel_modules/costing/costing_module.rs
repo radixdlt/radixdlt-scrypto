@@ -157,6 +157,7 @@ impl KernelModule for CostingModule {
             || package_address == ACCESS_CONTROLLER_PACKAGE
             || package_address == LOGGER_PACKAGE
             || package_address == TRANSACTION_RUNTIME_PACKAGE
+            || package_address == AUTH_ZONE_PACKAGE
         {
             return Ok(());
         }

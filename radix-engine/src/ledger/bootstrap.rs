@@ -13,6 +13,7 @@ use radix_engine_interface::api::package::{
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
 use radix_engine_interface::blueprints::account::AccountAbi;
+use radix_engine_interface::blueprints::auth_zone::AuthZoneAbi;
 use radix_engine_interface::blueprints::clock::{
     ClockAbi, ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
@@ -242,6 +243,23 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+            }),
+        )));
+    }
+
+    // AuthZone Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(AUTH_ZONE_PACKAGE)));
+        let package_address = AUTH_ZONE_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
             }),

@@ -91,6 +91,10 @@ impl KernelModule for AuthModule {
         if matches!(
             actor.identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: AUTH_ZONE_PACKAGE,
+                    ..
+                })
         ) {
             return Ok(());
         }
@@ -175,6 +179,15 @@ impl KernelModule for AuthModule {
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::TransactionRuntime,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::AuthZoneStack,
                         ..
                     }),
                 ..
@@ -389,6 +402,10 @@ impl KernelModule for AuthModule {
             actor.identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
                 | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: AUTH_ZONE_PACKAGE,
+                    ..
+                })
         ) {
             let handle = api.kernel_lock_substate(
                 RENodeId::AuthZoneStack,
@@ -424,7 +441,11 @@ impl KernelModule for AuthModule {
         if matches!(
             api.kernel_get_current_actor().identifier,
             FnIdentifier::Native(NativeFn::AuthZoneStack(..))
-                | FnIdentifier::Native(NativeFn::AccessRulesChain(..)),
+                | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: AUTH_ZONE_PACKAGE,
+                    ..
+                }),
         ) {
             return Ok(());
         }

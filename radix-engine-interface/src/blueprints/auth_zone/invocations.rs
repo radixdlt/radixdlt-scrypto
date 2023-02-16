@@ -1,79 +1,44 @@
-use crate::api::types::AuthZoneStackId;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::math::Decimal;
 use crate::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
+use scrypto_abi::BlueprintAbi;
+
+pub struct AuthZoneAbi;
+
+impl AuthZoneAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+
+pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
+
+pub const AUTH_ZONE_POP_IDENT: &str = "pop";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZonePopInvocation {
-    pub receiver: AuthZoneStackId,
-}
+pub struct AuthZonePopInput {}
 
-impl Invocation for AuthZonePopInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::Pop))
-    }
-}
-
-impl SerializableInvocation for AuthZonePopInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::Pop)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZonePopInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Pop(self)).into()
-    }
-}
+pub const AUTH_ZONE_PUSH_IDENT: &str = "push";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZonePushInvocation {
-    pub receiver: AuthZoneStackId,
+pub struct AuthZonePushInput {
     pub proof: Proof,
 }
 
-impl Clone for AuthZonePushInvocation {
+impl Clone for AuthZonePushInput {
     fn clone(&self) -> Self {
         Self {
-            receiver: self.receiver,
             proof: Proof(self.proof.0),
         }
     }
 }
 
-impl Invocation for AuthZonePushInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::AuthZoneStack(AuthZoneStackFn::Push))
-    }
-}
-
-impl SerializableInvocation for AuthZonePushInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::AuthZoneStack(AuthZoneStackFn::Push)
-    }
-}
-
-impl Into<CallTableInvocation> for AuthZonePushInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Push(self)).into()
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneCreateProofInvocation {
-    pub receiver: AuthZoneStackId,
     pub resource_address: ResourceAddress,
 }
 
@@ -101,7 +66,6 @@ impl Into<CallTableInvocation> for AuthZoneCreateProofInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
-    pub receiver: AuthZoneStackId,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
@@ -132,7 +96,6 @@ impl Into<CallTableInvocation> for AuthZoneCreateProofByAmountInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
-    pub receiver: AuthZoneStackId,
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
@@ -160,9 +123,7 @@ impl Into<CallTableInvocation> for AuthZoneCreateProofByIdsInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneClearInvocation {
-    pub receiver: AuthZoneStackId,
-}
+pub struct AuthZoneClearInvocation {}
 
 impl Invocation for AuthZoneClearInvocation {
     type Output = ();
@@ -187,9 +148,7 @@ impl Into<CallTableInvocation> for AuthZoneClearInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AuthZoneDrainInvocation {
-    pub receiver: AuthZoneStackId,
-}
+pub struct AuthZoneDrainInvocation {}
 
 impl Invocation for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
@@ -215,7 +174,6 @@ impl Into<CallTableInvocation> for AuthZoneDrainInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneAssertAccessRuleInvocation {
-    pub receiver: AuthZoneStackId,
     pub access_rule: AccessRule,
 }
 

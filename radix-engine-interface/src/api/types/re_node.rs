@@ -104,16 +104,8 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id"),
-        }
-    }
-}
-
-impl Into<u32> for RENodeId {
-    fn into(self) -> u32 {
-        match self {
-            RENodeId::AuthZoneStack => 0x10000000u32, // TODO: Remove, this is here to preserve receiver in invocation for now
-            _ => panic!("Not a transient id"),
         }
     }
 }

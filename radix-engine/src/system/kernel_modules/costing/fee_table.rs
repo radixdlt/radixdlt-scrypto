@@ -2,6 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::auth_zone::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
@@ -226,6 +227,11 @@ impl FeeTable {
                 _ => self.fixed_low,
             },
 
+            (AUTH_ZONE_PACKAGE, AUTH_ZONE_BLUEPRINT) => match identifier.ident.as_str() {
+                AUTH_ZONE_PUSH_IDENT => self.fixed_low,
+                AUTH_ZONE_POP_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
             _ => 0u32,
         }
     }
@@ -235,8 +241,6 @@ impl FeeTable {
             NativeFn::Root => panic!("Should not get here"),
             NativeFn::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneStackFn::Pop => self.fixed_low,
-                    AuthZoneStackFn::Push => self.fixed_low,
                     AuthZoneStackFn::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
                     AuthZoneStackFn::CreateProofByAmount => self.fixed_high,
                     AuthZoneStackFn::CreateProofByIds => self.fixed_high,
