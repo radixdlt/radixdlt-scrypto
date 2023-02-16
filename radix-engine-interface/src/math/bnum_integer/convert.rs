@@ -14,7 +14,9 @@ macro_rules! impl_from_primitive {
             impl FromPrimitive for $t {
                 $(
                     fn [< from_$type >](n: [<$type>]) -> Option<Self> {
-                        Some(Self(<$wrapped>::try_from(n).unwrap()))
+                        <$wrapped>::try_from(n)
+                            .map(|val| Self(val))
+                            .ok()
                     }
                 )*
             }
@@ -95,9 +97,12 @@ macro_rules! impl_to_builtin{
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
             $(
-                impl From<$t> for $o {
-                    fn from(val: $t) -> $o {
-                        $o::try_from(val.0).unwrap()
+                impl TryFrom<$t> for $o {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: $t) -> Result<Self, Self::Error> {
+                        $o::try_from(val.0)
+                            .map_err(|_| [<Parse $t Error>]::Overflow)
                     }
                 }
             )*

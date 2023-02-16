@@ -212,8 +212,16 @@ macro_rules! test_bnums {
                     let bnum: $t = 21_u32.into();
                     assert_eq!(bnum.to_string(), 21.to_string());
 
-                    let i: i128 = <$t>::from(21_u8).into();
+                    let i: i128 = <$t>::from(21_u8).try_into().unwrap();
                     assert_eq!(i, 21_i128);
+
+                    let val = u8::try_from(<$t>::from(300_u32)).unwrap_err();
+                    assert_eq!(val, [< Parse $t Error >]::Overflow);
+
+                    if <$t>::MIN < <$t>::ZERO {
+                        let val = u8::try_from(<$t>::try_from(-300_i32).unwrap()).unwrap_err();
+                        assert_eq!(val, [< Parse $t Error >]::Overflow);
+                    }
                 }
 
                 #[test]
@@ -223,24 +231,24 @@ macro_rules! test_bnums {
                 }
 
                 #[test]
-                #[should_panic(expected = "TryFromIntError")]
+                #[should_panic(expected = "Overflow")]
                 fn [< test_ $t:lower _to_u128_panic >]() {
                     if <$t>::MIN < <$t>::ZERO {
-                        let _u: u128 = <$t>::try_from(-21).unwrap().into();
+                        let _u: u128 = <$t>::try_from(-21).unwrap().try_into().unwrap();
                     } else {
-                        let _u: u128 = <$t>::from_str("290437112829027226192310037731274304321654649956335616").unwrap().into();
+                        let _u: u128 = <$t>::from_str("290437112829027226192310037731274304321654649956335616").unwrap().try_into().unwrap();
                     }
                 }
                 #[test]
-                #[should_panic(expected = "TryFromIntError")]
+                #[should_panic(expected = "Overflow")]
                 fn [< test_ $t:lower _to_i8_panic >]() {
-                    let _i: i8 = <$t>::try_from(-260).unwrap().into();
+                    let _i: i8 = <$t>::try_from(-260).unwrap().try_into().unwrap();
                 }
 
                 #[test]
-                #[should_panic(expected = "TryFromIntError")]
+                #[should_panic(expected = "Overflow")]
                 fn [< test_ $t:lower _u16_panic >]() {
-                    let _i: u16 = <$t>::from(123123123_u32).into();
+                    let _i: u16 = <$t>::from(123123123_u32).try_into().unwrap();
                 }
 
             )*
