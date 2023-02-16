@@ -6,8 +6,18 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+use scrypto_abi::BlueprintAbi;
+
+pub struct EpochManagerAbi;
+
+impl EpochManagerAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorInit {
@@ -53,136 +63,34 @@ impl Clone for EpochManagerCreateInput {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerGetCurrentEpochMethodArgs {}
+pub const EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: ComponentAddress,
-}
+pub struct EpochManagerGetCurrentEpochInput;
 
-impl Invocation for EpochManagerGetCurrentEpochInvocation {
-    type Output = u64;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch))
-    }
-}
-
-impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
-    type ScryptoOutput = u64;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerSetEpochMethodArgs {
+pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerSetEpochInvocation {
-    pub receiver: ComponentAddress,
-    pub epoch: u64,
-}
-
-impl Invocation for EpochManagerSetEpochInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch))
-    }
-}
-
-impl SerializableInvocation for EpochManagerSetEpochInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::SetEpoch)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerNextRoundMethodArgs {
+pub struct EpochManagerNextRoundInput {
     pub round: u64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerNextRoundInvocation {
-    pub receiver: ComponentAddress,
-    pub round: u64,
-}
-
-impl Invocation for EpochManagerNextRoundInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::NextRound))
-    }
-}
-
-impl SerializableInvocation for EpochManagerNextRoundInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::NextRound)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateValidatorMethodArgs {
+pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerCreateValidatorInvocation {
-    pub receiver: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-    pub owner_access_rule: AccessRule,
-}
-
-impl Invocation for EpochManagerCreateValidatorInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator))
-    }
-}
-
-impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::CreateValidator)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(self)).into()
-    }
-}
+pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum UpdateValidator {
@@ -191,289 +99,52 @@ pub enum UpdateValidator {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUpdateValidatorMethodArgs {
+pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUpdateValidatorInvocation {
-    pub receiver: ComponentAddress,
-    pub validator_address: ComponentAddress,
-    pub update: UpdateValidator,
-}
-
-impl Invocation for EpochManagerUpdateValidatorInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator))
-    }
-}
-
-// TODO: Should we have this or not?
-impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::EpochManager(EpochManagerFn::UpdateValidator)
-    }
-}
-
-impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(self)).into()
-    }
-}
+pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorRegisterMethodArgs {}
+pub struct ValidatorRegisterInput {}
+
+pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorRegisterInvocation {
-    pub receiver: ComponentAddress,
-}
+pub struct ValidatorUnregisterInput {}
 
-impl Invocation for ValidatorRegisterInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Register))
-    }
-}
-
-impl SerializableInvocation for ValidatorRegisterInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Register)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Register(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnregisterValidatorMethodArgs {}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnregisterInvocation {
-    pub receiver: ComponentAddress,
-}
-
-impl Invocation for ValidatorUnregisterInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unregister))
-    }
-}
-
-impl SerializableInvocation for ValidatorUnregisterInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Unregister)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
-    }
-}
+pub const VALIDATOR_STAKE_IDENT: &str = "stake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorStakeMethodArgs {
+pub struct ValidatorStakeInput {
     pub stake: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorStakeInvocation {
-    pub receiver: ComponentAddress,
-    pub stake: Bucket,
-}
-
-impl Clone for ValidatorStakeInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            stake: Bucket(self.stake.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorStakeInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Stake))
-    }
-}
-
-impl SerializableInvocation for ValidatorStakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Stake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorStakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Stake(self)).into()
-    }
-}
+pub const VALIDATOR_UNSTAKE_IDENT: &str = "unstake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnstakeMethodArgs {
+pub struct ValidatorUnstakeInput {
     pub lp_tokens: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUnstakeInvocation {
-    pub receiver: ComponentAddress,
-    pub lp_tokens: Bucket,
-}
-
-impl Clone for ValidatorUnstakeInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            lp_tokens: Bucket(self.lp_tokens.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorUnstakeInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::Unstake))
-    }
-}
-
-impl SerializableInvocation for ValidatorUnstakeInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::Unstake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
-    }
-}
+pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorClaimXrdMethodArgs {
+pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorClaimXrdInvocation {
-    pub receiver: ComponentAddress,
-    pub unstake_nft: Bucket,
-}
-
-impl Clone for ValidatorClaimXrdInvocation {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver,
-            unstake_nft: Bucket(self.unstake_nft.0),
-        }
-    }
-}
-
-impl Invocation for ValidatorClaimXrdInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::ClaimXrd))
-    }
-}
-
-impl SerializableInvocation for ValidatorClaimXrdInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::ClaimXrd)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorClaimXrdInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
-    }
-}
+pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateKeyMethodArgs {
+pub struct ValidatorUpdateKeyInput {
     pub key: EcdsaSecp256k1PublicKey,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateKeyInvocation {
-    pub receiver: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-}
-
-impl Invocation for ValidatorUpdateKeyInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateKey))
-    }
-}
-
-impl SerializableInvocation for ValidatorUpdateKeyInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::UpdateKey)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUpdateKeyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::UpdateKey(self)).into()
-    }
-}
+pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateAcceptDelegatedStakeMethodArgs {
+pub struct ValidatorUpdateAcceptDelegatedStakeInput {
     pub accept_delegated_stake: bool,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorUpdateAcceptDelegatedStakeInvocation {
-    pub receiver: ComponentAddress,
-    pub accept_delegated_stake: bool,
-}
-
-impl Invocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake))
-    }
-}
-
-impl SerializableInvocation for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Validator(ValidatorFn::UpdateAcceptDelegatedStake)
-    }
-}
-
-impl Into<CallTableInvocation> for ValidatorUpdateAcceptDelegatedStakeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Validator(ValidatorInvocation::UpdateAcceptDelegatedStake(self)).into()
-    }
 }

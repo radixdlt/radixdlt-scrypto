@@ -294,7 +294,6 @@ impl NotarizedTransactionValidator {
                 | BasicInstruction::MintFungible { .. }
                 | BasicInstruction::MintNonFungible { .. }
                 | BasicInstruction::MintUuidNonFungible { .. }
-                | BasicInstruction::CreateValidator { .. }
                 | BasicInstruction::AssertAccessRule { .. } => {}
             }
         }

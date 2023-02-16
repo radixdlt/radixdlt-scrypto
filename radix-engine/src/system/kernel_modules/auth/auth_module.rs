@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_ID
 use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::resource::*;
 use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
@@ -133,6 +134,71 @@ impl KernelModule for AuthModule {
                 }
                 _ => vec![],
             },
+
+            ResolvedActor {
+                identifier,
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => {
+                let vault_node_id = RENodeId::Vault(*vault_id);
+                let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
+                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(vault_node_id)),
+                )?;
+
+                let resource_address = {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    let handle = api.kernel_lock_substate(
+                        vault_node_id,
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let resource_address = substate_ref.vault().resource_address();
+                    api.kernel_drop_lock(handle)?;
+                    resource_address
+                };
+                let handle = api.kernel_lock_substate(
+                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                    NodeModuleId::AccessRules1,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    LockFlags::read_only(),
+                )?;
+
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let substate = substate_ref.access_rules_chain();
+
+                // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                let auth = match visibility {
+                    RENodeVisibilityOrigin::Normal => {
+                        substate.native_fn_authorization(identifier.clone())
+                    }
+                    RENodeVisibilityOrigin::DirectAccess => match identifier {
+                        // TODO: Do we want to allow recaller to be able to withdraw from
+                        // TODO: any visible vault?
+                        FnIdentifier::Scrypto(ident)
+                            if ident.ident.eq(VAULT_RECALL_IDENT)
+                                || ident.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT) =>
+                        {
+                            let access_rule = substate.access_rules_chain[0].get_group("recall");
+                            let authorization = convert_contextless(access_rule);
+                            vec![authorization]
+                        }
+                        _ => {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::VisibilityError(vault_node_id),
+                            )));
+                        }
+                    },
+                };
+
+                api.kernel_drop_lock(handle)?;
+                auth
+            }
+
             ResolvedActor {
                 identifier: FnIdentifier::Native(native_fn),
                 receiver: Some(resolved_receiver),
@@ -144,14 +210,8 @@ impl KernelModule for AuthModule {
                     }
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
-                            || matches!(method, NativeFn::EpochManager(..))
-                            || matches!(method, NativeFn::Validator(..))
-                            || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
-                            || matches!(method, NativeFn::Clock(..))
-                            || matches!(method, NativeFn::Component(..))
-                            || matches!(method, NativeFn::Account(..))
-                            || matches!(method, NativeFn::AccessController(..)) =>
+                            || matches!(method, NativeFn::Component(..)) =>
                     {
                         let handle = api.kernel_lock_substate(
                             resolved_receiver.receiver,
@@ -163,78 +223,15 @@ impl KernelModule for AuthModule {
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
-                        let auth = substate.native_fn_authorization(*method);
+                        let auth = substate.native_fn_authorization(FnIdentifier::Native(*method));
                         api.kernel_drop_lock(handle)?;
                         auth
                     }
-                    (
-                        NativeFn::Vault(ref vault_fn),
-                        ResolvedReceiver {
-                            receiver: RENodeId::Vault(vault_id),
-                            ..
-                        },
-                    ) => {
-                        let vault_node_id = RENodeId::Vault(*vault_id);
-                        let visibility = api
-                            .kernel_get_node_visibility_origin(vault_node_id)
-                            .ok_or(RuntimeError::CallFrameError(
-                                CallFrameError::RENodeNotVisible(vault_node_id),
-                            ))?;
 
-                        let resource_address = {
-                            let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                            let handle = api.kernel_lock_substate(
-                                vault_node_id,
-                                NodeModuleId::SELF,
-                                offset,
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let resource_address = substate_ref.vault().resource_address();
-                            api.kernel_drop_lock(handle)?;
-                            resource_address
-                        };
-                        let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let handle = api.kernel_lock_substate(
-                            node_id,
-                            NodeModuleId::AccessRules1,
-                            SubstateOffset::AccessRulesChain(
-                                AccessRulesChainOffset::AccessRulesChain,
-                            ),
-                            LockFlags::read_only(),
-                        )?;
-
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let substate = substate_ref.access_rules_chain();
-
-                        // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                        let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => {
-                                substate.native_fn_authorization(NativeFn::Vault(vault_fn.clone()))
-                            }
-                            RENodeVisibilityOrigin::DirectAccess => match vault_fn {
-                                // TODO: Do we want to allow recaller to be able to withdraw from
-                                // TODO: any visible vault?
-                                VaultFn::Recall | VaultFn::RecallNonFungibles => {
-                                    let access_rule =
-                                        substate.access_rules_chain[0].get_group("recall");
-                                    let authorization = convert_contextless(access_rule);
-                                    vec![authorization]
-                                }
-                                _ => {
-                                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                        AuthError::VisibilityError(vault_node_id),
-                                    )));
-                                }
-                            },
-                        };
-
-                        api.kernel_drop_lock(handle)?;
-                        auth
-                    }
                     _ => vec![],
                 }
             }
+
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(method_identifier),
                 receiver:
@@ -296,8 +293,22 @@ impl KernelModule for AuthModule {
                     auth
                 }
             }
-
-            _ => vec![],
+            ResolvedActor {
+                identifier,
+                receiver: Some(ResolvedReceiver { receiver, .. }),
+            } => {
+                let handle = api.kernel_lock_substate(
+                    *receiver,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let substate = substate_ref.access_rules_chain();
+                let auth = substate.native_fn_authorization(identifier.clone());
+                api.kernel_drop_lock(handle)?;
+                auth
+            }
         };
 
         let handle = api.kernel_lock_substate(

@@ -41,7 +41,9 @@ impl Into<CallTableInvocation> for PackagePublishInvocation {
 pub struct PackagePublishNativeInvocation {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
+    pub abi: Vec<u8>,
     pub dependent_resources: Vec<ResourceAddress>,
+    pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 }

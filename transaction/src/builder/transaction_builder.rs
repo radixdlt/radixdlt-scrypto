@@ -31,8 +31,10 @@ impl TransactionBuilder {
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = manifest_encode(&intent).unwrap();
-        self.intent_signatures.push(signer.sign(&intent_payload));
+        let intent_payload = scrypto_encode(&intent).unwrap();
+        let intent_payload_hash = hash(intent_payload);
+        self.intent_signatures
+            .push(signer.sign(&intent_payload_hash));
         self
     }
 
@@ -43,8 +45,9 @@ impl TransactionBuilder {
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
-        self.notary_signature = Some(signer.sign(&signed_intent_payload).signature());
+        let signed_intent_payload = scrypto_encode(&signed_intent).unwrap();
+        let signed_intent_payload_hash = hash(signed_intent_payload);
+        self.notary_signature = Some(signer.sign(&signed_intent_payload_hash).signature());
         self
     }
 

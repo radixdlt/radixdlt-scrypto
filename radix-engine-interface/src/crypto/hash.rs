@@ -1,3 +1,4 @@
+use crate::crypto::blake2b_256_hash;
 use crate::LegacyDescribe;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::convert::TryFrom;
@@ -40,10 +41,7 @@ impl AsRef<[u8]> for Hash {
 
 /// Computes the hash digest of a message.
 pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
-    // TODO: replace with whatever hash algorithm we eventually agrees on
-    // The point here is to have a single "main" hashing function in the code base
-
-    crate::crypto::sha256(data)
+    blake2b_256_hash(data)
 }
 
 //========

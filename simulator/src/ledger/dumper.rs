@@ -8,7 +8,7 @@ use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::package::PackageInfoSubstate;
+use radix_engine_interface::api::package::WasmCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
 use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
@@ -43,12 +43,12 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package: Option<PackageInfoSubstate> = global.and_then(|global| {
+    let package: Option<WasmCodeSubstate> = global.and_then(|global| {
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
+                SubstateOffset::Package(PackageOffset::WasmCode),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into())

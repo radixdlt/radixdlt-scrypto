@@ -13,10 +13,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -132,22 +128,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<EpochManagerNextRoundInvocation, E>
-    + Invokable<EpochManagerGetCurrentEpochInvocation, E>
-    + Invokable<EpochManagerSetEpochInvocation, E>
-    + Invokable<EpochManagerUpdateValidatorInvocation, E>
-    + Invokable<ValidatorRegisterInvocation, E>
-    + Invokable<ValidatorUnregisterInvocation, E>
-    + Invokable<ValidatorStakeInvocation, E>
-    + Invokable<ValidatorUnstakeInvocation, E>
-    + Invokable<ValidatorClaimXrdInvocation, E>
-    + Invokable<ValidatorUpdateKeyInvocation, E>
-    + Invokable<ValidatorUpdateAcceptDelegatedStakeInvocation, E>
-    + Invokable<EpochManagerCreateValidatorInvocation, E>
-    + Invokable<ClockSetCurrentTimeInvocation, E>
-    + Invokable<ClockGetCurrentTimeInvocation, E>
-    + Invokable<ClockCompareCurrentTimeInvocation, E>
-    + Invokable<MetadataSetInvocation, E>
+    Invokable<MetadataSetInvocation, E>
     + Invokable<MetadataGetInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
     + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
@@ -184,32 +165,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<ProofGetAmountInvocation, E>
     + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
-    + Invokable<ResourceManagerBurnBucketInvocation, E>
-    + Invokable<ResourceManagerBurnInvocation, E>
-    + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
-    + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
-    + Invokable<ResourceManagerCreateVaultInvocation, E>
-    + Invokable<ResourceManagerCreateBucketInvocation, E>
-    + Invokable<ResourceManagerMintNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
-    + Invokable<ResourceManagerMintFungibleInvocation, E>
-    + Invokable<ResourceManagerGetResourceTypeInvocation, E>
-    + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
-    + Invokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
-    + Invokable<ResourceManagerNonFungibleExistsInvocation, E>
-    + Invokable<ResourceManagerGetNonFungibleInvocation, E>
-    + Invokable<VaultTakeInvocation, E>
-    + Invokable<VaultPutInvocation, E>
-    + Invokable<VaultLockFeeInvocation, E>
-    + Invokable<VaultTakeNonFungiblesInvocation, E>
-    + Invokable<VaultGetAmountInvocation, E>
-    + Invokable<VaultGetResourceAddressInvocation, E>
-    + Invokable<VaultGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<VaultCreateProofInvocation, E>
-    + Invokable<VaultCreateProofByAmountInvocation, E>
-    + Invokable<VaultCreateProofByIdsInvocation, E>
-    + Invokable<VaultRecallInvocation, E>
-    + Invokable<VaultRecallNonFungiblesInvocation, E>
     + Invokable<WorktopPutInvocation, E>
     + Invokable<WorktopTakeAmountInvocation, E>
     + Invokable<WorktopTakeAllInvocation, E>
@@ -221,30 +176,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
     + Invokable<LoggerLogInvocation, E>
-    + Invokable<AccessControllerCreateProofInvocation, E>
-    + Invokable<AccessControllerInitiateRecoveryAsPrimaryInvocation, E>
-    + Invokable<AccessControllerInitiateRecoveryAsRecoveryInvocation, E>
-    + Invokable<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInvocation, E>
-    + Invokable<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInvocation, E>
-    + Invokable<AccessControllerTimedConfirmRecoveryInvocation, E>
-    + Invokable<AccessControllerCancelPrimaryRoleRecoveryProposalInvocation, E>
-    + Invokable<AccessControllerCancelRecoveryRoleRecoveryProposalInvocation, E>
-    + Invokable<AccessControllerLockPrimaryRoleInvocation, E>
-    + Invokable<AccessControllerUnlockPrimaryRoleInvocation, E>
-    + Invokable<AccessControllerStopTimedRecoveryInvocation, E>
-    + Invokable<AccountLockFeeInvocation, E>
-    + Invokable<AccountLockContingentFeeInvocation, E>
-    + Invokable<AccountDepositInvocation, E>
-    + Invokable<AccountDepositBatchInvocation, E>
-    + Invokable<AccountWithdrawInvocation, E>
-    + Invokable<AccountWithdrawAllInvocation, E>
-    + Invokable<AccountWithdrawNonFungiblesInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawAllInvocation, E>
-    + Invokable<AccountLockFeeAndWithdrawNonFungiblesInvocation, E>
-    + Invokable<AccountCreateProofInvocation, E>
-    + Invokable<AccountCreateProofByAmountInvocation, E>
-    + Invokable<AccountCreateProofByIdsInvocation, E>
 {
 }
 

@@ -4,6 +4,7 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT};
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
 use radix_engine_interface::blueprints::resource::{
     RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
@@ -12,7 +13,8 @@ use radix_engine_interface::blueprints::resource::{
     RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::data::model::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
@@ -404,11 +406,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             method_name,
             args,
         } => {
-            f.write_str(&format!(
-                "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
-                component_address.display(context.bech32_encoder),
-                method_name
-            ))?;
+            match (component_address, method_name.as_str()) {
+                (&EPOCH_MANAGER, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => {
+                    write!(f, "CREATE_VALIDATOR")?;
+                }
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
+                        component_address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
             format_args(f, context, args)?;
             f.write_str(";")?;
         }
@@ -536,15 +546,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
             format_typed_value(f, context, &entries)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateValidator {
-            key,
-            owner_access_rule,
-        } => {
-            f.write_str("CREATE_VALIDATOR")?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, owner_access_rule)?;
             f.write_str(";")?;
         }
         BasicInstruction::AssertAccessRule { access_rule } => {

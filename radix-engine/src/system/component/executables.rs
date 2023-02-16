@@ -8,6 +8,7 @@ use crate::kernel::kernel_api::{
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::wasm::WasmEngine;
+use native_sdk::resource::Vault;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
@@ -217,7 +218,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
@@ -231,14 +232,8 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
-        let amount = api.call_native(VaultGetAmountInvocation {
-            receiver: royalty_vault.vault_id(),
-        })?;
-
-        let bucket = api.call_native(VaultTakeInvocation {
-            receiver: royalty_vault.vault_id(),
-            amount,
-        })?;
+        let mut vault = Vault(royalty_vault.vault_id());
+        let bucket = vault.sys_take_all(api)?;
         let bucket_id = bucket.0;
 
         api.kernel_drop_lock(handle)?;

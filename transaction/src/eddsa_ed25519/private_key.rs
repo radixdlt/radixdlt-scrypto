@@ -13,7 +13,7 @@ impl EddsaEd25519PrivateKey {
         EddsaEd25519PublicKey(PublicKey::from(&self.0).to_bytes())
     }
 
-    pub fn sign(&self, msg: &[u8]) -> EddsaEd25519Signature {
+    pub fn sign(&self, msg_hash: &Hash) -> EddsaEd25519Signature {
         let keypair = Keypair {
             secret: SecretKey::from_bytes(self.0.as_bytes()).expect("From a valid key bytes"),
             public: PublicKey::from(&self.0),
@@ -21,7 +21,7 @@ impl EddsaEd25519PrivateKey {
 
         // SHA512 is used here
 
-        EddsaEd25519Signature(keypair.sign(msg).to_bytes())
+        EddsaEd25519Signature(keypair.sign(&msg_hash.0).to_bytes())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -48,20 +48,21 @@ impl EddsaEd25519PrivateKey {
 mod tests {
     use super::*;
     use crate::validation::verify_eddsa_ed25519;
+    use radix_engine_interface::crypto::hash;
     use sbor::rust::str::FromStr;
 
     #[test]
     fn sign_and_verify() {
         let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
         let test_pk = "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29";
-        let test_message = "Test";
-        let test_signature = "ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09";
+        let test_message_hash = hash("Test");
+        let test_signature = "cf0ca64435609b85ab170da339d415bbac87d678dfd505969be20adc6b5971f4ee4b4620c602bcbc34fd347596546675099d696265f4a42a16df343da1af980e";
         let sk = EddsaEd25519PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
         let pk = EddsaEd25519PublicKey::from_str(test_pk).unwrap();
         let sig = EddsaEd25519Signature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
-        assert_eq!(sk.sign(test_message.as_bytes()), sig);
-        assert!(verify_eddsa_ed25519(test_message.as_bytes(), &pk, &sig));
+        assert_eq!(sk.sign(&test_message_hash), sig);
+        assert!(verify_eddsa_ed25519(&test_message_hash, &pk, &sig));
     }
 }

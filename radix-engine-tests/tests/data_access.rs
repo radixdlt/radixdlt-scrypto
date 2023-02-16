@@ -25,7 +25,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
+            RuntimeError::KernelError(KernelError::InvalidSubstateAccess { .. })
         )
     })
 }
@@ -52,7 +52,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
+            RuntimeError::KernelError(KernelError::InvalidSubstateAccess { .. })
         )
     })
 }

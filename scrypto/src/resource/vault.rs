@@ -1,14 +1,13 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::ScryptoCustomValueKind;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::scrypto_env_native_fn;
 use scrypto_abi::Type;
 
 use crate::resource::*;
@@ -98,86 +97,158 @@ impl ScryptoVault for Vault {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
-        env.call_native(VaultGetAmountInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_AMOUNT_IDENT,
+                scrypto_encode(&VaultGetAmountInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        Self(
-            env.call_native(ResourceManagerCreateVaultInvocation {
-                receiver: resource_address,
-            })
-            .unwrap()
-            .vault_id(),
-        )
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(resource_address),
+                RESOURCE_MANAGER_CREATE_VAULT_IDENT,
+                scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
-    scrypto_env_native_fn! {
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_TAKE_IDENT,
+                scrypto_encode(&VaultTakeInput { amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn take_internal(&mut self, amount: Decimal) -> Bucket {
-            VaultTakeInvocation {
-                receiver: self.0,
-                amount,
-            }
-        }
+    fn lock_fee_internal(&mut self, amount: Decimal) {
+        let mut env = ScryptoEnv;
+        let _rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&VaultLockFeeInput {
+                    amount,
+                    contingent: false,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+    }
 
-        fn lock_fee_internal(&mut self, amount: Decimal) -> () {
-            VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: false,
-            }
-        }
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
+        let mut env = ScryptoEnv;
+        let _rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&VaultLockFeeInput {
+                    amount,
+                    contingent: true,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+    }
 
-        fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
-            VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: true,
-            }
-        }
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_TAKE_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&VaultTakeNonFungiblesInput {
+                    non_fungible_local_ids: non_fungible_local_ids.clone(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
+    fn put(&mut self, bucket: Bucket) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_PUT_IDENT,
+                scrypto_encode(&VaultPutInput { bucket }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn put(&mut self, bucket: Bucket) -> () {
-            VaultPutInvocation {
-                receiver: self.0,
-                bucket: Bucket(bucket.0),
-            }
-        }
+    fn resource_address(&self) -> ResourceAddress {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_RESOURCE_ADDRESS_IDENT,
+                scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
-            VaultTakeNonFungiblesInvocation {
-                receiver: self.0,
-                non_fungible_local_ids: non_fungible_local_ids.clone(),
-            }
-        }
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn resource_address(&self) -> ResourceAddress {
-            VaultGetResourceAddressInvocation {
-                receiver: self.0,
-            }
-        }
+    fn create_proof(&self) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_IDENT,
+                scrypto_encode(&VaultCreateProofInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-            VaultGetNonFungibleLocalIdsInvocation {
-                receiver: self.0,
-            }
-        }
+    fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
+                scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn create_proof(&self) -> Proof {
-            VaultCreateProofInvocation {
-                receiver: self.0,
-            }
-        }
-
-        fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-            VaultCreateProofByAmountInvocation {  receiver: self.0,amount }
-        }
-
-        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
-            VaultCreateProofByIdsInvocation {  receiver: self.0, ids: ids.clone(), }
-        }
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Vault(self.0),
+                VAULT_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Locks the specified amount as transaction fee.

@@ -168,11 +168,6 @@ pub enum BasicInstruction {
         entries: Vec<(Vec<u8>, Vec<u8>)>,
     },
 
-    CreateValidator {
-        key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
-    },
-
     AssertAccessRule {
         access_rule: AccessRule,
     },
