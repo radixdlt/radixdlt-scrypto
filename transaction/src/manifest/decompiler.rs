@@ -16,7 +16,6 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::data::model::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
