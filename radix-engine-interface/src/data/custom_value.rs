@@ -2,7 +2,6 @@ use sbor::value_kind::*;
 use sbor::*;
 
 use crate::blueprints::resource::*;
-use crate::crypto::*;
 use crate::data::model::*;
 use crate::data::*;
 use crate::math::{Decimal, PreciseDecimal};
@@ -14,7 +13,6 @@ pub enum ScryptoCustomValue {
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),
-    PublicKey(PublicKey),
 }
 
 impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ScryptoCustomValue {
@@ -35,9 +33,6 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
                 ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
             ),
-            ScryptoCustomValue::PublicKey(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PublicKey))
-            }
         }
     }
 
@@ -49,7 +44,6 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
-            ScryptoCustomValue::PublicKey(v) => v.encode_body(encoder),
         }
     }
 }
@@ -77,9 +71,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                 ScryptoCustomValueKind::NonFungibleLocalId => {
                     NonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
-                }
-                ScryptoCustomValueKind::PublicKey => {
-                    PublicKey::decode_body_with_value_kind(decoder, value_kind).map(Self::PublicKey)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
@@ -196,8 +187,6 @@ mod tests {
             PreciseDecimal::ONE,
             NonFungibleLocalId::integer(1),
             NonFungibleLocalId::bytes(vec![2, 3]).unwrap(),
-            EcdsaSecp256k1PublicKey([1u8; 33]),
-            EddsaEd25519PublicKey([3u8; 32]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -238,16 +227,6 @@ mod tests {
                         value: ScryptoCustomValue::NonFungibleLocalId(
                             NonFungibleLocalId::bytes(vec![2, 3]).unwrap()
                         ),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::PublicKey(PublicKey::EcdsaSecp256k1(
-                            EcdsaSecp256k1PublicKey([1u8; 33],)
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::PublicKey(PublicKey::EddsaEd25519(
-                            EddsaEd25519PublicKey([3u8; 32])
-                        )),
                     },
                 ]
             }

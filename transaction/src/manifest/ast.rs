@@ -244,8 +244,6 @@ pub enum Type {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    EcdsaSecp256k1PublicKey,
-    EddsaEd25519PublicKey,
 
     // ==============
     // Custom Types
@@ -260,7 +258,6 @@ pub enum Type {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-    PublicKey,
 }
 
 impl Type {
@@ -288,12 +285,6 @@ impl Type {
             Type::PackageAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             Type::ComponentAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             Type::ResourceAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
-            Type::EcdsaSecp256k1PublicKey => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey)
-            }
-            Type::EddsaEd25519PublicKey => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey)
-            }
 
             // Custom types
             Type::Address => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
@@ -308,7 +299,6 @@ impl Type {
             Type::NonFungibleLocalId => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
             }
-            Type::PublicKey => ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey),
         }
     }
 }
@@ -348,8 +338,6 @@ pub enum Value {
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
-    EcdsaSecp256k1PublicKey(Box<Value>),
-    EddsaEd25519PublicKey(Box<Value>),
 
     // ==============
     // Custom Types
@@ -362,7 +350,6 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleLocalId(Box<Value>),
-    PublicKey(Box<Value>),
 }
 
 impl Value {
@@ -404,12 +391,6 @@ impl Value {
             Value::ResourceAddress(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::Address)
             }
-            Value::EcdsaSecp256k1PublicKey(_) => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey)
-            }
-            Value::EddsaEd25519PublicKey(_) => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey)
-            }
 
             // ==============
             // Custom Types
@@ -426,7 +407,6 @@ impl Value {
             Value::NonFungibleLocalId(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
             }
-            Value::PublicKey(_) => ManifestValueKind::Custom(ManifestCustomValueKind::PublicKey),
         }
     }
 }

@@ -58,8 +58,6 @@ pub enum TokenKind {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    EcdsaSecp256k1PublicKey,
-    EddsaEd25519PublicKey,
 
     // ==============
     // SBOR custom types
@@ -72,7 +70,6 @@ pub enum TokenKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-    PublicKey,
 
     /* Punctuations */
     OpenParenthesis,
@@ -407,8 +404,6 @@ impl Lexer {
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
-            "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),
-            "EddsaEd25519PublicKey" => Ok(TokenKind::EddsaEd25519PublicKey),
 
             "Address" => Ok(TokenKind::Address),
             "Bucket" => Ok(TokenKind::Bucket),
@@ -418,7 +413,6 @@ impl Lexer {
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
-            "PublicKey" => Ok(TokenKind::PublicKey),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

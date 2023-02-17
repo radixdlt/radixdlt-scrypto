@@ -5,7 +5,6 @@ pub const TYPE_OWN: u8 = 0x81;
 pub const TYPE_DECIMAL: u8 = 0x85;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
-pub const TYPE_PUBLIC_KEY: u8 = 0x88;
 
 #[cfg_attr(
     feature = "serde",
@@ -14,25 +13,15 @@ pub const TYPE_PUBLIC_KEY: u8 = 0x88;
 )]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeId {
-    // RE interpreted types
+    Address, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
-    Own,
-
-    // TX interpreted types
+    
+    Own, /* any */
     Bucket,
     Proof,
-    Expression,
-    Blob,
 
-    // Uninterpreted
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,

@@ -88,7 +88,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 "NonFungibleLocalId",
                 ScryptoCustomTypeKind::NonFungibleLocalId,
             ),
-            PUBLIC_KEY_ID => ("PublicKey", ScryptoCustomTypeKind::PublicKey),
             _ => return None,
         };
 
@@ -114,5 +113,4 @@ mod well_known_scrypto_types {
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
     pub const NON_FUNGIBLE_LOCAL_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_LOCAL_ID;
-    pub const PUBLIC_KEY_ID: u8 = VALUE_KIND_PUBLIC_KEY;
 }

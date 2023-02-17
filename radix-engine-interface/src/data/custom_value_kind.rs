@@ -5,7 +5,6 @@ pub const VALUE_KIND_OWN: u8 = 0x81;
 pub const VALUE_KIND_DECIMAL: u8 = 0x85;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0x86;
 pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
-pub const VALUE_KIND_PUBLIC_KEY: u8 = 0x88;
 
 #[cfg_attr(
     feature = "serde",
@@ -16,12 +15,9 @@ pub const VALUE_KIND_PUBLIC_KEY: u8 = 0x88;
 pub enum ScryptoCustomValueKind {
     Address,
     Own,
-
-    /* Uninterpreted, but so common; consistent with manifest model */
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-    PublicKey,
 }
 
 impl From<ScryptoCustomValueKind> for ValueKind<ScryptoCustomValueKind> {
@@ -38,7 +34,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::Decimal => VALUE_KIND_DECIMAL,
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
             Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
-            Self::PublicKey => VALUE_KIND_PUBLIC_KEY,
         }
     }
 
@@ -49,7 +44,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             VALUE_KIND_DECIMAL => Some(ScryptoCustomValueKind::Decimal),
             VALUE_KIND_PRECISE_DECIMAL => Some(ScryptoCustomValueKind::PreciseDecimal),
             VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => Some(ScryptoCustomValueKind::NonFungibleLocalId),
-            VALUE_KIND_PUBLIC_KEY => Some(ScryptoCustomValueKind::PublicKey),
             _ => None,
         }
     }

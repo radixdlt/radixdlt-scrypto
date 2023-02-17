@@ -404,13 +404,6 @@ pub fn serialize_custom_value<S: Serializer>(
             ScryptoCustomValueKind::NonFungibleLocalId,
             &format!("{}", value),
         ),
-        ScryptoCustomValue::PublicKey(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::PublicKey,
-            &format!("{:?}", value), // TODO: fix syntax
-        ),
     }
 }
 
@@ -593,7 +586,6 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::{
             constants::{EPOCH_MANAGER, FAUCET_COMPONENT},
-            crypto::{EddsaEd25519PublicKey, PublicKey},
             data::model::*,
             math::{Decimal, PreciseDecimal},
         };
@@ -682,11 +674,6 @@ mod tests {
                                 NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd)
                                     .unwrap(),
                             ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::PublicKey(PublicKey::EddsaEd25519(
-                                EddsaEd25519PublicKey([0; 32]),
-                            )),
                         },
                     ],
                 },

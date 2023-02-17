@@ -92,10 +92,6 @@ pub enum Type {
     PreciseDecimal,
     NonFungibleLocalId,
 
-    PublicKey, /* any */
-    EcdsaSecp256k1PublicKey,
-    EddsaEd25519PublicKey,
-
     Any,
 }
 

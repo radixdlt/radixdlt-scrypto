@@ -356,15 +356,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
         SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
         SchemaType::NonFungibleLocalId => parse_quote! {::scrypto::model::NonFungibleLocalId },
-        SchemaType::PublicKey => {
-            parse_quote! {::scrypto::crypto::PublicKey }
-        }
-        SchemaType::EcdsaSecp256k1PublicKey => {
-            parse_quote! {::scrypto::crypto::EcdsaSecp256k1PublicKey }
-        }
-        SchemaType::EddsaEd25519PublicKey => {
-            parse_quote! { ::scrypto::crypto::EddsaEd25519PublicKey}
-        }
 
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");

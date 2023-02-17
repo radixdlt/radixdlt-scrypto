@@ -303,9 +303,7 @@ impl Parser {
             | TokenKind::NonFungibleGlobalId
             | TokenKind::PackageAddress
             | TokenKind::ComponentAddress
-            | TokenKind::ResourceAddress
-            | TokenKind::EcdsaSecp256k1PublicKey
-            | TokenKind::EddsaEd25519PublicKey => self.parse_alias(),
+            | TokenKind::ResourceAddress => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -317,8 +315,7 @@ impl Parser {
             | TokenKind::Blob
             | TokenKind::Decimal
             | TokenKind::PreciseDecimal
-            | TokenKind::NonFungibleLocalId
-            | TokenKind::PublicKey => self.parse_custom_types(),
+            | TokenKind::NonFungibleLocalId => self.parse_custom_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -385,12 +382,6 @@ impl Parser {
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Value::EcdsaSecp256k1PublicKey(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EddsaEd25519PublicKey => Ok(Value::EddsaEd25519PublicKey(
-                self.parse_values_one()?.into(),
-            )),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -408,7 +399,6 @@ impl Parser {
             TokenKind::NonFungibleLocalId => {
                 Ok(Value::NonFungibleLocalId(self.parse_values_one()?.into()))
             }
-            TokenKind::PublicKey => Ok(Value::PublicKey(self.parse_values_one()?.into())),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -491,8 +481,6 @@ impl Parser {
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
-            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
 
             // Custom types
             TokenKind::Address => Ok(Type::Address),
@@ -503,7 +491,6 @@ impl Parser {
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
             TokenKind::NonFungibleLocalId => Ok(Type::NonFungibleLocalId),
-            TokenKind::PublicKey => Ok(Type::PublicKey),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

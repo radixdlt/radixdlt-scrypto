@@ -1,5 +1,5 @@
+use crate::data::model::Own;
 use crate::data::*;
-use crate::{crypto::PublicKey, data::model::Own};
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
@@ -51,9 +51,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         Type::NonFungibleLocalId => Some(ValueKind::Custom(
             ScryptoCustomValueKind::NonFungibleLocalId,
         )),
-        Type::PublicKey | Type::EcdsaSecp256k1PublicKey | Type::EddsaEd25519PublicKey => {
-            Some(ValueKind::Custom(ScryptoCustomValueKind::PublicKey))
-        }
 
         Type::Any => None,
     }
@@ -361,34 +358,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::NonFungibleLocalId => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::NonFungibleLocalId(_))
-            } else {
-                false
-            }
-        }
-
-        Type::PublicKey => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::PublicKey(_))
-            } else {
-                false
-            }
-        }
-        Type::EcdsaSecp256k1PublicKey => {
-            if let Value::Custom { value } = value {
-                matches!(
-                    value,
-                    ScryptoCustomValue::PublicKey(PublicKey::EcdsaSecp256k1(_))
-                )
-            } else {
-                false
-            }
-        }
-        Type::EddsaEd25519PublicKey => {
-            if let Value::Custom { value } = value {
-                matches!(
-                    value,
-                    ScryptoCustomValue::PublicKey(PublicKey::EddsaEd25519(_))
-                )
             } else {
                 false
             }

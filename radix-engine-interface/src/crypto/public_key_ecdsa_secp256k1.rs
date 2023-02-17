@@ -1,5 +1,3 @@
-use crate::crypto::*;
-use crate::data::*;
 use crate::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -7,13 +5,11 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::Type;
-use transaction_data::*;
 use utils::copy_u8_array;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
 pub struct EcdsaSecp256k1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
@@ -58,92 +54,6 @@ impl std::error::Error for ParseEcdsaSecp256k1PublicKeyError {}
 impl fmt::Display for ParseEcdsaSecp256k1PublicKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-//======
-// binary
-//======
-
-impl Categorize<ScryptoCustomValueKind> for EcdsaSecp256k1PublicKey {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::PublicKey)
-    }
-}
-
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-    for EcdsaSecp256k1PublicKey
-{
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        PublicKey::EcdsaSecp256k1(self.clone()).encode_body(encoder)
-    }
-}
-
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-    for EcdsaSecp256k1PublicKey
-{
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        let o = PublicKey::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            PublicKey::EcdsaSecp256k1(pk) => Ok(pk),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
-    }
-}
-
-impl scrypto_abi::LegacyDescribe for EcdsaSecp256k1PublicKey {
-    fn describe() -> scrypto_abi::Type {
-        Type::EcdsaSecp256k1PublicKey
-    }
-}
-
-//===================
-// binary (manifest)
-//===================
-
-impl Categorize<ManifestCustomValueKind> for EcdsaSecp256k1PublicKey {
-    #[inline]
-    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
-        ValueKind::Custom(ManifestCustomValueKind::PublicKey)
-    }
-}
-
-impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
-    for EcdsaSecp256k1PublicKey
-{
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        PublicKey::EcdsaSecp256k1(self.clone()).encode_body(encoder)
-    }
-}
-
-impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
-    for EcdsaSecp256k1PublicKey
-{
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ManifestCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        let o = PublicKey::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            PublicKey::EcdsaSecp256k1(pk) => Ok(pk),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
     }
 }
 

@@ -179,8 +179,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
 
             ScryptoCustomValue::Decimal(_)
             | ScryptoCustomValue::PreciseDecimal(_)
-            | ScryptoCustomValue::NonFungibleLocalId(_)
-            | ScryptoCustomValue::PublicKey(_) => {
+            | ScryptoCustomValue::NonFungibleLocalId(_) => {
                 // no-op
             }
         }

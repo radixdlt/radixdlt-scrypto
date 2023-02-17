@@ -164,7 +164,6 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
             ScryptoCustomValueKind::Decimal => f.write_str("Decimal"),
             ScryptoCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
             ScryptoCustomValueKind::NonFungibleLocalId => f.write_str("NonFungibleLocalId"),
-            ScryptoCustomValueKind::PublicKey => f.write_str("PublicKey"),
         },
     }
 }
@@ -243,9 +242,6 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::NonFungibleLocalId(value) => {
             write!(f, "NonFungibleLocalId(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::PublicKey(value) => {
-            write!(f, "PublicKey(\"{:?}\")", value)?; // TODO: fix syntax
         }
     }
     Ok(())

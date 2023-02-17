@@ -13,15 +13,14 @@ struct TestStruct {
     h: ManifestDecimal,
     i: ManifestPreciseDecimal,
     j: ManifestNonFungibleLocalId,
-    k: ManifestPublicKey,
 }
 
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress([1u8; 27]),
-        b: ManifestAddress([2u8; 27]),
-        c: ManifestAddress([3u8; 27]),
+        a: ManifestAddress::ResourceManager([0u8; 27]),
+        b: ManifestAddress::Package([1u8; 27]),
+        c: ManifestAddress::Component([2u8; 27]),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
@@ -29,7 +28,6 @@ fn test_encode_and_decode() {
         h: ManifestDecimal([7u8; 32]),
         i: ManifestPreciseDecimal([8u8; 64]),
         j: ManifestNonFungibleLocalId::string("abc".to_owned()).unwrap(),
-        k: ManifestPublicKey::EcdsaSecp256k1([10u8; 33]),
     };
 
     let bytes = manifest_encode(&t).unwrap();
@@ -56,8 +54,6 @@ fn test_encode_and_decode() {
             8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
             8, 8, 8, 8, 8, 8, 8, 8, // precise decimal
             135, 0, 3, 97, 98, 99, // non-fungible local id
-            136, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-            10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 // public key
         ]
     );
     let decoded: TestStruct = manifest_decode(&bytes).unwrap();

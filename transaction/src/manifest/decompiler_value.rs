@@ -13,7 +13,7 @@ use utils::ContextualDisplay;
 
 use super::utils::{
     map_validated_address, map_validated_decimal, map_validated_non_fungible_local_id,
-    map_validated_precise_decimal, map_validated_public_key,
+    map_validated_precise_decimal,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -232,7 +232,6 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ManifestValueKin
             ManifestCustomValueKind::Decimal => f.write_str("Decimal"),
             ManifestCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
             ManifestCustomValueKind::NonFungibleLocalId => f.write_str("NonFungibleLocalId"),
-            ManifestCustomValueKind::PublicKey => f.write_str("PublicKey"),
         },
     }
 }
@@ -356,13 +355,6 @@ pub fn format_custom_value<F: fmt::Write>(
                 f,
                 "NonFungibleLocalId(\"{}\")",
                 map_validated_non_fungible_local_id(value.clone())
-            )?;
-        }
-        ManifestCustomValue::PublicKey(value) => {
-            write!(
-                f,
-                "PublicKey(\"{}\")",
-                map_validated_public_key(value.clone())
             )?;
         }
     }

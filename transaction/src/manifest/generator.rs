@@ -1287,16 +1287,6 @@ pub fn generate_value(
                 value: ManifestCustomValue::Address(v),
             })
         }
-        ast::Value::EcdsaSecp256k1PublicKey(_) => {
-            generate_ecdsa_secp256k1_public_key(value).map(|v| Value::Custom {
-                value: ManifestCustomValue::PublicKey(v),
-            })
-        }
-        ast::Value::EddsaEd25519PublicKey(_) => {
-            generate_eddsa_ed25519_public_key(value).map(|v| Value::Custom {
-                value: ManifestCustomValue::PublicKey(v),
-            })
-        }
         // ==============
         // Custom Types
         // ==============
@@ -1326,9 +1316,6 @@ pub fn generate_value(
                 value: ManifestCustomValue::NonFungibleLocalId(v),
             })
         }
-        ast::Value::PublicKey(_) => generate_public_key(value).map(|v| Value::Custom {
-            value: ManifestCustomValue::PublicKey(v),
-        }),
     }
 }
 
