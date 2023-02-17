@@ -2,7 +2,9 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataGetInput, MetadataSetInput, METADATA_SET_IDENT, METADATA_GET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::types::{GlobalAddress, NodeModuleId, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;

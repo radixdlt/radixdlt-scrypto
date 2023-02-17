@@ -16,10 +16,12 @@ use crate::kernel::kernel_api::{
 };
 use crate::system::node_modules::auth::AuthZoneNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
@@ -28,10 +30,8 @@ use radix_engine_interface::api::{
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
 
 use super::ScryptoRuntime;
 
@@ -109,7 +109,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                         info
                     }
                     NodeModuleId::Metadata => (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string()),
-                    NodeModuleId::ComponentRoyalty => (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string()),
+                    NodeModuleId::ComponentRoyalty => {
+                        (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
+                    }
                     _ => todo!(),
                 };
 

@@ -1,8 +1,7 @@
 use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, ComponentRoyaltyInvocation, NativeInvocation,
-    PackageInvocation,
+    AccessRulesChainInvocation, NativeInvocation, PackageInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -13,12 +12,6 @@ where
     Y: KernelInvokeApi<E>,
 {
     match invocation {
-        NativeInvocation::ComponentRoyalty(component_invocation) => match component_invocation {
-            ComponentRoyaltyInvocation::ClaimRoyalty(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
         NativeInvocation::Package(package_invocation) => match package_invocation {
             PackageInvocation::Publish(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;

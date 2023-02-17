@@ -5,7 +5,6 @@ use crate::api::types::*;
 use crate::data::scrypto_encode;
 use crate::data::ScryptoValue;
 use crate::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentClaimRoyaltyInvocation;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -49,7 +48,6 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Package(PackageInvocation),
-    ComponentRoyalty(ComponentRoyaltyInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -69,11 +67,6 @@ pub enum AccessRulesChainInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ComponentRoyaltyInvocation {
-    ClaimRoyalty(ComponentClaimRoyaltyInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     PublishNative(PackagePublishNativeInvocation),
@@ -85,11 +78,6 @@ impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
         let mut refs = HashSet::new();
         match self {
-            NativeInvocation::ComponentRoyalty(invocation) => match invocation {
-                ComponentRoyaltyInvocation::ClaimRoyalty(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
-            },
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
                 PackageInvocation::PublishNative(..) => {}
@@ -160,11 +148,6 @@ impl NativeInvocation {
                 PackageInvocation::PublishNative(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::ComponentRoyalty(i) => match i {
-                ComponentRoyaltyInvocation::ClaimRoyalty(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
             },
         };
 

@@ -12,7 +12,6 @@ pub enum PackageIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
-    Royalty,
     Package,
     TransactionProcessor,
     Root,
@@ -82,7 +81,6 @@ impl ScryptoFnIdentifier {
 )]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
-    ComponentRoyalty(ComponentRoyaltyFn),
     Package(PackageFn),
     TransactionProcessor(TransactionProcessorFn),
     Root,
@@ -92,7 +90,6 @@ impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
             NativeFn::AccessRulesChain(..) => NativePackage::Auth,
-            NativeFn::ComponentRoyalty(..) => NativePackage::Royalty,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
@@ -127,30 +124,6 @@ pub enum AccessRulesChainFn {
     SetMethodMutability,
     SetGroupMutability,
     GetLength,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ComponentRoyaltyFn {
-    ClaimRoyalty,
 }
 
 #[derive(

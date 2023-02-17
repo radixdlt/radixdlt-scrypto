@@ -1,6 +1,6 @@
 use crate::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
-use crate::api::types::PackageFn;
 use crate::api::types::NodeModuleId;
+use crate::api::types::PackageFn;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;

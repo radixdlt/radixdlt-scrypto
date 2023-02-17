@@ -11,7 +11,10 @@ use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInput};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -692,7 +695,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -715,15 +718,20 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::Basic(BasicInstruction::ClaimComponentRoyalty {
                     component_address,
                 }) => {
-                    let rtn = api.call_native(ComponentClaimRoyaltyInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            component_address.clone(),
-                        )),
-                    })?;
+                    let result = api.call_module_method(
+                        ScryptoReceiver::Global(*component_address),
+                        NodeModuleId::ComponentRoyalty,
+                        COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+                        scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
+                    )?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::SetMethodAccessRule {
                     entity_address,

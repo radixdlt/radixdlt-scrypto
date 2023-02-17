@@ -265,10 +265,7 @@ impl KernelModule for AuthModule {
                     (NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodAccessRule), ..) => {
                         vec![]
                     }
-                    (method, ..)
-                        if matches!(method, NativeFn::Package(..))
-                            || matches!(method, NativeFn::ComponentRoyalty(..)) =>
-                    {
+                    (method, ..) if matches!(method, NativeFn::Package(..)) => {
                         let handle = api.kernel_lock_substate(
                             resolved_receiver.receiver.0,
                             NodeModuleId::AccessRules,

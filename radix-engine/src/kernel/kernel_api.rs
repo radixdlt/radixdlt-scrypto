@@ -7,9 +7,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInvocation,
-};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -134,7 +131,6 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
     + Invokable<AccessRulesGetLengthInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<ComponentClaimRoyaltyInvocation, E>
     + Invokable<PackageSetRoyaltyConfigInvocation, E>
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>

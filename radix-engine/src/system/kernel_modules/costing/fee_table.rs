@@ -241,6 +241,7 @@ impl FeeTable {
             },
             (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT) => match identifier.ident.as_str() {
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => self.fixed_medium,
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT => self.fixed_medium,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -257,9 +258,6 @@ impl FeeTable {
                 AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
                 AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
-            },
-            NativeFn::ComponentRoyalty(method_ident) => match method_ident {
-                ComponentRoyaltyFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
