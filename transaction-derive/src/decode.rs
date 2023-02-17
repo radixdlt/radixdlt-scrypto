@@ -55,9 +55,12 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Decode<transaction_data::ManifestCustomValueKind, D>,
+                        T: Bound,
                         D: ::sbor::Decoder<transaction_data::ManifestCustomValueKind>
                     > ::sbor::Decode<transaction_data::ManifestCustomValueKind, D> for MyEnum<T>
+                where
+                    T: ::sbor::Decode<transaction_data::ManifestCustomValueKind, D>,
+                    T: ::sbor::Categorize<transaction_data::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(

@@ -720,6 +720,12 @@ fn generate_package_address(
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
             v => invalid_type!(v, ast::Type::String),
         },
+        ast::Value::Address(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
         v => invalid_type!(v, ast::Type::PackageAddress),
     }
 }
@@ -735,7 +741,13 @@ fn generate_component_address(
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::ComponentAddress),
+        ast::Value::Address(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_component_address(s)
+                .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::ComponentAddress, ast::Type::Address),
     }
 }
 
@@ -745,6 +757,12 @@ fn generate_resource_address(
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::ResourceAddress(inner) => match inner.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
+                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        ast::Value::Address(inner) => match inner.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),

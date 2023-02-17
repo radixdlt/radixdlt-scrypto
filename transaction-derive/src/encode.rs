@@ -55,9 +55,12 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Encode<transaction_data::ManifestCustomValueKind, E>,
+                        T: Bound,
                         E: ::sbor::Encoder<transaction_data::ManifestCustomValueKind>
                     > ::sbor::Encode<transaction_data::ManifestCustomValueKind, E> for MyEnum<T>
+                where
+                    T: ::sbor::Encode<transaction_data::ManifestCustomValueKind, E>,
+                    T: ::sbor::Categorize<transaction_data::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

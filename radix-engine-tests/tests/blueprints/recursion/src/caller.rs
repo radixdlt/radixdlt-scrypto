@@ -23,7 +23,7 @@ mod caller {
                     Runtime::package_address(),
                     "Caller",
                     "recursive_with_memory",
-                    args!(n - 1, m),
+                    scrypto_args!(n - 1, m),
                 );
             }
         }

@@ -225,7 +225,7 @@ fn test_max_call_frame_memory_exceeded() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -256,7 +256,7 @@ fn test_max_transaction_memory_exceeded() {
             package_address,
             "Caller",
             "recursive_with_memory",
-            args!(DEFAULT_MAX_CALL_DEPTH as u32, grow_value),
+            manifest_args!(DEFAULT_MAX_CALL_DEPTH as u32, grow_value),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
