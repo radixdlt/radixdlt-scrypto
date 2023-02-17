@@ -75,3 +75,28 @@ pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, E
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
     ScryptoDecoder::new(buf).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
 }
+
+#[macro_export]
+macro_rules! count {
+    () => {0usize};
+    ($a:expr) => {1usize};
+    ($a:expr, $($rest:expr),*) => {1usize + $crate::count!($($rest),*)};
+}
+
+#[macro_export]
+macro_rules! scrypto_args {
+    ($($args: expr),*) => {{
+        use ::sbor::Encoder;
+        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut encoder = $crate::data::ScryptoEncoder::new(&mut buf);
+        encoder.write_payload_prefix($crate::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX).unwrap();
+        encoder.write_value_kind($crate::data::ScryptoValueKind::Tuple).unwrap();
+        // Hack: stringify to skip ownership move semantics
+        encoder.write_size($crate::count!($(stringify!($args)),*)).unwrap();
+        $(
+            let arg = $args;
+            encoder.encode(&arg).unwrap();
+        )*
+        buf
+    }};
+}

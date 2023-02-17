@@ -10,6 +10,7 @@ use utils::copy_u8_array;
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
+#[sbor(transparent)]
 pub struct EddsaEd25519PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );

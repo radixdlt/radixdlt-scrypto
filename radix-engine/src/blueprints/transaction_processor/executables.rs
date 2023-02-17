@@ -416,8 +416,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
-                    println!("!!!! {:?}", scrypto_value);
-
                     let rtn = api.call_function(
                         package_address,
                         &blueprint_name,

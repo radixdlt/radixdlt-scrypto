@@ -86,12 +86,27 @@ pub use transaction_derive::{ManifestCategorize, ManifestDecode, ManifestEncode}
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 pub extern crate self as transaction_data;
 
-// TODO: re-enable "any-free" encoding
+#[macro_export]
+macro_rules! count {
+    () => {0usize};
+    ($a:expr) => {1usize};
+    ($a:expr, $($rest:expr),*) => {1usize + $crate::count!($($rest),*)};
+}
+
 #[macro_export]
 macro_rules! manifest_args {
-    ($($args: expr),*) => {
-        {
-            $crate::transaction_data::manifest_encode(&($($args),*)).unwrap()
-        }
-    };
+    ($($args: expr),*) => {{
+        use ::sbor::Encoder;
+        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut encoder = $crate::ManifestEncoder::new(&mut buf);
+        encoder.write_payload_prefix($crate::MANIFEST_SBOR_V1_PAYLOAD_PREFIX).unwrap();
+        encoder.write_value_kind($crate::ManifestValueKind::Tuple).unwrap();
+        // Hack: stringify to skip ownership move semantics
+        encoder.write_size($crate::count!($(stringify!($args)),*)).unwrap();
+        $(
+            let arg = $args;
+            encoder.encode(&arg).unwrap();
+        )*
+        buf
+    }};
 }

@@ -767,7 +767,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawInput {
+        let args = manifest_encode(&AccountLockFeeAndWithdrawInput {
             resource_address,
             amount,
             amount_to_lock,
@@ -789,7 +789,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawNonFungiblesInput {
+        let args = manifest_encode(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
             ids,
@@ -806,7 +806,7 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let args = scrypto_encode(&AccountLockFeeInput { amount }).unwrap();
+        let args = manifest_encode(&AccountLockFeeInput { amount }).unwrap();
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -817,7 +817,7 @@ impl ManifestBuilder {
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let args = scrypto_encode(&AccountLockContingentFeeInput { amount }).unwrap();
+        let args = manifest_encode(&AccountLockContingentFeeInput { amount }).unwrap();
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -834,7 +834,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountWithdrawInput {
+        let args = manifest_encode(&AccountWithdrawInput {
             resource_address,
             amount,
         })
@@ -854,7 +854,7 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountWithdrawAllInput { resource_address }).unwrap();
+        let args = manifest_encode(&AccountWithdrawAllInput { resource_address }).unwrap();
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -871,7 +871,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountWithdrawNonFungiblesInput {
+        let args = manifest_encode(&AccountWithdrawNonFungiblesInput {
             ids: ids.clone(),
             resource_address,
         })
@@ -891,7 +891,7 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountLockFeeAndWithdrawAllInput {
+        let args = manifest_encode(&AccountLockFeeAndWithdrawAllInput {
             amount_to_lock: amount,
             resource_address,
         })
@@ -911,7 +911,7 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountCreateProofInput { resource_address }).unwrap();
+        let args = manifest_encode(&AccountCreateProofInput { resource_address }).unwrap();
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -928,7 +928,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountCreateProofByAmountInput {
+        let args = manifest_encode(&AccountCreateProofByAmountInput {
             resource_address,
             amount,
         })
@@ -949,7 +949,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = scrypto_encode(&AccountCreateProofByIdsInput {
+        let args = manifest_encode(&AccountCreateProofByIdsInput {
             resource_address,
             ids: ids.clone(),
         })

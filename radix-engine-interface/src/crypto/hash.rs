@@ -13,6 +13,7 @@ use utils::copy_u8_array;
 #[derive(
     Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, LegacyDescribe,
 )]
+#[sbor(transparent)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {
