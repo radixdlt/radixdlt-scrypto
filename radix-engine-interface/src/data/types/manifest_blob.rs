@@ -7,7 +7,7 @@ use utils::copy_u8_array;
 
 use crate::crypto::Hash;
 use crate::data::*;
-use crate::scrypto_type;
+use crate::schemaless_scrypto_custom_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBlobRef(pub Hash);
@@ -53,4 +53,4 @@ impl ManifestBlobRef {
     }
 }
 
-scrypto_type!(ManifestBlobRef, ScryptoCustomValueKind::Blob, 32);
+schemaless_scrypto_custom_type!(ManifestBlobRef, ScryptoCustomValueKind::Blob, 32);

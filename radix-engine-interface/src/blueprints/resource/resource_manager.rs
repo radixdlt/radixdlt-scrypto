@@ -3,7 +3,7 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -294,11 +294,12 @@ impl ResourceAddress {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     ResourceAddress,
     ScryptoCustomValueKind::ResourceAddress,
     Type::ResourceAddress,
-    27
+    27,
+    RESOURCE_ADDRESS_ID
 );
 
 //======

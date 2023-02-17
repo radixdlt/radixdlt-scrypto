@@ -4,6 +4,8 @@ mod custom_schema;
 mod custom_value;
 /// Defines the custom value kind model that scrypto uses.
 mod custom_value_kind;
+/// Defines the scrypto custom well known types.
+mod custom_well_known_types;
 /// Indexed Scrypto value.
 mod indexed_value;
 /// Matches a Scrypto schema type with a Scrypto value.
@@ -23,6 +25,7 @@ pub use crate::args;
 pub use custom_schema::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
+pub use custom_well_known_types::*;
 pub use indexed_value::*;
 use sbor::rust::vec::Vec;
 use sbor::{
