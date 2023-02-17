@@ -296,6 +296,15 @@ where
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
     }
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api
+            .update_wasm_memory_usage(size)
+            .map_err(InvokeError::downstream)
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -435,6 +444,13 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }
