@@ -4,7 +4,9 @@ use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation,
 };
-use radix_engine_interface::api::types::{ComponentAddress, ComponentId, GlobalAddress, NodeModuleId, RENodeId, ToString};
+use radix_engine_interface::api::types::{
+    ComponentAddress, ComponentId, GlobalAddress, NodeModuleId, RENodeId, ToString,
+};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
 

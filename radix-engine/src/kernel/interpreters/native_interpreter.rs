@@ -17,7 +17,9 @@ pub fn deref_and_update<D: ClientDerefApi<RuntimeError>>(
         ResolvedReceiver::new((receiver, module_id))
     };
     let resolved_node_id = resolved_receiver.receiver;
-    call_frame_update.node_refs_to_copy.insert(resolved_node_id.0);
+    call_frame_update
+        .node_refs_to_copy
+        .insert(resolved_node_id.0);
 
     Ok(resolved_receiver)
 }

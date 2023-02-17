@@ -1,6 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -115,7 +116,7 @@ fn can_lock_package_metadata_with_owner() {
         .set_method_access_rule(
             GlobalAddress::Package(package_address),
             0,
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRule::DenyAll,
         )
         .build();

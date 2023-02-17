@@ -3,9 +3,9 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataGetInvocation, MetadataSetInvocation,
+    MetadataGetInvocation, MetadataSetInput, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::types::{GlobalAddress, MetadataFn, NativeFn, NodeModuleId, RENodeId, ScryptoReceiver};
+use radix_engine_interface::api::types::{GlobalAddress, NodeModuleId, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -24,13 +24,14 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
     pub fn set_metadata(&mut self, key: String, value: String) {
-        let mut env = ScryptoEnv;
-        env.call_native(MetadataSetInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            key,
-            value,
-        })
-        .unwrap()
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn get_metadata(&mut self, key: String) -> Option<String> {
@@ -58,7 +59,10 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                RESOURCE_MANAGER_BURN_IDENT.to_string(),
+            ),
             rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
@@ -114,7 +118,10 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT.to_string(),
+            ),
             rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
@@ -150,7 +157,10 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                RESOURCE_MANAGER_BURN_IDENT.to_string(),
+            ),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -161,7 +171,10 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT.to_string(),
+            ),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()

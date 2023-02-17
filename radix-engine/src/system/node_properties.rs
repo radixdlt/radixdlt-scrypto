@@ -211,7 +211,8 @@ impl VisibilityProperties {
                             || package_address.eq(&LOGGER_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE) =>
+                            || package_address.eq(&AUTH_ZONE_PACKAGE)
+                            || package_address.eq(&METADATA_PACKAGE) =>
                         {
                             true
                         }
@@ -293,7 +294,8 @@ impl VisibilityProperties {
                             || package_address.eq(&LOGGER_PACKAGE)
                             || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                             || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE) =>
+                            || package_address.eq(&AUTH_ZONE_PACKAGE)
+                            || package_address.eq(&METADATA_PACKAGE) =>
                         {
                             true
                         }

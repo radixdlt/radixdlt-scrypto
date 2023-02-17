@@ -10,7 +10,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
-use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
 };
@@ -623,13 +623,55 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     key,
                     value,
                 }) => {
-                    let rtn = api.call_native(MetadataSetInvocation {
-                        receiver: RENodeId::Global(entity_address.clone()),
-                        key: key.clone(),
-                        value: value.clone(),
-                    })?;
+                    let result = match entity_address {
+                        GlobalAddress::Resource(address) => {
+                            let result = api.call_module_method(
+                                ScryptoReceiver::Resource(*address),
+                                NodeModuleId::Metadata,
+                                METADATA_SET_IDENT,
+                                scrypto_encode(&MetadataSetInput {
+                                    key: key.clone(),
+                                    value: value.clone(),
+                                })
+                                .unwrap(),
+                            )?;
+                            result
+                        }
+                        GlobalAddress::Component(address) => {
+                            let result = api.call_module_method(
+                                ScryptoReceiver::Global(*address),
+                                NodeModuleId::Metadata,
+                                METADATA_SET_IDENT,
+                                scrypto_encode(&MetadataSetInput {
+                                    key: key.clone(),
+                                    value: value.clone(),
+                                })
+                                .unwrap(),
+                            )?;
+                            result
+                        }
+                        GlobalAddress::Package(address) => {
+                            let result = api.call_module_method(
+                                ScryptoReceiver::Package(*address),
+                                NodeModuleId::Metadata,
+                                METADATA_SET_IDENT,
+                                scrypto_encode(&MetadataSetInput {
+                                    key: key.clone(),
+                                    value: value.clone(),
+                                })
+                                .unwrap(),
+                            )?;
+                            result
+                        }
+                    };
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::SetPackageRoyaltyConfig {
                     package_address,

@@ -125,8 +125,7 @@ lazy_static! {
         known_enum!(
             m,
             enum MetadataFn {
-                Set = 0;
-                Get = 1;
+                Get = 0;
             }
         );
 

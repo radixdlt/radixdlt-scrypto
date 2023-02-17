@@ -38,4 +38,12 @@ pub trait ClientComponentApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
+
+    fn call_module_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        node_module_id: NodeModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
 }

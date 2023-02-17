@@ -281,7 +281,8 @@ impl KernelModule for AuthModule {
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
                         let auth = substate.native_fn_authorization(
-                            resolved_receiver.receiver.1, FnIdentifier::Native(*method)
+                            resolved_receiver.receiver.1,
+                            FnIdentifier::Native(*method),
                         );
                         api.kernel_drop_lock(handle)?;
                         auth
@@ -301,6 +302,7 @@ impl KernelModule for AuthModule {
             } => {
                 let node_id =
                     RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
+
                 let offset = SubstateOffset::Package(PackageOffset::Info);
                 let handle = api.kernel_lock_substate(
                     node_id,
@@ -309,45 +311,64 @@ impl KernelModule for AuthModule {
                     LockFlags::read_only(),
                 )?;
 
-                // Assume that package_address/blueprint is the original impl of Component for now
-                // TODO: Remove this assumption
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let package = substate_ref.package_info();
-                let schema = package
-                    .blueprint_abi(&method_identifier.blueprint_name)
-                    .expect("Blueprint not found for existing component")
-                    .structure
-                    .clone();
-                api.kernel_drop_lock(handle)?;
-
-                let component_node_id = RENodeId::Component(*component_id);
-                let state = {
-                    let offset = SubstateOffset::Component(ComponentOffset::State0);
-                    let handle = api.kernel_lock_substate(
-                        component_node_id,
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::read_only(),
-                    )?;
+                if let NodeModuleId::SELF = module_id {
+                    // Assume that package_address/blueprint is the original impl of Component for now
+                    // TODO: Remove this assumption
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                    let package = substate_ref.package_info();
+                    let schema = package
+                        .blueprint_abi(&method_identifier.blueprint_name)
+                        .expect("Blueprint not found for existing component")
+                        .structure
+                        .clone();
                     api.kernel_drop_lock(handle)?;
-                    state
-                };
-                {
+
+                    let state = {
+                        let offset = SubstateOffset::Component(ComponentOffset::State0);
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::Component(*component_id),
+                            NodeModuleId::SELF,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                        api.kernel_drop_lock(handle)?;
+                        state
+                    };
+
+                    {
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::Component(*component_id),
+                            NodeModuleId::AccessRules,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let access_rules = substate_ref.access_rules_chain();
+                        let auth = access_rules.method_authorization(
+                            &state,
+                            &schema,
+                            *module_id,
+                            method_identifier.ident.clone(),
+                        );
+                        api.kernel_drop_lock(handle)?;
+                        auth
+                    }
+                } else {
                     let handle = api.kernel_lock_substate(
-                        component_node_id,
+                        RENodeId::Component(*component_id),
                         NodeModuleId::AccessRules,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let access_rules = substate_ref.access_rules_chain();
-                    let auth = access_rules.method_authorization(
-                        &state,
-                        &schema,
+                    let auth = access_rules.native_fn_authorization(
                         *module_id,
-                        method_identifier.ident.clone(),
+                        FnIdentifier::Scrypto(method_identifier.clone()),
                     );
                     api.kernel_drop_lock(handle)?;
                     auth

@@ -180,6 +180,7 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
             receiver_len: u32,
+            module_id: u32,
             ident_ptr: u32,
             ident_len: u32,
             args_ptr: u32,
@@ -198,7 +199,7 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
-                .call_method(receiver, ident, args)
+                .call_method(receiver, module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

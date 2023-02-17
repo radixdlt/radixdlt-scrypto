@@ -1,4 +1,5 @@
 use crate::types::*;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -71,7 +72,7 @@ impl FeeTable {
             identifier.package_address,
             identifier.blueprint_name.as_str(),
         ) {
-            (LOGGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => match identifier.ident.as_str() {
+            (LOGGER_PACKAGE, LOGGER_BLUEPRINT) => match identifier.ident.as_str() {
                 LOGGER_LOG_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
@@ -238,6 +239,10 @@ impl FeeTable {
                 AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => self.fixed_high,
                 _ => self.fixed_low,
             },
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => match identifier.ident.as_str() {
+                METADATA_SET_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
             _ => 0u32,
         }
     }
@@ -254,7 +259,6 @@ impl FeeTable {
                 AccessRulesChainFn::GetLength => self.fixed_low,
             },
             NativeFn::Metadata(metadata_method) => match metadata_method {
-                MetadataFn::Set => self.fixed_low,
                 MetadataFn::Get => self.fixed_low,
             },
             NativeFn::ComponentRoyalty(method_ident) => match method_ident {

@@ -128,8 +128,7 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<MetadataSetInvocation, E>
-    + Invokable<MetadataGetInvocation, E>
+    Invokable<MetadataGetInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
     + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
     + Invokable<AccessRulesSetMethodMutabilityInvocation, E>

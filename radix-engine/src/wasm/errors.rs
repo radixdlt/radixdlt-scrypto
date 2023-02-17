@@ -116,7 +116,7 @@ pub enum WasmRuntimeError {
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
     /// Invalid RE module ID
-    InvalidModuleId(DecodeError),
+    InvalidModuleId(u32),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
     /// Invalid package abi

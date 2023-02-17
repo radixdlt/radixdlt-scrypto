@@ -1,5 +1,6 @@
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::{errors::RuntimeError, types::*};
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
@@ -15,6 +16,9 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         }
         ScryptoReceiver::Resource(resource_address) => {
             RENodeId::Global(GlobalAddress::Resource(resource_address))
+        }
+        ScryptoReceiver::Package(package_address) => {
+            RENodeId::Global(GlobalAddress::Package(package_address))
         }
         ScryptoReceiver::Component(component_id) => {
             // TODO: Fix this as this is wrong id for native components
@@ -48,7 +52,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
 
             object_info
         }
-        //NodeModuleId::ComponentRoyalty => (ROYALTY_PACKAGE_ADDRESS, COMPONENT_ROYALTY_BLUEPRINT),
+        NodeModuleId::Metadata => {
+            // TODO: Check if type has metadata
+            (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())
+        }
         _ => todo!(),
     };
 

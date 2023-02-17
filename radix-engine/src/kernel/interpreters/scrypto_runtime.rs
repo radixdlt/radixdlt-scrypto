@@ -86,6 +86,7 @@ where
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -94,7 +95,12 @@ where
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
 
-        let return_data = self.api.call_method(receiver, ident.as_str(), args)?;
+        let node_module_id = NodeModuleId::from_u32(module_id)
+            .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
+
+        let return_data =
+            self.api
+                .call_module_method(receiver, node_module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -337,6 +343,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        node_module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

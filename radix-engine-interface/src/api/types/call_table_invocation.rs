@@ -73,7 +73,6 @@ pub enum AccessRulesChainInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum MetadataInvocation {
-    Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
@@ -138,9 +137,6 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Metadata(metadata_method) => match metadata_method {
-                MetadataInvocation::Set(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
                 MetadataInvocation::Get(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -177,7 +173,6 @@ impl NativeInvocation {
                 AccessRulesChainInvocation::GetLength(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Metadata(i) => match i {
-                MetadataInvocation::Set(i) => (get_native_fn(i), scrypto_encode(i)),
                 MetadataInvocation::Get(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Package(i) => match i {

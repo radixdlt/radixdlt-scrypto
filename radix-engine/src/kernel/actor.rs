@@ -7,10 +7,15 @@ use radix_engine_interface::api::types::RENodeId;
 pub struct ResolvedReceiver {
     pub derefed_from: Option<(RENodeId, LockHandle)>,
     pub receiver: (RENodeId, NodeModuleId),
+    // TODO: Add receiver type
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: (RENodeId, NodeModuleId), from: RENodeId, lock_handle: LockHandle) -> Self {
+    pub fn derefed(
+        receiver: (RENodeId, NodeModuleId),
+        from: RENodeId,
+        lock_handle: LockHandle,
+    ) -> Self {
         Self {
             receiver,
             derefed_from: Some((from, lock_handle)),

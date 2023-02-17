@@ -208,6 +208,35 @@ pub enum NodeModuleId {
     PackageRoyalty,
 }
 
+impl NodeModuleId {
+    pub fn from_u32(i: u32) -> Option<NodeModuleId> {
+        match i {
+            0u32 => Some(NodeModuleId::PackageTypeInfo),
+            1u32 => Some(NodeModuleId::ComponentTypeInfo),
+            2u32 => Some(NodeModuleId::SELF),
+            3u32 => Some(NodeModuleId::Metadata),
+            4u32 => Some(NodeModuleId::AccessRules),
+            5u32 => Some(NodeModuleId::AccessRules1),
+            6u32 => Some(NodeModuleId::ComponentRoyalty),
+            7u32 => Some(NodeModuleId::PackageRoyalty),
+            _ => None,
+        }
+    }
+
+    pub fn id(&self) -> u32 {
+        match self {
+            NodeModuleId::PackageTypeInfo => 0u32,
+            NodeModuleId::ComponentTypeInfo => 1u32,
+            NodeModuleId::SELF => 2u32,
+            NodeModuleId::Metadata => 3u32,
+            NodeModuleId::AccessRules => 4u32,
+            NodeModuleId::AccessRules1 => 5u32,
+            NodeModuleId::ComponentRoyalty => 6u32,
+            NodeModuleId::PackageRoyalty => 7u32,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
     AuthZoneStack,

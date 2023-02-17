@@ -82,11 +82,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::Metadata(metadata_fn) => match metadata_fn {
-            MetadataFn::Set => {
-                let invocation = scrypto_decode::<MetadataSetInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             MetadataFn::Get => {
                 let invocation = scrypto_decode::<MetadataGetInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

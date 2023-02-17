@@ -15,9 +15,11 @@ use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
 use crate::system::node_modules::auth::AuthZoneNativePackage;
+use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
@@ -72,6 +74,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::Resource(resource_address) => {
                     RENodeId::Global(GlobalAddress::Resource(resource_address))
                 }
+                ScryptoReceiver::Package(package_address) => {
+                    RENodeId::Global(GlobalAddress::Package(package_address))
+                }
                 ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
                 ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
                 ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
@@ -101,6 +106,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                         api.kernel_drop_lock(handle)?;
                         info
                     }
+                    NodeModuleId::Metadata => (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string()),
                     _ => todo!(),
                 };
 
@@ -119,12 +125,13 @@ impl ExecutableInvocation for ScryptoInvocation {
 
             // Deref if global
             // TODO: Move into kernel
-            let resolved_receiver =
-                if let Some((derefed, derefed_lock)) = api.deref(original_node_id)? {
-                    ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
-                } else {
-                    ResolvedReceiver::new((original_node_id, node_module_id))
-                };
+            let resolved_receiver = if let Some((derefed, derefed_lock)) =
+                api.deref(original_node_id)?
+            {
+                ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
+            } else {
+                ResolvedReceiver::new((original_node_id, node_module_id))
+            };
 
             // Pass the component ref
             node_refs_to_copy.insert(resolved_receiver.receiver.0);
@@ -455,6 +462,9 @@ impl NativeVm {
             }
             AUTH_ZONE_CODE_ID => {
                 AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            METADATA_CODE_ID => {
+                MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeInvalidCodeId(native_package_code_id),

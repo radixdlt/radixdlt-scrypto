@@ -13,6 +13,7 @@ use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
@@ -211,7 +212,7 @@ fn build_substates(
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+        AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
@@ -226,17 +227,26 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_MINT_FUNGIBLE.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
@@ -247,47 +257,74 @@ fn build_substates(
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+        ),
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string(),
+        ),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string(),
+        ),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
@@ -323,7 +360,10 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+        ),
         "withdraw".to_string(),
         DenyAll,
     );
@@ -344,12 +384,18 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
@@ -359,12 +405,18 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::SELF,
+            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
@@ -1273,7 +1325,10 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                    let key = AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        VAULT_PUT_IDENT.to_string(),
+                    );
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1293,7 +1348,8 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                let key =
+                    AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
             }
             Withdraw => {
@@ -1339,7 +1395,10 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                    let key = AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        VAULT_PUT_IDENT.to_string(),
+                    );
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1359,7 +1418,8 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                let key =
+                    AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_mutability(key, input.mutability);
             }
             Withdraw => {

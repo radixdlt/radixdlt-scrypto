@@ -30,7 +30,9 @@ pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = address!(EntityType::Packa
 pub const LOGGER_PACKAGE: PackageAddress = address!(EntityType::Package, 6);
 pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = address!(EntityType::Package, 7);
 pub const AUTH_ZONE_PACKAGE: PackageAddress = address!(EntityType::Package, 8);
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 9);
+pub const METADATA_PACKAGE: PackageAddress = address!(EntityType::Package, 9);
+
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.

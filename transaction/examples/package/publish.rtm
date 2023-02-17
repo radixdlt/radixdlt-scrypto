@@ -67,11 +67,9 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Metadata",
-                    Enum("MetadataFn::Set")
-                )
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::Metadata"),
+                "set"
             ),
             Enum(
                 "AccessRuleEntry::AccessRule", 
@@ -145,11 +143,9 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Metadata",
-                    Enum("MetadataFn::Set")
-                )
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::Metadata"),
+                "set"
             ), 
             Enum(
                 "AccessRule::Protected", 

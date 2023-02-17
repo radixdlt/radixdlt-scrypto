@@ -5,7 +5,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
-use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
 };
@@ -16,7 +16,7 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
 };
 use radix_engine_interface::data::{
-    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
@@ -58,7 +58,7 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
@@ -96,11 +96,16 @@ impl Component for OwnedComponent {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
-            .call_native(MetadataSetInvocation {
-                receiver: RENodeId::Component(self.0),
-                key: name.as_ref().to_owned(),
-                value: value.as_ref().to_owned(),
-            })
+            .call_module_method(
+                ScryptoReceiver::Component(self.0),
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: name.as_ref().to_owned(),
+                    value: value.as_ref().to_owned(),
+                })
+                .unwrap(),
+            )
             .unwrap();
     }
 
@@ -171,11 +176,16 @@ impl Component for GlobalComponentRef {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
-            .call_native(MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-                key: name.as_ref().to_owned(),
-                value: value.as_ref().to_owned(),
-            })
+            .call_module_method(
+                ScryptoReceiver::Global(self.0),
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: name.as_ref().to_owned(),
+                    value: value.as_ref().to_owned(),
+                })
+                .unwrap(),
+            )
             .unwrap();
     }
 

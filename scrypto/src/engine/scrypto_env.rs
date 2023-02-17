@@ -86,12 +86,23 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
+        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+    }
+
+    fn call_module_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        node_module_id: NodeModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
         let receiver = scrypto_encode(&receiver).unwrap();
 
         let return_data = copy_buffer(unsafe {
             call_method(
                 receiver.as_ptr(),
                 receiver.len(),
+                node_module_id.id(),
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),

@@ -393,8 +393,18 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+    }
+
+    fn call_module_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        node_module_id: NodeModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
-        let invocation = resolve_method(receiver, NodeModuleId::SELF, method_name, &args, self)?;
+        let invocation = resolve_method(receiver, node_module_id, method_name, &args, self)?;
         self.kernel_invoke(invocation)
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }

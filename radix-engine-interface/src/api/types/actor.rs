@@ -153,7 +153,6 @@ pub enum AccessRulesChainFn {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataFn {
-    Set,
     Get,
 }
 

@@ -6,6 +6,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackagePublishInvocation, PackagePublishNativeInvocation,
@@ -52,6 +53,23 @@ pub fn create_genesis(
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
+
+    // Metadata Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(METADATA_PACKAGE)));
+        let package_address = METADATA_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: METADATA_CODE_ID,
+                abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+            }),
+        )));
+    }
 
     // Resource Package
     {

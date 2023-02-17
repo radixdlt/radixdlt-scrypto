@@ -1,5 +1,6 @@
-use crate::api::types::{MetadataFn, NodeModuleId};
+use crate::api::node_modules::metadata::METADATA_SET_IDENT;
 use crate::api::types::PackageFn;
+use crate::api::types::{MetadataFn, NodeModuleId};
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -237,7 +238,7 @@ pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) 
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+        AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

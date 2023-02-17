@@ -9,6 +9,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -479,7 +480,10 @@ impl ValidatorBlueprint {
         api.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver,
             index: 0u32,
-            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                VALIDATOR_STAKE_IDENT.to_string(),
+            ),
             rule,
         })?;
 
@@ -612,7 +616,7 @@ impl ValidatorCreator {
             AccessRule::DenyAll,
         );
         access_rules.set_method_access_rule_to_group(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
@@ -620,15 +624,24 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                VALIDATOR_UNREGISTER_IDENT.to_string(),
+            ),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+            ),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
+                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            ),
             "owner".to_string(),
         );
 

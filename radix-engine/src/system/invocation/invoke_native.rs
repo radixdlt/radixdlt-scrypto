@@ -70,10 +70,6 @@ where
             }
         }
         NativeInvocation::Metadata(metadata_invocation) => match metadata_invocation {
-            MetadataInvocation::Set(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             MetadataInvocation::Get(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
