@@ -6,9 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT, METADATA_GET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
-};
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInput};
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
@@ -63,9 +61,7 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::ComponentRoyalty(
-                ComponentRoyaltyFn::SetRoyaltyConfig,
-            )),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::ComponentRoyalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string()),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
@@ -119,12 +115,15 @@ impl Component for OwnedComponent {
     }
 
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
-        ScryptoEnv
-            .call_native(ComponentSetRoyaltyConfigInvocation {
-                receiver: RENodeId::Component(self.0),
+        ScryptoEnv.call_module_method(
+            ScryptoReceiver::Component(self.0),
+            NodeModuleId::ComponentRoyalty,
+            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&ComponentSetRoyaltyConfigInput {
                 royalty_config,
             })
-            .unwrap();
+                .unwrap(),
+        ).unwrap();
     }
 
     fn claim_royalty(&self) -> Bucket {
@@ -199,12 +198,15 @@ impl Component for GlobalComponentRef {
     }
 
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
-        let mut env = ScryptoEnv;
-        env.call_native(ComponentSetRoyaltyConfigInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-            royalty_config,
-        })
-        .unwrap();
+        ScryptoEnv.call_module_method(
+            ScryptoReceiver::Global(self.0),
+            NodeModuleId::ComponentRoyalty,
+            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&ComponentSetRoyaltyConfigInput {
+                royalty_config,
+            })
+                .unwrap(),
+        ).unwrap();
     }
 
     fn claim_royalty(&self) -> Bucket {

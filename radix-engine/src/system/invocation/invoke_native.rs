@@ -14,10 +14,6 @@ where
 {
     match invocation {
         NativeInvocation::ComponentRoyalty(component_invocation) => match component_invocation {
-            ComponentRoyaltyInvocation::SetRoyaltyConfig(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             ComponentRoyaltyInvocation::ClaimRoyalty(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))

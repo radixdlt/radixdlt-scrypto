@@ -1,7 +1,7 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
+    ComponentClaimRoyaltyInvocation,
 };
 use radix_engine_interface::api::node_modules::{auth::*};
 use radix_engine_interface::api::package::*;
@@ -12,11 +12,6 @@ pub fn resolve_native(
 ) -> Result<CallTableInvocation, RuntimeError> {
     match native_fn {
         NativeFn::ComponentRoyalty(component_fn) => match component_fn {
-            ComponentRoyaltyFn::SetRoyaltyConfig => {
-                let invocation = scrypto_decode::<ComponentSetRoyaltyConfigInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             ComponentRoyaltyFn::ClaimRoyalty => {
                 let invocation = scrypto_decode::<ComponentClaimRoyaltyInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

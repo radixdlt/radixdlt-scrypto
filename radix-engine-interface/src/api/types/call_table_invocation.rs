@@ -1,5 +1,4 @@
 use crate::api::node_modules::auth::*;
-use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
@@ -71,7 +70,6 @@ pub enum AccessRulesChainInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ComponentRoyaltyInvocation {
-    SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
@@ -88,9 +86,6 @@ impl NativeInvocation {
         let mut refs = HashSet::new();
         match self {
             NativeInvocation::ComponentRoyalty(invocation) => match invocation {
-                ComponentRoyaltyInvocation::SetRoyaltyConfig(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
                 ComponentRoyaltyInvocation::ClaimRoyalty(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -167,9 +162,6 @@ impl NativeInvocation {
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::ComponentRoyalty(i) => match i {
-                ComponentRoyaltyInvocation::SetRoyaltyConfig(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 ComponentRoyaltyInvocation::ClaimRoyalty(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

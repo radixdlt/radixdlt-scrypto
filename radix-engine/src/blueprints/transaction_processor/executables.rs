@@ -11,9 +11,7 @@ use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
-};
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInput};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -687,14 +685,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     component_address,
                     royalty_config,
                 }) => {
-                    let rtn = api.call_native(ComponentSetRoyaltyConfigInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            component_address.clone(),
-                        )),
-                        royalty_config: royalty_config.clone(),
-                    })?;
+                    let result = api.call_module_method(
+                        ScryptoReceiver::Global(*component_address),
+                        NodeModuleId::ComponentRoyalty,
+                        COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                        scrypto_encode(&ComponentSetRoyaltyConfigInput {
+                            royalty_config: royalty_config.clone(),
+                        })
+                            .unwrap(),
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::ClaimPackageRoyalty { package_address }) => {
                     let rtn = api.call_native(PackageClaimRoyaltyInvocation {

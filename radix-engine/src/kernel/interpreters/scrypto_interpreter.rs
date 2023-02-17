@@ -28,8 +28,10 @@ use radix_engine_interface::api::{
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use crate::system::node_modules::royalty::RoyaltyNativePackage;
 
 use super::ScryptoRuntime;
 
@@ -107,6 +109,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                         info
                     }
                     NodeModuleId::Metadata => (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string()),
+                    NodeModuleId::ComponentRoyalty => (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string()),
                     _ => todo!(),
                 };
 
@@ -465,6 +468,9 @@ impl NativeVm {
             }
             METADATA_CODE_ID => {
                 MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            ROYALTY_CODE_ID => {
+                RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeInvalidCodeId(native_package_code_id),

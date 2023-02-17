@@ -159,6 +159,7 @@ impl KernelModule for CostingModule {
             || package_address == TRANSACTION_RUNTIME_PACKAGE
             || package_address == AUTH_ZONE_PACKAGE
             || package_address == METADATA_PACKAGE
+            || package_address == ROYALTY_PACKAGE
         {
             return Ok(());
         }

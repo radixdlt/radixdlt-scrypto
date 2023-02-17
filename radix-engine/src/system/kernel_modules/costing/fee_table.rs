@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -239,9 +239,8 @@ impl FeeTable {
                 AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => self.fixed_high,
                 _ => self.fixed_low,
             },
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => match identifier.ident.as_str() {
-                METADATA_SET_IDENT => self.fixed_low,
-                METADATA_GET_IDENT => self.fixed_low,
+            (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT) => match identifier.ident.as_str() {
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => self.fixed_medium,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -260,7 +259,6 @@ impl FeeTable {
                 AccessRulesChainFn::GetLength => self.fixed_low,
             },
             NativeFn::ComponentRoyalty(method_ident) => match method_ident {
-                ComponentRoyaltyFn::SetRoyaltyConfig => self.fixed_medium,
                 ComponentRoyaltyFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {

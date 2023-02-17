@@ -7,6 +7,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
+use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackagePublishInvocation, PackagePublishNativeInvocation,
@@ -63,6 +64,23 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+            }),
+        )));
+    }
+
+    // Royalty Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ROYALTY_PACKAGE)));
+        let package_address = ROYALTY_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ROYALTY_CODE_ID,
+                abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
