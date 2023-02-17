@@ -277,7 +277,7 @@ SET_METADATA ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk
             r##"
 SET_METHOD_ACCESS_RULE ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     0u32
-    Enum(0u8, "test")
+    Enum(0u8, Enum(1u8), "test")
     Enum(0u8);
 "##,
         );

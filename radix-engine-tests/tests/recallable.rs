@@ -71,7 +71,7 @@ fn cannot_take_on_non_recallable_vault() {
                         ..
                     }),
                     receiver: Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(..),
+                        receiver: (RENodeId::Vault(..), ..),
                         ..
                     })
                 },

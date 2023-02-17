@@ -141,7 +141,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Proof(..),
+                        receiver: (RENodeId::Proof(..), ..),
                         ..
                     }),
                 ..
@@ -150,7 +150,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Bucket(..),
+                        receiver: (RENodeId::Bucket(..), ..),
                         ..
                     }),
                 ..
@@ -159,7 +159,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Worktop,
+                        receiver: (RENodeId::Worktop, ..),
                         ..
                     }),
                 ..
@@ -168,7 +168,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Logger,
+                        receiver: (RENodeId::Logger, ..),
                         ..
                     }),
                 ..
@@ -177,7 +177,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::TransactionRuntime,
+                        receiver: (RENodeId::TransactionRuntime, ..),
                         ..
                     }),
                 ..
@@ -186,7 +186,7 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::AuthZoneStack,
+                        receiver: (RENodeId::AuthZoneStack, ..),
                         ..
                     }),
                 ..
@@ -196,7 +196,7 @@ impl KernelModule for AuthModule {
                 identifier,
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: (RENodeId::Vault(vault_id), module_id),
                         ..
                     }),
             } => {
@@ -231,7 +231,7 @@ impl KernelModule for AuthModule {
                 // TODO: Revisit what the correct abstraction is for visibility in the auth module
                 let auth = match visibility {
                     RENodeVisibilityOrigin::Normal => {
-                        substate.native_fn_authorization(identifier.clone())
+                        substate.native_fn_authorization(*module_id, identifier.clone())
                     }
                     RENodeVisibilityOrigin::DirectAccess => match identifier {
                         // TODO: Do we want to allow recaller to be able to withdraw from
@@ -271,7 +271,7 @@ impl KernelModule for AuthModule {
                             || matches!(method, NativeFn::ComponentRoyalty(..)) =>
                     {
                         let handle = api.kernel_lock_substate(
-                            resolved_receiver.receiver,
+                            resolved_receiver.receiver.0,
                             NodeModuleId::AccessRules,
                             SubstateOffset::AccessRulesChain(
                                 AccessRulesChainOffset::AccessRulesChain,
@@ -280,7 +280,9 @@ impl KernelModule for AuthModule {
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
-                        let auth = substate.native_fn_authorization(FnIdentifier::Native(*method));
+                        let auth = substate.native_fn_authorization(
+                            resolved_receiver.receiver.1, FnIdentifier::Native(*method)
+                        );
                         api.kernel_drop_lock(handle)?;
                         auth
                     }
@@ -293,7 +295,7 @@ impl KernelModule for AuthModule {
                 identifier: FnIdentifier::Scrypto(method_identifier),
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Component(component_id),
+                        receiver: (RENodeId::Component(component_id), module_id),
                         ..
                     }),
             } => {
@@ -344,6 +346,7 @@ impl KernelModule for AuthModule {
                     let auth = access_rules.method_authorization(
                         &state,
                         &schema,
+                        *module_id,
                         method_identifier.ident.clone(),
                     );
                     api.kernel_drop_lock(handle)?;
@@ -355,14 +358,14 @@ impl KernelModule for AuthModule {
                 receiver: Some(ResolvedReceiver { receiver, .. }),
             } => {
                 let handle = api.kernel_lock_substate(
-                    *receiver,
+                    receiver.0,
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.access_rules_chain();
-                let auth = substate.native_fn_authorization(identifier.clone());
+                let auth = substate.native_fn_authorization(receiver.1, identifier.clone());
                 api.kernel_drop_lock(handle)?;
                 auth
             }

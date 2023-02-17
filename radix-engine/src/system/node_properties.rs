@@ -244,7 +244,7 @@ impl VisibilityProperties {
                                 _ => false,
                             },
                             Some(ResolvedReceiver {
-                                receiver: RENodeId::Component(component_address),
+                                receiver: (RENodeId::Component(component_address), ..),
                                 ..
                             }) => match (node_id, offset) {
                                 // READ package code & abi
@@ -309,11 +309,11 @@ impl VisibilityProperties {
                             },
 
                             Some(ResolvedReceiver {
-                                receiver: RENodeId::Component(component_address),
+                                receiver: (RENodeId::Component(component_address), ..),
                                 ..
                             })
                             | Some(ResolvedReceiver {
-                                receiver: RENodeId::Account(component_address),
+                                receiver: (RENodeId::Account(component_address), ..),
                                 ..
                             }) => match (node_id, offset) {
                                 (

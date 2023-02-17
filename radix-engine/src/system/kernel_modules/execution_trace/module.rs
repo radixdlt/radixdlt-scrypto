@@ -349,7 +349,7 @@ impl ExecutionTraceModule {
                     }),
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: (RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -367,7 +367,7 @@ impl ExecutionTraceModule {
                     }),
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: (RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -397,7 +397,7 @@ impl ExecutionTraceModule {
                     }),
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: (RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -529,7 +529,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let Some(resolved_receiver) = actor.receiver {
-                match resolved_receiver.receiver {
+                match resolved_receiver.receiver.0 {
                     RENodeId::Component(component_id) | RENodeId::Account(component_id) => {
                         match vault_op {
                             VaultOp::Create(_) => todo!("Not supported yet!"),

@@ -290,7 +290,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             .set_method_access_rule(
                 GlobalAddress::Component(test_runner.component_address),
                 0,
-                AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
+                AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, "borrow_funds".to_string()),
                 rule!(deny_all),
             )
             .build(),

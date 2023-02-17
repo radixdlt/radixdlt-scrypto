@@ -195,6 +195,7 @@ impl Into<ResourceAddress> for GlobalAddress {
     ScryptoCategorize,
     ScryptoEncode,
     ScryptoDecode,
+    LegacyDescribe,
 )]
 pub enum NodeModuleId {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo

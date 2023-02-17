@@ -101,6 +101,20 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum NodeModuleId {
+                PackageTypeInfo = 0;
+                SELF = 1;
+                ComponentTypeInfo = 2;
+                Metadata = 3;
+                AccessRules = 4;
+                AccessRules1 = 5;
+                ComponentRoyalty = 6;
+                PackageRoyalty = 7;
+            }
+        );
+
+        known_enum!(
+            m,
             enum PackageFn {
                 Publish = 0;
                 SetRoyaltyConfig = 1;

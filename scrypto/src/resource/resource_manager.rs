@@ -5,9 +5,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInvocation, MetadataSetInvocation,
 };
-use radix_engine_interface::api::types::{
-    GlobalAddress, MetadataFn, NativeFn, RENodeId, ScryptoReceiver,
-};
+use radix_engine_interface::api::types::{GlobalAddress, MetadataFn, NativeFn, NodeModuleId, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -60,7 +58,7 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
             rule: AccessRuleEntry::AccessRule(access_rule),
         })
         .unwrap();
@@ -128,6 +126,7 @@ impl ResourceManager {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
                 RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
             ),
             rule: AccessRuleEntry::AccessRule(access_rule),
@@ -151,7 +150,7 @@ impl ResourceManager {
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -174,6 +173,7 @@ impl ResourceManager {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(
+                NodeModuleId::SELF,
                 RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
             ),
             mutability: AccessRule::DenyAll,

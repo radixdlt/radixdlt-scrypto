@@ -6,18 +6,18 @@ use radix_engine_interface::api::types::RENodeId;
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<(RENodeId, LockHandle)>,
-    pub receiver: RENodeId,
+    pub receiver: (RENodeId, NodeModuleId),
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: RENodeId, from: RENodeId, lock_handle: LockHandle) -> Self {
+    pub fn derefed(receiver: (RENodeId, NodeModuleId), from: RENodeId, lock_handle: LockHandle) -> Self {
         Self {
             receiver,
             derefed_from: Some((from, lock_handle)),
         }
     }
 
-    pub fn new(receiver: RENodeId) -> Self {
+    pub fn new(receiver: (RENodeId, NodeModuleId)) -> Self {
         Self {
             receiver,
             derefed_from: None,

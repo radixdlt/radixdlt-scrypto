@@ -121,13 +121,13 @@ impl ExecutableInvocation for ScryptoInvocation {
             // TODO: Move into kernel
             let resolved_receiver =
                 if let Some((derefed, derefed_lock)) = api.deref(original_node_id)? {
-                    ResolvedReceiver::derefed(derefed, original_node_id, derefed_lock)
+                    ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
                 } else {
-                    ResolvedReceiver::new(original_node_id)
+                    ResolvedReceiver::new((original_node_id, node_module_id))
                 };
 
             // Pass the component ref
-            node_refs_to_copy.insert(resolved_receiver.receiver);
+            node_refs_to_copy.insert(resolved_receiver.receiver.0);
 
             (
                 Some(resolved_receiver.receiver),
@@ -230,7 +230,7 @@ impl ExecutableInvocation for ScryptoInvocation {
         let executor = ScryptoExecutor {
             package_address: self.package_address,
             export_name,
-            receiver: receiver,
+            receiver: receiver.map(|r| r.0),
             args: args.into(),
         };
 

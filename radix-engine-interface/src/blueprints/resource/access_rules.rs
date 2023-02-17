@@ -1,4 +1,4 @@
-use crate::api::types::MetadataFn;
+use crate::api::types::{MetadataFn, NodeModuleId};
 use crate::api::types::PackageFn;
 use crate::blueprints::resource::*;
 use crate::rule;
@@ -25,7 +25,7 @@ use super::AccessRule;
     LegacyDescribe,
 )]
 pub enum AccessRuleKey {
-    ScryptoMethod(String),
+    ScryptoMethod(NodeModuleId, String),
     Native(NativeFn),
 }
 
@@ -91,7 +91,7 @@ impl AccessRules {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = AccessRuleKey::ScryptoMethod(method_name.to_string());
+        let key = AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, method_name.to_string());
         let mutability = mutability.into();
 
         self.method_auth

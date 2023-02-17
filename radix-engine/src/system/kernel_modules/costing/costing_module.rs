@@ -135,7 +135,7 @@ impl KernelModule for CostingModule {
                     Some(ResolvedReceiver {
                         derefed_from:
                             Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
-                        receiver: RENodeId::Component(component_id),
+                        receiver: (RENodeId::Component(component_id), ..),
                     }) => Some((*component_address, *component_id)),
                     _ => None,
                 };

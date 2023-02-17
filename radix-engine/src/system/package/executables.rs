@@ -238,14 +238,14 @@ impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
+        let resolved_receiver = deref_and_update(receiver, NodeModuleId::SELF, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(
             NativeFn::Package(PackageFn::SetRoyaltyConfig),
             resolved_receiver,
         );
         let executor = PackageSetRoyaltyConfigExecutable {
-            receiver: resolved_receiver.receiver,
+            receiver: resolved_receiver.receiver.0,
             royalty_config: self.royalty_config,
         };
 
@@ -287,14 +287,14 @@ impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
+        let resolved_receiver = deref_and_update(receiver, NodeModuleId::SELF, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(
             NativeFn::Package(PackageFn::ClaimRoyalty),
             resolved_receiver,
         );
         let executor = PackageClaimRoyaltyExecutable {
-            receiver: resolved_receiver.receiver,
+            receiver: resolved_receiver.receiver.0,
         };
 
         Ok((actor, call_frame_update, executor))

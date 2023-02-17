@@ -4,9 +4,7 @@ use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation,
 };
-use radix_engine_interface::api::types::{
-    ComponentAddress, ComponentId, GlobalAddress, RENodeId, ToString,
-};
+use radix_engine_interface::api::types::{ComponentAddress, ComponentId, GlobalAddress, NodeModuleId, RENodeId, ToString};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
 
@@ -42,7 +40,7 @@ impl ComponentAccessRules {
             .call_native(AccessRulesSetMethodAccessRuleInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
+                key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, method_name.to_string()),
                 rule: AccessRuleEntry::AccessRule(access_rule),
             })
             .unwrap();
@@ -54,7 +52,7 @@ impl ComponentAccessRules {
             .call_native(AccessRulesSetMethodMutabilityInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
+                key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, method_name.to_string()),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap();

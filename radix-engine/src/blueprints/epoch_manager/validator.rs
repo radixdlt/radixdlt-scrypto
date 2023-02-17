@@ -479,7 +479,7 @@ impl ValidatorBlueprint {
         api.call_native(AccessRulesSetMethodAccessRuleInvocation {
             receiver,
             index: 0u32,
-            key: AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
+            key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
             rule,
         })?;
 
@@ -616,19 +616,19 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_REGISTER_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_REGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UNREGISTER_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_KEY_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
             "owner".to_string(),
         );
 
@@ -638,7 +638,7 @@ impl ValidatorCreator {
         .unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
             "owner".to_string(),
             rule!(require(non_fungible_global_id)),
         );
@@ -648,11 +648,11 @@ impl ValidatorCreator {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UNSTAKE_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_UNSTAKE_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_CLAIM_XRD_IDENT.to_string()),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, VALIDATOR_CLAIM_XRD_IDENT.to_string()),
             rule!(allow_all),
         );
 
