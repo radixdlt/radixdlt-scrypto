@@ -73,7 +73,7 @@ pub enum RENodeId {
     Worktop,
     Logger,
     TransactionRuntime,
-    Global(GlobalAddress),
+    Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
@@ -117,7 +117,7 @@ impl Into<[u8; 36]> for RENodeId {
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Component(address)) => address,
+            RENodeId::Global(Address::Component(address)) => address,
             _ => panic!("Not a component address"),
         }
     }
@@ -126,7 +126,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
+            RENodeId::Global(Address::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
     }
@@ -135,56 +135,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
-            _ => panic!("Not a resource address"),
-        }
-    }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
-pub enum GlobalAddress {
-    Component(ComponentAddress),
-    Package(PackageAddress),
-    Resource(ResourceAddress),
-}
-
-impl Into<ComponentAddress> for GlobalAddress {
-    fn into(self) -> ComponentAddress {
-        match self {
-            GlobalAddress::Component(component_address) => component_address,
-            _ => panic!("Not a component address"),
-        }
-    }
-}
-
-impl Into<PackageAddress> for GlobalAddress {
-    fn into(self) -> PackageAddress {
-        match self {
-            GlobalAddress::Package(package_address) => package_address,
-            _ => panic!("Not a package address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for GlobalAddress {
-    fn into(self) -> ResourceAddress {
-        match self {
-            GlobalAddress::Resource(resource_address) => resource_address,
+            RENodeId::Global(Address::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }

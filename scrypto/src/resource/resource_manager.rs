@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInvocation, MetadataSetInvocation,
 };
 use radix_engine_interface::api::types::{
-    GlobalAddress, MetadataFn, NativeFn, RENodeId, ScryptoReceiver,
+    Address, MetadataFn, NativeFn, RENodeId, ScryptoReceiver,
 };
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
@@ -28,7 +28,7 @@ impl ResourceManager {
     pub fn set_metadata(&mut self, key: String, value: String) {
         let mut env = ScryptoEnv;
         env.call_native(MetadataSetInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             key,
             value,
         })
@@ -38,7 +38,7 @@ impl ResourceManager {
     pub fn get_metadata(&mut self, key: String) -> Option<String> {
         let mut env = ScryptoEnv;
         env.call_native(MetadataGetInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             key,
         })
         .unwrap()
@@ -47,7 +47,7 @@ impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetGroupAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             name: "mint".to_string(),
             rule: access_rule,
@@ -58,7 +58,7 @@ impl ResourceManager {
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
             rule: AccessRuleEntry::AccessRule(access_rule),
@@ -114,7 +114,7 @@ impl ResourceManager {
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             rule: AccessRuleEntry::AccessRule(access_rule),
@@ -125,7 +125,7 @@ impl ResourceManager {
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(
                 RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
@@ -138,7 +138,7 @@ impl ResourceManager {
     pub fn lock_mintable(&mut self) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetGroupMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             name: "mint".to_string(),
             mutability: AccessRule::DenyAll,
@@ -149,7 +149,7 @@ impl ResourceManager {
     pub fn lock_burnable(&mut self) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
             mutability: AccessRule::DenyAll,
@@ -160,7 +160,7 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&mut self) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             mutability: AccessRule::DenyAll,
@@ -171,7 +171,7 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&mut self) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            receiver: RENodeId::Global(Address::Resource(self.0)),
             index: 0,
             key: AccessRuleKey::ScryptoMethod(
                 RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),

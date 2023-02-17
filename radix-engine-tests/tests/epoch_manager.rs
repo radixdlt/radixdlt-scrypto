@@ -851,10 +851,8 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-        OLYMPIA_VALIDATOR_TOKEN,
-    )));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
@@ -893,10 +891,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-        OLYMPIA_VALIDATOR_TOKEN,
-    )));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
 
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {

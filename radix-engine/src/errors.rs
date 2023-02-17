@@ -15,7 +15,7 @@ use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
-use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
@@ -122,7 +122,7 @@ pub enum KernelError {
     // invocation
     WasmRuntimeError(WasmRuntimeError),
 
-    InvalidReferenceWrite(GlobalAddress),
+    InvalidReferenceWrite(Address),
 
     RENodeNotFound(RENodeId),
 

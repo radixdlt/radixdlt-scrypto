@@ -775,7 +775,7 @@ fn generate_address(
                     .map(|a| Address::Component(a)))
                 .or(bech32_decoder
                     .validate_and_decode_resource_address(s)
-                    .map(|a| Address::ResourceManager(a)))
+                    .map(|a| Address::Resource(a)))
                 .map_err(|_| GeneratorError::InvalidAddress(s.into()))
                 .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
@@ -799,7 +799,7 @@ fn generate_address(
         ast::Value::ResourceAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
-                .map(|a| Address::ResourceManager(a))
+                .map(|a| Address::Resource(a))
                 .map_err(|_| GeneratorError::InvalidAddress(s.into()))
                 .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
@@ -1248,9 +1248,9 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(from_address(
-                            Address::ResourceManager(global_id.resource_address()),
-                        )),
+                        value: ManifestCustomValue::Address(from_address(Address::Resource(
+                            global_id.resource_address(),
+                        ))),
                     },
                     Value::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(
@@ -1272,7 +1272,7 @@ pub fn generate_value(
         }
         ast::Value::ResourceAddress(_) => {
             generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(from_address(Address::ResourceManager(v))),
+                value: ManifestCustomValue::Address(from_address(Address::Resource(v))),
             })
         }
         // ==============

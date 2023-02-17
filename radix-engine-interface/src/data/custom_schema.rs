@@ -19,10 +19,6 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-
-    PublicKey, /* any */
-    EcdsaSecp256k1PublicKey,
-    EddsaEd25519PublicKey,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
@@ -65,13 +61,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
             ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
-            ScryptoCustomTypeKind::PublicKey => ScryptoCustomTypeKind::PublicKey,
-            ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
-                ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
-            }
-            ScryptoCustomTypeKind::EddsaEd25519PublicKey => {
-                ScryptoCustomTypeKind::EddsaEd25519PublicKey
-            }
         }
     }
 

@@ -31,7 +31,7 @@ impl KeyValueStoreEntrySubstate {
         owned_node_ids
     }
 
-    pub fn global_references(&self) -> HashSet<GlobalAddress> {
+    pub fn global_references(&self) -> HashSet<Address> {
         let mut global_references = HashSet::new();
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {

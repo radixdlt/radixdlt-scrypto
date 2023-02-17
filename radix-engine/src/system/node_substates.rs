@@ -1,4 +1,4 @@
-use super::global::GlobalAddressSubstate;
+use super::global::GlobalSubstate;
 use super::node_modules::auth::AccessRulesChainSubstate;
 use super::node_modules::auth::AuthZoneStackSubstate;
 use super::node_modules::metadata::MetadataSubstate;
@@ -23,14 +23,13 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
-    SubstateOffset,
+    Address, ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
@@ -88,7 +87,7 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn global(&self) -> &GlobalAddressSubstate {
+    pub fn global(&self) -> &GlobalSubstate {
         if let PersistedSubstate::Global(state) = self {
             state
         } else {
@@ -165,7 +164,7 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
@@ -431,7 +430,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn global(&self) -> &GlobalAddressSubstate {
+    pub fn global(&self) -> &GlobalSubstate {
         if let RuntimeSubstate::Global(global) = self {
             global
         } else {
@@ -822,8 +821,8 @@ impl Into<ValidatorSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<GlobalAddressSubstate> for RuntimeSubstate {
-    fn into(self) -> GlobalAddressSubstate {
+impl Into<GlobalSubstate> for RuntimeSubstate {
+    fn into(self) -> GlobalSubstate {
         if let RuntimeSubstate::Global(substate) = self {
             substate
         } else {
@@ -927,7 +926,7 @@ pub enum SubstateRef<'a> {
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
-    Global(&'a GlobalAddressSubstate),
+    Global(&'a GlobalSubstate),
     TypeInfo(&'a TypeInfoSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
@@ -1110,7 +1109,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn global_address(&self) -> &GlobalAddressSubstate {
+    pub fn global_address(&self) -> &GlobalSubstate {
         match self {
             SubstateRef::Global(value) => *value,
             _ => panic!("Not a global address"),
@@ -1152,36 +1151,36 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (HashSet<Address>, HashSet<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
                 let mut owned_nodes = HashSet::new();
                 match global {
-                    GlobalAddressSubstate::Resource(resource_manager_id) => {
+                    GlobalSubstate::Resource(resource_manager_id) => {
                         owned_nodes.insert(RENodeId::ResourceManager(*resource_manager_id))
                     }
-                    GlobalAddressSubstate::Component(component_id) => {
+                    GlobalSubstate::Component(component_id) => {
                         owned_nodes.insert(RENodeId::Component(*component_id))
                     }
-                    GlobalAddressSubstate::Identity(identity_id) => {
+                    GlobalSubstate::Identity(identity_id) => {
                         owned_nodes.insert(RENodeId::Identity(*identity_id))
                     }
-                    GlobalAddressSubstate::EpochManager(epoch_manager_id) => {
+                    GlobalSubstate::EpochManager(epoch_manager_id) => {
                         owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
                     }
-                    GlobalAddressSubstate::Clock(clock_id) => {
+                    GlobalSubstate::Clock(clock_id) => {
                         owned_nodes.insert(RENodeId::Clock(*clock_id))
                     }
-                    GlobalAddressSubstate::Package(package_id) => {
+                    GlobalSubstate::Package(package_id) => {
                         owned_nodes.insert(RENodeId::Package(*package_id))
                     }
-                    GlobalAddressSubstate::Validator(validator_id) => {
+                    GlobalSubstate::Validator(validator_id) => {
                         owned_nodes.insert(RENodeId::Validator(*validator_id))
                     }
-                    GlobalAddressSubstate::Account(account_id) => {
+                    GlobalSubstate::Account(account_id) => {
                         owned_nodes.insert(RENodeId::Account(*account_id))
                     }
-                    GlobalAddressSubstate::AccessController(access_controller_id) => {
+                    GlobalSubstate::AccessController(access_controller_id) => {
                         owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
                     }
                 };
@@ -1198,32 +1197,32 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(vault.resource_address()));
+                references.insert(Address::Resource(vault.resource_address()));
                 (references, HashSet::new())
             }
             SubstateRef::Proof(proof) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(proof.resource_address()));
+                references.insert(Address::Resource(proof.resource_address()));
                 (references, HashSet::new())
             }
             SubstateRef::Bucket(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(bucket.resource_address()));
+                references.insert(Address::Resource(bucket.resource_address()));
                 (references, HashSet::new())
             }
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(GlobalAddress::Component(*component_ref));
+                    references.insert(Address::Component(*component_ref));
                 }
                 for resource_ref in &substate.dependent_resources {
-                    references.insert(GlobalAddress::Resource(*resource_ref));
+                    references.insert(Address::Resource(*resource_ref));
                 }
                 (references, HashSet::new())
             }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Package(substate.package_address));
+                references.insert(Address::Package(substate.package_address));
                 (references, HashSet::new())
             }
             SubstateRef::ResourceManager(substate) => {
@@ -1236,10 +1235,10 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = HashSet::new();
-                references.insert(GlobalAddress::Component(substate.manager));
-                references.insert(GlobalAddress::Component(substate.address));
-                references.insert(GlobalAddress::Resource(substate.unstake_nft));
-                references.insert(GlobalAddress::Resource(substate.liquidity_token));
+                references.insert(Address::Component(substate.manager));
+                references.insert(Address::Component(substate.address));
+                references.insert(Address::Resource(substate.unstake_nft));
+                references.insert(Address::Resource(substate.liquidity_token));
                 owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
                 owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
@@ -1323,7 +1322,7 @@ pub enum SubstateRefMut<'a> {
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
-    Global(&'a mut GlobalAddressSubstate),
+    Global(&'a mut GlobalSubstate),
     TypeInfo(&'a mut TypeInfoSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),

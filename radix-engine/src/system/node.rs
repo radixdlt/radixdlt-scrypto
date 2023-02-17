@@ -5,7 +5,7 @@ use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
@@ -88,7 +88,7 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),

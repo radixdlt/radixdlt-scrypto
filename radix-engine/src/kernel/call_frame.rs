@@ -6,7 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    Address, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
 use super::heap::{Heap, HeapRENode};
@@ -64,7 +64,7 @@ pub enum RENodeVisibilityOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub substate_pointer: (RENodeLocation, RENodeId, NodeModuleId, SubstateOffset),
-    pub global_references: HashSet<GlobalAddress>,
+    pub global_references: HashSet<Address>,
     pub substate_owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
 }
@@ -301,35 +301,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeId::Global(Address::Resource(RADIX_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeId::Global(Address::Resource(SYSTEM_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
+            RENodeId::Global(Address::Resource(PACKAGE_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
+            RENodeId::Global(Address::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(CLOCK)),
+            RENodeId::Global(Address::Component(CLOCK)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
+            RENodeId::Global(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

@@ -2,7 +2,7 @@ use crate::types::*;
 
 // TODO: clean up after `Owned(RENodeId)`?
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum GlobalAddressSubstate {
+pub enum GlobalSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),
     Package(PackageId),
@@ -14,18 +14,18 @@ pub enum GlobalAddressSubstate {
     Account(AccountId),
 }
 
-impl GlobalAddressSubstate {
+impl GlobalSubstate {
     pub fn node_deref(&self) -> RENodeId {
         match self {
-            GlobalAddressSubstate::Component(id) => RENodeId::Component(*id),
-            GlobalAddressSubstate::Resource(id) => RENodeId::ResourceManager(*id),
-            GlobalAddressSubstate::Package(id) => RENodeId::Package(*id),
-            GlobalAddressSubstate::EpochManager(id) => RENodeId::EpochManager(*id),
-            GlobalAddressSubstate::Identity(id) => RENodeId::Identity(*id),
-            GlobalAddressSubstate::Validator(id) => RENodeId::Validator(*id),
-            GlobalAddressSubstate::Clock(id) => RENodeId::Clock(*id),
-            GlobalAddressSubstate::Account(id) => RENodeId::Account(*id),
-            GlobalAddressSubstate::AccessController(id) => RENodeId::AccessController(*id),
+            GlobalSubstate::Component(id) => RENodeId::Component(*id),
+            GlobalSubstate::Resource(id) => RENodeId::ResourceManager(*id),
+            GlobalSubstate::Package(id) => RENodeId::Package(*id),
+            GlobalSubstate::EpochManager(id) => RENodeId::EpochManager(*id),
+            GlobalSubstate::Identity(id) => RENodeId::Identity(*id),
+            GlobalSubstate::Validator(id) => RENodeId::Validator(*id),
+            GlobalSubstate::Clock(id) => RENodeId::Clock(*id),
+            GlobalSubstate::Account(id) => RENodeId::Account(*id),
+            GlobalSubstate::AccessController(id) => RENodeId::AccessController(*id),
         }
     }
 }

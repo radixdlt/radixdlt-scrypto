@@ -8,7 +8,7 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
@@ -220,7 +220,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
+    pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
             .substate_store
@@ -249,7 +249,7 @@ impl TestRunner {
     }
 
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let global = self
             .substate_store
             .get_substate(&SubstateId(
@@ -262,7 +262,7 @@ impl TestRunner {
     }
 
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let node_id = RENodeId::Global(Address::Package(package_address));
         let global = self
             .substate_store
             .get_substate(&SubstateId(
@@ -354,7 +354,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<VaultId> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -389,7 +389,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -448,10 +448,10 @@ impl TestRunner {
     }
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
-        let substate: GlobalAddressSubstate = self
+        let substate: GlobalSubstate = self
             .substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
+                RENodeId::Global(Address::Component(component_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
@@ -462,10 +462,10 @@ impl TestRunner {
     }
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
-        let substate: GlobalAddressSubstate = self
+        let substate: GlobalSubstate = self
             .substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
+                RENodeId::Global(Address::Package(package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))

@@ -56,9 +56,7 @@ pub fn create_genesis(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            RESOURCE_MANAGER_PACKAGE,
-        )));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
         let package_address = RESOURCE_MANAGER_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -85,7 +83,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -110,7 +108,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -127,7 +125,7 @@ pub fn create_genesis(
 
     // Identity Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -144,9 +142,7 @@ pub fn create_genesis(
 
     // EpochManager Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            EPOCH_MANAGER_PACKAGE,
-        )));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
         let package_address = EPOCH_MANAGER_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -163,7 +159,7 @@ pub fn create_genesis(
 
     // Clock Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -180,7 +176,7 @@ pub fn create_genesis(
 
     // Account Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -197,7 +193,7 @@ pub fn create_genesis(
 
     // AccessRules Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
             ACCESS_CONTROLLER_PACKAGE,
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
@@ -216,7 +212,7 @@ pub fn create_genesis(
 
     // Logger Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(LOGGER_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -233,7 +229,7 @@ pub fn create_genesis(
 
     // TransactionRuntime Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
             TRANSACTION_RUNTIME_PACKAGE,
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
@@ -252,7 +248,7 @@ pub fn create_genesis(
 
     // AuthZone Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(AUTH_ZONE_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
@@ -273,9 +269,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -297,9 +291,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -321,7 +313,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(SYSTEM_TOKEN)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -340,7 +332,7 @@ pub fn create_genesis(
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::Publish(PackagePublishInvocation {
                 package_address: Some(package_address),
@@ -355,7 +347,7 @@ pub fn create_genesis(
 
     {
         let component_address = CLOCK.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
@@ -388,10 +380,8 @@ pub fn create_genesis(
 
         let component_address = EPOCH_MANAGER.raw();
         let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            OLYMPIA_VALIDATOR_TOKEN,
-        )));
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
@@ -495,7 +485,7 @@ where
 {
     if substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeId::Global(Address::Resource(RADIX_TOKEN)),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
@@ -589,7 +579,7 @@ mod tests {
 
         let global_substate = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Component(account_component_address)),
+                RENodeId::Global(Address::Component(account_component_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))

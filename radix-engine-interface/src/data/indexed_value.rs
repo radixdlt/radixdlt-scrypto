@@ -108,20 +108,10 @@ impl IndexedScryptoValue {
         Ok(node_ids)
     }
 
-    pub fn global_references(&self) -> HashSet<GlobalAddress> {
+    pub fn global_references(&self) -> HashSet<Address> {
         let mut references = HashSet::new();
         for (reference, _) in &self.references {
-            match reference {
-                Address::Package(address) => {
-                    references.insert(GlobalAddress::Package(*address));
-                }
-                Address::Component(address) => {
-                    references.insert(GlobalAddress::Component(*address));
-                }
-                Address::ResourceManager(address) => {
-                    references.insert(GlobalAddress::Resource(*address));
-                }
-            }
+            references.insert(reference.clone());
         }
 
         references

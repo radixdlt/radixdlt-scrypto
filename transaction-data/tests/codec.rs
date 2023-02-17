@@ -18,7 +18,7 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress::ResourceManager([0u8; 27]),
+        a: ManifestAddress::Resource([0u8; 27]),
         b: ManifestAddress::Package([1u8; 27]),
         c: ManifestAddress::Component([2u8; 27]),
         d: ManifestBucket(4),

@@ -288,7 +288,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
-                GlobalAddress::Component(test_runner.component_address),
+                Address::Component(test_runner.component_address),
                 0,
                 AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
                 rule!(deny_all),
@@ -339,7 +339,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let receipt = test_runner.execute_manifest(
             MutableAccessRulesTestRunner::manifest_builder()
                 .set_method_access_rule(
-                    GlobalAddress::Component(test_runner.component_address),
+                    Address::Component(test_runner.component_address),
                     1,
                     AccessRuleKey::Native(NativeFn::AccessRulesChain(method)),
                     rule!(deny_all),

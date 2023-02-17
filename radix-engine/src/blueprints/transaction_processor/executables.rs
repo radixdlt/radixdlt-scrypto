@@ -104,13 +104,13 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 package_address,
                 ..
             } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Package(*package_address)));
+                update.add_ref(RENodeId::Global(Address::Package(*package_address)));
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
 
                 if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                    update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
+                    update.add_ref(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
                 }
             }
             BasicInstruction::CallMethod {
@@ -118,9 +118,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 component_address,
                 ..
             } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                    *component_address,
-                )));
+                update.add_ref(RENodeId::Global(Address::Component(*component_address)));
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
@@ -143,7 +141,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::ClaimPackageRoyalty {
                 package_address, ..
             } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Package(*package_address)));
+                update.add_ref(RENodeId::Global(Address::Package(*package_address)));
             }
             BasicInstruction::SetComponentRoyaltyConfig {
                 component_address, ..
@@ -151,9 +149,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::ClaimComponentRoyalty {
                 component_address, ..
             } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Component(
-                    *component_address,
-                )));
+                update.add_ref(RENodeId::Global(Address::Component(*component_address)));
             }
             BasicInstruction::TakeFromWorktop {
                 resource_address, ..
@@ -191,7 +187,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::MintUuidNonFungible {
                 resource_address, ..
             } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
+                update.add_ref(RENodeId::Global(Address::Resource(*resource_address)));
             }
             BasicInstruction::ReturnToWorktop { .. }
             | BasicInstruction::PopFromAuthZone { .. }
@@ -235,16 +231,12 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         for instruction in self.instructions.as_ref() {
             instruction_get_update(instruction, &mut call_frame_update);
         }
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
+        call_frame_update.add_ref(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Component(CLOCK)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
 
         let actor =
             ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
@@ -643,9 +635,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 }) => {
                     let rtn = api.call_native(ComponentSetRoyaltyConfigInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            component_address.clone(),
-                        )),
+                        receiver: RENodeId::Global(Address::Component(component_address.clone())),
                         royalty_config: royalty_config.clone(),
                     })?;
 
@@ -664,9 +654,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     component_address,
                 }) => {
                     let rtn = api.call_native(ComponentClaimRoyaltyInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            component_address.clone(),
-                        )),
+                        receiver: RENodeId::Global(Address::Component(component_address.clone())),
                     })?;
 
                     Worktop::sys_put(Bucket(rtn.0), api)?;

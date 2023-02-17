@@ -12,7 +12,7 @@ use crate::*;
 pub enum ManifestAddress {
     Package([u8; 27]),
     Component([u8; 27]),
-    ResourceManager([u8; 27]),
+    Resource([u8; 27]),
 }
 
 //========
@@ -49,7 +49,7 @@ impl TryFrom<&[u8]> for ManifestAddress {
         }
         // FIXME: move HRP constants to `radix-engine-constants`, and remove hard-coded range here
         if slice[0] == 0x00 {
-            Ok(Self::ResourceManager(copy_u8_array(slice)))
+            Ok(Self::Resource(copy_u8_array(slice)))
         } else if slice[0] == 0x01 {
             Ok(Self::Package(copy_u8_array(slice)))
         } else if slice[0] <= 0x0c {
@@ -65,7 +65,7 @@ impl ManifestAddress {
         match self {
             ManifestAddress::Package(v) => v.to_vec(),
             ManifestAddress::Component(v) => v.to_vec(),
-            ManifestAddress::ResourceManager(v) => v.to_vec(),
+            ManifestAddress::Resource(v) => v.to_vec(),
         }
     }
 }

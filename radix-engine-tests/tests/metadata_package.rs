@@ -27,7 +27,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            GlobalAddress::Package(package_address),
+            Address::Package(package_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )
@@ -41,7 +41,7 @@ fn cannot_set_package_metadata_with_no_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
+    let metadata = test_runner.get_metadata(Address::Package(package_address));
     assert!(metadata.get("name").is_none());
 }
 
@@ -71,7 +71,7 @@ fn can_set_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
-            GlobalAddress::Package(package_address),
+            Address::Package(package_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )
@@ -83,7 +83,7 @@ fn can_set_package_metadata_with_owner() {
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
+    let metadata = test_runner.get_metadata(Address::Package(package_address));
     assert_eq!(metadata.get("name").unwrap(), "best package ever!");
 }
 
@@ -113,7 +113,7 @@ fn can_lock_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_method_access_rule(
-            GlobalAddress::Package(package_address),
+            Address::Package(package_address),
             0,
             AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             AccessRule::DenyAll,
@@ -130,7 +130,7 @@ fn can_lock_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
-            GlobalAddress::Package(package_address),
+            Address::Package(package_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )
@@ -147,6 +147,6 @@ fn can_lock_package_metadata_with_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
+    let metadata = test_runner.get_metadata(Address::Package(package_address));
     assert!(metadata.get("name").is_none());
 }

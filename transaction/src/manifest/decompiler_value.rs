@@ -106,8 +106,7 @@ pub fn format_manifest_value<F: fmt::Write>(
             if fields.len() == 2 {
                 if let (
                     ManifestValue::Custom {
-                        value:
-                            ManifestCustomValue::Address(ManifestAddress::ResourceManager(address)),
+                        value: ManifestCustomValue::Address(ManifestAddress::Resource(address)),
                     },
                     ManifestValue::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(id),
@@ -303,7 +302,7 @@ pub fn format_custom_value<F: fmt::Write>(
                 a.format(f, context.bech32_encoder).unwrap();
                 f.write_str("\")")?;
             }
-            Address::ResourceManager(a) => {
+            Address::Resource(a) => {
                 f.write_str("ResourceAddress(\"")?;
                 a.format(f, context.bech32_encoder).unwrap();
                 f.write_str("\")")?;

@@ -638,9 +638,7 @@ mod tests {
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
-                            value: ScryptoCustomValue::Address(Address::ResourceManager(
-                                RADIX_TOKEN,
-                            )),
+                            value: ScryptoCustomValue::Address(Address::Resource(RADIX_TOKEN)),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),

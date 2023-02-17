@@ -598,7 +598,7 @@ pub fn format_address<F: fmt::Write>(
                 &address.display(context.bech32_encoder)
             )?;
         }
-        Address::ResourceManager(address) => {
+        Address::Resource(address) => {
             write!(
                 f,
                 "ResourceAddress(\"{}\")",

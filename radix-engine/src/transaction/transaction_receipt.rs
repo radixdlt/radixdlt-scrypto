@@ -91,7 +91,7 @@ pub struct EntityChanges {
 }
 
 impl EntityChanges {
-    pub fn new(new_global_addresses: Vec<GlobalAddress>) -> Self {
+    pub fn new(new_global_addresses: Vec<Address>) -> Self {
         let mut entity_changes = Self {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
@@ -100,13 +100,13 @@ impl EntityChanges {
 
         for new_global_address in new_global_addresses {
             match new_global_address {
-                GlobalAddress::Package(package_address) => {
+                Address::Package(package_address) => {
                     entity_changes.new_package_addresses.push(package_address)
                 }
-                GlobalAddress::Component(component_address) => entity_changes
+                Address::Component(component_address) => entity_changes
                     .new_component_addresses
                     .push(component_address),
-                GlobalAddress::Resource(resource_address) => {
+                Address::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
                 }
             }

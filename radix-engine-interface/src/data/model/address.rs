@@ -7,11 +7,11 @@ use crate::*;
 use sbor::rust::fmt::Debug;
 use transaction_data::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Address {
     Package(PackageAddress),
     Component(ComponentAddress),
-    ResourceManager(ResourceAddress),
+    Resource(ResourceAddress),
 }
 
 impl Address {
@@ -28,7 +28,7 @@ impl Address {
                 encoder.write_byte(1)?;
                 encoder.write_slice(&v.to_vec())?;
             }
-            Address::ResourceManager(v) => {
+            Address::Resource(v) => {
                 encoder.write_byte(2)?;
                 encoder.write_slice(&v.to_vec())?;
             }
@@ -48,11 +48,38 @@ impl Address {
                 ComponentAddress::try_from(decoder.read_slice(27)?)
                     .map_err(|_| DecodeError::InvalidCustomValue)?,
             )),
-            2 => Ok(Self::ResourceManager(
+            2 => Ok(Self::Resource(
                 ResourceAddress::try_from(decoder.read_slice(27)?)
                     .map_err(|_| DecodeError::InvalidCustomValue)?,
             )),
             _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl Into<ComponentAddress> for Address {
+    fn into(self) -> ComponentAddress {
+        match self {
+            Address::Component(component_address) => component_address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
+impl Into<PackageAddress> for Address {
+    fn into(self) -> PackageAddress {
+        match self {
+            Address::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for Address {
+    fn into(self) -> ResourceAddress {
+        match self {
+            Address::Resource(resource_address) => resource_address,
+            _ => panic!("Not a resource address"),
         }
     }
 }

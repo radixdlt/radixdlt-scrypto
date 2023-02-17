@@ -78,7 +78,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for R
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Address::ResourceManager(self.clone()).encode_body(encoder)
+        Address::Resource(self.clone()).encode_body(encoder)
     }
 }
 
@@ -89,7 +89,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for R
     ) -> Result<Self, DecodeError> {
         let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
         match a {
-            Address::ResourceManager(x) => Ok(x),
+            Address::Resource(x) => Ok(x),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
@@ -120,7 +120,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Address::ResourceManager(self.clone()).encode_body(encoder)
+        Address::Resource(self.clone()).encode_body(encoder)
     }
 }
 
@@ -131,7 +131,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
     ) -> Result<Self, DecodeError> {
         let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
         match a {
-            Address::ResourceManager(x) => Ok(x),
+            Address::Resource(x) => Ok(x),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::package::PackageInfoSubstate;
@@ -66,9 +66,9 @@ impl Publish {
             let mut substate_store =
                 RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-            let global: GlobalAddressSubstate = substate_store
+            let global: GlobalSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(GlobalAddress::Package(package_address.0)),
+                    RENodeId::Global(Address::Package(package_address.0)),
                     NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ))

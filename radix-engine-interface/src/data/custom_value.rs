@@ -90,7 +90,7 @@ mod tests {
         let values = (
             Address::Package(PackageAddress::Normal([1u8; 26])),
             Address::Component(ComponentAddress::Normal([2u8; 26])),
-            Address::ResourceManager(ResourceAddress::Normal([3u8; 26])),
+            Address::Resource(ResourceAddress::Normal([3u8; 26])),
             Address::Component(ComponentAddress::EpochManager([4u8; 26])),
         );
         let bytes = scrypto_encode(&values).unwrap();
@@ -119,7 +119,7 @@ mod tests {
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::ResourceManager(
+                        value: ScryptoCustomValue::Address(Address::Resource(
                             ResourceAddress::Normal([3u8; 26])
                         )),
                     },

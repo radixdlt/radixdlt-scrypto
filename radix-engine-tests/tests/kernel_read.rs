@@ -34,7 +34,7 @@ fn should_not_be_able_to_read_global_substate() {
                     identifier: FnIdentifier::Scrypto(..),
                     ..
                 },
-                node_id: RENodeId::Global(GlobalAddress::Component(..)),
+                node_id: RENodeId::Global(Address::Component(..)),
                 offset: SubstateOffset::Global(GlobalOffset::Global),
                 ..
             })

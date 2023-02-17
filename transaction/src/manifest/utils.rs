@@ -18,8 +18,8 @@ pub fn to_address(address: ManifestAddress) -> Address {
         ManifestAddress::Component(a) => {
             Address::Component(ComponentAddress::try_from(a.as_slice()).unwrap())
         }
-        ManifestAddress::ResourceManager(a) => {
-            Address::ResourceManager(ResourceAddress::try_from(a.as_slice()).unwrap())
+        ManifestAddress::Resource(a) => {
+            Address::Resource(ResourceAddress::try_from(a.as_slice()).unwrap())
         }
     }
 }
@@ -45,9 +45,7 @@ pub fn from_address(address: Address) -> ManifestAddress {
     match address {
         Address::Package(a) => ManifestAddress::Package(a.to_vec().try_into().unwrap()),
         Address::Component(a) => ManifestAddress::Component(a.to_vec().try_into().unwrap()),
-        Address::ResourceManager(a) => {
-            ManifestAddress::ResourceManager(a.to_vec().try_into().unwrap())
-        }
+        Address::Resource(a) => ManifestAddress::Resource(a.to_vec().try_into().unwrap()),
     }
 }
 

@@ -7,8 +7,7 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, GlobalAddress, ProofOffset, RENodeId, ResourceManagerOffset,
-    SubstateOffset,
+    Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -187,7 +186,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,
@@ -235,7 +234,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,
@@ -285,7 +284,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
                 resource_id,

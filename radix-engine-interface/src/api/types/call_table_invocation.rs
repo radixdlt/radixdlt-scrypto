@@ -163,14 +163,10 @@ impl NativeInvocation {
                 PackageInvocation::Publish(..) => {}
                 PackageInvocation::PublishNative(..) => {}
                 PackageInvocation::SetRoyaltyConfig(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Package(
-                        invocation.receiver,
-                    )));
+                    refs.insert(RENodeId::Global(Address::Package(invocation.receiver)));
                 }
                 PackageInvocation::ClaimRoyalty(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Package(
-                        invocation.receiver,
-                    )));
+                    refs.insert(RENodeId::Global(Address::Package(invocation.receiver)));
                 }
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {

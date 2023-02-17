@@ -112,7 +112,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             )
         }
         Action::UpdateMetadata => builder.set_metadata(
-            GlobalAddress::Resource(token_address),
+            Address::Resource(token_address),
             "key".to_string(),
             "value".to_string(),
         ),

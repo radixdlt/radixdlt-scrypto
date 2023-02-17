@@ -290,10 +290,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
         Type::ResourceAddress => {
             if let Value::Custom { value } = value {
-                matches!(
-                    value,
-                    ScryptoCustomValue::Address(Address::ResourceManager(_))
-                )
+                matches!(value, ScryptoCustomValue::Address(Address::Resource(_)))
             } else {
                 false
             }

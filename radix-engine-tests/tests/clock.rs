@@ -13,7 +13,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
     let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
@@ -42,7 +42,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+    pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
     let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
