@@ -19,6 +19,7 @@ pub enum TypeValidation<V: CustomTypeValidation> {
     U128(NumericValidation<u128>),
     String { length_validation: LengthValidation },
     Array { length_validation: LengthValidation },
+    Map { length_validation: LengthValidation },
 
     Custom(V),
 }

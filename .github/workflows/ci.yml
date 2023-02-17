@@ -61,9 +61,6 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --no-default-features --features alloc
       working-directory: sbor
-    - name: Run tests (indexmap + no_std)
-      run: cargo test --no-default-features --features alloc,indexmap
-      working-directory: sbor
     - name: Run derive tests
       run: cargo test
       working-directory: sbor-derive-common

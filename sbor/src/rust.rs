@@ -1,3 +1,35 @@
+pub mod prelude {
+    // See eg https://doc.rust-lang.org/std/prelude/index.html
+
+    // std::prelude::v1
+    pub use super::borrow::ToOwned;
+    pub use super::boxed::Box;
+    pub use super::clone::Clone;
+    pub use super::cmp::{Eq, Ord, PartialEq, PartialOrd};
+    pub use super::convert::{AsMut, AsRef, From, Into};
+    pub use super::default::Default;
+    pub use super::iter::{DoubleEndedIterator, ExactSizeIterator, Extend, IntoIterator, Iterator};
+    pub use super::marker::{Copy, Send, Sized, Sync, Unpin};
+    pub use super::mem::drop;
+    pub use super::ops::{Drop, Fn, FnMut, FnOnce};
+    pub use super::option::Option::{self, None, Some};
+    pub use super::result::Result::{self, Err, Ok};
+    pub use super::string::{String, ToString};
+    pub use super::vec::Vec;
+
+    // std::prelude::rust_2021
+    pub use super::convert::{TryFrom, TryInto};
+    pub use super::iter::FromIterator;
+
+    // And some extra useful additions we use a lot:
+    pub use super::collections::*;
+    pub use super::fmt::{Debug, Display};
+    pub use super::format;
+    pub use super::marker::PhantomData;
+    pub use super::str::FromStr;
+    pub use super::vec;
+}
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
@@ -21,9 +53,13 @@ pub use alloc::vec;
 #[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
+pub use core::clone;
+#[cfg(feature = "alloc")]
 pub use core::cmp;
 #[cfg(feature = "alloc")]
 pub use core::convert;
+#[cfg(feature = "alloc")]
+pub use core::default;
 #[cfg(feature = "alloc")]
 pub use core::hash;
 #[cfg(feature = "alloc")]
@@ -37,7 +73,11 @@ pub use core::num;
 #[cfg(feature = "alloc")]
 pub use core::ops;
 #[cfg(feature = "alloc")]
+pub use core::option;
+#[cfg(feature = "alloc")]
 pub use core::ptr;
+#[cfg(feature = "alloc")]
+pub use core::result;
 #[cfg(feature = "alloc")]
 pub use core::slice;
 
@@ -50,9 +90,13 @@ pub use std::boxed;
 #[cfg(not(feature = "alloc"))]
 pub use std::cell;
 #[cfg(not(feature = "alloc"))]
+pub use std::clone;
+#[cfg(not(feature = "alloc"))]
 pub use std::cmp;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
+#[cfg(not(feature = "alloc"))]
+pub use std::default;
 #[cfg(not(feature = "alloc"))]
 pub use std::fmt;
 #[cfg(not(feature = "alloc"))]
@@ -70,9 +114,13 @@ pub use std::num;
 #[cfg(not(feature = "alloc"))]
 pub use std::ops;
 #[cfg(not(feature = "alloc"))]
+pub use std::option;
+#[cfg(not(feature = "alloc"))]
 pub use std::ptr;
 #[cfg(not(feature = "alloc"))]
 pub use std::rc;
+#[cfg(not(feature = "alloc"))]
+pub use std::result;
 #[cfg(not(feature = "alloc"))]
 pub use std::slice;
 #[cfg(not(feature = "alloc"))]
@@ -211,7 +259,6 @@ pub mod collections {
         pub use hashset;
     }
 
-    #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexMap` itself.
     ///
@@ -274,7 +321,6 @@ pub mod collections {
         pub use indexmap;
     }
 
-    #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_set` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexSet` itself.
     ///
@@ -340,16 +386,10 @@ pub mod collections {
     pub use hash_map::HashMap;
     pub use hash_set::hashset;
     pub use hash_set::HashSet;
-    #[cfg(feature = "indexmap")]
     pub use index_map::indexmap;
-    #[cfg(feature = "indexmap")]
     pub use index_map::IndexMap;
-    #[cfg(feature = "indexmap")]
     pub use index_map::{new as index_map_new, with_capacity as index_map_with_capacity};
-    #[cfg(feature = "indexmap")]
     pub use index_set::indexset;
-    #[cfg(feature = "indexmap")]
     pub use index_set::IndexSet;
-    #[cfg(feature = "indexmap")]
     pub use index_set::{new as index_set_new, with_capacity as index_set_with_capacity};
 }
