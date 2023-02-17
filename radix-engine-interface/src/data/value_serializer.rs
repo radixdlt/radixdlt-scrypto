@@ -31,12 +31,12 @@ pub enum ScryptoValueSerializationType {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct ScryptoValueSerializerContext<'a> {
+pub struct ScryptoValueSerializationContext<'a> {
     pub serialization_type: ScryptoValueSerializationType,
     pub display_context: ScryptoValueDisplayContext<'a>,
 }
 
-impl<'a> ScryptoValueSerializerContext<'a> {
+impl<'a> ScryptoValueSerializationContext<'a> {
     pub fn simple(display_context: ScryptoValueDisplayContext<'a>) -> Self {
         Self {
             serialization_type: ScryptoValueSerializationType::Simple,
@@ -53,28 +53,28 @@ impl<'a> ScryptoValueSerializerContext<'a> {
 }
 
 pub trait SerializableScryptoValue:
-    for<'a> ContextualSerialize<ScryptoValueSerializerContext<'a>>
+    for<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>>
 {
     fn simple_serializable<'a, 'b, TContext: Into<ScryptoValueDisplayContext<'b>>>(
         &'a self,
         context: TContext,
-    ) -> ContextSerializable<'a, Self, ScryptoValueSerializerContext<'b>> {
-        self.serializable(ScryptoValueSerializerContext::simple(context.into()))
+    ) -> ContextSerializable<'a, Self, ScryptoValueSerializationContext<'b>> {
+        self.serializable(ScryptoValueSerializationContext::simple(context.into()))
     }
 
     fn invertible_serializable<'a, 'b, TContext: Into<ScryptoValueDisplayContext<'b>>>(
         &'a self,
         context: TContext,
-    ) -> ContextSerializable<'a, Self, ScryptoValueSerializerContext<'b>> {
-        self.serializable(ScryptoValueSerializerContext::invertible(context.into()))
+    ) -> ContextSerializable<'a, Self, ScryptoValueSerializationContext<'b>> {
+        self.serializable(ScryptoValueSerializationContext::invertible(context.into()))
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueSerializerContext<'a>> for ScryptoValue {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for ScryptoValue {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_schemaless_scrypto_value(serializer, self, context)
     }
@@ -85,7 +85,7 @@ impl SerializableScryptoValue for ScryptoValue {}
 pub fn serialize_schemaless_scrypto_value<S: Serializer>(
     serializer: S,
     value: &ScryptoValue,
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
         // primitive types
@@ -249,11 +249,11 @@ pub struct ArrayValue<'a> {
     elements: &'a [ScryptoValue],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueSerializerContext<'a>> for ArrayValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for ArrayValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         if *self.element_value_kind == ValueKind::U8 {
             let length = self.elements.len();
@@ -275,11 +275,11 @@ pub struct MapValue<'a> {
     entries: &'a [(ScryptoValue, ScryptoValue)],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueSerializerContext<'a>> for MapValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for MapValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         // Serialize map into JSON array instead of JSON map because SBOR map is a superset of JSON map.
         let mut tuple = serializer.serialize_tuple(self.entries.len())?;
@@ -297,11 +297,11 @@ pub struct BytesValue<'a> {
     bytes: &'a [u8],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueSerializerContext<'a>> for BytesValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for BytesValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        _context: &ScryptoValueSerializerContext<'a>,
+        _context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_hex(serializer, &self.bytes)
     }
@@ -322,11 +322,11 @@ pub struct EnumVariant<'a> {
     fields: &'a [ScryptoValue],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueSerializerContext<'a>> for EnumVariant<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for EnumVariant<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(2))?;
         map.serialize_entry("variant", &self.discriminator)?;
@@ -335,11 +335,11 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueSerializerContext<'a>> for EnumVari
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueSerializerContext<'a>> for [ScryptoValue] {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for [ScryptoValue] {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_schemaless_scrypto_value_slice(serializer, self, context)
     }
@@ -350,7 +350,7 @@ impl SerializableScryptoValue for [ScryptoValue] {}
 pub fn serialize_schemaless_scrypto_value_slice<S: Serializer>(
     serializer: S,
     elements: &[ScryptoValue],
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     // Tuple is the serde type corresponding to a known-length list
     // See https://serde.rs/data-model.html
@@ -364,7 +364,7 @@ pub fn serialize_schemaless_scrypto_value_slice<S: Serializer>(
 pub fn serialize_custom_value<S: Serializer>(
     serializer: S,
     value: &ScryptoCustomValue,
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
         ScryptoCustomValue::Address(value) => serialize_value(
@@ -407,11 +407,11 @@ pub fn serialize_custom_value<S: Serializer>(
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueSerializerContext<'a>> for NonFungibleGlobalId {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for NonFungibleGlobalId {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueSerializerContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         let mut tuple = serializer.serialize_tuple(2)?;
         tuple.serialize_element(
@@ -440,7 +440,7 @@ enum ValueEncoding {
 fn serialize_value<S: Serializer, T: Serialize + ?Sized, K: Into<ScryptoValueKind>>(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
@@ -463,7 +463,7 @@ fn serialize_value_with_element_type<
 >(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     element_value_kind: K,
     value: &T,
@@ -491,7 +491,7 @@ fn serialize_value_with_kv_types<
 >(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueSerializerContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     key_value_kind: K,
     value_value_kind: K,

@@ -232,13 +232,13 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::AllowAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::DenyAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }
 
@@ -247,7 +247,7 @@ macro_rules! rule {
 macro_rules! scrypto_args {
     ($($args: expr),*) => {
         {
-            radix_engine_interface::data::scrypto_encode(&($($args),*)).unwrap()
+            $crate::radix_engine_interface::data::scrypto_encode(&($($args),*)).unwrap()
         }
     };
 }

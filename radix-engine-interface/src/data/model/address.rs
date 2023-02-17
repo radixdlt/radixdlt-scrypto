@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::ScryptoCustomValueKind;
+use crate::data::ScryptoEncoder;
 use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt::Debug;
@@ -55,7 +56,16 @@ impl Address {
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        let mut encoder = ScryptoEncoder::new(&mut buffer);
+        self.encode_body_common(&mut encoder).unwrap();
+        buffer
+    }
 }
+
+// TODO: replace with TryInto
 
 impl Into<ComponentAddress> for Address {
     fn into(self) -> ComponentAddress {
