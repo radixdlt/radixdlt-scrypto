@@ -1,3 +1,4 @@
+use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{transaction::TransactionReceipt, types::*};
 use radix_engine_interface::blueprints::resource::*;
@@ -174,5 +175,11 @@ fn do_swap(
     receipt
 }
 
-criterion_group!(radiswap, bench_radiswap);
+criterion_group!(
+    name = radiswap;
+    // Reduce number of iterations by reducing the benchmark duration.
+    // This is to avoid VaultError(LockFeeInsufficientBalance) error
+    config = Criterion::default().measurement_time(Duration::from_millis(2000));
+    targets = bench_radiswap
+);
 criterion_main!(radiswap);

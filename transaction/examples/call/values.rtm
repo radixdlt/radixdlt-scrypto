@@ -66,7 +66,7 @@ CALL_METHOD
     # RE interpreted types
     # TODO: fix own syntax OR disallow own type in manifest
     # Own("000000000000000000000000000000000000000000000000000000000000000005000000")
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
 
     # TX interpreted types
     Bucket("temp1")

@@ -55,9 +55,12 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D>,
+                        T: Bound,
                         D: ::sbor::Decoder<radix_engine_interface::data::ScryptoCustomValueKind>
                     > ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D> for MyEnum<T>
+                where
+                    T: ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D>,
+                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(

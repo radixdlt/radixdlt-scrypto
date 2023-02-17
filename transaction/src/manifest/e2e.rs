@@ -21,8 +21,8 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
-    Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()
     Map<String, String>()
     Tuple(Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(0u8, Enum(0u8))), Map<String, Enum>(), Enum(1u8), Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Map<String, Enum>(), Enum(1u8));
@@ -47,8 +47,8 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE_WITH_OWNER
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
-    Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#");
 "##,
         );
@@ -208,7 +208,7 @@ CALL_METHOD
     ComponentAddress("validator_sim1q5qszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqsvkh36j")
     ComponentAddress("accesscontroller_sim1pspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqq397jz")
     ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Bucket("bucket1")
     Proof("proof1")
     Expression("ENTIRE_WORKTOP")
@@ -572,11 +572,11 @@ CREATE_ACCESS_CONTROLLER
             ("${owner_badge_non_fungible_local_id}", "#1#"),
             (
                 "${code_blob_hash}",
-                "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+                "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             ),
             (
                 "${abi_blob_hash}",
-                "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d",
+                "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791",
             ),
             ("${initial_supply}", "12"),
             ("${mint_amount}", "12"),

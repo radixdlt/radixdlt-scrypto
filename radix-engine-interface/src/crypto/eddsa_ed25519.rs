@@ -8,7 +8,7 @@ use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -105,11 +105,12 @@ impl EddsaEd25519PublicKey {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     EddsaEd25519PublicKey,
     ScryptoCustomValueKind::EddsaEd25519PublicKey,
     Type::EddsaEd25519PublicKey,
-    EddsaEd25519PublicKey::LENGTH
+    EddsaEd25519PublicKey::LENGTH,
+    EDDSA_ED25519_PUBLIC_KEY_ID
 );
 
 impl TryFrom<&[u8]> for EddsaEd25519Signature {
@@ -136,11 +137,12 @@ impl EddsaEd25519Signature {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     EddsaEd25519Signature,
     ScryptoCustomValueKind::EddsaEd25519Signature,
     Type::EddsaEd25519Signature,
-    EddsaEd25519Signature::LENGTH
+    EddsaEd25519Signature::LENGTH,
+    EDDSA_ED25519_SIGNATURE_ID
 );
 
 //======

@@ -8,7 +8,7 @@ use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -107,11 +107,12 @@ impl EcdsaSecp256k1PublicKey {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     EcdsaSecp256k1PublicKey,
     ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
     Type::EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1PublicKey::LENGTH
+    EcdsaSecp256k1PublicKey::LENGTH,
+    ECDSA_SECP256K1_PUBLIC_KEY_ID
 );
 
 impl TryFrom<&[u8]> for EcdsaSecp256k1Signature {
@@ -140,11 +141,12 @@ impl EcdsaSecp256k1Signature {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     EcdsaSecp256k1Signature,
     ScryptoCustomValueKind::EcdsaSecp256k1Signature,
     Type::EcdsaSecp256k1Signature,
-    EcdsaSecp256k1Signature::LENGTH
+    EcdsaSecp256k1Signature::LENGTH,
+    ECDSA_SECP256K1_SIGNATURE_ID
 );
 
 //======

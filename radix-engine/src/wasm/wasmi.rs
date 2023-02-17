@@ -125,6 +125,14 @@ fn call_method(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
+    // Get current memory consumption and update it in transaction limit kernel module
+    // for current call frame through runtime call.
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
+    runtime.update_wasm_memory_usage(mem)?;
+
     runtime
         .call_method(receiver, ident, args)
         .map(|buffer| buffer.0)
@@ -157,6 +165,14 @@ fn call_function(
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    // Get current memory consumption and update it in transaction limit kernel module
+    // for current call frame through runtime call.
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
+    runtime.update_wasm_memory_usage(mem)?;
 
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
@@ -860,6 +876,13 @@ impl WasmInstance for WasmiInstance {
             ),
             _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
         }
+    }
+
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
+        self.memory
+            .current_pages(self.store.as_context())
+            .to_bytes()
+            .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))
     }
 }
 
