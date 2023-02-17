@@ -151,7 +151,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
@@ -161,7 +160,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .collect();
             let mut queue: VecDeque<KeyValueStoreId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
