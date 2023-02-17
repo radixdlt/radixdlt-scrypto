@@ -225,14 +225,14 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for ScryptoCustomValu
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    _context: &ScryptoValueDisplayContext,
+    context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     match value {
         ScryptoCustomValue::Address(value) => {
-            write!(f, "Address(\"{:?}\")", value)?; // TODO: fix syntax
+            write!(f, "Address(\"{}\")", value.display(context.bech32_encoder))?;
         }
         ScryptoCustomValue::Own(value) => {
-            write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
+            write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Decimal(value) => {
             write!(f, "Decimal(\"{}\")", value)?;

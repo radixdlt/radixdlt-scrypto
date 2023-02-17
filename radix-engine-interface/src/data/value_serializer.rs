@@ -384,7 +384,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomValueKind::Own,
-            &format!("{:?}", value), // TODO: fix syntax
+            &format!("{}", hex::encode(value.to_vec())),
         ),
         ScryptoCustomValue::Decimal(value) => serialize_value(
             // The fact it's a decimal number will be obvious from context, so favour simplicity over verbosity
@@ -725,7 +725,7 @@ mod tests {
                 "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
                 {
                     "type": "Own",
-                    "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+                    "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
                 },
                 "1",
                 "0.01",
@@ -881,7 +881,7 @@ mod tests {
                         },
                         {
                             "type": "Own",
-                            "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+                            "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
                         },
                         {
                             "type": "Decimal",

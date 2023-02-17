@@ -1,7 +1,7 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::ScryptoCustomValueKind;
+use crate::data::{ScryptoCustomValueKind, ScryptoEncoder};
 use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -49,6 +49,62 @@ impl Own {
             Own::KeyValueStore(v) => v.clone(),
             _ => panic!("Not a key-value store ownership"),
         }
+    }
+}
+
+impl Own {
+    pub fn encode_body_common<X: CustomValueKind, E: Encoder<X>>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
+        match self {
+            Own::Bucket(v) => {
+                encoder.write_byte(0)?;
+                encoder.write_slice(v)?;
+            }
+            Own::Proof(v) => {
+                encoder.write_byte(1)?;
+                encoder.write_slice(v)?;
+            }
+            Own::Vault(v) => {
+                encoder.write_byte(2)?;
+                encoder.write_slice(v)?;
+            }
+            Own::Component(v) => {
+                encoder.write_byte(3)?;
+                encoder.write_slice(v)?;
+            }
+            Own::KeyValueStore(v) => {
+                encoder.write_byte(4)?;
+                encoder.write_slice(v)?;
+            }
+            Own::Account(v) => {
+                encoder.write_byte(5)?;
+                encoder.write_slice(v)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
+        match decoder.read_byte()? {
+            0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
+            1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
+            2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
+            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
+            4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
+            5 => Ok(Self::Account(copy_u8_array(decoder.read_slice(36)?))),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        let mut encoder = ScryptoEncoder::new(&mut buffer);
+        self.encode_body_common(&mut encoder).unwrap();
+        buffer
     }
 }
 
@@ -103,33 +159,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        match self {
-            Own::Bucket(v) => {
-                encoder.write_byte(0)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Proof(v) => {
-                encoder.write_byte(1)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Vault(v) => {
-                encoder.write_byte(2)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Component(v) => {
-                encoder.write_byte(3)?;
-                encoder.write_slice(v)?;
-            }
-            Own::KeyValueStore(v) => {
-                encoder.write_byte(4)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Account(v) => {
-                encoder.write_byte(5)?;
-                encoder.write_slice(v)?;
-            }
-        }
-        Ok(())
+        self.encode_body_common(encoder)
     }
 }
 
@@ -139,15 +169,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        match decoder.read_byte()? {
-            0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
-            1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
-            2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
-            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
-            4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
-            5 => Ok(Self::Account(copy_u8_array(decoder.read_slice(36)?))),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Self::decode_body_common(decoder)
     }
 }
 
