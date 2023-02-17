@@ -43,7 +43,6 @@ pub enum ManifestIdValidationError {
 pub enum CallDataValidationError {
     DecodeError(DecodeError),
     IdValidationError(ManifestIdValidationError),
-    OwnNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

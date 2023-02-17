@@ -7,6 +7,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use scrypto_abi::BlueprintAbi;
+use transaction_data::model::ManifestBucket;
 use transaction_data::*;
 
 pub struct EpochManagerAbi;
@@ -24,6 +25,13 @@ pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 pub struct ValidatorInit {
     pub validator_account_address: ComponentAddress,
     pub initial_stake: Bucket,
+    pub stake_account_address: ComponentAddress,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+pub struct ManifestValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: ManifestBucket,
     pub stake_account_address: ComponentAddress,
 }
 

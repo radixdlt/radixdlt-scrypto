@@ -30,9 +30,8 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EddsaEd25519PublicKey, Hash};
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::model::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
@@ -41,6 +40,11 @@ use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use transaction_data::model::*;
 use transaction_data::*;
+
+use super::utils::from_address;
+use super::utils::from_decimal;
+use super::utils::from_non_fungible_local_id;
+use super::utils::from_precise_decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -83,7 +87,7 @@ pub enum GeneratorError {
     IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    InvalidEntityAddress(String),
+    InvalidAddress(String),
     InvalidLength {
         value_type: ast::Type,
         expected_length: usize,
@@ -360,7 +364,7 @@ pub fn generate_instruction(
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
-                .call_with(&args)
+                .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
@@ -379,7 +383,7 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
-                .call_with(&args)
+                .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::CallMethod {
                 component_address,
@@ -425,7 +429,7 @@ pub fn generate_instruction(
             key,
             value,
         } => BasicInstruction::SetMetadata {
-            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+            entity_address: generate_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
             value: generate_string(value)?,
         },
@@ -459,7 +463,7 @@ pub fn generate_instruction(
             key,
             rule,
         } => BasicInstruction::SetMethodAccessRule {
-            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+            entity_address: generate_address(entity_address, bech32_decoder)?,
             index: generate_typed_value(index, resolver, bech32_decoder, blobs)?,
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
@@ -705,35 +709,10 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
         ast::Value::PreciseDecimal(inner) => match &**inner {
             ast::Value::String(s) => PreciseDecimal::from_str(s)
                 .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Decimal),
-    }
-}
-
-fn generate_ecdsa_secp256k1_public_key(
-    value: &ast::Value,
-) -> Result<EcdsaSecp256k1PublicKey, GeneratorError> {
-    match value {
-        ast::Value::EcdsaSecp256k1PublicKey(inner) => match &**inner {
-            ast::Value::String(s) => EcdsaSecp256k1PublicKey::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEcdsaSecp256k1PublicKey(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EcdsaSecp256k1PublicKey),
-    }
-}
-
-fn generate_eddsa_ed25519_public_key(
-    value: &ast::Value,
-) -> Result<EddsaEd25519PublicKey, GeneratorError> {
-    match value {
-        ast::Value::EddsaEd25519PublicKey(inner) => match &**inner {
-            ast::Value::String(s) => EddsaEd25519PublicKey::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEddsaEd25519PublicKey(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EddsaEd25519PublicKey),
     }
 }
 
@@ -767,58 +746,67 @@ fn generate_component_address(
     }
 }
 
-fn generate_resource_address_internal(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<ResourceAddress, GeneratorError> {
-    match value {
-        ast::Value::String(s) => bech32_decoder
-            .validate_and_decode_resource_address(s)
-            .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-        v => invalid_type!(v, ast::Type::String),
-    }
-}
-
 fn generate_resource_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
-        ast::Value::ResourceAddress(inner) => {
-            generate_resource_address_internal(inner, bech32_decoder)
-        }
+        ast::Value::ResourceAddress(inner) => match inner.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
+                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
         v => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
 
-fn generate_entity_address(
+fn generate_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<GlobalAddress, GeneratorError> {
+) -> Result<ManifestAddress, GeneratorError> {
     match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map(|a| Address::Package(a))
+                .or(bech32_decoder
+                    .validate_and_decode_component_address(s)
+                    .map(|a| Address::Component(a)))
+                .or(bech32_decoder
+                    .validate_and_decode_resource_address(s)
+                    .map(|a| Address::ResourceManager(a)))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
+            v => return invalid_type!(v, ast::Type::String),
+        },
         ast::Value::PackageAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
-                .map(|a| GlobalAddress::Package(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::Package(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         ast::Value::ComponentAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_component_address(s)
-                .map(|a| GlobalAddress::Component(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::Component(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         ast::Value::ResourceAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
-                .map(|a| GlobalAddress::Resource(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::ResourceManager(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(
             v,
+            ast::Type::Address,
             ast::Type::PackageAddress,
             ast::Type::ResourceAddress,
             ast::Type::ComponentAddress
@@ -1260,37 +1248,37 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(ManifestAddress::ResourceManager(
-                            global_id.resource_address().to_vec(),
+                        value: ManifestCustomValue::Address(from_address(
+                            Address::ResourceManager(global_id.resource_address()),
                         )),
                     },
                     Value::Custom {
-                        value: ManifestCustomValue::NonFungibleLocalId(
-                            global_id.local_id().to_vec(),
-                        ),
+                        value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(
+                            global_id.local_id().clone(),
+                        )),
                     },
                 ],
             })
         }
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(v),
+                value: ManifestCustomValue::Address(from_address(Address::Package(v))),
             })
         }
         ast::Value::ComponentAddress(_) => {
             generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(v),
+                value: ManifestCustomValue::Address(from_address(Address::Component(v))),
             })
         }
         ast::Value::ResourceAddress(_) => {
             generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(v),
+                value: ManifestCustomValue::Address(from_address(Address::ResourceManager(v))),
             })
         }
         // ==============
         // Custom Types
         // ==============
-        ast::Value::Address(_) => generate_address(value).map(|v| Value::Custom {
+        ast::Value::Address(_) => generate_address(value, bech32_decoder).map(|v| Value::Custom {
             value: ManifestCustomValue::Address(v),
         }),
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
@@ -1306,14 +1294,14 @@ pub fn generate_value(
             value: ManifestCustomValue::Blob(v),
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
-            value: ManifestCustomValue::Decimal(v),
+            value: ManifestCustomValue::Decimal(from_decimal(v)),
         }),
         ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            value: ManifestCustomValue::PreciseDecimal(v),
+            value: ManifestCustomValue::PreciseDecimal(from_precise_decimal(v)),
         }),
         ast::Value::NonFungibleLocalId(_) => {
             generate_non_fungible_local_id(value).map(|v| Value::Custom {
-                value: ManifestCustomValue::NonFungibleLocalId(v),
+                value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(v)),
             })
         }
     }
@@ -1375,6 +1363,7 @@ fn generate_kv_entries(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
@@ -1476,21 +1465,13 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Tuple(Decimal("1"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            r#"Tuple(Decimal("1"))"#,
             Value::Tuple {
-                fields: vec![
-                    Value::Custom {
-                        value: ManifestCustomValue::Decimal(Decimal::from_str("1").unwrap())
-                    },
-                    Value::Custom {
-                        value: ManifestCustomValue::Hash(
-                            Hash::from_str(
-                                "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
-                            )
-                            .unwrap()
-                        )
-                    },
-                ]
+                fields: vec![Value::Custom {
+                    value: ManifestCustomValue::Decimal(from_decimal(
+                        Decimal::from_str("1").unwrap()
+                    ))
+                },]
             }
         );
         generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
@@ -1604,13 +1585,15 @@ mod tests {
             r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             BasicInstruction::PublishPackage {
                 code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
+                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
+                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 royalty_config: BTreeMap::new(),
@@ -1624,13 +1607,15 @@ mod tests {
             r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
             BasicInstruction::PublishPackageWithOwner {
                 code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
+                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
+                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 owner_badge: owner_badge.clone()
@@ -1812,7 +1797,7 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
             BasicInstruction::CallMethod {
                 component_address: EPOCH_MANAGER,

@@ -6,7 +6,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn cannot_make_cross_component_call_without_authorization() {
+fn cannot_make_cross_component_process_call_dataout_authorization() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
@@ -68,7 +68,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 }
 
 #[test]
-fn can_make_cross_component_call_with_authorization() {
+fn can_make_cross_component_process_call_data_authorization() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();

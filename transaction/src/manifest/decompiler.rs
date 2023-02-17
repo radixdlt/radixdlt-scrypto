@@ -19,15 +19,22 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::data::*;
+use radix_engine_interface::data::model::Address;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
+use transaction_data::manifest_decode;
+use transaction_data::manifest_encode;
 use transaction_data::model::*;
-use transaction_data::*;
+use transaction_data::ManifestCustomValue;
+use transaction_data::ManifestEncode;
+use transaction_data::ManifestValue;
 use utils::ContextualDisplay;
 
+use super::decompiler_value::format_manifest_value;
 use super::decompiler_value::ManifestValueDisplayContext;
+use super::utils::from_non_fungible_local_id;
+use super::utils::to_address;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
@@ -161,7 +168,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
+                    .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -205,7 +212,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone())
+                    .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
@@ -280,7 +287,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
-                .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
+                .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -473,7 +480,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             value,
         } => {
             f.write_str("SET_METADATA")?;
-            format_entity_address(f, context, entity_address)?;
+            format_address(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, value)?;
             f.write_str(";")?;
@@ -513,7 +520,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             rule,
         } => {
             f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_entity_address(f, context, entity_address)?;
+            format_address(f, context, entity_address)?;
             format_typed_value(f, context, index)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, rule)?;
@@ -559,39 +566,39 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
+pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     f: &mut F,
     context: &mut DecompilationContext,
     value: &T,
 ) -> Result<(), DecompileError> {
-    let value = IndexedScryptoValue::from_typed(value);
     f.write_str("\n    ")?;
-    write!(f, "{}", &value.display(context.for_value_display()))?;
+    let value: ManifestValue = manifest_decode(&(manifest_encode(value).unwrap())).unwrap();
+    format_manifest_value(f, &value, &context.for_value_display())?;
     Ok(())
 }
 
-pub fn format_entity_address<F: fmt::Write>(
+pub fn format_address<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    address: &GlobalAddress,
+    address: &ManifestAddress,
 ) -> Result<(), DecompileError> {
     f.write_char(' ')?;
-    match address {
-        GlobalAddress::Component(address) => {
+    match to_address(address.clone()) {
+        Address::Component(address) => {
             write!(
                 f,
                 "ComponentAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
-        GlobalAddress::Package(address) => {
+        Address::Package(address) => {
             write!(
                 f,
                 "PackageAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
-        GlobalAddress::Resource(address) => {
+        Address::ResourceManager(address) => {
             write!(
                 f,
                 "ResourceAddress(\"{}\")",
@@ -608,15 +615,11 @@ pub fn format_args<F: fmt::Write>(
     context: &mut DecompilationContext,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
-    let value =
-        IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let Value::Tuple { fields } = value.as_value() {
+    let value: ManifestValue =
+        manifest_decode(&args).map_err(|_| DecompileError::InvalidArguments)?;
+    if let Value::Tuple { fields } = value {
         for field in fields {
-            let bytes = scrypto_encode(&field)?;
-            let arg = IndexedScryptoValue::from_slice(&bytes)
-                .map_err(|_| DecompileError::InvalidArguments)?;
-            f.write_str("\n    ")?;
-            write!(f, "{}", &arg.display(context.for_value_display()))?;
+            format_manifest_value(f, &field, &context.for_value_display())?;
         }
     } else {
         return Err(DecompileError::InvalidArguments);
@@ -627,30 +630,30 @@ pub fn format_args<F: fmt::Write>(
 
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>, DecodeError> {
-    let mut mint_params_scrypto_value =
-        BTreeMap::<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>::new();
+) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue, ManifestValue)>, DecodeError> {
+    let mut mint_params_manifest_value =
+        BTreeMap::<NonFungibleLocalId, (ManifestValue, ManifestValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
-        mint_params_scrypto_value.insert(
+        mint_params_manifest_value.insert(
             id.clone(),
             (
-                scrypto_decode(&immutable_data)?,
-                scrypto_decode(&mutable_data)?,
+                manifest_decode(&immutable_data)?,
+                manifest_decode(&mutable_data)?,
             ),
         );
     }
-    Ok(mint_params_scrypto_value)
+    Ok(mint_params_manifest_value)
 }
 
 fn transform_uuid_non_fungible_mint_params(
     mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
-) -> Result<Vec<(ScryptoValue, ScryptoValue)>, DecodeError> {
-    let mut mint_params_scrypto_value = Vec::<(ScryptoValue, ScryptoValue)>::new();
+) -> Result<Vec<(ManifestValue, ManifestValue)>, DecodeError> {
+    let mut mint_params_manifest_value = Vec::<(ManifestValue, ManifestValue)>::new();
     for (immutable_data, mutable_data) in mint_params.into_iter() {
-        mint_params_scrypto_value.push((
-            scrypto_decode(&immutable_data)?,
-            scrypto_decode(&mutable_data)?,
+        mint_params_manifest_value.push((
+            manifest_decode(&immutable_data)?,
+            manifest_decode(&mutable_data)?,
         ));
     }
-    Ok(mint_params_scrypto_value)
+    Ok(mint_params_manifest_value)
 }

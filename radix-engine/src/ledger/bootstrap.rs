@@ -28,6 +28,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
+use transaction_data::manifest_args;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -528,9 +529,10 @@ where
 
 #[cfg(test)]
 mod tests {
+    use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+
     use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
-    use transaction::signing::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {

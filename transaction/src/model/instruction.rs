@@ -121,7 +121,7 @@ pub enum BasicInstruction {
     },
 
     SetMetadata {
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         key: String,
         value: String,
     },
@@ -145,7 +145,7 @@ pub enum BasicInstruction {
     },
 
     SetMethodAccessRule {
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         index: u32,
         key: AccessRuleKey,
         rule: AccessRule,

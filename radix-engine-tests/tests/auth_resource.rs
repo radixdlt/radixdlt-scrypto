@@ -169,13 +169,13 @@ fn cannot_withdraw_with_wrong_auth() {
 }
 
 #[test]
-fn can_recall_with_auth() {
+fn can_reprocess_call_data_auth() {
     test_resource_auth(Action::Recall, false, false, false);
     test_resource_auth(Action::Recall, true, true, false);
 }
 
 #[test]
-fn cannot_recall_with_wrong_auth() {
+fn cannot_reprocess_call_data_wrong_auth() {
     test_resource_auth(Action::Recall, false, true, true);
     test_resource_auth(Action::Recall, true, false, true);
 }

@@ -1,6 +1,6 @@
 use radix_engine_interface::abi::*;
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -519,7 +519,7 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         index: u32,
         key: AccessRuleKey,
         rule: AccessRule,
@@ -535,7 +535,7 @@ impl ManifestBuilder {
 
     pub fn set_metadata(
         &mut self,
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         key: String,
         value: String,
     ) -> &mut Self {

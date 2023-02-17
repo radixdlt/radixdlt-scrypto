@@ -19,19 +19,18 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{
-    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
-};
+use radix_engine_interface::data::{IndexedScryptoValue, ReadOwnedNodesError, ScryptoValue};
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
+use transaction_data::model::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
-    pub instructions: Cow<'a, [Instruction]>,
+    pub manifest: Cow<'a, Vec<u8>>,
     pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
@@ -45,13 +44,11 @@ pub enum TransactionProcessorError {
         valid_until: u64,
         current_epoch: u64,
     },
-    BucketNotFound(ManifestBucket),
-    ProofNotFound(ManifestProof),
-    BlobNotFound(ManifestBlobRef),
+    BucketNotFound(u32),
+    ProofNotFound(u32),
+    BlobNotFound(u32),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
-    ReadOwnedNodesError(ReadOwnedNodesError),
-    ReplaceManifestValuesError(ReplaceManifestValuesError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}

@@ -2,7 +2,6 @@ use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
-use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
@@ -385,20 +384,12 @@ impl NotarizedTransactionValidator {
         args: &[u8],
         id_validator: &mut ManifestIdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let indexed_args =
-            IndexedScryptoValue::from_slice(args).map_err(CallDataValidationError::DecodeError)?;
+        let value: ManifestValue =
+            manifest_decode(args).map_err(CallDataValidationError::DecodeError)?;
 
         id_validator
-            .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+            .process_call_data(&value)
             .map_err(CallDataValidationError::IdValidationError)?;
-
-        if let Ok(node_ids) = indexed_args.owned_node_ids() {
-            if !node_ids.is_empty() {
-                return Err(CallDataValidationError::OwnNotAllowed);
-            }
-        } else {
-            return Err(CallDataValidationError::OwnNotAllowed);
-        }
 
         Ok(())
     }

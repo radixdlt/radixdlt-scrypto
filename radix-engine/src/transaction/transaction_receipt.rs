@@ -10,8 +10,9 @@ use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
-use transaction::manifest::decompiler::DecompilationContext;
+use radix_engine_interface::data::{
+    IndexedScryptoValue, ScryptoDecode, ScryptoValueDisplayContext,
+};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
@@ -366,7 +367,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             }
         }
 
-        let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
+        let decompilation_context = ScryptoValueDisplayContext::with_bench32(bech32_encoder);
 
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
@@ -378,7 +379,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         prefix!(i, outputs),
                         IndexedScryptoValue::from_slice(&output.as_vec())
                             .expect("Failed to parse return data")
-                            .display(decompilation_context.for_value_display())
+                            .display(decompilation_context)
                     )?;
                 }
             }

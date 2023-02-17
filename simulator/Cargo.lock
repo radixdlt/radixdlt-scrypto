@@ -1053,6 +1053,7 @@ dependencies = [
  "sbor",
  "strum",
  "transaction",
+ "transaction-data",
  "utils",
  "wasm-instrument",
  "wasmi",

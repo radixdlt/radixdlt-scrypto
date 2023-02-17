@@ -125,13 +125,16 @@ impl ManifestIdValidator {
         Ok(())
     }
 
-    pub fn call_with(&mut self, args: &ManifestValue) -> Result<(), ManifestIdValidationError> {
-        for (bucket, _) in buckets {
-            self.drop_bucket(bucket)?;
-        }
-        for (proof, _) in proofs {
-            self.drop_proof(proof)?;
-        }
+    pub fn process_call_data(
+        &mut self,
+        args: &ManifestValue,
+    ) -> Result<(), ManifestIdValidationError> {
+        // for (bucket, _) in buckets {
+        //     self.drop_bucket(bucket)?;
+        // }
+        // for (proof, _) in proofs {
+        //     self.drop_proof(proof)?;
+        // }
         Ok(())
     }
 }
