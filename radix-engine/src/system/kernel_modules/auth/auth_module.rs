@@ -266,8 +266,7 @@ impl KernelModule for AuthModule {
                         vec![]
                     }
                     (method, ..)
-                        if matches!(method, NativeFn::Metadata(..))
-                            || matches!(method, NativeFn::Package(..))
+                        if matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::ComponentRoyalty(..)) =>
                     {
                         let handle = api.kernel_lock_substate(

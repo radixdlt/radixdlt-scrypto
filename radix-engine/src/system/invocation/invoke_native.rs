@@ -1,7 +1,7 @@
 use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, ComponentRoyaltyInvocation, MetadataInvocation, NativeInvocation,
+    AccessRulesChainInvocation, ComponentRoyaltyInvocation, NativeInvocation,
     PackageInvocation,
 };
 
@@ -69,11 +69,5 @@ where
                 }
             }
         }
-        NativeInvocation::Metadata(metadata_invocation) => match metadata_invocation {
-            MetadataInvocation::Get(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
-        },
     }
 }

@@ -8,7 +8,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
@@ -82,7 +82,7 @@ impl Identity {
             access_rule,
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );

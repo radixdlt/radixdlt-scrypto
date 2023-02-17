@@ -9,7 +9,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -657,7 +657,7 @@ impl ValidatorCreator {
         );
 
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(

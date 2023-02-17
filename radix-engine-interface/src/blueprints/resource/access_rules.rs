@@ -1,6 +1,6 @@
-use crate::api::node_modules::metadata::METADATA_SET_IDENT;
+use crate::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use crate::api::types::PackageFn;
-use crate::api::types::{MetadataFn, NodeModuleId};
+use crate::api::types::NodeModuleId;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -233,7 +233,7 @@ impl AccessRules {
 pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) -> AccessRules {
     let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+        AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );

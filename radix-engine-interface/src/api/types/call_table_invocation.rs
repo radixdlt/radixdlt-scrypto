@@ -1,5 +1,4 @@
 use crate::api::node_modules::auth::*;
-use crate::api::node_modules::metadata::*;
 use crate::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
@@ -50,7 +49,6 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
-    Metadata(MetadataInvocation),
     Package(PackageInvocation),
     ComponentRoyalty(ComponentRoyaltyInvocation),
 }
@@ -69,11 +67,6 @@ pub enum AccessRulesChainInvocation {
     SetGroupAccessRule(AccessRulesSetGroupAccessRuleInvocation),
     SetGroupMutability(AccessRulesSetGroupMutabilityInvocation),
     GetLength(AccessRulesGetLengthInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum MetadataInvocation {
-    Get(MetadataGetInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -136,11 +129,6 @@ impl NativeInvocation {
                     refs.insert(invocation.receiver);
                 }
             },
-            NativeInvocation::Metadata(metadata_method) => match metadata_method {
-                MetadataInvocation::Get(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
-            },
         }
 
         refs
@@ -171,9 +159,6 @@ impl NativeInvocation {
                     (get_native_fn(i), scrypto_encode(i))
                 }
                 AccessRulesChainInvocation::GetLength(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
-            NativeInvocation::Metadata(i) => match i {
-                MetadataInvocation::Get(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Package(i) => match i {
                 PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),

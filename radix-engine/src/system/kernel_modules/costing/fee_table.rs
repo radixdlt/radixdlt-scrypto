@@ -241,6 +241,7 @@ impl FeeTable {
             },
             (METADATA_PACKAGE, METADATA_BLUEPRINT) => match identifier.ident.as_str() {
                 METADATA_SET_IDENT => self.fixed_low,
+                METADATA_GET_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -257,9 +258,6 @@ impl FeeTable {
                 AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
                 AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
-            },
-            NativeFn::Metadata(metadata_method) => match metadata_method {
-                MetadataFn::Get => self.fixed_low,
             },
             NativeFn::ComponentRoyalty(method_ident) => match method_ident {
                 ComponentRoyaltyFn::SetRoyaltyConfig => self.fixed_medium,

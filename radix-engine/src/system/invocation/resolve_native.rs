@@ -3,7 +3,7 @@ use crate::types::*;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
 };
-use radix_engine_interface::api::node_modules::{auth::*, metadata::*};
+use radix_engine_interface::api::node_modules::{auth::*};
 use radix_engine_interface::api::package::*;
 
 pub fn resolve_native(
@@ -77,13 +77,6 @@ pub fn resolve_native(
             }
             AccessRulesChainFn::GetLength => {
                 let invocation = scrypto_decode::<AccessRulesGetLengthInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-        },
-        NativeFn::Metadata(metadata_fn) => match metadata_fn {
-            MetadataFn::Get => {
-                let invocation = scrypto_decode::<MetadataGetInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }

@@ -2,9 +2,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataGetInvocation, MetadataSetInput, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataGetInput, MetadataSetInput, METADATA_SET_IDENT, METADATA_GET_IDENT};
 use radix_engine_interface::api::types::{GlobalAddress, NodeModuleId, RENodeId, ScryptoReceiver};
 use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
 use radix_engine_interface::blueprints::resource::*;
@@ -35,12 +33,16 @@ impl ResourceManager {
     }
 
     pub fn get_metadata(&mut self, key: String) -> Option<String> {
-        let mut env = ScryptoEnv;
-        env.call_native(MetadataGetInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            key,
-        })
-        .unwrap()
+        let rtn = ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::Metadata,
+                METADATA_GET_IDENT,
+                scrypto_encode(&MetadataGetInput { key }).unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {

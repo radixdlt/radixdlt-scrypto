@@ -14,7 +14,6 @@ pub enum NativePackage {
     Auth,
     Royalty,
     Package,
-    Metadata,
     TransactionProcessor,
     Root,
 }
@@ -85,7 +84,6 @@ pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     ComponentRoyalty(ComponentRoyaltyFn),
     Package(PackageFn),
-    Metadata(MetadataFn),
     TransactionProcessor(TransactionProcessorFn),
     Root,
 }
@@ -96,7 +94,6 @@ impl NativeFn {
             NativeFn::AccessRulesChain(..) => NativePackage::Auth,
             NativeFn::ComponentRoyalty(..) => NativePackage::Royalty,
             NativeFn::Package(..) => NativePackage::Package,
-            NativeFn::Metadata(..) => NativePackage::Metadata,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
         }
@@ -130,30 +127,6 @@ pub enum AccessRulesChainFn {
     SetMethodMutability,
     SetGroupMutability,
     GetLength,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum MetadataFn {
-    Get,
 }
 
 #[derive(

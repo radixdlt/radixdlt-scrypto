@@ -13,10 +13,10 @@ use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
+    GlobalAddress, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
@@ -217,7 +217,7 @@ fn build_substates(
         update_metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+        AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );

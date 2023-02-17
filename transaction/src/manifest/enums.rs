@@ -93,9 +93,8 @@ lazy_static! {
                 AccessRulesChain = 0;
                 ComponentRoyalty = 1;
                 Package = 2;
-                Metadata = 3;
-                TransactionProcessor = 4;
-                Root = 5;
+                TransactionProcessor = 3;
+                Root = 4;
             }
         );
 
@@ -119,13 +118,6 @@ lazy_static! {
                 Publish = 0;
                 SetRoyaltyConfig = 1;
                 ClaimRoyalty = 2;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum MetadataFn {
-                Get = 0;
             }
         );
 
