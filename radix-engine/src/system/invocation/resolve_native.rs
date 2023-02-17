@@ -19,11 +19,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            PackageFn::ClaimRoyalty => {
-                let invocation = scrypto_decode::<PackageClaimRoyaltyInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
         },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
             AccessRulesChainFn::AddAccessCheck => {

@@ -21,12 +21,10 @@ PUBLISH_PACKAGE
     Tuple(                     # Access Rules Struct
         Map<Enum, Enum>(       # Method auth Field
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Package",
-                    Enum("PackageFn::SetRoyaltyConfig")
-                )
-            ), 
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::PackageRoyalty"),
+                "set_royalty_config"
+            ),
             Enum(
                 "AccessRuleEntry::AccessRule", 
                 Enum(
@@ -44,11 +42,9 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Package",
-                    Enum("PackageFn::ClaimRoyalty")
-                )
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::PackageRoyalty"),
+                "claim_royalty"
             ),
             Enum(
                 "AccessRuleEntry::AccessRule", 
@@ -101,12 +97,10 @@ PUBLISH_PACKAGE
         Enum("AccessRule::DenyAll"),         # Default Auth Field
         Map<Enum, Enum>(         # Method Auth Mutability Field
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Package",
-                    Enum("PackageFn::SetRoyaltyConfig")
-                )
-            ), 
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::PackageRoyalty"),
+                "set_royalty_config"
+            ),
             Enum(
                 "AccessRule::Protected", 
                 Enum(
@@ -121,12 +115,10 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "AccessRuleKey::Native", 
-                Enum(
-                    "NativeFn::Package",
-                    Enum("PackageFn::ClaimRoyalty")
-                )
-            ), 
+                "AccessRuleKey::Scrypto",
+                Enum("NodeModuleId::PackageRoyalty"),
+                "claim_royalty"
+            ),
             Enum(
                 "AccessRule::Protected", 
                 Enum(

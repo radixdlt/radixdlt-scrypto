@@ -115,8 +115,6 @@ lazy_static! {
             m,
             enum PackageFn {
                 Publish = 0;
-                SetRoyaltyConfig = 1;
-                ClaimRoyalty = 2;
             }
         );
 

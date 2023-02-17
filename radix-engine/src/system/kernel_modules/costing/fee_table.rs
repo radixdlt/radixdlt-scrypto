@@ -243,6 +243,7 @@ impl FeeTable {
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => self.fixed_medium,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT => self.fixed_medium,
                 PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT => self.fixed_medium,
+                PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT => self.fixed_medium,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -263,7 +264,6 @@ impl FeeTable {
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
                 PackageFn::PublishNative => self.fixed_high,
-                PackageFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {

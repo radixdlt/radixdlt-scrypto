@@ -1,7 +1,6 @@
 use crate::api::node_modules::metadata::*;
 use crate::api::node_modules::royalty::*;
 use crate::api::types::NodeModuleId;
-use crate::api::types::PackageFn;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -249,7 +248,7 @@ pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) 
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Package(PackageFn::ClaimRoyalty)),
+        AccessRuleKey::ScryptoMethod(NodeModuleId::PackageRoyalty, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

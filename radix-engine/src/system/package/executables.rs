@@ -1,9 +1,8 @@
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::interpreters::deref_and_update;
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi,
 };
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
@@ -13,13 +12,12 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use native_sdk::resource::{ResourceManager, Vault};
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
-use radix_engine_interface::blueprints::resource::Bucket;
 
 pub struct Package;
 
@@ -223,63 +221,5 @@ impl Executor for PackagePublishInvocation {
 
         let package_address: PackageAddress = global_node_id.into();
         Ok((package_address, CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
-    type Exec = PackageClaimRoyaltyExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver =
-            deref_and_update(receiver, NodeModuleId::SELF, &mut call_frame_update, api)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::Package(PackageFn::ClaimRoyalty),
-            resolved_receiver,
-        );
-        let executor = PackageClaimRoyaltyExecutable {
-            receiver: resolved_receiver.receiver.0,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for PackageClaimRoyaltyExecutable {
-    type Output = Bucket;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        // TODO: auth check
-        let node_id = self.receiver;
-        let handle = api.kernel_lock_substate(
-            node_id,
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            LockFlags::MUTABLE,
-        )?;
-
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
-        let mut vault = Vault(royalty_vault.vault_id());
-        let bucket = vault.sys_take_all(api)?;
-        let bucket_id = bucket.0;
-
-        api.kernel_drop_lock(handle)?;
-
-        Ok((
-            Bucket(bucket_id),
-            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
-        ))
     }
 }
