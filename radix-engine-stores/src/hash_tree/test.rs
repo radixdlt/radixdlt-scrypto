@@ -1,6 +1,6 @@
 use super::types::{Nibble, NibblePath, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::tree_store::{
-    Payload, SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
     TypedInMemoryTreeStore, Version,
 };
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -197,14 +197,10 @@ fn hash_of_different_re_node_nested_trees_is_same_when_contained_substates_are_s
     );
 
     let nested_tree_hashes = store
-        .memory
+        .root_tree_nodes
         .values()
         .filter_map(|node| match node {
-            TreeNode::Leaf(TreeLeafNode {
-                payload: Payload::ReNodeModule(_),
-                value_hash,
-                ..
-            }) => Some(value_hash.clone()),
+            TreeNode::Leaf(TreeLeafNode { value_hash, .. }) => Some(value_hash.clone()),
             _ => None,
         })
         .collect::<Vec<Hash>>();
@@ -216,18 +212,10 @@ fn hash_of_different_re_node_nested_trees_is_same_when_contained_substates_are_s
 fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
     fn count_current_re_node_leafs(store: &TypedInMemoryTreeStore) -> usize {
         store
-            .memory
+            .root_tree_nodes
             .iter()
             .filter(|(key, _)| !store.stale_key_buffer.contains(key))
-            .filter(|(_, node)| {
-                matches!(
-                    node,
-                    TreeNode::Leaf(TreeLeafNode {
-                        payload: Payload::ReNodeModule(_),
-                        ..
-                    })
-                )
-            })
+            .filter(|(_, node)| matches!(node, TreeNode::Leaf(TreeLeafNode { .. })))
             .count()
     }
 
