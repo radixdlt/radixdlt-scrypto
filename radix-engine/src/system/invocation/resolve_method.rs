@@ -4,6 +4,7 @@ use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     receiver: ScryptoReceiver,
+    module_id: NodeModuleId,
     method_name: &str,
     args: &[u8],
     api: &mut Y,
@@ -29,24 +30,30 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
     };
 
-    let component_info = {
-        let handle = api.kernel_lock_substate(
-            node_id,
-            NodeModuleId::ComponentTypeInfo,
-            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-        api.kernel_drop_lock(handle)?;
+    let (package_address, blueprint_name) = match module_id {
+        NodeModuleId::SELF => {
+            let handle = api.kernel_lock_substate(
+                node_id,
+                NodeModuleId::ComponentTypeInfo,
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+            let object_info = (component_info.package_address, component_info.blueprint_name);
+            api.kernel_drop_lock(handle)?;
 
-        component_info
+            object_info
+        }
+        //NodeModuleId::ComponentRoyalty => (ROYALTY_PACKAGE_ADDRESS, COMPONENT_ROYALTY_BLUEPRINT),
+        _ => todo!(),
     };
 
+
     let invocation = ScryptoInvocation {
-        package_address: component_info.package_address,
-        blueprint_name: component_info.blueprint_name,
-        receiver: Some(receiver),
+        package_address,
+        blueprint_name,
+        receiver: Some((receiver, module_id)),
         fn_name: method_name.to_string(),
         args: args.to_owned(),
     };

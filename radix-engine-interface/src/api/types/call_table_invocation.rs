@@ -25,7 +25,7 @@ pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub fn_name: String,
-    pub receiver: Option<ScryptoReceiver>,
+    pub receiver: Option<(ScryptoReceiver, NodeModuleId)>,
     pub args: Vec<u8>,
 }
 

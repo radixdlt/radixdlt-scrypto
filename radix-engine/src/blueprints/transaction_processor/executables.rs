@@ -477,15 +477,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 TransactionProcessorError::BlobNotFound(abi.clone()),
                             ),
                         ))?;
+
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let rtn = api.call_native(PackagePublishInvocation {
-                        package_address: None,
-                        code: code.clone().clone(),
-                        abi: abi.clone().clone(),
-                        royalty_config: royalty_config.clone(),
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                    })?;
+                    let rtn = api.new_package(
+                        code.clone().clone(),
+                        abi.clone().clone(),
+                        vec![access_rules.clone()],
+                        royalty_config.clone(),
+                        metadata.clone(),
+                    )?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }

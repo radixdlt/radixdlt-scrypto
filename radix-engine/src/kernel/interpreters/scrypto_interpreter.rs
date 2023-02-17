@@ -64,7 +64,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             self.fn_name.clone(),
         );
 
-        let (receiver, actor) = if let Some(receiver) = self.receiver {
+        let (receiver, actor) = if let Some((receiver, node_module_id)) = self.receiver {
             let original_node_id = match receiver {
                 ScryptoReceiver::Global(component_address) => {
                     RENodeId::Global(GlobalAddress::Component(component_address))
@@ -82,30 +82,37 @@ impl ExecutableInvocation for ScryptoInvocation {
                 ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
             };
 
-            // Type Check
+            // Receiver Type Check
             {
-                let handle = api.kernel_lock_substate(
-                    original_node_id,
-                    NodeModuleId::ComponentTypeInfo,
-                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let component_info = substate_ref.component_info(); // TODO: Remove clone()
+                let (object_package_address, object_blueprint) = match node_module_id {
+                    NodeModuleId::SELF => {
+                        let handle = api.kernel_lock_substate(
+                            original_node_id,
+                            NodeModuleId::ComponentTypeInfo,
+                            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let component_info = substate_ref.component_info(); // TODO: Remove clone()
+                        let info = (component_info.package_address, component_info.blueprint_name.to_string());
+                        api.kernel_drop_lock(handle)?;
+                        info
+                    },
+                    _ => todo!(),
+                };
+
 
                 // Type check
-                if !component_info.package_address.eq(&self.package_address) {
+                if !object_package_address.eq(&self.package_address) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidInvocation,
                     ));
                 }
-                if !component_info.blueprint_name.eq(&self.blueprint_name) {
+                if !object_blueprint.eq(&self.blueprint_name) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidInvocation,
                     ));
                 }
-
-                api.kernel_drop_lock(handle)?;
             }
 
             // Deref if global
