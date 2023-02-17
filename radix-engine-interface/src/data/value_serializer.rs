@@ -367,13 +367,18 @@ pub fn serialize_custom_value<S: Serializer>(
     context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
-        ScryptoCustomValue::Address(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Address,
-            &format!("{:?}", value), // TODO: fix syntax
-        ),
+        ScryptoCustomValue::Address(value) => {
+            let string_address =
+                format!("{}", value.display(context.display_context.bech32_encoder));
+
+            serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                ScryptoCustomValueKind::Address,
+                &string_address,
+            )
+        }
         ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -525,7 +530,6 @@ mod tests {
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 
     use crate::{
-        address::NO_NETWORK,
         constants::RADIX_TOKEN,
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };
@@ -551,11 +555,12 @@ mod tests {
     fn test_address_encoding_no_network() {
         let value = RADIX_TOKEN;
 
-        let no_network_radix_token_address = RADIX_TOKEN.display(NO_NETWORK).to_string();
-
-        let expected = json!(no_network_radix_token_address);
-        let expected_invertible =
-            json!({ "type": "ResourceAddress", "value": no_network_radix_token_address });
+        let expected =
+            json!("NormalResource[000000000000000000000000000000000000000000000000000000]");
+        let expected_invertible = json!({
+            "type": "Address",
+            "value": "NormalResource[000000000000000000000000000000000000000000000000000000]"
+        });
 
         assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
         assert_invertible_json_matches(
@@ -571,11 +576,12 @@ mod tests {
         let value = RADIX_TOKEN;
         let encoder = Bech32Encoder::for_simulator();
 
-        let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
-
-        let expected_simple = json!(radix_token_address);
-        let expected_invertible =
-            json!({ "type": "ResourceAddress", "value": radix_token_address });
+        let expected_simple =
+            json!("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety");
+        let expected_invertible = json!({
+            "type": "Address",
+            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+        });
 
         assert_simple_json_matches(&value, &encoder, expected_simple);
         assert_invertible_json_matches(&value, &encoder, expected_invertible);
@@ -585,16 +591,11 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::{
-            constants::{EPOCH_MANAGER, FAUCET_COMPONENT},
             data::model::*,
             math::{Decimal, PreciseDecimal},
         };
 
         let encoder = Bech32Encoder::for_simulator();
-        let faucet_address = FAUCET_COMPONENT.display(&encoder).to_string();
-        let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
-        let epoch_manager_address = EPOCH_MANAGER.display(&encoder).to_string();
-
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Bool { value: true },
@@ -690,88 +691,226 @@ mod tests {
             -5,
             "-5",
             "-5",
-            { "hex": "3a92" },
-            [153, 62],
-            { "variant": 0, "fields": [] },
-            { "variant": 1, "fields": [153] },
-            { "variant": 2, "fields": [153, true] },
-            [[153, 62]],
+            {
+                "hex": "3a92"
+            },
             [
-                faucet_address,
-                radix_token_address,
-                epoch_manager_address,
-                { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                { "type": "Bucket", "value": "Hello" },
-                { "type": "Bucket", "value": 10 },
-                { "type": "Proof", "value": 2 },
-                "ENTIRE_WORKTOP",
-                { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                153,
+                62
+            ],
+            {
+                "fields": [],
+                "variant": 0
+            },
+            {
+                "fields": [
+                    153
+                ],
+                "variant": 1
+            },
+            {
+                "fields": [
+                    153,
+                    true
+                ],
+                "variant": 2
+            },
+            [
+                [
+                    153,
+                    62
+                ]
+            ],
+            [
+                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
+                {
+                    "type": "Own",
+                    "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+                },
                 "1",
                 "0.01",
                 "0",
-                { "type": "NonFungibleLocalId", "value": "<hello>" },
-                { "type": "NonFungibleLocalId", "value": "#123#" },
-                { "type": "NonFungibleLocalId", "value": "[2345]" },
-                { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "<hello>"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "#123#"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "[2345]"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                }
             ]
         ]);
 
         let expected_invertible = json!({
             "type": "Tuple",
             "value": [
-                { "type": "Bool", "value": true },
-                { "type": "U8", "value": 5 },
-                { "type": "U16", "value": 5 },
-                { "type": "U32", "value": 5 },
-                { "type": "U64", "value": "18446744073709551615" },
-                { "type": "U128", "value": "9912313323213" },
-                { "type": "I8", "value": -5 },
-                { "type": "I16", "value": -5 },
-                { "type": "I32", "value": -5 },
-                { "type": "I64", "value": "-5" },
-                { "type": "I128", "value": "-5" },
-                { "type": "Array", "element_type": "U8", "value": { "hex": "3a92" } },
                 {
+                    "type": "Bool",
+                    "value": true
+                },
+                {
+                    "type": "U8",
+                    "value": 5
+                },
+                {
+                    "type": "U16",
+                    "value": 5
+                },
+                {
+                    "type": "U32",
+                    "value": 5
+                },
+                {
+                    "type": "U64",
+                    "value": "18446744073709551615"
+                },
+                {
+                    "type": "U128",
+                    "value": "9912313323213"
+                },
+                {
+                    "type": "I8",
+                    "value": -5
+                },
+                {
+                    "type": "I16",
+                    "value": -5
+                },
+                {
+                    "type": "I32",
+                    "value": -5
+                },
+                {
+                    "type": "I64",
+                    "value": "-5"
+                },
+                {
+                    "type": "I128",
+                    "value": "-5"
+                },
+                {
+                    "element_type": "U8",
                     "type": "Array",
+                    "value": {
+                        "hex": "3a92"
+                    }
+                },
+                {
                     "element_type": "U32",
+                    "type": "Array",
                     "value": [
-                        { "type": "U32", "value": 153 },
-                        { "type": "U32", "value": 62 },
+                        {
+                            "type": "U32",
+                            "value": 153
+                        },
+                        {
+                            "type": "U32",
+                            "value": 62
+                        }
                     ]
                 },
-                { "type": "Enum", "value": { "variant": 0, "fields": [] } },
-                { "type": "Enum", "value": { "variant": 1, "fields": [{ "type": "U32", "value": 153 }] } },
-                { "type": "Enum", "value": { "variant": 2, "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
-                { "type": "Map", "key_type": "U32", "value_type": "U32", "value": [{"type":"Tuple","value":[{"type":"U32","value":153},{"type":"U32","value":62}]}] },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [],
+                        "variant": 0
+                    }
+                },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [
+                            {
+                                "type": "U32",
+                                "value": 153
+                            }
+                        ],
+                        "variant": 1
+                    }
+                },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [
+                            {
+                                "type": "U32",
+                                "value": 153
+                            },
+                            {
+                                "type": "Bool",
+                                "value": true
+                            }
+                        ],
+                        "variant": 2
+                    }
+                },
+                {
+                    "key_type": "U32",
+                    "type": "Map",
+                    "value": [
+                        {
+                            "type": "Tuple",
+                            "value": [
+                                {
+                                    "type": "U32",
+                                    "value": 153
+                                },
+                                {
+                                    "type": "U32",
+                                    "value": 62
+                                }
+                            ]
+                        }
+                    ],
+                    "value_type": "U32"
+                },
                 {
                     "type": "Tuple",
                     "value": [
-                        { "type": "ComponentAddress", "value": faucet_address },
-                        { "type": "ResourceAddress", "value": radix_token_address },
-                        { "type": "ComponentAddress", "value": epoch_manager_address },
-                        { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                        { "type": "Bucket", "value": "Hello" },
-                        { "type": "Bucket", "value": 10 },
-                        { "type": "Proof", "value": 2 },
-                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
-                        { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "Decimal", "value": "1" },
-                        { "type": "Decimal", "value": "0.01" },
-                        { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "NonFungibleLocalId", "value": "<hello>" },
-                        { "type": "NonFungibleLocalId", "value": "#123#" },
-                        { "type": "NonFungibleLocalId", "value": "[2345]" },
-                        { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
+                        {
+                            "type": "Address",
+                            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+                        },
+                        {
+                            "type": "Own",
+                            "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+                        },
+                        {
+                            "type": "Decimal",
+                            "value": "1"
+                        },
+                        {
+                            "type": "Decimal",
+                            "value": "0.01"
+                        },
+                        {
+                            "type": "PreciseDecimal",
+                            "value": "0"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "<hello>"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "#123#"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "[2345]"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                        }
                     ]
                 }
             ]

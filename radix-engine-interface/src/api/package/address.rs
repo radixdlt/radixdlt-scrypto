@@ -1,14 +1,13 @@
-use sbor::rust::fmt;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::{copy_u8_array, ContextualDisplay};
-
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use sbor::rust::fmt;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
+use sbor::*;
 use transaction_data::*;
+use utils::{copy_u8_array, ContextualDisplay};
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

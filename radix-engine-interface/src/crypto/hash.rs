@@ -1,6 +1,6 @@
 use crate::crypto::blake2b_256_hash;
-use crate::LegacyDescribe;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -10,9 +10,7 @@ use sbor::*;
 use utils::copy_u8_array;
 
 /// Represents a 32-byte hash digest.
-#[derive(
-    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, LegacyDescribe,
-)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
 #[sbor(transparent)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
@@ -90,6 +88,15 @@ impl From<Hash> for Vec<u8> {
 impl Hash {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+}
+
+impl scrypto_abi::LegacyDescribe for Hash {
+    fn describe() -> scrypto_abi::Type {
+        scrypto_abi::Type::Array {
+            element_type: Box::new(scrypto_abi::Type::U8),
+            length: Self::LENGTH as u16,
+        }
     }
 }
 

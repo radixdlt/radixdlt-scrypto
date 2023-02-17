@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::TestRunner;
+use transaction::data::manifest_encode;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
 #[test]
@@ -240,7 +241,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            scrypto_encode(&AccessControllerStopTimedRecoveryInput {
+            manifest_encode(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
@@ -1492,7 +1493,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                scrypto_encode(&AccessControllerCreateProofInput {}).unwrap(),
+                manifest_encode(&AccessControllerCreateProofInput {}).unwrap(),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1518,7 +1519,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
+                manifest_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1561,7 +1562,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                scrypto_encode(
+                manifest_encode(
                     &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
@@ -1590,7 +1591,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryInput {
+                manifest_encode(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1616,7 +1617,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
+                manifest_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1628,7 +1629,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                scrypto_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
+                manifest_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1640,7 +1641,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                scrypto_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
+                manifest_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1659,7 +1660,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                scrypto_encode(&AccessControllerStopTimedRecoveryInput {
+                manifest_encode(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

@@ -8,8 +8,8 @@ use radix_engine_interface::abi::{BlueprintAbi, Type};
 use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
 use transaction::data::*;
+use transaction::model::Instruction;
 
 use crate::resim::SimulatorNonFungibleGlobalId;
 

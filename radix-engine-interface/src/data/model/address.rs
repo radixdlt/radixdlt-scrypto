@@ -1,14 +1,16 @@
 use crate::abi::*;
+use crate::address::{AddressDisplayContext, AddressError, NO_NETWORK};
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::ScryptoCustomValueKind;
 use crate::data::ScryptoEncoder;
 use crate::*;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt::Debug;
+use sbor::rust::fmt;
+use sbor::rust::vec::Vec;
 use transaction_data::*;
+use utils::ContextualDisplay;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Address {
     Package(PackageAddress),
     Component(ComponentAddress),
@@ -151,5 +153,35 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         Self::decode_body_common(decoder)
+    }
+}
+
+//======
+// text
+//======
+
+impl fmt::Debug for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            Address::Package(a) => write!(f, "{}", a.display(NO_NETWORK)),
+            Address::Component(a) => write!(f, "{}", a.display(NO_NETWORK)),
+            Address::Resource(a) => write!(f, "{}", a.display(NO_NETWORK)),
+        }
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Address {
+    type Error = AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            Address::Package(a) => a.contextual_format(f, context),
+            Address::Component(a) => a.contextual_format(f, context),
+            Address::Resource(a) => a.contextual_format(f, context),
+        }
     }
 }

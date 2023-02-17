@@ -6,9 +6,9 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
 use radix_engine_stores::rocks_db::RadixEngineDB;
+use transaction::data::manifest_encode;
 use transaction::model::Instruction;
 use utils::ContextualDisplay;
-use transaction::data::manifest_encode;
 
 use crate::resim::*;
 use crate::utils::*;

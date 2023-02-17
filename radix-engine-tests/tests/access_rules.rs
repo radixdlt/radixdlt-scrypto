@@ -323,7 +323,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = vec![scrypto_decode::<AccessRules>(&manifest_args!(
+        let access_rules = vec![manifest_decode::<AccessRules>(&manifest_args!(
             HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,

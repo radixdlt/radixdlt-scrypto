@@ -1,3 +1,10 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(any(feature = "std", feature = "alloc")))]
+compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
+#[cfg(all(feature = "std", feature = "alloc"))]
+compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
+
 mod custom_value;
 mod custom_value_kind;
 pub mod model;
@@ -5,6 +12,8 @@ pub mod model;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code

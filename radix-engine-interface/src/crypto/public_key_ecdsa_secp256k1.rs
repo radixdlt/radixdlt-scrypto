@@ -1,5 +1,6 @@
 use crate::*;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -34,6 +35,15 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1PublicKey {
         }
 
         Ok(EcdsaSecp256k1PublicKey(copy_u8_array(slice)))
+    }
+}
+
+impl scrypto_abi::LegacyDescribe for EcdsaSecp256k1PublicKey {
+    fn describe() -> scrypto_abi::Type {
+        scrypto_abi::Type::Array {
+            element_type: Box::new(scrypto_abi::Type::U8),
+            length: Self::LENGTH as u16,
+        }
     }
 }
 

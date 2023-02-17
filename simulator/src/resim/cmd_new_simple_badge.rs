@@ -10,9 +10,9 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
-use transaction::data::{manifest_args, manifest_encode};
 use transaction::data::model::*;
+use transaction::data::{manifest_args, manifest_encode};
+use transaction::model::Instruction;
 
 use crate::resim::*;
 

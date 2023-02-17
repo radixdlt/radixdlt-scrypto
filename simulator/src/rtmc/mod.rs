@@ -2,8 +2,8 @@ use clap::Parser;
 use radix_engine_interface::network::{NetworkDefinition, ParseNetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::compile;
 use transaction::data::manifest_encode;
+use transaction::manifest::compile;
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
