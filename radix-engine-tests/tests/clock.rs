@@ -4,7 +4,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
+use transaction::model::{Instruction, Instruction, SystemTransaction};
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -14,7 +14,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
-    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+    let instructions = vec![Instruction::Basic(Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
@@ -43,7 +43,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
-    let instructions = vec![Instruction::Basic(BasicInstruction::CallFunction {
+    let instructions = vec![Instruction::Basic(Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),

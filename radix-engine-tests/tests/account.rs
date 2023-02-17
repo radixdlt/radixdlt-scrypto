@@ -128,7 +128,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw_all(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(BasicInstruction::CallMethod {
+                .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
                     args: manifest_args!(bucket_id),

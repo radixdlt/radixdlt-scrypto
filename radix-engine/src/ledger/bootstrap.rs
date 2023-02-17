@@ -26,7 +26,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
+use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 use transaction_data::manifest_args;
 
@@ -58,7 +58,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
         let package_address = RESOURCE_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
@@ -84,7 +84,7 @@ pub fn create_genesis(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
@@ -99,7 +99,7 @@ pub fn create_genesis(
                 },
             )
             .unwrap(),
-        }));
+        });
     }
 
     // Package Token
@@ -109,7 +109,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
@@ -120,14 +120,14 @@ pub fn create_genesis(
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // Identity Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
@@ -144,7 +144,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
         let package_address = EPOCH_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
@@ -161,7 +161,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
@@ -178,7 +178,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
@@ -197,7 +197,7 @@ pub fn create_genesis(
             ACCESS_CONTROLLER_PACKAGE,
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
@@ -214,7 +214,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
@@ -233,7 +233,7 @@ pub fn create_genesis(
             TRANSACTION_RUNTIME_PACKAGE,
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
@@ -250,7 +250,7 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
@@ -270,7 +270,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
@@ -281,7 +281,7 @@ pub fn create_genesis(
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -292,7 +292,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
@@ -303,7 +303,7 @@ pub fn create_genesis(
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -314,7 +314,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
@@ -325,7 +325,7 @@ pub fn create_genesis(
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     {
@@ -333,7 +333,7 @@ pub fn create_genesis(
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(
+        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::Publish(PackagePublishInvocation {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
@@ -348,12 +348,12 @@ pub fn create_genesis(
     {
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
             args: scrypto_encode(&ClockCreateInput { component_address }).unwrap(),
-        }));
+        });
     }
 
     {
@@ -361,7 +361,7 @@ pub fn create_genesis(
         for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
             let initial_stake = id_allocator.new_bucket_id().unwrap();
             instructions.push(
-                BasicInstruction::TakeFromWorktopByAmount {
+                Instruction::TakeFromWorktopByAmount {
                     resource_address: RADIX_TOKEN,
                     amount,
                 }
@@ -382,7 +382,7 @@ pub fn create_genesis(
         let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
         pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
             function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
@@ -394,13 +394,13 @@ pub fn create_genesis(
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
-        }));
+        });
     }
 
     for (public_key, amount) in account_xrd_allocations.into_iter() {
         let bucket_id = id_allocator.new_bucket_id().unwrap();
         instructions.push(
-            BasicInstruction::TakeFromWorktopByAmount {
+            Instruction::TakeFromWorktopByAmount {
                 resource_address: RADIX_TOKEN,
                 amount,
             }
@@ -410,7 +410,7 @@ pub fn create_genesis(
             &PublicKey::EcdsaSecp256k1(public_key),
         );
         instructions.push(
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address: component_address,
                 method_name: "deposit".to_string(),
                 args: manifest_args!(bucket_id),
@@ -422,19 +422,19 @@ pub fn create_genesis(
     // Faucet
     {
         instructions.push(
-            BasicInstruction::TakeFromWorktop {
+            Instruction::TakeFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
         );
 
         let bucket = id_allocator.new_bucket_id().unwrap();
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(bucket),
-        }));
+        });
     };
 
     SystemTransaction {

@@ -5,9 +5,8 @@ use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
-use crate::errors::{ApplicationError, ScryptoFnResolvingError};
+use crate::errors::ScryptoFnResolvingError;
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -39,19 +38,12 @@ impl ExecutableInvocation for ScryptoInvocation {
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
-        let args = IndexedScryptoValue::from_slice(&self.args).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::InvalidCallData(e),
-            ))
-        })?;
+        let args = IndexedScryptoValue::from_slice(&self.args)
+            .map_err(|e| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let nodes_to_move = args
             .owned_node_ids()
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ReadOwnedNodesError(e),
-                ))
-            })?
+            .map_err(|e| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
             .into_iter()
             .collect();
         for global_address in args.global_references() {

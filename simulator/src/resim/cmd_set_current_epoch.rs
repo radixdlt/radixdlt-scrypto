@@ -4,7 +4,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -21,7 +21,7 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),

@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 use utils::ContextualDisplay;
 
 use crate::resim::*;
@@ -82,7 +82,7 @@ impl ShowLedger {
     }
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<u64, Error> {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
@@ -98,7 +98,7 @@ impl ShowLedger {
         out: &mut O,
         precision: TimePrecision,
     ) -> Result<Instant, Error> {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),

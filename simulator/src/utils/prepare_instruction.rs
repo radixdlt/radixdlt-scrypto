@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 use crate::resim::SimulatorNonFungibleGlobalId;
 
@@ -77,7 +77,7 @@ pub fn add_call_function_instruction_with_abi<'a>(
     let input_struct = ScryptoValue::Tuple { fields };
     let bytes = scrypto_encode(&input_struct).unwrap();
 
-    manifest_builder.add_instruction(BasicInstruction::CallFunction {
+    manifest_builder.add_instruction(Instruction::CallFunction {
         package_address,
         blueprint_name: blueprint_name.to_string(),
         function_name: function.to_string(),
@@ -112,7 +112,7 @@ pub fn add_call_method_instruction_with_abi<'a>(
     let (manifest_builder, arguments) =
         parse_args(manifest_builder, bech32_decoder, &abi.input, args, account)?;
 
-    manifest_builder.add_instruction(BasicInstruction::CallMethod {
+    manifest_builder.add_instruction(Instruction::CallMethod {
         component_address,
         method_name: method_name.to_owned(),
         args: args_from_bytes_vec!(arguments),
@@ -246,7 +246,7 @@ fn parse_args<'a>(
                                     );
                                 }
                                 manifest_builder
-                                    .add_instruction(BasicInstruction::TakeFromWorktopByAmount {
+                                    .add_instruction(Instruction::TakeFromWorktopByAmount {
                                         amount,
                                         resource_address,
                                     })
@@ -262,7 +262,7 @@ fn parse_args<'a>(
                                     );
                                 }
                                 manifest_builder
-                                    .add_instruction(BasicInstruction::TakeFromWorktopByIds {
+                                    .add_instruction(Instruction::TakeFromWorktopByIds {
                                         ids,
                                         resource_address,
                                     })
@@ -286,7 +286,7 @@ fn parse_args<'a>(
                                         amount,
                                     );
                                     manifest_builder
-                                        .add_instruction(BasicInstruction::PopFromAuthZone)
+                                        .add_instruction(Instruction::PopFromAuthZone)
                                         .2
                                         .unwrap()
                                 } else {
@@ -301,7 +301,7 @@ fn parse_args<'a>(
                                         &ids,
                                     );
                                     manifest_builder
-                                        .add_instruction(BasicInstruction::PopFromAuthZone)
+                                        .add_instruction(Instruction::PopFromAuthZone)
                                         .2
                                         .unwrap()
                                 } else {

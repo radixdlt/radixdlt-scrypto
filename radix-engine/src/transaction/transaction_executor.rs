@@ -16,6 +16,7 @@ use radix_engine_constants::{
 };
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
+use transaction_data::manifest_encode;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
@@ -171,12 +172,12 @@ where
 
     fn execute_with_fee_reserve(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
-        let transaction_hash = transaction.transaction_hash();
+        let transaction_hash = executable.transaction_hash();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.debug {
@@ -184,9 +185,9 @@ where
             println!("Transaction hash: {}", transaction_hash);
             println!(
                 "Transaction auth zone params: {:?}",
-                transaction.pre_allocated_ids()
+                executable.pre_allocated_ids()
             );
-            println!("Number of unique blobs: {}", transaction.blobs().len());
+            println!("Number of unique blobs: {}", executable.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -198,7 +199,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result =
-            Self::apply_pre_execution_costs(fee_reserve, &fee_table, transaction);
+            Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
         let fee_reserve = match pre_execution_result {
             Ok(fee_reserve) => fee_reserve,
             Err(err) => {
@@ -224,14 +225,14 @@ where
         let track_receipt = {
             let mut id_allocator = IdAllocator::new(
                 transaction_hash.clone(),
-                transaction.pre_allocated_ids().clone(),
+                executable.pre_allocated_ids().clone(),
             );
 
             // Create kernel
             let modules = KernelModuleMixer::standard(
                 execution_config.debug,
                 transaction_hash.clone(),
-                transaction.auth_zone_params().clone(),
+                executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
                 execution_config.max_call_depth,
@@ -250,15 +251,9 @@ where
             // Invoke transaction processor
             let invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: match transaction.instructions() {
-                    InstructionList::Basic(instructions) => {
-                        Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
-                    }
-                    InstructionList::Any(instructions) => Cow::Borrowed(instructions),
-                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
-                },
-                blobs: Cow::Borrowed(transaction.blobs()),
+                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
+                blobs: Cow::Borrowed(executable.blobs()),
             });
 
             // Teardown

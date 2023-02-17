@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::clock::{
     ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::time::UtcDateTime;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -22,7 +22,7 @@ pub struct SetCurrentTime {
 
 impl SetCurrentTime {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockSetCurrentTimeInput {

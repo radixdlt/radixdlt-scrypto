@@ -5,7 +5,7 @@ use radix_engine_interface::constants::FAUCET_COMPONENT;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 #[test]
 fn test_simple_deterministic_execution() {
@@ -57,7 +57,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
         .map(|_| {
             builder
                 .create_proof_from_account_by_amount(account, resource_address, 1.into())
-                .add_instruction(BasicInstruction::PopFromAuthZone)
+                .add_instruction(Instruction::PopFromAuthZone)
                 .2
                 .unwrap()
         })

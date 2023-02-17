@@ -8,7 +8,7 @@ use transaction_data::model::*;
 use transaction_data::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
-pub enum BasicInstruction {
+pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
         resource_address: ResourceAddress,
@@ -187,16 +187,7 @@ pub enum BasicInstruction {
         method_name: String,
         args: Vec<u8>,
     },
-}
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
-pub enum Instruction {
-    Basic(BasicInstruction),
-    System(NativeInvocation),
-}
-
-impl From<BasicInstruction> for Instruction {
-    fn from(i: BasicInstruction) -> Self {
-        Instruction::Basic(i)
-    }
+    // TODO: remove
+    NativeInvocation(NativeInvocation),
 }

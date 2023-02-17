@@ -40,7 +40,7 @@ use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{
-    BasicInstruction, Executable, Instruction, SystemTransaction, TransactionManifest,
+    Executable, Instruction, Instruction, SystemTransaction, TransactionManifest,
 };
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -629,7 +629,7 @@ impl TestRunner {
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
-            transaction::model::BasicInstruction::CallMethod {
+            transaction::model::Instruction::CallMethod {
                 component_address: FAUCET_COMPONENT,
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
@@ -1018,7 +1018,7 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
@@ -1039,7 +1039,7 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
@@ -1068,7 +1068,7 @@ impl TestRunner {
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
@@ -1089,7 +1089,7 @@ impl TestRunner {
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),

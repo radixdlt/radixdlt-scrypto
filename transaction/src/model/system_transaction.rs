@@ -1,4 +1,4 @@
-use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
+use super::{ExecutionContext, FeePayment, Instruction};
 use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::hash;
@@ -27,7 +27,7 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            InstructionList::Any(&self.instructions),
+            &self.instructions,
             &self.blobs,
             ExecutionContext {
                 transaction_hash,

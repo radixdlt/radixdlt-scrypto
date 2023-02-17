@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -91,7 +91,7 @@ impl NewSimpleBadge {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CallFunction {
+            .add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
