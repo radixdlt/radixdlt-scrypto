@@ -359,17 +359,15 @@ pub fn generate_instruction(
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-
-            let indexed_args = IndexedManifestValue::from_value(args);
             id_validator
-                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+                .call_with(&args)
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: indexed_args.to_vec(),
+                args: manifest_encode(&args).unwrap(),
             }
         }
         ast::Instruction::CallMethod {
@@ -380,16 +378,13 @@ pub fn generate_instruction(
             let component_address = generate_component_address(component_address, bech32_decoder)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-
-            let indexed_args = IndexedManifestValue::from_value(args);
             id_validator
-                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+                .call_with(&args)
                 .map_err(GeneratorError::IdValidationError)?;
-
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: indexed_args.into_vec(),
+                args: manifest_encode(&args).unwrap(),
             }
         }
         ast::Instruction::PublishPackage {
@@ -1265,11 +1260,13 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(global_id.resource_address()),
+                        value: ManifestCustomValue::Address(ManifestAddress::ResourceManager(
+                            global_id.resource_address().to_vec(),
+                        )),
                     },
                     Value::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(
-                            global_id.local_id().clone(),
+                            global_id.local_id().to_vec(),
                         ),
                     },
                 ],

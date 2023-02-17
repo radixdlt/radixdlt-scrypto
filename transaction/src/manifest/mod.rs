@@ -7,6 +7,7 @@ pub mod enums;
 pub mod generator;
 pub mod lexer;
 pub mod parser;
+pub mod utils;
 
 pub use compiler::{compile, CompileError};
 pub use decompiler::{decompile, DecompileError};

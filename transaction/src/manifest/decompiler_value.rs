@@ -1,8 +1,7 @@
 use radix_engine_interface::{
     address::Bech32Encoder,
-    api::types::{ComponentAddress, PackageAddress},
-    blueprints::resource::{NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress},
-    math::Decimal,
+    blueprints::resource::{NonFungibleGlobalId, ResourceAddress},
+    data::model::Address,
 };
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
@@ -11,6 +10,11 @@ use transaction_data::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
 use utils::ContextualDisplay;
+
+use super::utils::{
+    map_validated_address, map_validated_decimal, map_validated_non_fungible_local_id,
+    map_validated_precise_decimal, map_validated_public_key,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ManifestValueDisplayContext<'a> {
@@ -116,20 +120,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
                 {
                     let global_id = NonFungibleGlobalId::new(
                         ResourceAddress::try_from(address.as_slice()).unwrap(),
-                        match id {
-                            ManifestNonFungibleLocalId::String(i) => {
-                                NonFungibleLocalId::string(i.clone()).unwrap()
-                            }
-                            ManifestNonFungibleLocalId::Integer(i) => {
-                                NonFungibleLocalId::integer(i.clone())
-                            }
-                            ManifestNonFungibleLocalId::Bytes(i) => {
-                                NonFungibleLocalId::bytes(i.clone()).unwrap()
-                            }
-                            ManifestNonFungibleLocalId::UUID(i) => {
-                                NonFungibleLocalId::uuid(i.clone()).unwrap()
-                            }
-                        },
+                        map_validated_non_fungible_local_id(id.clone()),
                     );
                     return write!(
                         f,
@@ -306,33 +297,23 @@ pub fn format_custom_value<F: fmt::Write>(
     context: &ManifestValueDisplayContext,
 ) -> fmt::Result {
     match value {
-        // RE interpreted
-        ManifestCustomValue::Address(value) => {
-            match value {
-                ManifestAddress::Package(a) => {
-                    f.write_str("PackageAddress(\"")?;
-                    PackageAddress::try_from(a.as_slice())
-                        .unwrap()
-                        .format(f, context.bech32_encoder)
-                        .unwrap();
-                }
-                ManifestAddress::Component(a) => {
-                    f.write_str("ComponentAddress(\"")?;
-                    ComponentAddress::try_from(a.as_slice())
-                        .unwrap()
-                        .format(f, context.bech32_encoder)
-                        .unwrap();
-                }
-                ManifestAddress::ResourceManager(a) => {
-                    f.write_str("ResourceAddress(\"")?;
-                    ResourceAddress::try_from(a.as_slice())
-                        .unwrap()
-                        .format(f, context.bech32_encoder)
-                        .unwrap();
-                }
+        ManifestCustomValue::Address(value) => match map_validated_address(value.clone()) {
+            Address::Package(a) => {
+                f.write_str("PackageAddress(\"")?;
+                a.format(f, context.bech32_encoder).unwrap();
+                f.write_str("\")")?;
             }
-            f.write_str("\")")?;
-        }
+            Address::Component(a) => {
+                f.write_str("ComponentAddress(\"")?;
+                a.format(f, context.bech32_encoder).unwrap();
+                f.write_str("\")")?;
+            }
+            Address::ResourceManager(a) => {
+                f.write_str("ResourceAddress(\"")?;
+                a.format(f, context.bech32_encoder).unwrap();
+                f.write_str("\")")?;
+            }
+        },
         ManifestCustomValue::Bucket(value) => {
             if let Some(name) = context.get_bucket_name(&value) {
                 write!(f, "Bucket(\"{}\")", name)?;
@@ -361,38 +342,29 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "Blob(\"{}\")", hex::encode(&value.0))?;
         }
         ManifestCustomValue::Decimal(value) => {
-            write!(
-                f,
-                "Decimal(\"{}\")",
-                Decimal::try_from(value.0.as_slice()).unwrap()
-            )?;
+            write!(f, "Decimal(\"{}\")", map_validated_decimal(value.clone()))?;
         }
         ManifestCustomValue::PreciseDecimal(value) => {
             write!(
                 f,
                 "PreciseDecimal(\"{}\")",
-                Decimal::try_from(value.0.as_slice()).unwrap()
+                map_validated_precise_decimal(value.clone())
             )?;
         }
         ManifestCustomValue::NonFungibleLocalId(value) => {
             write!(
                 f,
                 "NonFungibleLocalId(\"{}\")",
-                convert_non_fungible_local_id(value.clone())
+                map_validated_non_fungible_local_id(value.clone())
             )?;
         }
         ManifestCustomValue::PublicKey(value) => {
-            write!(f, "PublicKey(\"{}\")", value)?;
+            write!(
+                f,
+                "PublicKey(\"{}\")",
+                map_validated_public_key(value.clone())
+            )?;
         }
     }
     Ok(())
-}
-
-fn convert_non_fungible_local_id(id: ManifestNonFungibleLocalId) -> NonFungibleLocalId {
-    match id {
-        ManifestNonFungibleLocalId::String(i) => NonFungibleLocalId::string(i.clone()).unwrap(),
-        ManifestNonFungibleLocalId::Integer(i) => NonFungibleLocalId::integer(i.clone()),
-        ManifestNonFungibleLocalId::Bytes(i) => NonFungibleLocalId::bytes(i.clone()).unwrap(),
-        ManifestNonFungibleLocalId::UUID(i) => NonFungibleLocalId::uuid(i.clone()).unwrap(),
-    }
 }

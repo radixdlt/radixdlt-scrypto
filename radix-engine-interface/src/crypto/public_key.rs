@@ -134,3 +134,15 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
         Self::decode_body_common(decoder)
     }
 }
+
+//========
+// text
+//========
+impl ToString for PublicKey {
+    fn to_string(&self) -> String {
+        match self {
+            PublicKey::EcdsaSecp256k1(pk) => hex::encode(&pk.0),
+            PublicKey::EddsaEd25519(pk) => hex::encode(&pk.0),
+        }
+    }
+}

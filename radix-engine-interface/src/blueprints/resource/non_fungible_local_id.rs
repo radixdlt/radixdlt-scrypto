@@ -322,6 +322,13 @@ impl NonFungibleLocalId {
         Ok(())
     }
 
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        let mut encoder = ScryptoEncoder::new(&mut buffer);
+        self.encode_body_common(&mut encoder).unwrap();
+        buffer
+    }
+
     pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {

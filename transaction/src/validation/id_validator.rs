@@ -4,6 +4,7 @@ use sbor::rust::collections::*;
 use sbor::SborPath;
 use transaction_data::model::ManifestBucket;
 use transaction_data::model::ManifestProof;
+use transaction_data::ManifestValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {
@@ -124,11 +125,7 @@ impl ManifestIdValidator {
         Ok(())
     }
 
-    pub fn move_resources(
-        &mut self,
-        buckets: &Vec<(ManifestBucket, SborPath)>,
-        proofs: &Vec<(ManifestProof, SborPath)>,
-    ) -> Result<(), ManifestIdValidationError> {
+    pub fn call_with(&mut self, args: &ManifestValue) -> Result<(), ManifestIdValidationError> {
         for (bucket, _) in buckets {
             self.drop_bucket(bucket)?;
         }

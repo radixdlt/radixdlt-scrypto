@@ -1,8 +1,7 @@
 use sbor::*;
 
-pub const TYPE_ADDRESS: u8 = 0xf0;
-pub const TYPE_OWN: u8 = 0xf1;
-
+pub const TYPE_ADDRESS: u8 = 0x80;
+pub const TYPE_OWN: u8 = 0x81;
 pub const TYPE_DECIMAL: u8 = 0x85;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
