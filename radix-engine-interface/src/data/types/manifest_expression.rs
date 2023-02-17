@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::data::*;
-use crate::scrypto_type;
+use crate::schemaless_scrypto_custom_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestExpression {
@@ -68,4 +68,4 @@ impl ManifestExpression {
     }
 }
 
-scrypto_type!(ManifestExpression, ScryptoCustomValueKind::Expression, 1);
+schemaless_scrypto_custom_type!(ManifestExpression, ScryptoCustomValueKind::Expression, 1);

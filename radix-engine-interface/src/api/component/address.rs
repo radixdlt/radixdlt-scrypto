@@ -8,7 +8,7 @@ use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
 use crate::data::ScryptoCustomValueKind;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -145,11 +145,12 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     ComponentAddress,
     ScryptoCustomValueKind::ComponentAddress,
     Type::ComponentAddress,
-    27
+    27,
+    COMPONENT_ADDRESS_ID
 );
 
 //======

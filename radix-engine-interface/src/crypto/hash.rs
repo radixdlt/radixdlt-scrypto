@@ -10,7 +10,7 @@ use utils::copy_u8_array;
 use crate::abi::*;
 use crate::crypto::blake2b_256_hash;
 use crate::data::*;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -93,7 +93,7 @@ impl Hash {
     }
 }
 
-scrypto_type!(Hash, ScryptoCustomValueKind::Hash, Type::Hash, 32);
+well_known_scrypto_custom_type!(Hash, ScryptoCustomValueKind::Hash, Type::Hash, 32, HASH_ID);
 
 //======
 // text

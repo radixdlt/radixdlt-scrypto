@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::data::*;
-use crate::scrypto_type;
+use crate::schemaless_scrypto_custom_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBucket(pub u32);
@@ -51,4 +51,4 @@ impl ManifestBucket {
     }
 }
 
-scrypto_type!(ManifestBucket, ScryptoCustomValueKind::Bucket, 4);
+schemaless_scrypto_custom_type!(ManifestBucket, ScryptoCustomValueKind::Bucket, 4);
