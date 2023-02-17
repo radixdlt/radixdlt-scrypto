@@ -13,12 +13,15 @@ use radix_engine_interface::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionLimitsError {
-    /// Used when WASM memory consumed during transaction execution exceeds defined limit,
+    /// Retruned when WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter current memory value is returned.
     MaxWasmMemoryExceeded(usize),
-    /// Used when one instance WASM memory consumed during transaction execution exceeds defined limit,
+    /// Retruned when one instance WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter memory consumed by that instave is returned.
     MaxWasmInstanceMemoryExceeded(usize),
+    /// Retruned when substate reads count during transaction execution
+    /// exceeds defined limit just after reads occurs.
+    MaxSubstateReadsCountExceeded,
 }
 
 /// Representatino of data which needs to be limited for each call frame.
@@ -30,22 +33,28 @@ struct CallFrameInfo {
     substate_store_read: usize,
 }
 
+pub struct TransactionLimitsConfig {
+    /// Maximum WASM memory which can be consumed during transaction execution.
+    pub max_wasm_memory: usize,
+    /// Maximum WASM memory which can be consumed in one call frame.
+    pub max_wasm_memory_per_call_frame: usize,
+    /// Maximum Substates reads for transaction.
+    pub max_substate_reads: usize,
+}
+
 /// Tracks and verifies transaction limits during transactino execution,
 /// if exceeded breaks execution with appropriate error.
 pub struct TransactionLimitsModule {
-    /// Maximum WASM memory which can be consumed during transaction execution.
-    max_wasm_memory: usize,
-    /// Maximum WASM memory which can be consumed during transaction execution.
-    max_wasm_memory_per_call_frame: usize,
+    /// Definitions of the limits levels.
+    limits_config: TransactionLimitsConfig,
     /// Internal stack of data for each call frame.
     call_frames_stack: Vec<CallFrameInfo>,
 }
 
 impl TransactionLimitsModule {
-    pub fn new(max_wasm_memory: usize, max_wasm_instance_memory: usize) -> Self {
+    pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         TransactionLimitsModule {
-            max_wasm_memory,
-            max_wasm_memory_per_call_frame: max_wasm_instance_memory,
+            limits_config,
             call_frames_stack: Vec::with_capacity(8),
         }
     }
@@ -58,7 +67,8 @@ impl TransactionLimitsModule {
             .call_frames_stack
             .last()
             .expect("Call frames stack (Wasm memory) should not be empty.");
-        if current_call_frame.wasm_memory_usage > self.max_wasm_memory_per_call_frame {
+        if current_call_frame.wasm_memory_usage > self.limits_config.max_wasm_memory_per_call_frame
+        {
             return Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxWasmInstanceMemoryExceeded(
@@ -77,7 +87,7 @@ impl TransactionLimitsModule {
             .sum();
 
         // validate if limit was exceeded
-        if max_value > self.max_wasm_memory {
+        if max_value > self.limits_config.max_wasm_memory {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(TransactionLimitsError::MaxWasmMemoryExceeded(
                     max_value,
@@ -88,8 +98,24 @@ impl TransactionLimitsModule {
         }
     }
 
+    /// Checks if substate reads count is in the limit.
     fn validate_substates(&self) -> Result<(), RuntimeError> {
-        Ok(())
+        // sum all call stack values
+        let sum_reads: usize = self
+            .call_frames_stack
+            .iter()
+            .map(|item| item.substate_store_read)
+            .sum();
+
+        if sum_reads > self.limits_config.max_substate_reads {
+            Err(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxSubstateReadsCountExceeded,
+                ),
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 

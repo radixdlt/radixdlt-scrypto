@@ -42,6 +42,7 @@ pub struct ExecutionConfig {
     pub abort_when_loan_repaid: bool,
     pub max_wasm_mem_per_transaction: usize,
     pub max_wasm_mem_per_call_frame: usize,
+    pub max_substate_reads_per_transaction: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -59,6 +60,7 @@ impl ExecutionConfig {
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
+            max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
         }
     }
 
@@ -240,6 +242,7 @@ where
                 execution_config.max_kernel_call_depth_traced,
                 execution_config.max_wasm_mem_per_transaction,
                 execution_config.max_wasm_mem_per_call_frame,
+                execution_config.max_substate_reads_per_transaction,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
