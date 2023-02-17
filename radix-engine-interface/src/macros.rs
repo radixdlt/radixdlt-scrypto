@@ -67,9 +67,9 @@ macro_rules! pdec {
 
 /// A macro for implementing sbor traits (for statically sized types).
 #[macro_export]
-macro_rules! scrypto_type {
+macro_rules! well_known_scrypto_custom_type {
     // with describe
-    ($t:ty, $value_kind:expr, $schema_type: expr, $size: expr) => {
+    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_id:ident) => {
         impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
             fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
@@ -109,7 +109,17 @@ macro_rules! scrypto_type {
                 $schema_type
             }
         }
+
+        impl Describe<crate::data::ScryptoCustomTypeKind<GlobalTypeId>> for $t {
+            const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
+                crate::data::well_known_scrypto_custom_types::$well_known_id,
+            );
+        }
     };
+}
+
+#[macro_export]
+macro_rules! schemaless_scrypto_custom_type {
     // without describe
     ($t:ty, $value_kind:expr, $size: expr) => {
         impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {

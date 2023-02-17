@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use crate::data::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -94,6 +95,11 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
     }
 }
 
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for PackageAddress {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::PACKAGE_ADDRESS_ID);
+}
+
 impl scrypto_abi::LegacyDescribe for PackageAddress {
     fn describe() -> scrypto_abi::Type {
         Type::PackageAddress
@@ -136,9 +142,9 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
     }
 }
 
-//======
-// text
-//======
+//===================
+// binary (manifest)
+//===================
 
 impl fmt::Debug for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

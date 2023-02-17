@@ -12,6 +12,7 @@ use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
+use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
@@ -213,6 +214,7 @@ pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
+    TransactionLimitsError(TransactionLimitsError),
 }
 
 impl CanBeAbortion for ModuleError {

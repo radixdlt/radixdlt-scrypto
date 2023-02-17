@@ -14,6 +14,7 @@ pub use type_validation::*;
 /// * `kind` - The type's [`TypeKind`] - this is essentially the definition of the structure of the type,
 ///   and includes the type's `ValueKind` as well as the [`TypeKind`] of any child types.
 /// * `metadata` - The type's [`TypeMetadata`] including the name of the type and any of its fields or variants.
+/// * `validation` - The type's [`TypeValidation`] including extra information about validation the kind.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
     pub kind: TypeKind<C::CustomValueKind, C, L>,

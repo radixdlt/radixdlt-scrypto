@@ -16,7 +16,7 @@ use crate::data::*;
 use crate::math::bnum_integer::*;
 use crate::math::decimal::*;
 use crate::math::rounding_mode::*;
-use crate::scrypto_type;
+use crate::well_known_scrypto_custom_type;
 use transaction_data::*;
 
 /// `PreciseDecimal` represents a 512 bit representation of a fixed-scale decimal number.
@@ -457,11 +457,12 @@ impl PreciseDecimal {
     }
 }
 
-scrypto_type!(
+well_known_scrypto_custom_type!(
     PreciseDecimal,
     ScryptoCustomValueKind::PreciseDecimal,
     Type::PreciseDecimal,
-    PreciseDecimal::BITS / 8
+    PreciseDecimal::BITS / 8,
+    PRECISE_DECIMAL_ID
 );
 
 manifest_type!(

@@ -1,15 +1,15 @@
-use sbor::rust::fmt;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::{copy_u8_array, ContextualDisplay};
-
 use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
 use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use crate::data::*;
+use sbor::rust::fmt;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
+use sbor::*;
 use transaction_data::*;
+use utils::{copy_u8_array, ContextualDisplay};
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -176,6 +176,11 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for C
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for ComponentAddress {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::COMPONENT_ADDRESS_ID);
 }
 
 impl scrypto_abi::LegacyDescribe for ComponentAddress {

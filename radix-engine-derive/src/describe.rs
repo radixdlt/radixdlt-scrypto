@@ -13,6 +13,7 @@ mod tests {
     use super::*;
     use proc_macro2::TokenStream;
     use quote::quote;
+    use sbor_derive_common::utils::get_code_hash_const_array_token_stream;
     use std::str::FromStr;
 
     fn assert_code_eq(a: TokenStream, b: TokenStream) {
@@ -22,6 +23,7 @@ mod tests {
     #[test]
     fn test_describe_struct() {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input).unwrap();
 
         assert_code_eq(
@@ -31,9 +33,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(MyStruct),
                         &[],
-                        &[
-                            10u8, 39u8, 14u8, 207u8, 57u8, 233u8, 147u8, 10u8, 71u8, 184u8, 189u8, 42u8, 152u8, 227u8, 9u8, 254u8, 53u8, 33u8, 170u8, 163u8
-                        ]
+                        &#code_hash
                     );
                     fn type_data() -> Option<::sbor::TypeData<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
                         Some(::sbor::TypeData::named_fields_tuple(
@@ -51,20 +51,22 @@ mod tests {
     fn test_describe_enum() {
         let input = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound + ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > >
+                impl<T: Bound>
                     ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > for MyEnum<T>
+                where
+                    T: ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >,
+                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>::CustomValueKind >
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(MyEnum),
-                        &[T::TYPE_ID,],
-                        &[
-                            114u8, 163u8, 82u8, 202u8, 41u8, 220u8, 108u8, 111u8, 255u8, 110u8, 181u8, 107u8, 236u8, 117u8, 168u8, 151u8, 231u8, 247u8, 144u8, 85u8
-                        ]
+                        &[<T>::TYPE_ID,],
+                        &#code_hash
                     );
                     fn type_data() -> Option<::sbor::TypeData<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;

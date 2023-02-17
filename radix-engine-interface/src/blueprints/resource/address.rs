@@ -2,6 +2,7 @@ use crate::address::*;
 use crate::api::types::*;
 use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
+use crate::data::*;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -93,6 +94,11 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for R
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for ResourceAddress {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::RESOURCE_ADDRESS_ID);
 }
 
 impl scrypto_abi::LegacyDescribe for ResourceAddress {
