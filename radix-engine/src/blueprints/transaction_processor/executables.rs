@@ -21,12 +21,15 @@ use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{IndexedScryptoValue, ReadOwnedNodesError, ScryptoValue};
 use sbor::rust::borrow::Cow;
+use transaction::data::to_address;
+use transaction::data::transform;
+use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
-use transaction::manifest::utils::to_address;
 use transaction::model::*;
 use transaction::validation::*;
 use transaction_data::manifest_decode;
 use transaction_data::model::*;
+use transaction_data::ManifestValue;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionProcessorRunInvocation<'a> {
@@ -48,7 +51,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
-    BlobNotFound(u32),
+    BlobNotFound(Hash),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
 }
@@ -58,8 +61,12 @@ impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
 #[derive(Debug)]
 pub enum InstructionOutput {
+    /// Returns from a native function/method invocation.
+    /// TODO remove
     Native(Box<dyn NativeOutput>),
+    /// Returns from a scrypto function/method invocation.
     Scrypto(IndexedScryptoValue),
+    None,
 }
 
 impl InstructionOutput {
@@ -67,6 +74,7 @@ impl InstructionOutput {
         match self {
             InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
             InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
+            InstructionOutput::None => IndexedScryptoValue::unit().into_vec(),
         }
     }
 }
@@ -86,6 +94,7 @@ impl Clone for InstructionOutput {
 
                 InstructionOutput::Native(Box::new(decoded))
             }
+            InstructionOutput::None => InstructionOutput::None,
         }
     }
 }
@@ -188,7 +197,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
         | Instruction::MintUuidNonFungible {
             resource_address, ..
         } => {
-            update.add_ref(RENodeId::Global(Address::Resource(*resource_address)));
+            update.add_ref(RENodeId::Global(Address::Resource(
+                resource_address.clone(),
+            )));
         }
         Instruction::ReturnToWorktop { .. }
         | Instruction::PopFromAuthZone { .. }
@@ -228,8 +239,9 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         // TODO: This can be refactored out once any type in sbor is implemented
-        for instruction in self.instructions.as_ref() {
-            instruction_get_update(instruction, &mut call_frame_update);
+        let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
+        for instruction in instructions {
+            instruction_get_update(&instruction, &mut call_frame_update);
         }
         call_frame_update.add_ref(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
         call_frame_update.add_ref(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
@@ -274,118 +286,114 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             blobs_by_hash.insert(hash(blob), blob);
         }
 
-        let mut processor = TransactionProcessor::new();
+        let mut processor = TransactionProcessor::new(blobs_by_hash);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
 
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => {
-                    let bucket = Worktop::sys_take_all(*resource_address, api)?;
+                    let bucket = Worktop::sys_take_all(resource_address, api)?;
                     let bucket = processor.next_static_bucket(bucket)?;
-                    InstructionOutput::Native(Box::new(bucket))
+                    InstructionOutput::None
                 }
                 Instruction::TakeFromWorktopByAmount {
                     amount,
                     resource_address,
                 } => {
-                    let bucket = Worktop::sys_take(*resource_address, *amount, api)?;
+                    let bucket = Worktop::sys_take(resource_address, amount, api)?;
                     let bucket = processor.next_static_bucket(bucket)?;
-                    InstructionOutput::Native(Box::new(bucket))
+                    InstructionOutput::None
                 }
                 Instruction::TakeFromWorktopByIds {
                     ids,
                     resource_address,
                 } => {
-                    let bucket =
-                        Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), api)?;
+                    let bucket = Worktop::sys_take_non_fungibles(resource_address, ids, api)?;
                     let bucket = processor.next_static_bucket(bucket)?;
-                    InstructionOutput::Native(Box::new(bucket))
+                    InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = Worktop::sys_put(bucket, api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::None
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    let rtn = Worktop::sys_assert_contains(*resource_address, api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let rtn = Worktop::sys_assert_contains(resource_address, api)?;
+                    InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    let rtn = Worktop::sys_assert_contains_amount(*resource_address, *amount, api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let rtn = Worktop::sys_assert_contains_amount(resource_address, amount, api)?;
+                    InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    let rtn = Worktop::sys_assert_contains_non_fungibles(
-                        *resource_address,
-                        ids.clone(),
-                        api,
-                    )?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let rtn =
+                        Worktop::sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
                     let proof = ComponentAuthZone::sys_pop(api)?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
                     processor.proof_id_mapping.clear();
                     let rtn = ComponentAuthZone::sys_clear(api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     let rtn = ComponentAuthZone::sys_push(proof, api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
-                    let proof = ComponentAuthZone::sys_create_proof(*resource_address, api)?;
+                    let proof = ComponentAuthZone::sys_create_proof(resource_address, api)?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZoneByAmount {
                     amount,
                     resource_address,
                 } => {
                     let proof = ComponentAuthZone::sys_create_proof_by_amount(
-                        *amount,
-                        *resource_address,
+                        amount,
+                        resource_address,
                         api,
                     )?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZoneByIds {
                     ids,
                     resource_address,
                 } => {
                     let proof =
-                        ComponentAuthZone::sys_create_proof_by_ids(&ids, *resource_address, api)?;
+                        ComponentAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.sys_create_proof(api)?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
                     let proof = proof.sys_clone(api)?;
                     let proof = processor.next_static_proof(proof)?;
-                    InstructionOutput::Native(Box::new(proof))
+                    InstructionOutput::None
                 }
                 Instruction::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     let rtn = proof.sys_drop(api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
                     for (_, real_id) in processor.proof_id_mapping.drain() {
@@ -393,7 +401,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     let rtn = ComponentAuthZone::sys_clear(api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    InstructionOutput::None
                 }
                 Instruction::CallFunction {
                     package_address,
@@ -401,18 +409,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_name,
                     args,
                 } => {
-                    let args = processor.replace_manifest_values(
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_FUNCTION arguments"),
-                        api,
-                    )?;
+                    let value: ManifestValue =
+                        manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
+                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    transform(value, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
 
-                    let result = api.call_function(
-                        package_address.clone(),
-                        &blueprint_name,
-                        &function_name,
-                        args.to_vec(),
-                    )?;
+                    let result =
+                        api.call_function(package_address, &blueprint_name, &function_name, args)?;
                     let result = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
@@ -424,16 +428,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 } => {
-                    let args = processor.replace_manifest_values(
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_METHOD arguments"),
-                        api,
-                    )?;
+                    let value: ManifestValue =
+                        manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
+                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    transform(value, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
 
                     let result = api.call_method(
-                        ScryptoReceiver::Global(*component_address),
+                        ScryptoReceiver::Global(component_address),
                         &method_name,
-                        args.into_vec(),
+                        args,
                     )?;
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -450,28 +454,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     metadata,
                     access_rules,
                 } => {
-                    let code = blobs_by_hash
-                        .get(&code.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(code.clone()),
-                            ),
-                        ))?;
-                    let abi = blobs_by_hash
-                        .get(&abi.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(abi.clone()),
-                            ),
-                        ))?;
+                    let code = processor.get_blob(&code)?;
+                    let abi = processor.get_blob(&abi)?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.call_native(PackagePublishInvocation {
                         package_address: None,
-                        code: code.clone().clone(),
-                        abi: abi.clone().clone(),
-                        royalty_config: royalty_config.clone(),
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
+                        code: code.clone(),
+                        abi: abi.clone(),
+                        royalty_config: royalty_config,
+                        metadata: metadata,
+                        access_rules: access_rules,
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
@@ -481,25 +473,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     abi,
                     owner_badge,
                 } => {
-                    let code = blobs_by_hash
-                        .get(&code.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(code.clone()),
-                            ),
-                        ))?;
-                    let abi = blobs_by_hash
-                        .get(&abi.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(abi.clone()),
-                            ),
-                        ))?;
+                    let code = processor.get_blob(&code)?;
+                    let abi = processor.get_blob(&abi)?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.call_native(PackagePublishInvocation {
                         package_address: None,
-                        code: code.clone().clone(),
-                        abi: abi.clone().clone(),
+                        code: code.clone(),
+                        abi: abi.clone(),
                         royalty_config: BTreeMap::new(),
                         metadata: BTreeMap::new(),
                         access_rules: package_access_rules_from_owner_badge(&owner_badge),
@@ -529,12 +509,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                 } => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
-                        scrypto_encode(&ResourceManagerMintFungibleInput {
-                            amount: amount.clone(),
-                        })
-                        .unwrap(),
+                        scrypto_encode(&ResourceManagerMintFungibleInput { amount: amount })
+                            .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -550,12 +528,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
-                        scrypto_encode(&ResourceManagerMintNonFungibleInput {
-                            entries: entries.clone(),
-                        })
-                        .unwrap(),
+                        scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
+                            .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -571,10 +547,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
-                            entries: entries.clone(),
+                            entries: entries,
                         })
                         .unwrap(),
                     )?;
@@ -589,12 +565,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let result = api.call_method(
-                        ScryptoReceiver::Vault(*vault_id),
+                        ScryptoReceiver::Vault(vault_id),
                         VAULT_RECALL_IDENT,
-                        scrypto_encode(&VaultRecallInput {
-                            amount: amount.clone(),
-                        })
-                        .unwrap(),
+                        scrypto_encode(&VaultRecallInput { amount: amount }).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -611,9 +584,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     value,
                 } => {
                     let rtn = api.call_native(MetadataSetInvocation {
-                        receiver: RENodeId::Global(entity_address.clone()),
-                        key: key.clone(),
-                        value: value.clone(),
+                        receiver: RENodeId::Global(to_address(entity_address)),
+                        key: key,
+                        value: value,
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
@@ -623,8 +596,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let rtn = api.call_native(PackageSetRoyaltyConfigInvocation {
-                        receiver: package_address.clone(),
-                        royalty_config: royalty_config.clone(),
+                        receiver: package_address,
+                        royalty_config: royalty_config,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -633,15 +606,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let rtn = api.call_native(ComponentSetRoyaltyConfigInvocation {
-                        receiver: RENodeId::Global(Address::Component(component_address.clone())),
-                        royalty_config: royalty_config.clone(),
+                        receiver: RENodeId::Global(Address::Component(component_address)),
+                        royalty_config: royalty_config,
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let rtn = api.call_native(PackageClaimRoyaltyInvocation {
-                        receiver: package_address.clone(),
+                        receiver: package_address,
                     })?;
 
                     Worktop::sys_put(Bucket(rtn.0), api)?;
@@ -650,7 +623,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let rtn = api.call_native(ComponentClaimRoyaltyInvocation {
-                        receiver: RENodeId::Global(Address::Component(component_address.clone())),
+                        receiver: RENodeId::Global(Address::Component(component_address)),
                     })?;
 
                     Worktop::sys_put(Bucket(rtn.0), api)?;
@@ -664,29 +637,29 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     rule,
                 } => {
                     let rtn = api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: RENodeId::Global(entity_address.clone()),
-                        index: index.clone(),
-                        key: key.clone(),
-                        rule: AccessRuleEntry::AccessRule(rule.clone()),
+                        receiver: RENodeId::Global(to_address(entity_address)),
+                        index: index,
+                        key: key,
+                        rule: AccessRuleEntry::AccessRule(rule),
                     })?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::AssertAccessRule { access_rule } => {
-                    let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
+                    let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::NativeInvocation(invocation) => {
-                    let invocation = invocation.clone();
+                    let invocation = invocation;
                     let (fn_identifier, invocation) = invocation.flatten();
                     let rtn = api.call_native_raw(fn_identifier, invocation)?;
 
                     // TODO: Move buckets/proofs to worktop/authzone without serialization
-                    let result = IndexedScryptoValue::from_vec(rtn.clone()).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
-                    InstructionOutput::Native(Box::new(result.as_value().clone()))
+                    InstructionOutput::Native(Box::new(result.as_value()))
                 }
             };
             outputs.push(result);
@@ -698,18 +671,20 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     }
 }
 
-struct TransactionProcessor {
+struct TransactionProcessor<'blob> {
     proof_id_mapping: HashMap<ManifestProof, ProofId>,
     bucket_id_mapping: HashMap<ManifestBucket, BucketId>,
     id_allocator: ManifestIdAllocator,
+    blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
 }
 
-impl TransactionProcessor {
-    fn new() -> Self {
+impl<'blob> TransactionProcessor<'blob> {
+    fn new(blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>) -> Self {
         Self {
             proof_id_mapping: HashMap::new(),
             bucket_id_mapping: HashMap::new(),
             id_allocator: ManifestIdAllocator::new(),
+            blobs_by_hash,
         }
     }
 
@@ -732,6 +707,18 @@ impl TransactionProcessor {
                     ),
                 ))?;
         Ok(Bucket(real_id))
+    }
+
+    fn get_blob(&mut self, blob_ref: &ManifestBlobRef) -> Result<&'blob Vec<u8>, RuntimeError> {
+        let hash = Hash(blob_ref.0);
+        self.blobs_by_hash
+            .get(&hash)
+            .cloned()
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::BlobNotFound(hash),
+                ),
+            ))
     }
 
     fn get_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
@@ -765,7 +752,7 @@ impl TransactionProcessor {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.bucket_id_mapping.insert(new_id.clone(), bucket.0);
+        self.bucket_id_mapping.insert(new_id, bucket.0);
         Ok(new_id)
     }
 
@@ -775,7 +762,7 @@ impl TransactionProcessor {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.proof_id_mapping.insert(new_id.clone(), proof.0);
+        self.proof_id_mapping.insert(new_id, proof.0);
         Ok(new_id)
     }
 
@@ -804,41 +791,6 @@ impl TransactionProcessor {
         }
 
         Ok(())
-    }
-
-    fn replace_manifest_values<'a, Y>(
-        &mut self,
-        value: IndexedScryptoValue,
-        env: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let mut expression_replacements = Vec::<Vec<Own>>::new();
-        for (expression, _) in value.expressions() {
-            match expression {
-                ManifestExpression::EntireWorktop => {
-                    let buckets = Worktop::sys_drain(env)?;
-                    expression_replacements.push(buckets.into_iter().map(Into::into).collect())
-                }
-                ManifestExpression::EntireAuthZone => {
-                    let proofs = ComponentAuthZone::sys_drain(env)?;
-                    expression_replacements.push(proofs.into_iter().map(Into::into).collect())
-                }
-            }
-        }
-
-        value
-            .replace_manifest_values(
-                &mut self.proof_id_mapping,
-                &mut self.bucket_id_mapping,
-                expression_replacements,
-            )
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ReplaceManifestValuesError(e),
-                ))
-            })
     }
 
     fn perform_validation<'a, Y>(
@@ -887,5 +839,39 @@ impl TransactionProcessor {
                 Ok(())
             }
         }
+    }
+}
+
+struct TransactionProcessorWithApi<'blob, 'a, Y: ClientApi<RuntimeError>> {
+    processor: TransactionProcessor<'blob>,
+    api: &'a mut Y,
+}
+
+impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
+    for TransactionProcessorWithApi<'blob, 'a, Y>
+{
+    fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
+        self.processor.take_bucket(&b).map(|x| Own::Bucket(x.0))
+    }
+
+    fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, RuntimeError> {
+        self.processor.take_proof(&p).map(|x| Own::Proof(x.0))
+    }
+
+    fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
+        match e {
+            ManifestExpression::EntireWorktop => {
+                let buckets = Worktop::sys_drain(self.api)?;
+                Ok(buckets.into_iter().map(|b| Own::Bucket(b.0)).collect())
+            }
+            ManifestExpression::EntireAuthZone => {
+                let proofs = ComponentAuthZone::sys_drain(self.api)?;
+                Ok(proofs.into_iter().map(|p| Own::Proof(p.0)).collect())
+            }
+        }
+    }
+
+    fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, RuntimeError> {
+        Ok(self.processor.get_blob(&b)?.clone())
     }
 }

@@ -258,7 +258,7 @@ impl TransactionReceipt {
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         match &self.expect_commit_success()[nth] {
-            InstructionOutput::Native(native) => {
+            InstructionOutput::NativeReturn(native) => {
                 // TODO: Use downcast
                 IndexedScryptoValue::from_typed(&native.as_ref())
                     .as_typed()
