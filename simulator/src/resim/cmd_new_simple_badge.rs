@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
-use transaction_data::manifest_args;
-use transaction_data::model::*;
+use transaction::data::{manifest_args, manifest_encode};
+use transaction::data::model::*;
 
 use crate::resim::*;
 
@@ -98,7 +98,7 @@ impl NewSimpleBadge {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata,
                     access_rules: resource_auth,

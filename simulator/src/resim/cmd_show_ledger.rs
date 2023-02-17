@@ -8,6 +8,7 @@ use radix_engine_interface::time::UtcDateTime;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use transaction::model::Instruction;
 use utils::ContextualDisplay;
+use transaction::data::manifest_encode;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -85,7 +86,7 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         }];
         let blobs = vec![];
         let initial_proofs = vec![];
@@ -101,7 +102,7 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         }];
         let blobs = vec![];
         let initial_proofs = vec![];

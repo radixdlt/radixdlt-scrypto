@@ -28,7 +28,7 @@ use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use transaction_data::{manifest_args, model::*};
+use transaction_data::{manifest_args, manifest_encode, model::*};
 
 use crate::data::from_address;
 use crate::model::*;
@@ -285,7 +285,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: "create_fungible_with_initial_supply".to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -298,7 +298,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleInput {
+                args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -339,7 +339,7 @@ impl ManifestBuilder {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type,
                     metadata,
                     access_rules,
@@ -352,7 +352,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type,
                     metadata,
                     access_rules,
@@ -369,7 +369,7 @@ impl ManifestBuilder {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&IdentityCreateInput { access_rule }).unwrap(),
+            args: manifest_encode(&IdentityCreateInput { access_rule }).unwrap(),
         });
         self
     }
@@ -382,7 +382,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+            args: manifest_encode(&EpochManagerCreateValidatorInput {
                 key,
                 owner_access_rule,
             })
@@ -752,7 +752,7 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: scrypto_encode(&AccountCreateGlobalInput {
+            args: manifest_encode(&AccountCreateGlobalInput {
                 withdraw_rule: withdraw_auth,
             })
             .unwrap(),

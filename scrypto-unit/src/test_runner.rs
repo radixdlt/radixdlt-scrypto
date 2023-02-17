@@ -43,8 +43,8 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::validation::TestIntentHashManager;
-use transaction_data::manifest_args;
 use transaction_data::model::ManifestExpression;
+use transaction_data::{manifest_args, manifest_encode};
 
 pub struct Compile;
 
@@ -1021,7 +1021,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
+            args: manifest_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1042,7 +1042,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         }];
 
         let blobs = vec![];
@@ -1071,7 +1071,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+            args: manifest_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1092,7 +1092,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

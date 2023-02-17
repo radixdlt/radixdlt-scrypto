@@ -5,6 +5,7 @@ use radix_engine_interface::blueprints::clock::{
     ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::time::UtcDateTime;
+use transaction::data::manifest_encode;
 use transaction::model::Instruction;
 
 use crate::resim::*;
@@ -25,7 +26,7 @@ impl SetCurrentTime {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockSetCurrentTimeInput {
+            args: manifest_encode(&ClockSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
             })
             .unwrap(),

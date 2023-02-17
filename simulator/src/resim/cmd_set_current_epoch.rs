@@ -4,6 +4,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
+use transaction::data::manifest_encode;
 use transaction::model::Instruction;
 
 use crate::resim::*;
@@ -24,7 +25,7 @@ impl SetCurrentEpoch {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
+            args: manifest_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
         }];
 
         let blobs = vec![];

@@ -1458,7 +1458,6 @@ dependencies = [
  "serde_json",
  "temp-env",
  "transaction",
- "transaction-data",
  "utils",
  "uuid",
 ]

@@ -74,19 +74,19 @@ impl Clone for EpochManagerCreateInput {
 
 pub const EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInput;
 
 pub const EPOCH_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
 
 pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct EpochManagerNextRoundInput {
     pub round: u64,
 }
@@ -148,12 +148,12 @@ pub struct EpochManagerUpdateValidatorInput {
 
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ValidatorRegisterInput {}
 
 pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ValidatorUnregisterInput {}
 
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
@@ -179,14 +179,14 @@ pub struct ValidatorClaimXrdInput {
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ValidatorUpdateKeyInput {
     pub key: EcdsaSecp256k1PublicKey,
 }
 
 pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ValidatorUpdateAcceptDelegatedStakeInput {
     pub accept_delegated_stake: bool,
 }

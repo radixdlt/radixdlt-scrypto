@@ -3,7 +3,7 @@ use radix_engine_interface::network::{NetworkDefinition, ParseNetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;
-use transaction_data::manifest_encode;
+use transaction::data::manifest_encode;
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]

@@ -28,7 +28,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
-use transaction_data::manifest_args;
+use transaction_data::{manifest_args, manifest_encode};
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -89,7 +89,7 @@ pub fn create_genesis(
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
-            args: scrypto_encode(
+            args: manifest_encode(
                 &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
@@ -113,7 +113,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -274,7 +274,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -296,7 +296,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -318,7 +318,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -352,7 +352,7 @@ pub fn create_genesis(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&ClockCreateInput { component_address }).unwrap(),
+            args: manifest_encode(&ClockCreateInput { component_address }).unwrap(),
         });
     }
 
@@ -519,7 +519,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+    use transaction::{data::ManifestBucket, ecdsa_secp256k1::EcdsaSecp256k1PrivateKey};
+    use transaction_data::{manifest_decode, manifest_encode};
 
     use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
@@ -593,5 +594,18 @@ mod tests {
             .any(|rc| rc.resource_address == RADIX_TOKEN
                 && rc.amount == allocation_amount
                 && rc.component_id == derefed_component_id));
+    }
+
+    #[test]
+    fn test_encode_and_decode_validator_init() {
+        let t = ManifestValidatorInit {
+            validator_account_address: ComponentAddress::AccessController([0u8; 26]),
+            initial_stake: ManifestBucket(1),
+            stake_account_address: ComponentAddress::AccessController([0u8; 26]),
+        };
+
+        let bytes = manifest_encode(&t).unwrap();
+        let decoded: ManifestValidatorInit = manifest_decode(&bytes).unwrap();
+        assert_eq!(decoded, t);
     }
 }

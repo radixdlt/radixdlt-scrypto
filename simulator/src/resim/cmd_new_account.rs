@@ -5,8 +5,8 @@ use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
-use transaction_data::manifest_args;
-use transaction_data::model::*;
+use transaction::data::manifest_args;
+use transaction::data::model::*;
 use utils::ContextualDisplay;
 
 use crate::resim::Error::TransactionFailed;

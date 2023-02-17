@@ -22,15 +22,12 @@ impl Address {
     ) -> Result<(), EncodeError> {
         match self {
             Address::Package(v) => {
-                encoder.write_byte(0)?;
                 encoder.write_slice(&v.to_vec())?;
             }
             Address::Component(v) => {
-                encoder.write_byte(1)?;
                 encoder.write_slice(&v.to_vec())?;
             }
             Address::Resource(v) => {
-                encoder.write_byte(2)?;
                 encoder.write_slice(&v.to_vec())?;
             }
         }
@@ -40,21 +37,12 @@ impl Address {
     pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        match decoder.read_byte()? {
-            0 => Ok(Self::Package(
-                PackageAddress::try_from(decoder.read_slice(27)?)
-                    .map_err(|_| DecodeError::InvalidCustomValue)?,
-            )),
-            1 => Ok(Self::Component(
-                ComponentAddress::try_from(decoder.read_slice(27)?)
-                    .map_err(|_| DecodeError::InvalidCustomValue)?,
-            )),
-            2 => Ok(Self::Resource(
-                ResourceAddress::try_from(decoder.read_slice(27)?)
-                    .map_err(|_| DecodeError::InvalidCustomValue)?,
-            )),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        let slice = decoder.read_slice(27)?;
+        PackageAddress::try_from(slice)
+            .map(|x| Address::Package(x))
+            .or(ComponentAddress::try_from(slice).map(|x| Address::Component(x)))
+            .or(ResourceAddress::try_from(slice).map(|x| Address::Resource(x)))
+            .map_err(|_| DecodeError::InvalidCustomValue)
     }
 
     pub fn to_vec(&self) -> Vec<u8> {

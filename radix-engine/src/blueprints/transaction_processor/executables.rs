@@ -29,6 +29,7 @@ use transaction::model::*;
 use transaction::validation::*;
 use transaction_data::manifest_decode;
 use transaction_data::model::*;
+use transaction_data::ManifestCustomValue;
 use transaction_data::ManifestValue;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -73,31 +74,31 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     }
 }
 
-fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdate) {
+fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFrameUpdate) {
     match instruction {
         Instruction::CallFunction {
-            args,
             package_address,
+            args,
             ..
         } => {
             update.add_ref(RENodeId::Global(Address::Package(*package_address)));
-            for node_id in slice_to_global_references(args) {
-                update.add_ref(node_id);
-            }
+            let value: ManifestValue =
+                manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
+            extract_refs_from_value(&value, update);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
                 update.add_ref(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
             }
         }
         Instruction::CallMethod {
-            args,
             component_address,
+            args,
             ..
         } => {
             update.add_ref(RENodeId::Global(Address::Component(*component_address)));
-            for node_id in slice_to_global_references(args) {
-                update.add_ref(node_id);
-            }
+            let value: ManifestValue =
+                manifest_decode(args).expect("Invalid CALL_METHOD arguments");
+            extract_refs_from_value(&value, update);
         }
 
         Instruction::SetMetadata { entity_address, .. }
@@ -187,13 +188,48 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
     }
 }
 
-fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
-    let scrypto_value = IndexedScryptoValue::from_slice(slice).expect("Invalid CALL arguments");
-    scrypto_value
-        .global_references()
-        .into_iter()
-        .map(|addr| RENodeId::Global(addr))
-        .collect()
+fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdate) {
+    match value {
+        Value::Bool { .. }
+        | Value::I8 { .. }
+        | Value::I16 { .. }
+        | Value::I32 { .. }
+        | Value::I64 { .. }
+        | Value::I128 { .. }
+        | Value::U8 { .. }
+        | Value::U16 { .. }
+        | Value::U32 { .. }
+        | Value::U64 { .. }
+        | Value::U128 { .. }
+        | Value::String { .. } => {}
+        Value::Enum { fields, .. } => {
+            for f in fields {
+                extract_refs_from_value(f, collector);
+            }
+        }
+        Value::Array { elements, .. } => {
+            for f in elements {
+                extract_refs_from_value(f, collector);
+            }
+        }
+        Value::Tuple { fields } => {
+            for f in fields {
+                extract_refs_from_value(f, collector);
+            }
+        }
+        Value::Map { entries, .. } => {
+            for f in entries {
+                extract_refs_from_value(&f.0, collector);
+                extract_refs_from_value(&f.1, collector);
+            }
+        }
+        Value::Custom { value } => match value {
+            ManifestCustomValue::Address(a) => {
+                collector.add_ref(RENodeId::Global(to_address(a.clone())))
+            }
+            _ => {}
+        },
+    }
 }
 
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
@@ -207,7 +243,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         // TODO: This can be refactored out once any type in sbor is implemented
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
         for instruction in instructions {
-            instruction_get_update(&instruction, &mut call_frame_update);
+            extract_refs_from_instruction(&instruction, &mut call_frame_update);
         }
         call_frame_update.add_ref(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
         call_frame_update.add_ref(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
@@ -377,11 +413,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
                     let mut processor_with_api = TransactionProcessorWithApi { processor, api };
-                    transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
-                    let rtn =
-                        api.call_function(package_address, &blueprint_name, &function_name, args)?;
+                    println!("!!!! {:?}", scrypto_value);
+
+                    let rtn = api.call_function(
+                        package_address,
+                        &blueprint_name,
+                        &function_name,
+                        scrypto_encode(&scrypto_value).unwrap(),
+                    )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -397,13 +439,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
                     let mut processor_with_api = TransactionProcessorWithApi { processor, api };
-                    transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
                         ScryptoReceiver::Global(component_address),
                         &method_name,
-                        args,
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();

@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
-use transaction_data::*;
+use transaction::data::*;
 
 use crate::resim::SimulatorNonFungibleGlobalId;
 
@@ -22,10 +22,10 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::transaction_data::manifest_decode(&arg).unwrap());
+            fields.push(::transaction::data::manifest_decode(&arg).unwrap());
         }
-        let input_struct = ::transaction_data::ManifestValue::Tuple { fields };
-        ::transaction_data::manifest_encode(&input_struct).unwrap()
+        let input_struct = ::transaction::data::ManifestValue::Tuple { fields };
+        ::transaction::data::manifest_encode(&input_struct).unwrap()
     }};
 }
 
