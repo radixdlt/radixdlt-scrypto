@@ -58,7 +58,6 @@ impl Into<CallTableInvocation> for NativeInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainInvocation {
-    AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
     SetMethodMutability(AccessRulesSetMethodMutabilityInvocation),
     SetGroupAccessRule(AccessRulesSetGroupAccessRuleInvocation),
@@ -81,9 +80,6 @@ impl NativeInvocation {
                 PackageInvocation::PublishNative(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
-                AccessRulesChainInvocation::AddAccessCheck(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
                 AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -114,9 +110,6 @@ impl NativeInvocation {
     pub fn flatten(&self) -> (NativeFn, Vec<u8>) {
         let (native_fn, encoding) = match self {
             NativeInvocation::AccessRulesChain(i) => match i {
-                AccessRulesChainInvocation::AddAccessCheck(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessRulesChainInvocation::SetMethodAccessRule(i) => {
                     (get_native_fn(i), scrypto_encode(i))
                 }

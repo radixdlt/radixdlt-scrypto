@@ -32,6 +32,7 @@ pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = address!(EntityType::Pac
 pub const AUTH_ZONE_PACKAGE: PackageAddress = address!(EntityType::Package, 8);
 pub const METADATA_PACKAGE: PackageAddress = address!(EntityType::Package, 9);
 pub const ROYALTY_PACKAGE: PackageAddress = address!(EntityType::Package, 10);
+pub const ACCESS_RULES_PACKAGE: PackageAddress = address!(EntityType::Package, 11);
 
 pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";

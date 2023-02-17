@@ -160,6 +160,7 @@ impl KernelModule for CostingModule {
             || package_address == AUTH_ZONE_PACKAGE
             || package_address == METADATA_PACKAGE
             || package_address == ROYALTY_PACKAGE
+            || package_address == ACCESS_RULES_PACKAGE
         {
             return Ok(());
         }

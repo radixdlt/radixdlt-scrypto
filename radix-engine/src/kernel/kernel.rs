@@ -5,7 +5,6 @@ use crate::errors::*;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -37,6 +36,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
+use crate::system::node_modules::auth::AccessRulesChainSubstate;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use super::call_frame::{CallFrame, CallFrameUpdate, RENodeVisibilityOrigin};

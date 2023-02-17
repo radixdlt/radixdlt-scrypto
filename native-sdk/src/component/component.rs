@@ -1,10 +1,10 @@
-use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_ADD_ACCESS_CHECK_IDENT, AccessRulesAddAccessCheckInput};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
-    ClientApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+    ClientApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_encode, ScryptoDecode};
@@ -20,12 +20,14 @@ impl Component {
         api: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Component(self.0),
-            access_rules,
-        })?;
+        api.call_module_method(
+            ScryptoReceiver::Component(self.0),
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+            scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
+        )?;
 
         Ok(self)
     }

@@ -2,9 +2,7 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
-};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_ADD_ACCESS_CHECK_IDENT, AccessRulesAddAccessCheckInput, AccessRulesGetLengthInvocation};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
@@ -118,10 +116,15 @@ impl Component for OwnedComponent {
 
     fn add_access_check(&self, access_rules: AccessRules) {
         ScryptoEnv
-            .call_native(AccessRulesAddAccessCheckInvocation {
-                receiver: RENodeId::Component(self.0),
-                access_rules,
-            })
+            .call_module_method(
+                ScryptoReceiver::Component(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+                scrypto_encode(&AccessRulesAddAccessCheckInput {
+                    access_rules
+                })
+                    .unwrap(),
+            )
             .unwrap();
     }
 
@@ -203,12 +206,17 @@ impl Component for GlobalComponentRef {
     }
 
     fn add_access_check(&self, access_rules: AccessRules) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-            access_rules,
-        })
-        .unwrap();
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Global(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+                scrypto_encode(&AccessRulesAddAccessCheckInput {
+                    access_rules
+                })
+                    .unwrap(),
+            )
+            .unwrap();
     }
 
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {

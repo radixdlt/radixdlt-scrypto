@@ -21,11 +21,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
-            AccessRulesChainFn::AddAccessCheck => {
-                let invocation = scrypto_decode::<AccessRulesAddAccessCheckInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccessRulesChainFn::SetMethodAccessRule => {
                 let invocation =
                     scrypto_decode::<AccessRulesSetMethodAccessRuleInvocation>(&invocation)

@@ -16,6 +16,7 @@ pub const TRANSACTION_RUNTIME_CODE_ID: u8 = 7u8;
 pub const AUTH_ZONE_CODE_ID: u8 = 8u8;
 pub const METADATA_CODE_ID: u8 = 9u8;
 pub const ROYALTY_CODE_ID: u8 = 10u8;
+pub const ACCESS_RULES_CODE_ID: u8 = 11u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

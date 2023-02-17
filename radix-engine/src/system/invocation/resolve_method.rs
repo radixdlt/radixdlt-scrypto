@@ -1,3 +1,4 @@
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::{errors::RuntimeError, types::*};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
@@ -64,6 +65,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         NodeModuleId::PackageRoyalty => {
             // TODO: Check if type has royalty
             (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
+        }
+        NodeModuleId::AccessRules => {
+            // TODO: Check if type has royalty
+            (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
         }
         _ => todo!(),
     };

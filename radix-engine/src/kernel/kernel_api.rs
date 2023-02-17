@@ -124,13 +124,11 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait KernelInvokeApi<E>:
-    Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
+    Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
     + Invokable<AccessRulesSetMethodMutabilityInvocation, E>
     + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
     + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
     + Invokable<AccessRulesGetLengthInvocation, E>
-    + Invokable<AccessRulesAddAccessCheckInvocation, E>
     + Invokable<PackagePublishInvocation, E>
     + Invokable<PackagePublishNativeInvocation, E>
 {

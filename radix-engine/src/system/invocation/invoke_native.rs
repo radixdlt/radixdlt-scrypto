@@ -24,10 +24,6 @@ where
         },
         NativeInvocation::AccessRulesChain(access_rules_invocation) => {
             match access_rules_invocation {
-                AccessRulesChainInvocation::AddAccessCheck(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
                     let rtn = api.kernel_invoke(invocation)?;
                     Ok(Box::new(rtn))

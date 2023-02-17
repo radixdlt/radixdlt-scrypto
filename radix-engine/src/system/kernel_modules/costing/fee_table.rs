@@ -1,9 +1,9 @@
 use crate::types::*;
 use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::auth_zone::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
@@ -246,6 +246,11 @@ impl FeeTable {
                 PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT => self.fixed_medium,
                 _ => self.fixed_low,
             },
+
+            (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => match identifier.ident.as_str() {
+                ACCESS_RULES_ADD_ACCESS_CHECK_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            }
             _ => 0u32,
         }
     }
@@ -254,7 +259,6 @@ impl FeeTable {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
-                AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
                 AccessRulesChainFn::SetMethodMutability => self.fixed_low,
                 AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,

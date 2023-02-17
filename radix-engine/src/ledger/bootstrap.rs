@@ -5,7 +5,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AccessRulesAbi, AuthAddresses};
 use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
@@ -81,6 +81,23 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+            }),
+        )));
+    }
+
+    // Access Rules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCESS_RULES_PACKAGE)));
+        let package_address = ACCESS_RULES_PACKAGE.raw();
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ACCESS_RULES_CODE_ID,
+                abi: scrypto_encode(&AccessRulesAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),

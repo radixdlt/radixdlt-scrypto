@@ -14,7 +14,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
-use crate::system::node_modules::auth::AuthZoneNativePackage;
+use crate::system::node_modules::auth::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::type_info::TypeInfoSubstate;
@@ -30,6 +30,7 @@ use radix_engine_interface::api::{
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -114,6 +115,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                     }
                     NodeModuleId::PackageRoyalty => {
                         (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
+                    }
+                    NodeModuleId::AccessRules => {
+                        (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
                     }
                     _ => todo!(),
                 };
@@ -476,6 +480,9 @@ impl NativeVm {
             }
             ROYALTY_CODE_ID => {
                 RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            ACCESS_RULES_CODE_ID => {
+                AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeInvalidCodeId(native_package_code_id),
