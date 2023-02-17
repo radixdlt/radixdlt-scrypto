@@ -95,6 +95,12 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1PublicKey {
     }
 }
 
+impl From<EcdsaSecp256k1PublicKey> for Vec<u8> {
+    fn from(value: EcdsaSecp256k1PublicKey) -> Self {
+        value.to_vec()
+    }
+}
+
 impl EcdsaSecp256k1PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
@@ -119,6 +125,12 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1Signature {
         }
 
         Ok(EcdsaSecp256k1Signature(copy_u8_array(slice)))
+    }
+}
+
+impl From<EcdsaSecp256k1Signature> for Vec<u8> {
+    fn from(value: EcdsaSecp256k1Signature) -> Self {
+        value.to_vec()
     }
 }
 

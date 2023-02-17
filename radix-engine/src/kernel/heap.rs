@@ -1,14 +1,18 @@
-use crate::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
-use crate::kernel::Track;
-use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_modules::auth::AuthZoneStackSubstate;
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::{HashMap, HashSet};
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    AuthZoneStackOffset, BucketOffset, LoggerOffset, NodeModuleId, ProofOffset, RENodeId,
+    SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use sbor::rust::collections::BTreeMap;
+
+use super::track::Track;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -36,7 +40,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref())
             }
@@ -70,7 +74,7 @@ impl Heap {
         match (&node_id, offset) {
             (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref_mut())
             }
@@ -93,9 +97,9 @@ impl Heap {
         self.nodes.insert(node_id, node);
     }
 
-    pub fn move_nodes_to_store<R: FeeReserve>(
+    pub fn move_nodes_to_store(
         &mut self,
-        track: &mut Track<R>,
+        track: &mut Track,
         nodes: HashSet<RENodeId>,
     ) -> Result<(), CallFrameError> {
         for node_id in nodes {
@@ -105,9 +109,9 @@ impl Heap {
         Ok(())
     }
 
-    pub fn move_node_to_store<R: FeeReserve>(
+    pub fn move_node_to_store(
         &mut self,
-        track: &mut Track<R>,
+        track: &mut Track,
         node_id: RENodeId,
     ) -> Result<(), CallFrameError> {
         let node = self
@@ -153,6 +157,42 @@ impl Into<ProofSubstate> for HeapRENode {
             .remove(&(
                 NodeModuleId::SELF,
                 SubstateOffset::Proof(ProofOffset::Proof),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<LoggerSubstate> for HeapRENode {
+    fn into(mut self) -> LoggerSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::Logger(LoggerOffset::Logger),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<AuthZoneStackSubstate> for HeapRENode {
+    fn into(mut self) -> AuthZoneStackSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            ))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<TransactionRuntimeSubstate> for HeapRENode {
+    fn into(mut self) -> TransactionRuntimeSubstate {
+        self.substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             ))
             .unwrap()
             .into()

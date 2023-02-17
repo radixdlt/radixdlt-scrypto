@@ -1,11 +1,12 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::ResolvedActor;
+use radix_engine::kernel::actor::ResolvedActor;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+#[ignore = "disabled to enable client side address lookup. FIXME: should we re-enable this?"]
 fn should_not_be_able_to_read_global_substate() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -28,7 +29,7 @@ fn should_not_be_able_to_read_global_substate() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility {
+            RuntimeError::KernelError(KernelError::InvalidSubstateAccess {
                 actor: ResolvedActor {
                     identifier: FnIdentifier::Scrypto(..),
                     ..

@@ -1,11 +1,13 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::scrypto_env_native_fn;
 
 pub trait ScryptoBucket {
     fn new(resource_address: ResourceAddress) -> Self;
@@ -32,67 +34,120 @@ pub trait ScryptoBucket {
 impl ScryptoBucket for Bucket {
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        env.invoke(ResourceManagerCreateBucketInvocation {
-            receiver: resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Resource(resource_address),
+                RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     fn burn(self) {
         let mut env = ScryptoEnv;
-        let receiver = self.resource_address();
-        env.invoke(ResourceManagerBurnInvocation {
-            receiver,
-            bucket: Bucket(self.0),
-        })
-        .unwrap();
+        let rtn = env
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_MANAGER_BLUEPRINT,
+                RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerBurnInput {
+                    bucket: Bucket(self.0),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        let _: () = scrypto_decode(&rtn).unwrap();
     }
 
     fn create_proof(&self) -> Proof {
         let mut env = ScryptoEnv;
-        env.invoke(BucketCreateProofInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_CREATE_PROOF_IDENT,
+                scrypto_encode(&BucketCreateProofInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
-        env.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_GET_RESOURCE_ADDRESS_IDENT,
+                scrypto_encode(&BucketCreateProofInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
-    scrypto_env_native_fn! {
-        fn take_internal(&mut self, amount: Decimal) -> Bucket {
-            BucketTakeInvocation {
-                receiver: self.0,
-                amount,
-            }
-        }
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_TAKE_IDENT,
+                scrypto_encode(&BucketTakeInput { amount }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket {
-            BucketTakeNonFungiblesInvocation {
-                receiver: self.0,
-                ids: non_fungible_local_ids.clone()
-            }
-        }
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&BucketTakeNonFungiblesInput {
+                    ids: non_fungible_local_ids.clone(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn put(&mut self, other: Self) -> () {
-            BucketPutInvocation {
-                receiver: self.0,
-                bucket: Bucket(other.0),
-            }
-        }
+    fn put(&mut self, other: Self) -> () {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_PUT_IDENT,
+                scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-            BucketGetNonFungibleLocalIdsInvocation {
-                receiver: self.0,
-            }
-        }
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 
-        fn amount(&self) -> Decimal {
-            BucketGetAmountInvocation {
-                receiver: self.0,
-            }
-        }
+    fn amount(&self) -> Decimal {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Bucket(self.0),
+                BUCKET_GET_AMOUNT_IDENT,
+                scrypto_encode(&BucketGetAmountInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Takes some amount of resources from this bucket.

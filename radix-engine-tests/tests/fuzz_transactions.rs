@@ -1,4 +1,4 @@
-use radix_engine::kernel::ScryptoInterpreter;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
@@ -60,13 +60,13 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    builder.new_account(&AccessRule::AllowAll);
+                    builder.new_account(AccessRule::AllowAll);
                 }
                 1 => {
-                    builder.new_account(&AccessRule::AllowAll);
+                    builder.new_account(AccessRule::AllowAll);
                 }
                 2 => {
-                    builder.new_account(&AccessRule::AllowAll);
+                    builder.new_account(AccessRule::AllowAll);
                 }
                 3 => {
                     builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));

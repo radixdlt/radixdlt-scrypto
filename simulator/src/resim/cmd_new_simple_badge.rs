@@ -1,8 +1,13 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::NonFungibleIdType;
-use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey;
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleIdType, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
+    RESOURCE_MANAGER_BLUEPRINT,
+};
+use radix_engine_interface::blueprints::resource::{
+    ResourceMethodAuthKey, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
@@ -82,21 +87,28 @@ impl NewSimpleBadge {
             (rule!(allow_all), rule!(deny_all)),
         );
         let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleLocalId::Integer(1), EmptyStruct {});
+        initial_supply.insert(NonFungibleLocalId::integer(1), EmptyStruct {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: metadata,
-                access_rules: resource_auth,
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
-                    (
-                        scrypto_encode(&EmptyStruct).unwrap(),
-                        scrypto_encode(&EmptyStruct).unwrap(),
-                    ),
-                )])),
+            .add_instruction(BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    id_type: NonFungibleIdType::Integer,
+                    metadata,
+                    access_rules: resource_auth,
+                    entries: BTreeMap::from([(
+                        NonFungibleLocalId::integer(1),
+                        (
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                        ),
+                    )]),
+                })
+                .unwrap(),
             })
             .0
             .call_method(
@@ -126,7 +138,7 @@ impl NewSimpleBadge {
             writeln!(
                 out,
                 "NonFungibleGlobalId: {}",
-                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::Integer(1))
+                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1))
                     // This should be the opposite of parse_args in the manifest builder
                     .to_canonical_string(&bech32_encoder)
                     .green()
@@ -135,7 +147,7 @@ impl NewSimpleBadge {
 
             Ok(Some(NonFungibleGlobalId::new(
                 resource_address,
-                NonFungibleLocalId::Integer(1),
+                NonFungibleLocalId::integer(1),
             )))
         } else {
             Ok(None)

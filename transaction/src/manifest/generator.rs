@@ -1,5 +1,31 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::args;
+use radix_engine_interface::blueprints::access_controller::{
+    RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+};
+use radix_engine_interface::blueprints::account::{
+    AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+};
+use radix_engine_interface::blueprints::identity::{
+    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, ResourceManagerCreateFungibleInput,
+    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_BLUEPRINT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+};
+use radix_engine_interface::constants::{
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
+};
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -476,111 +502,147 @@ pub fn generate_instruction(
             )?,
         },
 
+        ast::Instruction::CreateValidator {
+            key,
+            owner_access_rule,
+        } => BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+                owner_access_rule: generate_typed_value(
+                    owner_access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
+        },
         ast::Instruction::CreateFungibleResource {
             divisibility,
             metadata,
             access_rules,
-            initial_supply,
-        } => BasicInstruction::CreateFungibleResource {
-            divisibility: generate_u8(divisibility)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateFungibleInput {
+                divisibility: generate_u8(divisibility)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            })
+            .unwrap(),
         },
-        ast::Instruction::CreateFungibleResourceWithOwner {
+        ast::Instruction::CreateFungibleResourceWithInitialSupply {
             divisibility,
             metadata,
-            owner_badge,
+            access_rules,
             initial_supply,
-        } => BasicInstruction::CreateFungibleResourceWithOwner {
-            divisibility: generate_u8(divisibility)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                divisibility: generate_u8(divisibility)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+                initial_supply: generate_decimal(initial_supply)?,
+            })
+            .unwrap(),
         },
-
         ast::Instruction::CreateNonFungibleResource {
             id_type,
             metadata,
             access_rules,
-            initial_supply,
-        } => BasicInstruction::CreateNonFungibleResource {
-            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            initial_supply: generate_from_enum_if_some(
-                initial_supply,
-                resolver,
-                bech32_decoder,
-                blobs,
-                generate_non_fungible_mint_params,
-            )?,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            })
+            .unwrap(),
         },
-        ast::Instruction::CreateNonFungibleResourceWithOwner {
+        ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
             id_type,
             metadata,
-            owner_badge,
+            access_rules,
             initial_supply,
-        } => BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-            initial_supply: generate_from_enum_if_some(
-                initial_supply,
-                resolver,
-                bech32_decoder,
-                blobs,
-                generate_non_fungible_mint_params,
-            )?,
-        },
-        ast::Instruction::CreateValidator {
-            key,
-            owner_access_rule,
-        } => BasicInstruction::CreateValidator {
-            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            owner_access_rule: generate_typed_value(
-                owner_access_rule,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+        } => BasicInstruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                .to_string(),
+            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+                entries: generate_non_fungible_mint_params(
+                    initial_supply,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
-            primary_role,
-            recovery_role,
-            confirmation_role,
+            rule_set,
             timed_recovery_delay_in_minutes,
-        } => BasicInstruction::CreateAccessController {
-            controlled_asset: generate_typed_value(
-                controlled_asset,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-            primary_role: generate_typed_value(primary_role, resolver, bech32_decoder, blobs)?,
-            recovery_role: generate_typed_value(recovery_role, resolver, bech32_decoder, blobs)?,
-            confirmation_role: generate_typed_value(
-                confirmation_role,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-            timed_recovery_delay_in_minutes: generate_typed_value(
-                timed_recovery_delay_in_minutes,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        },
-        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CreateIdentity {
-            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        } => BasicInstruction::CallFunction {
+            package_address: ACCESS_CONTROLLER_PACKAGE,
+            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+            function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            args: args!(
+                generate_typed_value::<ManifestBucket>(
+                    controlled_asset,
+                    resolver,
+                    bech32_decoder,
+                    blobs
+                )?,
+                generate_typed_value::<RuleSet>(rule_set, resolver, bech32_decoder, blobs)?,
+                generate_typed_value::<Option<u32>>(
+                    timed_recovery_delay_in_minutes,
+                    resolver,
+                    bech32_decoder,
+                    blobs
+                )?
+            ),
         },
         ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CreateAccount {
-            withdraw_rule: generate_typed_value(withdraw_rule, resolver, bech32_decoder, blobs)?,
+        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
+            args: scrypto_encode(&IdentityCreateInput {
+                access_rule: generate_typed_value::<AccessRule>(
+                    access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
+        },
+        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            args: scrypto_encode(&AccountCreateLocalInput {
+                withdraw_rule: generate_typed_value(
+                    withdraw_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+            .unwrap(),
         },
     })
 }
@@ -603,7 +665,8 @@ fn generate_typed_value<T: ScryptoDecode>(
 ) -> Result<T, GeneratorError> {
     let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
     let encoded = scrypto_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
-    let decoded: T = scrypto_decode(&encoded).map_err(GeneratorError::ArgumentDecodingError)?;
+    let decoded: T =
+        scrypto_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
     Ok(decoded)
 }
 
@@ -1003,41 +1066,6 @@ fn generate_args_from_tuple(
         ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
         v => invalid_type!(v, ast::Type::Tuple),
     }
-}
-
-fn generate_from_enum_if_some<F, T>(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-    generator: F,
-) -> Result<Option<T>, GeneratorError>
-where
-    F: Fn(
-        &ast::Value,
-        &mut NameResolver,
-        &Bech32Decoder,
-        &BTreeMap<Hash, Vec<u8>>,
-    ) -> Result<T, GeneratorError>,
-{
-    let value = match value {
-        ast::Value::None => {
-            return Ok(None);
-        }
-        ast::Value::Enum(variant, fields)
-            if *variant == OPTION_VARIANT_NONE && fields.len() == 0 =>
-        {
-            return Ok(None);
-        }
-        ast::Value::Some(value) => &**value,
-        ast::Value::Enum(variant, fields)
-            if *variant == OPTION_VARIANT_SOME && fields.len() == 1 =>
-        {
-            &fields[0]
-        }
-        v => invalid_type!(v, ast::Type::Enum)?,
-    };
-    Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
 }
 
 /// This function generates the mint parameters of a non fungible resource from an array which has
@@ -1613,7 +1641,7 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::Integer(1));
+        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::integer(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1657,15 +1685,15 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
+            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             BasicInstruction::PublishPackage {
                 code: ManifestBlobRef(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
                         .parse()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
                         .parse()
                         .unwrap()
                 ),
@@ -1673,149 +1701,26 @@ mod tests {
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new()
             },
-            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
-            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
             BasicInstruction::PublishPackageWithOwner {
                 code: ManifestBlobRef(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
                         .parse()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
                         .parse()
                         .unwrap()
                 ),
                 owner_badge: owner_badge.clone()
             },
-            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
-            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
-        );
-
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Decimal("500"));"#,
-            BasicInstruction::CreateFungibleResource {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: Some("500".parse().unwrap())
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
-            BasicInstruction::CreateFungibleResource {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: None
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Decimal("500"));"#,
-            BasicInstruction::CreateFungibleResourceWithOwner {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: Some("500".parse().unwrap())
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") None;"#,
-            BasicInstruction::CreateFungibleResourceWithOwner {
-                divisibility: 18,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: None
-            },
-        );
-
-        generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"##,
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
-                    (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
-                    )
-                )]))
-            },
-        );
-        generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                access_rules: BTreeMap::from([
-                    (
-                        ResourceMethodAuthKey::Withdraw,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                    (
-                        ResourceMethodAuthKey::Deposit,
-                        (AccessRule::AllowAll, AccessRule::DenyAll)
-                    ),
-                ]),
-                initial_supply: None
-            },
-        );
-
-        generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") Some(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"##,
-            BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
-                    (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
-                    )
-                )]))
-            },
-        );
-        generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#") None;"##,
-            BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::Integer,
-                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                owner_badge: owner_badge.clone(),
-                initial_supply: None
-            },
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
 
         generate_instruction_ok!(
@@ -1830,12 +1735,130 @@ mod tests {
             BasicInstruction::MintNonFungible {
                 resource_address: resource,
                 entries: BTreeMap::from([(
-                    NonFungibleLocalId::Integer(1),
+                    NonFungibleLocalId::integer(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
                     )
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    id_type: NonFungibleIdType::Integer,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                })
+                .unwrap(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_with_initial_supply_instruction() {
+        generate_instruction_ok!(
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    id_type: NonFungibleIdType::Integer,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                    entries: BTreeMap::from([(
+                        NonFungibleLocalId::integer(1),
+                        (
+                            args!(String::from("Hello World"), Decimal::from("12")),
+                            args!(12u8, 19u128)
+                        )
+                    )]),
+                })
+                .unwrap(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    divisibility: 18,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                })
+                .unwrap(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_with_initial_supply_instruction() {
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
+            BasicInstruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                    divisibility: 18,
+                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    access_rules: BTreeMap::from([
+                        (
+                            ResourceMethodAuthKey::Withdraw,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                        (
+                            ResourceMethodAuthKey::Deposit,
+                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                        ),
+                    ]),
+                    initial_supply: "500".parse().unwrap()
+                })
+                .unwrap()
             },
         );
     }
@@ -1875,11 +1898,16 @@ mod tests {
             r#"
             CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
-            BasicInstruction::CreateValidator {
-                key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
-                    .unwrap()
-                    .public_key(),
-                owner_access_rule: AccessRule::AllowAll,
+            BasicInstruction::CallMethod {
+                component_address: EPOCH_MANAGER,
+                method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                    key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
+                        .unwrap()
+                        .public_key(),
+                    owner_access_rule: AccessRule::AllowAll,
+                })
+                .unwrap(),
             },
         );
     }

@@ -1,6 +1,6 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
-    use radix_engine::kernel::ScryptoInterpreter;
+    use radix_engine::kernel::interpreters::ScryptoInterpreter;
     use radix_engine::ledger::*;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
@@ -39,7 +39,7 @@ mod multi_threaded_test {
             .map(|_| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET_COMPONENT, 100.into())
-                    .new_account(&rule!(require(NonFungibleGlobalId::from_public_key(
+                    .new_account(rule!(require(NonFungibleGlobalId::from_public_key(
                         &public_key
                     ))))
                     .build();
@@ -106,7 +106,7 @@ mod multi_threaded_test {
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .withdraw_from_account_by_amount(account1, dec!("0.000001"), RADIX_TOKEN)
+            .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,
                 "deposit_batch",

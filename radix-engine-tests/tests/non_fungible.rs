@@ -70,7 +70,7 @@ fn can_burn_non_fungible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account, resource_address)
+        .withdraw_all_from_account(account, resource_address)
         .burn_non_fungible(non_fungible_global_id.clone())
         .call_function(
             package,
@@ -279,8 +279,8 @@ fn test_mint_update_and_withdraw() {
     // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 1.into(), badge_resource_address)
-        .create_proof_from_account_by_amount(account, 1.into(), nft_resource_address)
+        .withdraw_from_account(account, badge_resource_address, 1.into())
+        .create_proof_from_account_by_amount(account, nft_resource_address, 1.into())
         .take_from_worktop(badge_resource_address, |builder, bucket_id| {
             builder.pop_from_auth_zone(|builder, proof_id| {
                 builder.call_function(
@@ -306,7 +306,7 @@ fn test_mint_update_and_withdraw() {
     // transfer
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account, nft_resource_address)
+        .withdraw_all_from_account(account, nft_resource_address)
         .call_method(
             account,
             "deposit_batch",
@@ -543,13 +543,15 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_global_id =
-        NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::UUID(0));
+    let non_fungible_global_id = NonFungibleGlobalId::new(
+        resource_address,
+        NonFungibleLocalId::uuid(0x4cdd7469_ac3f_4822_a817_93c904a2a556u128).unwrap(),
+    );
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account, resource_address)
+        .withdraw_all_from_account(account, resource_address)
         .burn_non_fungible(non_fungible_global_id.clone())
         .build();
     let receipt = test_runner.execute_manifest(

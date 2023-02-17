@@ -13,7 +13,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw_by_amount(account, 10.into(), Decimal::one(), token_resource_address)
+        .lock_fee_and_withdraw(account, 10.into(), token_resource_address, Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",
@@ -40,24 +40,20 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw_by_ids(
+        .lock_fee_and_withdraw_non_fungibles(
             account,
             10u32.into(),
-            BTreeSet::from([NonFungibleLocalId::Integer(1)]),
             auth_resource_address,
+            BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleLocalId::Integer(1)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder
                         .push_to_auth_zone(proof_id)
-                        .withdraw_from_account_by_amount(
-                            account,
-                            Decimal::one(),
-                            token_resource_address,
-                        )
+                        .withdraw_from_account(account, token_resource_address, Decimal::one())
                         .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
                 });
                 builder.return_to_worktop(bucket_id)

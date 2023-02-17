@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-tests"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
@@ -24,15 +24,23 @@ serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
 
 [[bench]]
-name = "radix_engine"
-harness = false
-
-[[bench]]
-name = "transaction"
+name = "validation"
 harness = false
 
 [[bench]]
 name = "wasm"
+harness = false
+
+[[bench]]
+name = "radiswap"
+harness = false
+
+[[bench]]
+name = "transfer"
+harness = false
+
+[[bench]]
+name = "spin_loop"
 harness = false
 
 [[bench]]
@@ -46,3 +54,5 @@ default = ["std"]
 std = ["sbor/std", "transaction/std", "radix-engine/std", "radix-engine-interface/std", "utils/std", "scrypto/std", "scrypto-unit/std"]
 alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc"]
 wasmer = ["radix-engine/wasmer"]
+cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
+flamegraph = []

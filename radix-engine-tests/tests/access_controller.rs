@@ -2,7 +2,7 @@ use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::ModuleError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -240,7 +240,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+            scrypto_encode(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
@@ -1453,7 +1453,7 @@ impl AccessControllerTestRunner {
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
             .lock_fee(account_component, 10.into())
-            .withdraw_from_account(account_component, controlled_asset)
+            .withdraw_all_from_account(account_component, controlled_asset)
             .take_from_worktop(controlled_asset, |builder, bucket| {
                 builder.create_access_controller(
                     bucket,
@@ -1492,7 +1492,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                scrypto_encode(&AccessControllerCreateProofMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerCreateProofInput {}).unwrap(),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1508,8 +1508,8 @@ impl AccessControllerTestRunner {
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let method_name = match as_role {
-            Role::Primary => AccessControllerFn::InitiateRecoveryAsPrimary,
-            Role::Recovery => AccessControllerFn::InitiateRecoveryAsRecovery,
+            Role::Primary => ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
+            Role::Recovery => ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
             Role::Confirmation => panic!("Confirmation Role can't initiate recovery!"),
         };
 
@@ -1517,8 +1517,8 @@ impl AccessControllerTestRunner {
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryMethodArgs {
+                method_name,
+                scrypto_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1548,17 +1548,21 @@ impl AccessControllerTestRunner {
         };
 
         let method_name = match proposer {
-            Proposer::Primary => AccessControllerFn::QuickConfirmPrimaryRoleRecoveryProposal,
-            Proposer::Recovery => AccessControllerFn::QuickConfirmRecoveryRoleRecoveryProposal,
+            Proposer::Primary => {
+                ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT
+            }
+            Proposer::Recovery => {
+                ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT
+            }
         };
 
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
+                method_name,
                 scrypto_encode(
-                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalMethodArgs {
+                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
                             recovery_role: proposed_recovery_role,
@@ -1581,14 +1585,12 @@ impl AccessControllerTestRunner {
         proposed_confirmation_role: AccessRule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
-        let method_name = AccessControllerFn::TimedConfirmRecovery;
-
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerTimedConfirmRecoveryMethodArgs {
+                ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
+                scrypto_encode(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1604,8 +1606,8 @@ impl AccessControllerTestRunner {
 
     pub fn cancel_recovery_attempt(&mut self, as_role: Role) -> TransactionReceipt {
         let method_name = match as_role {
-            Role::Primary => AccessControllerFn::CancelPrimaryRoleRecoveryProposal,
-            Role::Recovery => AccessControllerFn::CancelRecoveryRoleRecoveryProposal,
+            Role::Primary => ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+            Role::Recovery => ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
             Role::Confirmation => panic!("No method for the given role"),
         };
 
@@ -1613,9 +1615,8 @@ impl AccessControllerTestRunner {
             .manifest_builder(as_role)
             .call_method(
                 self.access_controller_component_address,
-                &method_name.to_string(),
-                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalMethodArgs)
-                    .unwrap(),
+                method_name,
+                scrypto_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1627,7 +1628,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                scrypto_encode(&AccessControllerLockPrimaryRoleMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1639,7 +1640,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                scrypto_encode(&AccessControllerUnlockPrimaryRoleMethodArgs {}).unwrap(),
+                scrypto_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1658,7 +1659,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                scrypto_encode(&AccessControllerStopTimedRecoveryMethodArgs {
+                scrypto_encode(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,

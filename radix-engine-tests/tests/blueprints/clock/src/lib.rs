@@ -1,5 +1,5 @@
 use crate::radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::ClientComponentApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -116,11 +116,12 @@ mod clock_test {
 
         pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
             ScryptoEnv
-                .invoke(ClockSetCurrentTimeInvocation {
-                    receiver: clock,
-                    current_time_ms,
-                })
-                .unwrap()
+                .call_method(
+                    ScryptoReceiver::Global(clock),
+                    CLOCK_SET_CURRENT_TIME_IDENT,
+                    scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+                )
+                .unwrap();
         }
     }
 }

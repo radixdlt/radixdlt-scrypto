@@ -6,7 +6,7 @@ pub trait IntentHashManager {
 }
 
 pub enum HashStatus {
-    Commited,
+    Committed,
     Cancelled,
 }
 

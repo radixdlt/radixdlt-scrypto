@@ -15,7 +15,7 @@ fn test_worktop_resource_leak() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account, RADIX_TOKEN)
+        .withdraw_all_from_account(account, RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

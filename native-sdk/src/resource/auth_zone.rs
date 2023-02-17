@@ -1,8 +1,10 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
+};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -12,104 +14,131 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     pub fn sys_drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneDrainInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZoneDrainInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_DRAIN_IDENT,
+            scrypto_encode(&AuthZoneDrainInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<(), E>
+    pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneClearInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZoneClearInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CLEAR_IDENT,
+            scrypto_encode(&AuthZoneClearInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
+    pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePopInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZonePopInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_POP_IDENT,
+            scrypto_encode(&AuthZonePopInput {}).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZoneCreateProofInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            resource_address,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_IDENT,
+            scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         amount: Decimal,
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZoneCreateProofByAmountInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            amount,
-            resource_address,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+            scrypto_encode(&AuthZoneCreateProofByAmountInput {
+                resource_address,
+                amount,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: ClientApi<E>,
     {
-        env.invoke(AuthZoneCreateProofByIdsInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            ids: ids.clone(),
-            resource_address,
-        })
+        let rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+            scrypto_encode(&AuthZoneCreateProofByIdsInput {
+                resource_address,
+                ids: ids.clone(),
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         proof: P,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + Invokable<AuthZonePushInvocation, E>,
+        Y: ClientApi<E>,
     {
         let proof: Proof = proof.into();
 
-        env.invoke(AuthZonePushInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            proof,
-        })
+        let _rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_PUSH_IDENT,
+            scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
+        )?;
+
+        Ok(())
     }
 
-    pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, env: &mut Y) -> Result<(), E>
+    pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + Invokable<AuthZoneAssertAccessRuleInvocation, E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        env.invoke(AuthZoneAssertAccessRuleInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            access_rule,
-        })
+        let _rtn = api.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+        )?;
+
+        Ok(())
     }
 }

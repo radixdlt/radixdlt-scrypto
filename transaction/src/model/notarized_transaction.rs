@@ -1,4 +1,4 @@
-use radix_engine_interface::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
+use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
@@ -39,6 +39,75 @@ pub struct SignedTransactionIntent {
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
+}
+
+/// Represents any natively supported signature.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type", content = "signature")
+)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub enum Signature {
+    EcdsaSecp256k1(EcdsaSecp256k1Signature),
+    EddsaEd25519(EddsaEd25519Signature),
+}
+
+/// Represents any natively supported signature, including public key.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub enum SignatureWithPublicKey {
+    EcdsaSecp256k1 {
+        signature: EcdsaSecp256k1Signature,
+    },
+    EddsaEd25519 {
+        public_key: EddsaEd25519PublicKey,
+        signature: EddsaEd25519Signature,
+    },
+}
+
+impl SignatureWithPublicKey {
+    pub fn signature(&self) -> Signature {
+        match &self {
+            SignatureWithPublicKey::EcdsaSecp256k1 { signature } => signature.clone().into(),
+            SignatureWithPublicKey::EddsaEd25519 { signature, .. } => signature.clone().into(),
+        }
+    }
+}
+
+impl From<EcdsaSecp256k1Signature> for Signature {
+    fn from(signature: EcdsaSecp256k1Signature) -> Self {
+        Self::EcdsaSecp256k1(signature)
+    }
+}
+
+impl From<EddsaEd25519Signature> for Signature {
+    fn from(signature: EddsaEd25519Signature) -> Self {
+        Self::EddsaEd25519(signature)
+    }
+}
+
+impl From<EcdsaSecp256k1Signature> for SignatureWithPublicKey {
+    fn from(signature: EcdsaSecp256k1Signature) -> Self {
+        Self::EcdsaSecp256k1 { signature }
+    }
+}
+
+impl From<(EddsaEd25519PublicKey, EddsaEd25519Signature)> for SignatureWithPublicKey {
+    fn from((public_key, signature): (EddsaEd25519PublicKey, EddsaEd25519Signature)) -> Self {
+        Self::EddsaEd25519 {
+            public_key,
+            signature,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -151,34 +220,38 @@ mod tests {
         )
         .unwrap();
 
+        let intent_hash = intent.hash().unwrap();
+
         // sign
-        let signature1 = sk1.sign(&intent.to_bytes().unwrap());
-        let signature2 = sk2.sign(&intent.to_bytes().unwrap());
+        let signature1 = sk1.sign(&intent_hash);
+        let signature2 = sk2.sign(&intent_hash);
         let signed_intent = SignedTransactionIntent {
             intent,
             intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
+        let signed_intent_hash = signed_intent.hash().unwrap();
+
         // notarize
-        let signature3 = sk_notary.sign(&signed_intent.to_bytes().unwrap());
+        let signature3 = sk_notary.sign(&signed_intent_hash);
         let transaction = NotarizedTransaction {
             signed_intent,
             notary_signature: signature3.into(),
         };
 
         assert_eq!(
-            "dc5ecacf6a3ceb4fef2e58deaa030d64edbfe6028eaf619f19fb411fc6223eba",
+            "641c247aa64c7f8f6706f365efcb2898b43893f006b748c2de46929756c08f5e",
             transaction.signed_intent.intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "279fb956a9143c0591424482c1bdfcc36c442485bdc8290c9f9f01ce9a15f99f",
+            "fea2075148785705d52a383176e9ded4b0ee8481ae82276bb7dec04c48f4eb05",
             transaction.signed_intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "d447fd70de1e7727067b6282ed11d2cc215e08ab495f5a017d2f4cc8628a9ebf",
+            "c1dce0e0b3cba17e85575736b25874f2185b7c761863bf52d1b49702ef23b228",
             transaction.hash().unwrap().to_string()
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220001b102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00080500210220220109002020002022020001b20093ce440fadbd89f53ec11e8f33a9f52073a4fb1447e4ca2fae5cc6951a8950a62d7cb46ee8b398796b630db258da0bf0bdb8a7d7dfad483e14ebf0eb2f6870da0001b201f6ab8f5364c763ad822790649738ee7ec9c69141bff73887e2124ffcd836c8ce703269f29484d8e7d2fbbd89c5f7960490b264de0ae1f3acdce3cc4dc4db9d6c220001b200b4fafc970acef2d0d63df34abac36e2f26e212d939c2d0aeeb14493b4e54ef0e27902de7e88e1864a56ce7f0cdcb797f1919d9e4f2c7c6262ef4958c2a777c08", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220001b102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00080500210220220109002020002022020001b20102115096107f734faceb87b1e3a6d678c3ddd407fb646a219035d79203caa348372be680c53eedc18160bf0dc8ca207c0082d4a35f40a8d4bad036f833c8bbae0001b200f0b7e0b49a44ed7f72cd8dcdbe267ebdde521935ea13273a4d0bee4ec68a7db658e56c9d2821f45ea78856c489c1c9eacf8fbf804eddeb77b4bd901916d4d4c1220001b200610bd7a14a6910490911f0b3de5a7b77669b224ff7ab5ffb62ceac4e2eb443731c3b5cd5d544db4f5671cf2b24b117ebd33122bc40b54ffb749c11e24dfa22c2", hex::encode(scrypto_encode(&transaction).unwrap()));
     }
 
     #[test]
@@ -207,33 +280,37 @@ mod tests {
         )
         .unwrap();
 
+        let intent_hash = intent.hash().unwrap();
+
         // sign
-        let signature1 = (sk1.public_key(), sk1.sign(&intent.to_bytes().unwrap()));
-        let signature2 = (sk2.public_key(), sk2.sign(&intent.to_bytes().unwrap()));
+        let signature1 = (sk1.public_key(), sk1.sign(&intent_hash));
+        let signature2 = (sk2.public_key(), sk2.sign(&intent_hash));
         let signed_intent = SignedTransactionIntent {
             intent,
             intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
         // notarize
-        let signature3 = sk_notary.sign(&signed_intent.to_bytes().unwrap());
+        let signed_intent_hash = hash(signed_intent.to_bytes().unwrap());
+
+        let signature3 = sk_notary.sign(&signed_intent_hash);
         let transaction = NotarizedTransaction {
             signed_intent,
             notary_signature: signature3.into(),
         };
 
         assert_eq!(
-            "ba55b1c9725753da65d708e7f88e894accec5e57da1c17c889b421cd49898abd",
+            "9e6a155f408a445b7f5249bfc2df9dbc4f94b78a1b81f170d2dc0f91529cc212",
             transaction.signed_intent.intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "dca89a7072a349b7d222b57852ccdd369eedf87997b9e79aee22d5ce7d11c02d",
+            "12f65ffad398eb3e927c68787cdc34efa61f57c038798e0cb465c34aed38cb49",
             transaction.signed_intent.hash().unwrap().to_string()
         );
         assert_eq!(
-            "6973345b165c9efb8f926b6decff306cd641d044518fdb15979cba801292a21d",
+            "69dbbf6de80d2508410a92b2840c913a989a43884a3ce376660a059ec921d1f4",
             transaction.hash().unwrap().to_string()
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101b3f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00080500210220220109002020002022020102b34cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29b4e756712638dc7deeabdee71bddc156f84cb69b24ed2bac7a0806a25a9831c1d63e26dfdb402313a07c9f3f1c4d2862dfb97b968f1dfbacc532eb0ce65ba66d090102b37422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674b4400bf5f21b9427bd6d379ee9200804066cf219044ac7f2cb9c1e22dccb122befee9e513a63f6f56ca120d91c04a00d7f250d80afcaaf089b942e4e631ed8d804220101b48b0b9f9ebe27b6a16158a91413488b3c9718cd0280d505e79efed54fc0edd7dfc2e31a4707925a642dd8d00b61c46cda670c16e8750bab5755cfa9f0f4092e0b", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101b3f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00080500210220220109002020002022020102b34cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29b4637acc3086579a7951f3339954a7c819082df0f2aefcf5bee6545886a212fb11deb3ea77cd45b20408980f31ce16bffeeb3e28705c601a4ae565e44a9ac120040102b37422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674b486aefe97b661ab550e5c65bb5bffbb27ad8a4b3a3936c9aecc7a308996087f9a624a3a0293aeacd3c3ec489054719e3854aad040e1ec0378013563c5db309106220101b4e224ace8bcd124de7af8da24cd897bc50ac8d26758020ae7735fa2374983be491de610450bc628e8c2e19fe386762f3573382f82607ac040fe72640c8ffb070a", hex::encode(scrypto_encode(&transaction).unwrap()));
     }
 }

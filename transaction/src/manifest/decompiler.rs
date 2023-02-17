@@ -1,5 +1,21 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::access_controller::{
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT};
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
+use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
+use radix_engine_interface::blueprints::resource::{
+    RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+};
+use radix_engine_interface::constants::{
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_MANAGER_PACKAGE,
+};
 use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
@@ -325,13 +341,63 @@ pub fn decompile_instruction<F: fmt::Write>(
             function_name,
             args,
         } => {
-            write!(
-                f,
-                "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
-                package_address.display(context.bech32_encoder),
-                blueprint_name,
-                function_name,
-            )?;
+            match (
+                package_address,
+                blueprint_name.as_str(),
+                function_name.as_str(),
+            ) {
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT) => {
+                    write!(f, "CREATE_ACCOUNT")?;
+                }
+                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => {
+                    write!(f, "CREATE_IDENTITY")?;
+                }
+                (
+                    &ACCESS_CONTROLLER_PACKAGE,
+                    ACCESS_CONTROLLER_BLUEPRINT,
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                ) => {
+                    write!(f, "CREATE_ACCESS_CONTROLLER")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                ) => {
+                    write!(f, "CREATE_FUNGIBLE_RESOURCE")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                ) => {
+                    write!(f, "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                ) => {
+                    write!(f, "CREATE_NON_FUNGIBLE_RESOURCE")?;
+                }
+                (
+                    &RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_MANAGER_BLUEPRINT,
+                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                ) => {
+                    write!(f, "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
+                }
+                _ => {
+                    write!(
+                        f,
+                        "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
+                        package_address.display(context.bech32_encoder),
+                        blueprint_name,
+                        function_name,
+                    )?;
+                }
+            }
+
             format_args(f, context, args)?;
             f.write_str(";")?;
         }
@@ -340,11 +406,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             method_name,
             args,
         } => {
-            f.write_str(&format!(
-                "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
-                component_address.display(context.bech32_encoder),
-                method_name
-            ))?;
+            match (component_address, method_name.as_str()) {
+                (&EPOCH_MANAGER, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => {
+                    write!(f, "CREATE_VALIDATOR")?;
+                }
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
+                        component_address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
             format_args(f, context, args)?;
             f.write_str(";")?;
         }
@@ -474,112 +548,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CreateFungibleResource {
-            divisibility,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => {
-            f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, divisibility)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, initial_supply)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateFungibleResourceWithOwner {
-            divisibility,
-            metadata,
-            owner_badge,
-            initial_supply,
-        } => {
-            f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_OWNER")?;
-            format_typed_value(f, context, divisibility)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
-            format_typed_value(f, context, initial_supply)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateNonFungibleResource {
-            id_type,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => {
-            let initial_supply = {
-                match initial_supply {
-                    Some(initial_supply) => {
-                        transform_non_fungible_mint_params(initial_supply).map(Some)?
-                    }
-                    None => None,
-                }
-            };
-
-            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, id_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, &initial_supply)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type,
-            metadata,
-            owner_badge,
-            initial_supply,
-        } => {
-            let initial_supply = {
-                match initial_supply {
-                    Some(initial_supply) => {
-                        transform_non_fungible_mint_params(initial_supply).map(Some)?
-                    }
-                    None => None,
-                }
-            };
-
-            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER")?;
-            format_typed_value(f, context, id_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
-            format_typed_value(f, context, &initial_supply)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateValidator {
-            key,
-            owner_access_rule,
-        } => {
-            f.write_str("CREATE_VALIDATOR")?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, owner_access_rule)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateAccessController {
-            controlled_asset,
-            primary_role,
-            recovery_role,
-            confirmation_role,
-            timed_recovery_delay_in_minutes,
-        } => {
-            f.write_str("CREATE_ACCESS_CONTROLLER")?;
-            format_typed_value(f, context, controlled_asset)?;
-            format_typed_value(f, context, primary_role)?;
-            format_typed_value(f, context, recovery_role)?;
-            format_typed_value(f, context, confirmation_role)?;
-            format_typed_value(f, context, timed_recovery_delay_in_minutes)?;
-        }
-        BasicInstruction::CreateIdentity { access_rule } => {
-            f.write_str("CREATE_IDENTITY")?;
-            format_typed_value(f, context, access_rule)?;
-            f.write_str(";")?;
-        }
         BasicInstruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;
             format_typed_value(f, context, access_rule)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateAccount { withdraw_rule } => {
-            f.write_str("CREATE_ACCOUNT")?;
-            format_typed_value(f, context, withdraw_rule)?;
             f.write_str(";")?;
         }
     }

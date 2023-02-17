@@ -8,6 +8,7 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::abi::*;
+use crate::crypto::blake2b_256_hash;
 use crate::data::*;
 use crate::scrypto_type;
 
@@ -41,10 +42,7 @@ impl AsRef<[u8]> for Hash {
 
 /// Computes the hash digest of a message.
 pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
-    // TODO: replace with whatever hash algorithm we eventually agrees on
-    // The point here is to have a single "main" hashing function in the code base
-
-    crate::crypto::sha256(data)
+    blake2b_256_hash(data)
 }
 
 //========
@@ -80,6 +78,12 @@ impl TryFrom<&[u8]> for Hash {
             return Err(ParseHashError::InvalidLength(slice.len()));
         }
         Ok(Self(copy_u8_array(slice)))
+    }
+}
+
+impl From<Hash> for Vec<u8> {
+    fn from(value: Hash) -> Self {
+        value.to_vec()
     }
 }
 

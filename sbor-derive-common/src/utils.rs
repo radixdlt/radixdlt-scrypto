@@ -188,9 +188,7 @@ pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStrea
 }
 
 pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
-    let buffer = const_sha1::ConstSlice::new();
-    let buffer = buffer.push_slice(input.to_string().as_bytes());
-    const_sha1::sha1(buffer.as_slice()).as_bytes()
+    const_sha1::sha1(input.to_string().as_bytes()).as_bytes()
 }
 
 pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {

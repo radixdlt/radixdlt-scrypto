@@ -1,11 +1,12 @@
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier,
+use radix_engine_interface::api::types::{FnIdentifier, PackageIdentifier, ScryptoFnIdentifier};
+use radix_engine_interface::api::ClientActorApi;
+use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
-use radix_engine_interface::api::{ClientActorApi, Invokable};
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerGetCurrentEpochInvocation;
-use radix_engine_interface::blueprints::transaction_hash::{
-    TransactionRuntimeGenerateUuidInvocation, TransactionRuntimeGetHashInvocation,
+use radix_engine_interface::blueprints::transaction_runtime::{
+    TransactionRuntimeGenerateUuid, TransactionRuntimeGetHashInput,
+    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -20,23 +21,28 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
-        ScryptoEnv
-            .invoke(EpochManagerGetCurrentEpochInvocation {
-                receiver: EPOCH_MANAGER,
-            })
-            .unwrap()
+        let rtn = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::Global(EPOCH_MANAGER),
+                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+                scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
-        let non_fungible_local_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::bytes(
             scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
-        );
+        )
+        .unwrap();
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.fn_identifier().unwrap() {
+        match ScryptoEnv.get_fn_identifier().unwrap() {
             FnIdentifier::Scrypto(identifier) => identifier,
             _ => panic!("Unexpected actor"),
         }
@@ -83,19 +89,25 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        ScryptoEnv
-            .invoke(TransactionRuntimeGetHashInvocation {
-                receiver: RENodeId::TransactionRuntime.into(),
-            })
-            .unwrap()
+        let output = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::TransactionRuntime,
+                TRANSACTION_RUNTIME_GET_HASH_IDENT,
+                scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        ScryptoEnv
-            .invoke(TransactionRuntimeGenerateUuidInvocation {
-                receiver: RENodeId::TransactionRuntime.into(),
-            })
-            .unwrap()
+        let output = ScryptoEnv
+            .call_method(
+                ScryptoReceiver::TransactionRuntime,
+                TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
+                scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 }

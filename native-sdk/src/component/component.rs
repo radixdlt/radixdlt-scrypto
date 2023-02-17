@@ -1,7 +1,7 @@
-use radix_engine_interface::api::component::ComponentSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
+use radix_engine_interface::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientNodeApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::ScryptoDecode;
 use sbor::rust::fmt::Debug;
@@ -13,14 +13,12 @@ impl Component {
     pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
         &mut self,
         access_rules: AccessRules,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<AccessRulesAddAccessCheckInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(AccessRulesAddAccessCheckInvocation {
+        api.call_native(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })?;
@@ -31,14 +29,12 @@ impl Component {
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &mut self,
         royalty_config: RoyaltyConfig,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + Invokable<ComponentSetRoyaltyConfigInvocation, E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
     {
-        sys_calls.invoke(ComponentSetRoyaltyConfigInvocation {
+        api.call_native(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),
             royalty_config,
         })?;

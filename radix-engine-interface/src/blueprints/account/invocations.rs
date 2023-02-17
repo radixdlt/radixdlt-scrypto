@@ -1,637 +1,374 @@
-use crate::api::component::ComponentAddress;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::types::Own;
 use crate::*;
+use radix_engine_interface::abi::LegacyDescribe;
 use radix_engine_interface::math::Decimal;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt::Debug;
+use scrypto_abi::Fn;
+use scrypto_abi::{BlueprintAbi, Fields, Type};
+
+pub struct AccountAbi;
+
+impl AccountAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        let fns = {
+            let mut fns = Vec::new();
+            // TODO: Add other functions/methods
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+                    export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountLockFeeInput::describe(),
+                    output: AccountLockFeeOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+                    export_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountLockContingentFeeInput::describe(),
+                    output: AccountLockContingentFeeOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_DEPOSIT_IDENT.to_string(),
+                    export_name: ACCOUNT_DEPOSIT_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountDepositInput::describe(),
+                    output: AccountDepositOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+                    export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountDepositBatchInput::describe(),
+                    output: AccountDepositBatchOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_WITHDRAW_IDENT.to_string(),
+                    export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountWithdrawInput::describe(),
+                    output: AccountWithdrawOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
+                    export_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountWithdrawAllInput::describe(),
+                    output: AccountWithdrawAllOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountWithdrawNonFungiblesInput::describe(),
+                    output: AccountWithdrawNonFungiblesOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+                    export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountLockFeeAndWithdrawInput::describe(),
+                    output: AccountLockFeeAndWithdrawOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
+                    export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountLockFeeAndWithdrawAllInput::describe(),
+                    output: AccountLockFeeAndWithdrawAllInput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountLockFeeAndWithdrawNonFungiblesInput::describe(),
+                    output: AccountLockFeeAndWithdrawNonFungiblesOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+                    export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountCreateProofInput::describe(),
+                    output: AccountCreateProofOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                    export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountCreateProofByAmountInput::describe(),
+                    output: AccountCreateProofByAmountOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            {
+                let fn_def = Fn {
+                    ident: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                    export_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                    mutability: Some(abi::SelfMutability::Mutable),
+                    input: AccountCreateProofByIdsInput::describe(),
+                    output: AccountCreateProofByIdsOutput::describe(),
+                };
+                fns.push(fn_def);
+            }
+            fns
+        };
+        let account_abi = BlueprintAbi {
+            structure: Type::Struct {
+                name: "Account".into(),
+                fields: Fields::Unit, // TODO: Add fields
+            },
+            fns,
+        };
+
+        let mut abis = BTreeMap::new();
+        abis.insert(ACCOUNT_BLUEPRINT.to_string(), account_abi);
+        abis
+    }
+}
+
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 //================
 // Account Create
 //================
 
+pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
+
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountCreateInvocation {
+pub struct AccountCreateLocalInput {
     pub withdraw_rule: AccessRule,
 }
 
-impl Invocation for AccountCreateInvocation {
-    type Output = ComponentId;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Create))
-    }
-}
-
-impl SerializableInvocation for AccountCreateInvocation {
-    type ScryptoOutput = ComponentId;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Create)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Create(self)).into()
-    }
-}
+pub type AccountCreateLocalOutput = Own;
 
 //=============
 // Account New
 //=============
 
+pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
+
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
 )]
-pub struct AccountNewInvocation {
+pub struct AccountCreateGlobalInput {
     pub withdraw_rule: AccessRule,
 }
 
-impl Invocation for AccountNewInvocation {
-    type Output = ComponentAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::New))
-    }
-}
-
-impl SerializableInvocation for AccountNewInvocation {
-    type ScryptoOutput = ComponentAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::New)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountNewInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::New(self)).into()
-    }
-}
-
-//=================
-// Account Balance
-//=================
-
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountBalanceMethodArgs {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountBalanceInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountBalanceInvocation {
-    type Output = Decimal;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Balance))
-    }
-}
-
-impl SerializableInvocation for AccountBalanceInvocation {
-    type ScryptoOutput = Decimal;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Balance)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountBalanceInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Balance(self)).into()
-    }
-}
+pub type AccountCreateGlobalOutput = ComponentAddress;
 
 //==================
 // Account Lock Fee
 //==================
 
+pub const ACCOUNT_LOCK_FEE_IDENT: &str = "lock_fee";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeMethodArgs {
+pub struct AccountLockFeeInput {
     pub amount: Decimal,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeInvocation {
-    pub receiver: ComponentAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountLockFeeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFee))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFee)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFee(self)).into()
-    }
-}
+pub type AccountLockFeeOutput = ();
 
 //=============================
 // Account Lock Contingent Fee
 //=============================
 
+pub const ACCOUNT_LOCK_CONTINGENT_FEE_IDENT: &str = "lock_contingent_fee";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockContingentFeeMethodArgs {
+pub struct AccountLockContingentFeeInput {
     pub amount: Decimal,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockContingentFeeInvocation {
-    pub receiver: ComponentAddress,
-    pub amount: Decimal,
-}
-
-impl Invocation for AccountLockContingentFeeInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockContingentFee))
-    }
-}
-
-impl SerializableInvocation for AccountLockContingentFeeInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockContingentFee)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockContingentFeeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockContingentFee(self)).into()
-    }
-}
+pub type AccountLockContingentFeeOutput = ();
 
 //=================
 // Account Deposit
 //=================
 
+pub const ACCOUNT_DEPOSIT_IDENT: &str = "deposit";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountDepositMethodArgs {
+pub struct AccountDepositInput {
     pub bucket: Bucket,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountDepositInvocation {
-    pub receiver: ComponentAddress,
-    pub bucket: BucketId,
-}
-
-impl Invocation for AccountDepositInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Deposit))
-    }
-}
-
-impl SerializableInvocation for AccountDepositInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Deposit)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountDepositInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Deposit(self)).into()
-    }
-}
+pub type AccountDepositOutput = ();
 
 //=======================
 // Account Deposit Batch
 //=======================
 
+pub const ACCOUNT_DEPOSIT_BATCH_IDENT: &str = "deposit_batch";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountDepositBatchMethodArgs {
+pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountDepositBatchInvocation {
-    pub receiver: ComponentAddress,
-    pub buckets: Vec<BucketId>,
-}
+pub type AccountDepositBatchOutput = ();
 
-impl Invocation for AccountDepositBatchInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::DepositBatch))
-    }
-}
-
-impl SerializableInvocation for AccountDepositBatchInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::DepositBatch)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountDepositBatchInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::DepositBatch(self)).into()
-    }
-}
-
-//==================
+//============================
 // Account Withdraw
+//============================
+
+pub const ACCOUNT_WITHDRAW_IDENT: &str = "withdraw";
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+pub struct AccountWithdrawInput {
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
+pub type AccountWithdrawOutput = Bucket;
+
+//==================
+// Account Withdraw All
 //==================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawMethodArgs {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountWithdrawInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::Withdraw))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::Withdraw)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::Withdraw(self)).into()
-    }
-}
-
-//============================
-// Account Withdraw By Amount
-//============================
+pub const ACCOUNT_WITHDRAW_ALL_IDENT: &str = "withdraw_all";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawByAmountMethodArgs {
-    pub amount: Decimal,
+pub struct AccountWithdrawAllInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawByAmountInvocation {
-    pub receiver: ComponentAddress,
-    pub amount: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountWithdrawByAmountInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawByAmount))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawByAmountInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::WithdrawByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::WithdrawByAmount(self)).into()
-    }
-}
+pub type AccountWithdrawAllOutput = Bucket;
 
 //=========================
 // Account Withdraw By Ids
 //=========================
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountWithdrawByIdsMethodArgs {
-    pub ids: BTreeSet<NonFungibleLocalId>,
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountWithdrawByIdsInvocation {
-    pub receiver: ComponentAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountWithdrawByIdsInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::WithdrawByIds))
-    }
-}
-
-impl SerializableInvocation for AccountWithdrawByIdsInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::WithdrawByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountWithdrawByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::WithdrawByIds(self)).into()
-    }
-}
-
-//===========================
-// Account Withdraw And Lock
-//===========================
+pub const ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "withdraw_non_fungibles";
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeAndWithdrawMethodArgs {
-    pub amount_to_lock: Decimal,
+pub struct AccountWithdrawNonFungiblesInput {
     pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawInvocation {
-    pub receiver: ComponentAddress,
-    pub amount_to_lock: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountLockFeeAndWithdrawInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdraw))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeAndWithdrawInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFeeAndWithdraw)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFeeAndWithdraw(self)).into()
-    }
-}
+pub type AccountWithdrawNonFungiblesOutput = Bucket;
 
 //=====================================
-// Account Withdraw By Amount And Lock
+// Account Withdraw
 //=====================================
 
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT: &str = "lock_fee_and_withdraw";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeAndWithdrawByAmountMethodArgs {
+pub struct AccountLockFeeAndWithdrawInput {
     pub amount_to_lock: Decimal,
+    pub resource_address: ResourceAddress,
     pub amount: Decimal,
+}
+
+pub type AccountLockFeeAndWithdrawOutput = ();
+
+//===========================
+// Account Withdraw All And Lock
+//===========================
+
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+pub struct AccountLockFeeAndWithdrawAllInput {
+    pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawByAmountInvocation {
-    pub receiver: ComponentAddress,
-    pub amount_to_lock: Decimal,
-    pub amount: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountLockFeeAndWithdrawByAmountInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdrawByAmount))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeAndWithdrawByAmountInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFeeAndWithdrawByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFeeAndWithdrawByAmount(self)).into()
-    }
-}
+pub type AccountLockFeeAndWithdrawAllOutput = ();
 
 //==================================
 // Account Withdraw By Ids And Lock
 //==================================
 
+pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str =
+    "lock_fee_and_withdraw_non_fungibles";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountLockFeeAndWithdrawByIdsMethodArgs {
+pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub amount_to_lock: Decimal,
-    pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawByIdsInvocation {
-    pub receiver: ComponentAddress,
-    pub amount_to_lock: Decimal,
     pub ids: BTreeSet<NonFungibleLocalId>,
-    pub resource_address: ResourceAddress,
 }
 
-impl Invocation for AccountLockFeeAndWithdrawByIdsInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::LockFeeAndWithdrawByIds))
-    }
-}
-
-impl SerializableInvocation for AccountLockFeeAndWithdrawByIdsInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::LockFeeAndWithdrawByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountLockFeeAndWithdrawByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::LockFeeAndWithdrawByIds(self)).into()
-    }
-}
+pub type AccountLockFeeAndWithdrawNonFungiblesOutput = ();
 
 //======================
 // Account Create Proof
 //======================
 
+pub const ACCOUNT_CREATE_PROOF_IDENT: &str = "create_proof";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofMethodArgs {
+pub struct AccountCreateProofInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofInvocation {
-    pub receiver: ComponentAddress,
-    pub resource_address: ResourceAddress,
-}
-
-impl Invocation for AccountCreateProofInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProof))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProof)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProof(self)).into()
-    }
-}
+pub type AccountCreateProofOutput = Proof;
 
 //================================
 // Account Create Proof By Amount
 //================================
 
+pub const ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofByAmountMethodArgs {
-    pub amount: Decimal,
+pub struct AccountCreateProofByAmountInput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofByAmountInvocation {
-    pub receiver: ComponentAddress,
     pub amount: Decimal,
-    pub resource_address: ResourceAddress,
 }
 
-impl Invocation for AccountCreateProofByAmountInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByAmount))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofByAmountInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProofByAmount)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofByAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProofByAmount(self)).into()
-    }
-}
+pub type AccountCreateProofByAmountOutput = Proof;
 
 //=============================
 // Account Create Proof By Ids
 //=============================
 
+pub const ACCOUNT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
-pub struct AccountCreateProofByIdsMethodArgs {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+pub struct AccountCreateProofByIdsInput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
-pub struct AccountCreateProofByIdsInvocation {
-    pub receiver: ComponentAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
-    pub resource_address: ResourceAddress,
 }
 
-impl Invocation for AccountCreateProofByIdsInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Account(AccountFn::CreateProofByIds))
-    }
-}
-
-impl SerializableInvocation for AccountCreateProofByIdsInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Account(AccountFn::CreateProofByIds)
-    }
-}
-
-impl Into<CallTableInvocation> for AccountCreateProofByIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Account(AccountInvocation::CreateProofByIds(self)).into()
-    }
-}
+pub type AccountCreateProofByIdsOutput = Proof;

@@ -1,5 +1,10 @@
+mod bucket;
 mod executables;
+mod package;
+mod proof;
+mod resource_manager;
 mod substates;
+mod vault;
 mod worktop;
 
 pub use executables::*;

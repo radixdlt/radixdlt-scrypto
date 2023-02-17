@@ -1,13 +1,11 @@
-mod any;
+mod blake2b;
 mod ecdsa_secp256k1;
 mod eddsa_ed25519;
 mod hash;
-mod sha2;
-mod sha3;
+mod public_key;
 
-pub use self::any::*;
+pub use self::blake2b::blake2b_256_hash;
 pub use self::ecdsa_secp256k1::*;
 pub use self::eddsa_ed25519::*;
 pub use self::hash::*;
-pub use self::sha2::{sha256, sha256_twice};
-pub use self::sha3::sha3;
+pub use self::public_key::*;

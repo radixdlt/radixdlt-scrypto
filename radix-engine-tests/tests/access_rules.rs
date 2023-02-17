@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::auth_module::AuthError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -38,11 +38,7 @@ fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers(
         let read_access_rules = test_runner.access_rules_chain(call);
 
         // Assert
-
-        assert_eq!(
-            access_rules.len() + 1, // TODO: The system adds a layer of access rules, is this the right abstraction?
-            read_access_rules.len(),
-        )
+        assert_eq!(access_rules.len(), read_access_rules.len(),)
     }
 }
 
@@ -293,7 +289,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 GlobalAddress::Component(test_runner.component_address),
-                1,
+                0,
                 AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
                 rule!(deny_all),
             )
@@ -431,7 +427,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .withdraw_all_from_account(account_component, RADIX_TOKEN)
         .call_method(
             component_address,
             "assert_access_rule",
@@ -478,7 +474,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN)
+        .withdraw_all_from_account(account_component, RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.call_method(
                 component_address,

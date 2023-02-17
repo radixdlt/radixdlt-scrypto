@@ -21,38 +21,47 @@ pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
+pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
+pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
+pub const EPOCH_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
+pub const CLOCK_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
+pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
+pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = address!(EntityType::Package, 5);
+pub const LOGGER_PACKAGE: PackageAddress = address!(EntityType::Package, 6);
+pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = address!(EntityType::Package, 7);
+pub const AUTH_ZONE_PACKAGE: PackageAddress = address!(EntityType::Package, 8);
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 9);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    51,
-    112,
+    236,
+    50,
+    10,
+    144,
+    199,
+    2,
+    90,
+    211,
+    144,
+    180,
+    74,
+    9,
+    97,
+    68,
+    149,
+    245,
+    250,
+    10,
+    4,
+    229,
+    206,
+    191,
+    50,
     129,
-    183,
-    184,
-    244,
-    163,
-    95,
-    218,
-    117,
-    244,
-    128,
-    134,
-    100,
-    153,
-    207,
-    215,
-    243,
-    188,
-    209,
-    242,
-    31,
-    200,
-    35,
-    100,
-    163
+    179,
+    215
 );
 
 pub const CLOCK: ComponentAddress = address!(EntityType::Clock, 0);

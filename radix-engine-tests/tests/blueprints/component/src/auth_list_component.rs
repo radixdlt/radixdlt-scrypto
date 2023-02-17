@@ -13,7 +13,7 @@ mod auth_list_component {
             auth: Vec<NonFungibleGlobalId>,
             access_rules: AccessRules,
         ) -> ComponentAddress {
-            let mut component = Self { count, auth }.instantiate();
+            let component = Self { count, auth }.instantiate();
             component.add_access_check(access_rules);
             component.globalize()
         }

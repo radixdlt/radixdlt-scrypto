@@ -125,6 +125,16 @@ pub fn read_slice(instance: &Instance, v: Slice) -> Result<Vec<u8>, WasmRuntimeE
     read_memory(instance, ptr, len)
 }
 
+pub fn get_memory_size(instance: &Instance) -> Result<usize, WasmRuntimeError> {
+    let memory = instance
+        .exports
+        .get_memory(EXPORT_MEMORY)
+        .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+    let memory_slice = unsafe { memory.data_unchecked() };
+
+    Ok(memory_slice.len())
+}
+
 impl WasmerEnv for WasmerInstanceEnv {
     fn init_with_instance(&mut self, instance: &Instance) -> Result<(), HostEnvInitError> {
         self.instance.initialize(instance.clone());
@@ -181,6 +191,12 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
             let buffer = runtime
                 .call_method(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -205,6 +221,12 @@ impl WasmerModule {
             let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
+
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_function(package_address, blueprint_ident, ident, args)
@@ -236,17 +258,117 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn create_node(
+        pub fn new_package(
             env: &WasmerInstanceEnv,
-            node_ptr: u32,
-            node_len: u32,
+            code_ptr: u32,
+            code_len: u32,
+            abi_ptr: u32,
+            abi_len: u32,
+            access_rules_ptr: u32,
+            access_rules_len: u32,
+            royalty_config_ptr: u32,
+            royalty_config_len: u32,
+            metadata_ptr: u32,
+            metadata_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let node = read_memory(&instance, node_ptr, node_len)?;
+            let buffer = runtime
+                .new_package(
+                    read_memory(&instance, code_ptr, code_len)?,
+                    read_memory(&instance, abi_ptr, abi_len)?,
+                    read_memory(&instance, access_rules_ptr, access_rules_len)?,
+                    read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
+                    read_memory(&instance, metadata_ptr, metadata_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn new_component(
+            env: &WasmerInstanceEnv,
+            blueprint_ident_ptr: u32,
+            blueprint_ident_len: u32,
+            app_states_ptr: u32,
+            app_states_len: u32,
+            access_rules_ptr: u32,
+            access_rules_len: u32,
+            royalty_config_ptr: u32,
+            royalty_config_len: u32,
+            metadata_ptr: u32,
+            metadata_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .create_node(node)
+                .new_component(
+                    read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
+                    read_memory(&instance, app_states_ptr, app_states_len)?,
+                    read_memory(&instance, access_rules_ptr, access_rules_len)?,
+                    read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
+                    read_memory(&instance, metadata_ptr, metadata_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn globalize_component(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .globalize_component(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn lookup_global_component(
+            env: &WasmerInstanceEnv,
+            component_address_ptr: u32,
+            component_address_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .lookup_global_component(read_memory(
+                    &instance,
+                    component_address_ptr,
+                    component_address_len,
+                )?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn get_component_type_info(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_component_type_info(read_memory(
+                    &instance,
+                    component_id_ptr,
+                    component_id_len,
+                )?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn new_key_value_store(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .new_key_value_store()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -315,11 +437,11 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn drop_lock(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .unlock_substate(handle)
+                .drop_lock(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -356,12 +478,17 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 CALL_NATIVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_native),
-                CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
+                NEW_PACKAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_package),
+                NEW_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_component),
+                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
+                GLOBALIZE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_component),
+                LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lookup_global_component),
+                GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_component_type_info),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                UNLOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), unlock_substate),
+                DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }
@@ -421,10 +548,18 @@ impl WasmInstance for WasmerInstance {
         if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
             read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
         } else {
-            Err(InvokeError::SelfError(
-                WasmRuntimeError::InvalidExportReturn,
-            ))
+            Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
         }
+    }
+
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
+        let memory = self
+            .instance
+            .exports
+            .get_memory(EXPORT_MEMORY)
+            .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+        let memory_slice = unsafe { memory.data_unchecked_mut() };
+        Ok(memory_slice.len())
     }
 }
 

@@ -12,9 +12,8 @@ pub fn validate_type_validation_with_type_kind<'a, E: CustomTypeExtension>(
     }
     match type_kind {
         TypeKind::Any | TypeKind::Tuple { .. } | TypeKind::Enum { .. } | TypeKind::Bool => {
-            if !matches!(type_validation, TypeValidation::None) {
-                return Err(SchemaValidationError::TypeValidationMismatch);
-            };
+            // Only None is supported - which is handled above
+            return Err(SchemaValidationError::TypeValidationMismatch);
         }
         TypeKind::I8 => {
             let TypeValidation::I8(numeric_validation) = type_validation else {
@@ -105,7 +104,6 @@ pub fn validate_type_validation_with_type_kind<'a, E: CustomTypeExtension>(
             )?;
         }
     }
-
     Ok(())
 }
 

@@ -63,11 +63,12 @@ pub fn put_at_next_version<S: TreeStore>(
             current_version.unwrap_or(0) + 1,
         )
         .expect("error while reading tree during put");
-    for (key, node) in update_result.node_batch.iter().flatten() {
-        store.insert_node(key, TreeNode::from(key, node));
+    for (key, node) in update_result.node_batch.into_iter().flatten() {
+        let node = TreeNode::from(&key, &node);
+        store.insert_node(key, node);
     }
-    for stale_node in update_result.stale_node_index_batch.iter().flatten() {
-        store.record_stale_node(&stale_node.node_key);
+    for stale_node in update_result.stale_node_index_batch.into_iter().flatten() {
+        store.record_stale_node(stale_node.node_key);
     }
     root_hash
 }

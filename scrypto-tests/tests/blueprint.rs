@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(unused_imports)]
 
 use scrypto::prelude::*;
 
@@ -44,7 +45,6 @@ mod simple {
 
 #[blueprint]
 mod empty_with_use_statements {
-    use sbor::BasicValue;
     use scrypto::model::ComponentAddress;
 
     struct Empty1 {}

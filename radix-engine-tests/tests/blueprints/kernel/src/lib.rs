@@ -36,22 +36,15 @@ mod node_create {
     impl NodeCreate {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoEnv
-                .sys_create_node(ScryptoRENode::Component(
-                    Runtime::package_address(),
-                    "invalid_blueprint".to_owned(),
-                    scrypto_encode(&NodeCreate {}).unwrap(),
-                ))
-                .unwrap();
-        }
-
-        pub fn create_node_with_invalid_package() {
-            let package_address = PackageAddress::Normal([0u8; 26]);
-            ScryptoEnv
-                .sys_create_node(ScryptoRENode::Component(
-                    package_address,
-                    "NodeCreate".to_owned(),
-                    scrypto_encode(&NodeCreate {}).unwrap(),
-                ))
+                .new_component(
+                    "invalid_blueprint",
+                    btreemap!(
+                        0 => scrypto_encode(&NodeCreate {}).unwrap()
+                    ),
+                    Vec::default(),
+                    RoyaltyConfig::default(),
+                    BTreeMap::default(),
+                )
                 .unwrap();
         }
     }

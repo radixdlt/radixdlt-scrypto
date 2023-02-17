@@ -1,22 +1,30 @@
 #!/bin/bash
 
-set -x
+#set -x
 set -e
 
 cd "$(dirname "$0")"
 
-(cd sbor; cargo clean)
-(cd sbor-derive; cargo clean)
-(cd sbor-tests; cargo clean)
-(cd scrypto; cargo clean)
-(cd scrypto-derive; cargo clean)
-(cd scrypto-tests; cargo clean)
-(cd radix-engine; cargo clean)
-(cd radix-engine-stores; cargo clean)
-(cd transaction; cargo clean)
-(cd simulator; cargo clean)
+# clean this worksapce
+cargo clean
 
-(cd assets/blueprints/account; cargo clean)
-(cd assets/blueprints/faucet; cargo clean)
-(cd examples/hello-world; cargo clean)
-(cd examples/no-std; cargo clean)
+# clean this and other workspaces folders
+(
+    find "." -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "echo cleaning '{}'; cd '{}'; cargo clean"
+)
+
+# clean assets/blueprints
+(
+    find "assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "echo cleaning '{}'; cd '{}'; cargo clean"
+)
+
+# clean examples
+(
+    find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "echo cleaning '{}'; cd '{}'; cargo clean"
+)

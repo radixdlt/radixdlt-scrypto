@@ -21,8 +21,8 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
-    Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()
     Map<String, String>()
     Tuple(Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(0u8, Enum(0u8))), Map<String, Enum>(), Enum(1u8), Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#"))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v:#1#")))))), Map<String, Enum>(), Enum(1u8));
@@ -47,8 +47,8 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE_WITH_OWNER
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
-    Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#");
 "##,
         );
@@ -63,9 +63,9 @@ PUBLISH_PACKAGE_WITH_OWNER
             r##"
 CALL_METHOD
     ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
-    "withdraw_by_amount"
-    Decimal("5")
-    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+    "withdraw"
+    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Decimal("5");
 TAKE_FROM_WORKTOP_BY_AMOUNT
     Decimal("2")
     ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
@@ -95,8 +95,8 @@ DROP_PROOF
 CALL_METHOD
     ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
     "create_proof_by_amount"
-    Decimal("5")
-    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Decimal("5");
 POP_FROM_AUTH_ZONE
     Proof("proof3");
 DROP_PROOF
@@ -208,7 +208,7 @@ CALL_METHOD
     ComponentAddress("validator_sim1q5qszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqsvkh36j")
     ComponentAddress("accesscontroller_sim1pspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqq397jz")
     ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
+    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Bucket("bucket1")
     Proof("proof1")
     Expression("ENTIRE_WORKTOP")
@@ -297,40 +297,11 @@ CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "lock_fee"
     Decimal("10");
-CREATE_FUNGIBLE_RESOURCE
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(1u8, Decimal("12"));
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "deposit_batch"
-    Expression("ENTIRE_WORKTOP");
-"##,
-        );
-    }
-
-    #[test]
-    fn test_create_fungible_resource_with_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/fungible/with_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-            vec![],
-            r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_FUNGIBLE_RESOURCE_WITH_OWNER
-    18u8
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(1u8, Decimal("12"));
+    Decimal("12");
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -356,33 +327,7 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(0u8);
-"##,
-        );
-    }
-
-    #[test]
-    fn test_create_fungible_resource_with_no_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/fungible/no_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-            vec![],
-            r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_FUNGIBLE_RESOURCE_WITH_OWNER
-    18u8
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(0u8);
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
         );
     }
@@ -403,39 +348,11 @@ CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "lock_fee"
     Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "deposit_batch"
-    Expression("ENTIRE_WORKTOP");
-"##,
-        );
-    }
-
-    #[test]
-    fn test_create_non_fungible_resource_with_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-             vec![], r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum(1u8)
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(1u8, Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Bytes("5c21020c0b48656c6c6f20576f726c64b50000b0d86b9088a6000000000000000000000000000000000000000000000000"), Bytes("5c2102070c0b13000000000000000000000000000000")));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -463,32 +380,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Enum(0u8);
-"##,
-        );
-    }
-
-    #[test]
-    fn test_create_non_fungible_resource_with_no_initial_supply_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!(
-                    "../../examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
-                )
-                .to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-             vec![], r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum(1u8)
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#")
-    Enum(0u8);
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
         );
     }
@@ -509,8 +401,8 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "create_proof_by_amount"
-    Decimal("1")
-    ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
+    ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02")
+    Decimal("1");
 MINT_FUNGIBLE
     ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx")
     Decimal("12");
@@ -538,8 +430,8 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "create_proof_by_amount"
-    Decimal("1")
-    ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
+    ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02")
+    Decimal("1");
 MINT_NON_FUNGIBLE
     ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx")
     Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));
@@ -580,6 +472,41 @@ ASSERT_ACCESS_RULE
             vec![],
             r##"
 CREATE_ACCOUNT
+    Enum(0u8);
+"##,
+        );
+    }
+
+    #[test]
+    fn test_create_identity() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/identity/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_IDENTITY
+    Enum(0u8);
+"##,
+        );
+    }
+
+    #[test]
+    fn test_create_access_controller() {
+        compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/access_controller/new.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+TAKE_FROM_WORKTOP
+    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket1");
+CREATE_ACCESS_CONTROLLER
+    Bucket("bucket1")
+    Tuple(Enum(0u8), Enum(0u8), Enum(0u8))
     Enum(0u8);
 "##,
         );
@@ -645,11 +572,11 @@ CREATE_ACCOUNT
             ("${owner_badge_non_fungible_local_id}", "#1#"),
             (
                 "${code_blob_hash}",
-                "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+                "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             ),
             (
                 "${abi_blob_hash}",
-                "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d",
+                "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791",
             ),
             ("${initial_supply}", "12"),
             ("${mint_amount}", "12"),

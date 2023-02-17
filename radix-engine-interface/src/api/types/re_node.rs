@@ -5,13 +5,6 @@ use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
 
-// TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ScryptoRENode {
-    Component(PackageAddress, String, Vec<u8>),
-    KeyValueStore,
-}
-
 // TODO: Remove when better type system implemented
 #[derive(
     Debug,
@@ -73,7 +66,6 @@ pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
     AuthZoneStack,
-    FeeReserve(FeeReserveId),
     Worktop,
     Logger,
     TransactionRuntime,
@@ -107,20 +99,13 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Clock(id) => id,
             RENodeId::Account(id) => id,
             RENodeId::AccessController(id) => id,
-            _ => panic!("Not a stored id"),
-        }
-    }
-}
-
-impl Into<u32> for RENodeId {
-    fn into(self) -> u32 {
-        match self {
-            RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
-            RENodeId::FeeReserve(id) => id,
-            RENodeId::AuthZoneStack => 0x10000000u32, // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::TransactionRuntime => 0x20000000u32, // TODO: Remove, this here to preserve receiver in invocation for now
-            _ => panic!("Not a transient id"),
+            RENodeId::Bucket(id) => id,
+            RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            _ => panic!("Not a stored id"),
         }
     }
 }
@@ -212,7 +197,9 @@ impl Into<ResourceAddress> for GlobalAddress {
     ScryptoDecode,
 )]
 pub enum NodeModuleId {
+    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
+    ComponentTypeInfo,
     Metadata,
     AccessRules,
     AccessRules1,
@@ -231,6 +218,11 @@ pub enum AccessRulesChainOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentTypeInfoOffset {
+    TypeInfo,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MetadataOffset {
     Metadata,
 }
@@ -243,12 +235,14 @@ pub enum RoyaltyOffset {
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
-    Info,
-    State,
+    /// Component application state at offset `0x00`.
+    State0,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
+    NativeCode,
+    WasmCode,
     Info,
 }
 
@@ -262,7 +256,18 @@ pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
@@ -298,11 +303,6 @@ pub enum EpochManagerOffset {
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ValidatorOffset {
     Validator,
-}
-
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum FeeReserveOffset {
-    FeeReserve,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -359,9 +359,9 @@ pub enum AccessControllerOffset {
     ScryptoDecode,
 )]
 pub enum SubstateOffset {
+    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
-    FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
@@ -379,6 +379,9 @@ pub enum SubstateOffset {
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
 
+    // Node modules
+    // TODO: align with module ID allocation?
+    ComponentTypeInfo(ComponentTypeInfoOffset),
     AccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),

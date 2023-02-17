@@ -1,10 +1,10 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::api::{
-    kernel_modules::auth::AuthAddresses,
-    types::{EpochManagerInvocation, NativeInvocation},
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerSetEpochInvocation;
+use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
@@ -21,12 +21,11 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
-                receiver: EPOCH_MANAGER,
-                epoch: self.epoch,
-            }),
-        ))];
+        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+            args: scrypto_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
+        })];
 
         let blobs = vec![];
         let initial_proofs = vec![AuthAddresses::system_role()];

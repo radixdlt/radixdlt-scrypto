@@ -1,13 +1,45 @@
 use crate::errors::*;
-use crate::kernel::*;
-use crate::system::kernel_modules::fee::FeeReserve;
-use crate::system::substates::PersistedSubstate;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::event::TrackedEvent;
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::module::KernelModule;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
+
+//===================================================================================
+// Note: ExecutionTrace must not produce any error or transactional side effect!
+//===================================================================================
+
+#[derive(Debug, Clone)]
+pub struct ExecutionTraceModule {
+    /// Maximum depth up to which kernel calls are being traced.
+    max_kernel_call_depth_traced: usize,
+
+    /// Current transaction index
+    current_transaction_index: usize,
+
+    /// Current kernel calls depth. Note that this doesn't necessarily correspond to the
+    /// call frame depth, as there can be nested kernel calls within a single call frame
+    /// (e.g. lock_substate call inside drop_node).
+    current_kernel_call_depth: usize,
+
+    /// A stack of traced kernel call inputs, their origin, and the instruction index.
+    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, KernelCallOrigin, usize)>,
+
+    /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
+    kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
+
+    /// Vault operations: (Caller, Vault ID, operation)
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceChange {
@@ -22,33 +54,12 @@ pub struct ExecutionTraceReceipt {
     pub resource_changes: Vec<ResourceChange>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum VaultOp {
     Create(Decimal), // TODO: add trace of vault creation
     Put(Decimal),    // TODO: add non-fungible support
     Take(Decimal),
     LockFee,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ExecutionTraceError {
-    CallFrameError(CallFrameError),
-}
-
-pub struct ExecutionTraceModule {
-    /// Maximum depth up to which sys calls are being traced.
-    max_sys_call_trace_depth: usize,
-
-    /// Current sys calls depth. Note that this doesn't necessarily correspond to the
-    /// call frame depth, as there can be nested sys calls within a single call frame
-    /// (e.g. lock_substate call inside drop_node).
-    current_sys_call_depth: usize,
-
-    /// A stack of traced sys call inputs, their origin, and the instruction index.
-    traced_sys_call_inputs_stack: Vec<(TracedSysCallData, SysCallTraceOrigin, Option<u32>)>,
-
-    /// A mapping of complete SysCallTrace stacks (\w both inputs and outputs), indexed by depth.
-    sys_call_traces_stacks: HashMap<usize, Vec<SysCallTrace>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -60,12 +71,33 @@ pub struct ProofSnapshot {
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TracedSysCallData {
+pub struct ResourceSummary {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
-impl TracedSysCallData {
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct KernelCallTrace {
+    pub origin: KernelCallOrigin,
+    pub kernel_call_depth: usize,
+    pub current_frame_actor: ResolvedActor,
+    pub current_frame_depth: usize,
+    pub instruction_index: usize,
+    pub input: ResourceSummary,
+    pub output: ResourceSummary,
+    pub children: Vec<KernelCallTrace>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum KernelCallOrigin {
+    ScryptoFunction(ScryptoFnIdentifier),
+    ScryptoMethod(ScryptoFnIdentifier),
+    NativeFn(NativeFn),
+    CreateNode,
+    DropNode,
+}
+
+impl ResourceSummary {
     pub fn new_empty() -> Self {
         Self {
             buckets: HashMap::new(),
@@ -76,304 +108,333 @@ impl TracedSysCallData {
     pub fn is_empty(&self) -> bool {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
-}
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct SysCallTrace {
-    pub origin: SysCallTraceOrigin,
-    pub sys_call_depth: usize,
-    pub call_frame_actor: ResolvedActor,
-    pub call_frame_depth: usize,
-    pub instruction_index: Option<u32>,
-    pub input: TracedSysCallData,
-    pub output: TracedSysCallData,
-    pub children: Vec<SysCallTrace>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum SysCallTraceOrigin {
-    ScryptoFunction(ScryptoFnIdentifier),
-    ScryptoMethod(ScryptoFnIdentifier),
-    NativeFn(NativeFn),
-    CreateNode,
-    DropNode,
-    /// Anything else that isn't traced on its own, but the trace exists for its children
-    Opaque,
-}
-
-impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
-    fn pre_kernel_api_call(
-        &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track<R>,
-        input: KernelApiCallInput,
-    ) -> Result<(), ModuleError> {
-        self.handle_pre_kernel_api_call(call_frame, heap, input)
-    }
-
-    fn post_kernel_api_call(
-        &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track<R>,
-        output: KernelApiCallOutput,
-    ) -> Result<(), ModuleError> {
-        self.handle_post_kernel_api_call(call_frame, heap, output)
-    }
-
-    fn pre_execute_invocation(
-        &mut self,
-        actor: &ResolvedActor,
-        update: &CallFrameUpdate,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-            let origin = match &actor.identifier {
-                FnIdentifier::Scrypto(scrypto_fn) => {
-                    if actor.receiver.is_some() {
-                        SysCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
-                    } else {
-                        SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
+    pub fn from_call_frame_update<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        call_frame_update: &CallFrameUpdate,
+    ) -> Self {
+        let mut buckets = HashMap::new();
+        let mut proofs = HashMap::new();
+        for node_id in &call_frame_update.nodes_to_move {
+            match &node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    if let Some(x) = api.kernel_read_bucket(*bucket_id) {
+                        buckets.insert(*bucket_id, x);
                     }
                 }
-                FnIdentifier::Native(native_fn) => SysCallTraceOrigin::NativeFn(native_fn.clone()),
-            };
-
-            let instruction_index = Self::get_instruction_index(call_frame, heap);
-
-            let trace_data = Self::extract_trace_data(update, heap)?;
-            self.traced_sys_call_inputs_stack
-                .push((trace_data, origin, instruction_index));
+                RENodeId::Proof(proof_id) => {
+                    if let Some(x) = api.kernel_read_proof(*proof_id) {
+                        proofs.insert(*proof_id, x);
+                    }
+                }
+                _ => {}
+            }
         }
+        Self { buckets, proofs }
+    }
 
-        self.current_sys_call_depth += 1;
-
-        match &actor {
-            ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Put)),
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
-                        ..
-                    }),
-            } => Self::handle_vault_put(update, heap, track, &call_frame.actor, vault_id),
-            ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
-                        ..
-                    }),
-            } => Self::handle_vault_lock_fee(track, &call_frame.actor, vault_id),
+    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &RENodeId) -> Self {
+        let mut buckets = HashMap::new();
+        let mut proofs = HashMap::new();
+        match node_id {
+            RENodeId::Bucket(bucket_id) => {
+                if let Some(x) = api.kernel_read_bucket(*bucket_id) {
+                    buckets.insert(*bucket_id, x);
+                }
+            }
+            RENodeId::Proof(proof_id) => {
+                if let Some(x) = api.kernel_read_proof(*proof_id) {
+                    proofs.insert(*proof_id, x);
+                }
+            }
             _ => {}
         }
+        Self { buckets, proofs }
+    }
+}
 
+impl KernelModule for ExecutionTraceModule {
+    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _node_id: &RENodeId,
+        _node_init: &RENodeInit,
+        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_before_create_node();
         Ok(())
     }
 
-    fn post_execute_invocation(
-        &mut self,
+    fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        node_id: &RENodeId,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
+        let resource_summary = ResourceSummary::from_node_id(api, node_id);
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_after_create_node(current_actor, current_depth, resource_summary);
+        Ok(())
+    }
+
+    fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        node_id: &RENodeId,
+    ) -> Result<(), RuntimeError> {
+        let resource_summary = ResourceSummary::from_node_id(api, node_id);
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_before_drop_node(resource_summary);
+        Ok(())
+    }
+
+    fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_after_drop_node(current_actor, current_depth);
+        Ok(())
+    }
+
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        callee: &ResolvedActor,
+        update: &mut CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_current_actor();
+        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_before_push_frame(current_actor, callee, resource_summary);
+        Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
         caller: &ResolvedActor,
         update: &CallFrameUpdate,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        match &call_frame.actor {
-            ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Take)),
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
-                        ..
-                    }),
-            } => Self::handle_vault_take(update, heap, track, caller, vault_id),
-            _ => {}
-        }
-
-        // Important to always update the counter (even if we're over the depth limit).
-        self.current_sys_call_depth -= 1;
-
-        if self.current_sys_call_depth > self.max_sys_call_trace_depth {
-            // Nothing to trace at this depth, exit.
-            return Ok(());
-        }
-
-        let traced_output = Self::extract_trace_data(update, heap)?;
-        self.finalize_sys_call_trace(call_frame, traced_output)
-    }
-
-    fn on_wasm_instantiation(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _code: &[u8],
-    ) -> Result<(), ModuleError> {
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_current_actor();
+        let current_depth = api.kernel_get_current_depth();
+        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
+        api.kernel_get_module_state()
+            .execution_trace
+            .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())
     }
 
-    fn on_wasm_costing(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _units: u32,
-    ) -> Result<(), ModuleError> {
+    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        new_index: usize,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_module_state()
+            .execution_trace
+            .current_transaction_index = new_index;
         Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _vault_id: VaultId,
-        fee: Resource,
-        _contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        Ok(fee)
     }
 }
 
 impl ExecutionTraceModule {
-    pub fn new(max_sys_call_trace_depth: usize) -> ExecutionTraceModule {
+    pub fn new(max_kernel_call_depth_traced: usize) -> ExecutionTraceModule {
         Self {
-            max_sys_call_trace_depth,
-            current_sys_call_depth: 0,
-            traced_sys_call_inputs_stack: vec![],
-            sys_call_traces_stacks: HashMap::new(),
+            max_kernel_call_depth_traced,
+            current_transaction_index: 0,
+            current_kernel_call_depth: 0,
+            traced_kernel_call_inputs_stack: vec![],
+            kernel_call_traces_stacks: HashMap::new(),
+            vault_ops: Vec::new(),
         }
     }
 
-    fn get_instruction_index(call_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        if call_frame
-            .get_node_visibility(RENodeId::TransactionRuntime)
-            .is_ok()
-        {
-            let substate_ref = heap
-                .get_substate(
-                    RENodeId::TransactionRuntime,
-                    NodeModuleId::SELF,
-                    &SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                )
-                .unwrap();
-            Some(substate_ref.transaction_runtime().instruction_index)
-        } else {
-            None
+    fn handle_before_create_node(&mut self) {
+        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
+            let instruction_index = self.instruction_index();
+
+            let traced_input = (
+                ResourceSummary::new_empty(),
+                KernelCallOrigin::CreateNode,
+                instruction_index,
+            );
+            self.traced_kernel_call_inputs_stack.push(traced_input);
         }
+
+        self.current_kernel_call_depth += 1;
     }
 
-    fn handle_pre_kernel_api_call(
+    fn handle_after_create_node(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        input: KernelApiCallInput,
-    ) -> Result<(), ModuleError> {
-        if let KernelApiCallInput::Invoke { .. } = input {
-            // Invoke calls are handled separately in pre_execute_invocation
-            return Ok(());
+        current_actor: ResolvedActor,
+        current_depth: usize,
+        resource_summary: ResourceSummary,
+    ) {
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth -= 1;
+
+        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
+            // Nothing to trace at this depth, exit.
+            return;
         }
 
-        if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-            let instruction_index = Self::get_instruction_index(call_frame, heap);
+        self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
+    }
 
-            let traced_input = match input {
-                KernelApiCallInput::DropNode { node_id } => {
-                    // Buckets can't be dropped, so only tracking Proofs here
-                    let data = if let RENodeId::Proof(proof_id) = node_id {
-                        let proof = Self::read_proof(heap, proof_id)?;
-                        TracedSysCallData {
-                            buckets: HashMap::new(),
-                            proofs: HashMap::from([(proof_id.clone(), proof)]),
-                        }
+    fn handle_before_drop_node(&mut self, resource_summary: ResourceSummary) {
+        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
+            let instruction_index = self.instruction_index();
+
+            let traced_input = (
+                resource_summary,
+                KernelCallOrigin::DropNode,
+                instruction_index,
+            );
+            self.traced_kernel_call_inputs_stack.push(traced_input);
+        }
+
+        self.current_kernel_call_depth += 1;
+    }
+
+    fn handle_after_drop_node(&mut self, current_actor: ResolvedActor, current_depth: usize) {
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth -= 1;
+
+        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
+            // Nothing to trace at this depth, exit.
+            return;
+        }
+
+        let traced_output = ResourceSummary::new_empty();
+
+        self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
+    }
+
+    fn handle_before_push_frame(
+        &mut self,
+        current_actor: ResolvedActor,
+        callee: &ResolvedActor,
+        resource_summary: ResourceSummary,
+    ) {
+        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
+            let origin = match &callee.identifier {
+                FnIdentifier::Scrypto(scrypto_fn) => {
+                    if callee.receiver.is_some() {
+                        KernelCallOrigin::ScryptoMethod(scrypto_fn.clone())
                     } else {
-                        // Not a proof, so nothing to trace
-                        TracedSysCallData::new_empty()
-                    };
-
-                    (data, SysCallTraceOrigin::DropNode, instruction_index)
+                        KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
+                    }
                 }
-                KernelApiCallInput::CreateNode { .. } => (
-                    TracedSysCallData::new_empty(),
-                    SysCallTraceOrigin::CreateNode,
-                    instruction_index,
-                ),
-                _ => (
-                    TracedSysCallData::new_empty(),
-                    SysCallTraceOrigin::Opaque,
-                    instruction_index,
-                ),
+                FnIdentifier::Native(native_fn) => KernelCallOrigin::NativeFn(native_fn.clone()),
             };
-            self.traced_sys_call_inputs_stack.push(traced_input);
+
+            let instruction_index = self.instruction_index();
+
+            self.traced_kernel_call_inputs_stack.push((
+                resource_summary.clone(),
+                origin,
+                instruction_index,
+            ));
         }
 
-        self.current_sys_call_depth += 1;
-        Ok(())
+        self.current_kernel_call_depth += 1;
+
+        match &callee {
+            ResolvedActor {
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(VAULT_BLUEPRINT)
+                && ident.eq(VAULT_PUT_IDENT) =>
+            {
+                self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
+            }
+            ResolvedActor {
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(VAULT_BLUEPRINT)
+                && ident.eq(VAULT_LOCK_FEE_IDENT) =>
+            {
+                self.handle_vault_lock_fee_input(&current_actor, vault_id)
+            }
+            _ => {}
+        }
     }
 
-    fn handle_post_kernel_api_call(
+    fn handle_on_execution_finish(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        output: KernelApiCallOutput,
-    ) -> Result<(), ModuleError> {
-        if let KernelApiCallOutput::Invoke { .. } = output {
-            // Invoke calls are handled separately in post_execute_invocation
-            return Ok(());
+        current_actor: ResolvedActor,
+        current_depth: usize,
+        caller: &ResolvedActor,
+        resource_summary: ResourceSummary,
+    ) {
+        match &current_actor {
+            ResolvedActor {
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint_name.eq(VAULT_BLUEPRINT)
+                && ident.eq(VAULT_TAKE_IDENT) =>
+            {
+                self.handle_vault_take_output(&resource_summary, caller, vault_id)
+            }
+            _ => {}
         }
 
         // Important to always update the counter (even if we're over the depth limit).
-        self.current_sys_call_depth -= 1;
+        self.current_kernel_call_depth -= 1;
 
-        if self.current_sys_call_depth > self.max_sys_call_trace_depth {
+        if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
             // Nothing to trace at this depth, exit.
-            return Ok(());
+            return;
         }
 
-        let traced_output = match output {
-            KernelApiCallOutput::CreateNode { node_id } => match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
-                    TracedSysCallData {
-                        buckets: HashMap::from([(bucket_id.clone(), bucket_resource)]),
-                        proofs: HashMap::new(),
-                    }
-                }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Self::read_proof(heap, proof_id)?;
-                    TracedSysCallData {
-                        buckets: HashMap::new(),
-                        proofs: HashMap::from([(proof_id.clone(), proof)]),
-                    }
-                }
-                _ => TracedSysCallData::new_empty(),
-            },
-            _ => TracedSysCallData::new_empty(),
-        };
-
-        self.finalize_sys_call_trace(call_frame, traced_output)
+        self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
-    fn finalize_sys_call_trace(
+    fn finalize_kernel_call_trace(
         &mut self,
-        call_frame: &CallFrame,
-        traced_output: TracedSysCallData,
-    ) -> Result<(), ModuleError> {
+        traced_output: ResourceSummary,
+        current_actor: ResolvedActor,
+        current_depth: usize,
+    ) {
         let child_traces = self
-            .sys_call_traces_stacks
-            .remove(&(self.current_sys_call_depth + 1))
+            .kernel_call_traces_stacks
+            .remove(&(self.current_kernel_call_depth + 1))
             .unwrap_or(vec![]);
 
         let (traced_input, origin, instruction_index) = self
-            .traced_sys_call_inputs_stack
+            .traced_kernel_call_inputs_stack
             .pop()
-            .expect("Sys call input stack underflow");
+            .expect("kernel call input stack underflow");
 
         // Only include the trace if:
         // * there's a non-empty traced input or output
@@ -381,11 +442,11 @@ impl ExecutionTraceModule {
         //   At some depth (up to the tracing limit) there must have been at least one traced input/output
         //   so we need to include the full path up to the root.
         if !traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {
-            let trace = SysCallTrace {
+            let trace = KernelCallTrace {
                 origin,
-                sys_call_depth: self.current_sys_call_depth,
-                call_frame_actor: call_frame.actor.clone(),
-                call_frame_depth: call_frame.depth,
+                kernel_call_depth: self.current_kernel_call_depth,
+                current_frame_actor: current_actor,
+                current_frame_depth: current_depth,
                 instruction_index,
                 input: traced_input,
                 output: traced_output,
@@ -393,144 +454,62 @@ impl ExecutionTraceModule {
             };
 
             let siblings = self
-                .sys_call_traces_stacks
-                .entry(self.current_sys_call_depth)
+                .kernel_call_traces_stacks
+                .entry(self.current_kernel_call_depth)
                 .or_insert(vec![]);
             siblings.push(trace);
         }
-
-        Ok(())
     }
 
-    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
+    pub fn collect_events(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
-        for (_, traces) in self.sys_call_traces_stacks.drain() {
-            // Emit an output event for each "root" sys call trace
+        for (_, traces) in self.kernel_call_traces_stacks.drain() {
+            // Emit an output event for each "root" kernel call trace
             for trace in traces {
-                events.push(TrackedEvent::SysCallTrace(trace));
+                events.push(TrackedEvent::KernelCallTrace(trace));
             }
         }
 
-        events
+        (self.vault_ops, events)
     }
 
-    fn extract_trace_data(
-        call_frame_update: &CallFrameUpdate,
-        heap: &mut Heap,
-    ) -> Result<TracedSysCallData, ModuleError> {
-        let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
-        let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-
-        for node_id in &call_frame_update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
-                    buckets.insert(*bucket_id, bucket_resource);
-                }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Self::read_proof(heap, &proof_id)?;
-                    proofs.insert(*proof_id, proof);
-                }
-                _ => {}
-            }
-        }
-
-        Ok(TracedSysCallData { buckets, proofs })
+    fn instruction_index(&self) -> usize {
+        self.current_transaction_index
     }
 
-    fn read_proof(heap: &mut Heap, proof_id: &ProofId) -> Result<ProofSnapshot, ModuleError> {
-        let node_id = RENodeId::Proof(proof_id.clone());
-        let substate_ref = heap
-            .get_substate(
-                node_id,
-                NodeModuleId::SELF,
-                &SubstateOffset::Proof(ProofOffset::Proof),
-            )
-            .map_err(|e| {
-                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
-            })?;
-        Ok(substate_ref.proof().snapshot())
-    }
-
-    fn read_bucket_resource(
-        heap: &mut Heap,
-        bucket_id: &BucketId,
-    ) -> Result<Resource, ModuleError> {
-        let node_id = RENodeId::Bucket(bucket_id.clone());
-        let substate_ref = heap
-            .get_substate(
-                node_id,
-                NodeModuleId::SELF,
-                &SubstateOffset::Bucket(BucketOffset::Bucket),
-            )
-            .map_err(|e| {
-                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
-            })?;
-        Ok(substate_ref.bucket().peek_resource())
-    }
-
-    fn handle_vault_put<'s, R: FeeReserve>(
-        call_frame_update: &CallFrameUpdate,
-        heap: &mut Heap,
-        track: &mut Track<'s, R>,
-        actor: &ResolvedActor,
+    fn handle_vault_put_input<'s>(
+        &mut self,
+        resource_summary: &ResourceSummary,
+        caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        for node_id in &call_frame_update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    if let Ok(bucket_substate) = heap.get_substate(
-                        RENodeId::Bucket(*bucket_id),
-                        NodeModuleId::SELF,
-                        &SubstateOffset::Bucket(BucketOffset::Bucket),
-                    ) {
-                        track.vault_ops.push((
-                            actor.clone(),
-                            vault_id.clone(),
-                            VaultOp::Put(bucket_substate.bucket().total_amount()),
-                        ));
-                    }
-                }
-                _ => {}
-            }
+        for (_, resource) in &resource_summary.buckets {
+            self.vault_ops.push((
+                caller.clone(),
+                vault_id.clone(),
+                VaultOp::Put(resource.amount()),
+            ));
         }
     }
 
-    fn handle_vault_take<'s, R: FeeReserve>(
-        update: &CallFrameUpdate,
-        heap: &mut Heap,
-        track: &mut Track<'s, R>,
-        actor: &ResolvedActor,
-        vault_id: &VaultId,
-    ) {
-        for node_id in &update.nodes_to_move {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    if let Ok(bucket_substate) = heap.get_substate(
-                        RENodeId::Bucket(*bucket_id),
-                        NodeModuleId::SELF,
-                        &SubstateOffset::Bucket(BucketOffset::Bucket),
-                    ) {
-                        track.vault_ops.push((
-                            actor.clone(),
-                            vault_id.clone(),
-                            VaultOp::Take(bucket_substate.bucket().total_amount()),
-                        ));
-                    }
-                }
-                _ => {}
-            }
-        }
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &ResolvedActor, vault_id: &VaultId) {
+        self.vault_ops
+            .push((caller.clone(), vault_id.clone(), VaultOp::LockFee));
     }
 
-    fn handle_vault_lock_fee<'s, R: FeeReserve>(
-        track: &mut Track<'s, R>,
-        actor: &ResolvedActor,
+    fn handle_vault_take_output<'s>(
+        &mut self,
+        resource_summary: &ResourceSummary,
+        caller: &ResolvedActor,
         vault_id: &VaultId,
     ) {
-        track
-            .vault_ops
-            .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
+        for (_, resource) in &resource_summary.buckets {
+            self.vault_ops.push((
+                caller.clone(),
+                vault_id.clone(),
+                VaultOp::Take(resource.amount()),
+            ));
+        }
     }
 }
 
@@ -541,7 +520,7 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         actual_fee_payments: &BTreeMap<VaultId, Decimal>,
-        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
@@ -620,7 +599,7 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> ResourceAddress {
         let (substate, _) = to_persist
             .get(&SubstateId(

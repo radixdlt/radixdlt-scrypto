@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::kernel::ScryptoInterpreter;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
 use radix_engine_interface::{api::types::RENodeId, data::ScryptoDecode};
@@ -176,19 +176,9 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let unit = scrypto_encode(&()).unwrap();
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(kv_store_id.clone()),
-            NodeModuleId::SELF,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                scrypto_encode(&unit).unwrap(),
-            )),
-        ))
-        .unwrap();
-
         let mut iter = self
             .db
-            .iterator(IteratorMode::From(&id, Direction::Forward));
+            .iterator(IteratorMode::From(&[], Direction::Forward));
         let mut items = HashMap::new();
         while let Some(kv) = iter.next() {
             let (key, value) = kv.unwrap();
@@ -197,11 +187,11 @@ impl QueryableSubstateStore for RadixEngineDB {
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
                 NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
             ) = substate_id
             {
                 if id == *kv_store_id {
-                    items.insert(key, substate.substate)
+                    items.insert(entry_id, substate.substate)
                 } else {
                     break;
                 }

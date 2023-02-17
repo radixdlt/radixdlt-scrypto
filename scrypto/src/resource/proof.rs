@@ -1,12 +1,12 @@
-use radix_engine_interface::api::types::{ProofId, RENodeId};
-use radix_engine_interface::api::{ClientNodeApi, Invokable};
+use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
+use radix_engine_interface::api::{ClientComponentApi, ClientNodeApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 use crate::*;
@@ -57,8 +57,14 @@ impl ScryptoProof for Proof {
 
     fn clone(&self) -> Self {
         let mut env = ScryptoEnv;
-        env.invoke(ProofCloneInvocation { receiver: self.0 })
-            .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0),
+                PROOF_CLONE_IDENT,
+                scrypto_encode(&ProofCloneInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
@@ -212,22 +218,40 @@ impl ScryptoProof for Proof {
         }
     }
 
-    scrypto_env_native_fn! {
-        fn amount(&self) -> Decimal {
-            ProofGetAmountInvocation {
-                receiver: self.0
-            }
-        }
-        fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-            ProofGetNonFungibleLocalIdsInvocation {
-                receiver: self.0
-            }
-        }
-        fn resource_address(&self) -> ResourceAddress {
-            ProofGetResourceAddressInvocation {
-                receiver: self.0
-            }
-        }
+    fn amount(&self) -> Decimal {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0),
+                PROOF_GET_AMOUNT_IDENT,
+                scrypto_encode(&ProofGetAmountInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0),
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0),
+                PROOF_GET_RESOURCE_ADDRESS_IDENT,
+                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     fn drop(self) {
@@ -248,22 +272,40 @@ impl Clone for ValidatedProof {
 }
 
 impl ValidatedProof {
-    scrypto_env_native_fn! {
-        pub fn amount(&self) -> Decimal {
-            ProofGetAmountInvocation {
-                receiver: self.proof_id(),
-            }
-        }
-        pub fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-            ProofGetNonFungibleLocalIdsInvocation {
-                receiver: self.proof_id(),
-            }
-        }
-        pub fn resource_address(&self) -> ResourceAddress {
-            ProofGetResourceAddressInvocation {
-                receiver: self.proof_id(),
-            }
-        }
+    pub fn amount(&self) -> Decimal {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0 .0),
+                PROOF_GET_AMOUNT_IDENT,
+                scrypto_encode(&ProofGetAmountInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0 .0),
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::Proof(self.0 .0),
+                PROOF_GET_RESOURCE_ADDRESS_IDENT,
+                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -331,10 +373,6 @@ impl ValidatedProof {
     /// Checks if the referenced bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
-    }
-
-    fn proof_id(&self) -> ProofId {
-        self.0 .0
     }
 }
 

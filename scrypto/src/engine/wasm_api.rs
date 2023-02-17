@@ -39,6 +39,42 @@ extern "C" {
     // Invocation API
     //===============
 
+    /// Invokes a native function or method.
+    pub fn call_native(
+        native_fn_identifier_ptr: *const u8,
+        native_fn_identifier_len: usize,
+        invocation_ptr: *const u8,
+        invocation_len: usize,
+    ) -> Buffer;
+
+    //===============
+    // Component API
+    //===============
+
+    pub fn lookup_global_component(
+        component_address_ptr: *const u8,
+        component_address_len: usize,
+    ) -> Buffer;
+
+    pub fn new_component(
+        blueprint_ident_ptr: *const u8,
+        blueprint_ident: usize,
+        app_states_ptr: *const u8,
+        app_states_len: usize,
+        access_rules_chain_ptr: *const u8,
+        access_rules_chain_len: usize,
+        royalty_config_ptr: *const u8,
+        royalty_config_len: usize,
+        metadata_ptr: *const u8,
+        metadata_len: usize,
+    ) -> Buffer;
+
+    pub fn new_key_value_store() -> Buffer;
+
+    pub fn globalize_component(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+    pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
@@ -47,6 +83,23 @@ extern "C" {
         ident_len: usize,
         args_ptr: *const u8,
         args_len: usize,
+    ) -> Buffer;
+
+    //===============
+    // Package API
+    //===============
+
+    pub fn new_package(
+        code_ptr: *const u8,
+        code_len: usize,
+        abi_ptr: *const u8,
+        abi_len: usize,
+        access_rules_chain_ptr: *const u8,
+        access_rules_chain: usize,
+        royalty_config_ptr: *const u8,
+        royalty_config: usize,
+        metadata_ptr: *const u8,
+        metadata_len: usize,
     ) -> Buffer;
 
     /// Invokes a function on a blueprint.
@@ -59,14 +112,6 @@ extern "C" {
         function_ident_len: usize,
         args_ptr: *const u8,
         args_len: usize,
-    ) -> Buffer;
-
-    /// Invokes a native function or method.
-    pub fn call_native(
-        native_fn_identifier_ptr: *const u8,
-        native_fn_identifier_len: usize,
-        invocation_ptr: *const u8,
-        invocation_len: usize,
     ) -> Buffer;
 
     //===============
@@ -88,9 +133,9 @@ extern "C" {
 
     // Locks a substate
     pub fn lock_substate(
-        node_id: *const u8,
+        node_id_ptr: *const u8,
         node_id_len: usize,
-        offset: *const u8,
+        offset_ptr: *const u8,
         offset_len: usize,
         mutable: bool,
     ) -> u32;
@@ -102,7 +147,7 @@ extern "C" {
     pub fn write_substate(handle: u32, data_ptr: *const u8, data_len: usize);
 
     // Releases a lock
-    pub fn unlock_substate(handle: u32);
+    pub fn drop_lock(handle: u32);
 
     //===============
     // Actor API
@@ -114,6 +159,61 @@ extern "C" {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn call_native(
+    _native_fn_identifier_ptr: *const u8,
+    _native_fn_identifier_len: usize,
+    _invocation_ptr: *const u8,
+    _invocation_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn lookup_global_component(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_component(
+    _blueprint_ident_ptr: *const u8,
+    _blueprint_ident: usize,
+    _app_states_ptr: *const u8,
+    _app_states: usize,
+    _access_rules_chain_ptr: *const u8,
+    _access_rules_chain: usize,
+    _royalty_config_ptr: *const u8,
+    _royalty_config: usize,
+    _metadata_ptr: *const u8,
+    _metadata_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_key_value_store() -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn globalize_component(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_component_type_info(
+    _component_id_ptr: *const u8,
+    _component_id_len: usize,
+) -> Buffer {
     todo!()
 }
 
@@ -130,6 +230,22 @@ pub unsafe fn call_method(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_package(
+    _code_ptr: *const u8,
+    _code_len: usize,
+    _abi_ptr: *const u8,
+    _abi_len: usize,
+    _access_rules_chain_ptr: *const u8,
+    _access_rules_chain: usize,
+    _royalty_config_ptr: *const u8,
+    _royalty_config: usize,
+    _metadata_ptr: *const u8,
+    _metadata_len: usize,
+) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn call_function(
     _package_address_ptr: *const u8,
     _package_address_len: usize,
@@ -140,21 +256,6 @@ pub unsafe fn call_function(
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_native(
-    _native_fn_identifier_ptr: *const u8,
-    _native_fn_identifier_len: usize,
-    _invocation_ptr: *const u8,
-    _invocation_len: usize,
-) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn create_node(_node_ptr: *const u8, _node_len: usize) -> Buffer {
     todo!()
 }
 
@@ -188,7 +289,7 @@ pub unsafe fn read_substate(_handle: u32) -> Buffer {
 pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn unlock_substate(_handle: u32) {
+pub unsafe fn drop_lock(_handle: u32) {
     todo!()
 }
 

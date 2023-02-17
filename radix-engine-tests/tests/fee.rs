@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::kernel::TrackError;
+use radix_engine::kernel::track::TrackError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -30,7 +30,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
+            .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", args!(bucket_id));
                 builder
@@ -221,7 +221,7 @@ fn test_fee_accounting_success() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
-        .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
+        .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
             "deposit_batch",
@@ -276,7 +276,7 @@ fn test_fee_accounting_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
-        .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
+        .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
             "deposit_batch",

@@ -1,14 +1,14 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::types::{
-    FnIdentifier, LockHandle, PackageAddress, RENodeId, ScryptoRENode, ScryptoReceiver,
-    SerializableInvocation, SubstateOffset,
+use radix_engine_interface::api::package::{PackageInfoSubstate, WasmCodeSubstate};
+use radix_engine_interface::api::{types::*, ClientNativeInvokeApi};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::{ClientActorApi, ClientSubstateApi, Invokable};
+use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 #[derive(Debug, Categorize, Encode, Decode)]
 pub enum ClientApiError {
@@ -18,9 +18,69 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ScryptoEnv {
-    // Slightly different from ClientComponentApi::call_method, for the return type.
-    // This is to avoid duplicated encoding and decoding.
-    pub fn call_method(
+    pub fn get_global_component_type_info(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<(PackageAddress, String), ClientApiError> {
+        let component_id = self.lookup_global_component(component_address)?;
+        self.get_component_type_info(component_id)
+    }
+}
+
+impl ClientComponentApi<ClientApiError> for ScryptoEnv {
+    fn lookup_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<ComponentId, ClientApiError> {
+        let component_address = scrypto_encode(&component_address).unwrap();
+        let bytes = copy_buffer(unsafe {
+            lookup_global_component(component_address.as_ptr(), component_address.len())
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn new_component(
+        &mut self,
+        blueprint_ident: &str,
+        app_states: BTreeMap<u8, Vec<u8>>,
+        access_rules_chain: Vec<AccessRules>,
+        royalty_config: RoyaltyConfig,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<ComponentId, ClientApiError> {
+        let app_states = scrypto_encode(&app_states).unwrap();
+        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
+        let royalty_config = scrypto_encode(&royalty_config).unwrap();
+        let metadata = scrypto_encode(&metadata).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            new_component(
+                blueprint_ident.as_ptr(),
+                blueprint_ident.len(),
+                app_states.as_ptr(),
+                app_states.len(),
+                access_rules_chain.as_ptr(),
+                access_rules_chain.len(),
+                royalty_config.as_ptr(),
+                royalty_config.len(),
+                metadata.as_ptr(),
+                metadata.len(),
+            )
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn globalize_component(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<ComponentAddress, ClientApiError> {
+        let component_id = scrypto_encode(&component_id).unwrap();
+
+        let bytes =
+            copy_buffer(unsafe { globalize_component(component_id.as_ptr(), component_id.len()) });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn call_method(
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
@@ -42,9 +102,88 @@ impl ScryptoEnv {
         Ok(return_data)
     }
 
-    // Slightly different from ClientPackageApi::call_function, for the return type.
-    // This is to avoid duplicated encoding and decoding.
-    pub fn call_function(
+    fn get_component_type_info(
+        &mut self,
+        component_id: ComponentId,
+    ) -> Result<(PackageAddress, String), ClientApiError> {
+        let component_id = scrypto_encode(&component_id).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            get_component_type_info(component_id.as_ptr(), component_id.len())
+        });
+
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, ClientApiError> {
+        let bytes = copy_buffer(unsafe { new_key_value_store() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+}
+
+impl ClientPackageApi<ClientApiError> for ScryptoEnv {
+    fn new_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: Vec<u8>,
+        access_rules_chain: Vec<AccessRules>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+    ) -> Result<PackageAddress, ClientApiError> {
+        let abi = scrypto_encode(&abi).unwrap();
+        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
+        let royalty_config = scrypto_encode(&royalty_config).unwrap();
+        let metadata = scrypto_encode(&metadata).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            new_package(
+                code.as_ptr(),
+                code.len(),
+                abi.as_ptr(),
+                abi.len(),
+                access_rules_chain.as_ptr(),
+                access_rules_chain.len(),
+                royalty_config.as_ptr(),
+                royalty_config.len(),
+                metadata.as_ptr(),
+                metadata.len(),
+            )
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.sys_lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::WasmCode),
+            false,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let package: WasmCodeSubstate =
+            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
+        self.sys_drop_lock(handle)?;
+        Ok(PackageCode::Wasm(package.code))
+    }
+
+    fn get_abi(
+        &mut self,
+        package_address: PackageAddress,
+    ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
+        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let handle = self.sys_lock_substate(
+            package_global,
+            SubstateOffset::Package(PackageOffset::Info),
+            false,
+        )?;
+        let substate = self.sys_read_substate(handle)?;
+        let package: PackageInfoSubstate =
+            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
+        self.sys_drop_lock(handle)?;
+        Ok(package.blueprint_abis)
+    }
+
+    fn call_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
@@ -68,15 +207,25 @@ impl ScryptoEnv {
 
         Ok(return_data)
     }
+}
 
-    pub fn call_native<N: SerializableInvocation>(
+impl ClientNativeInvokeApi<ClientApiError> for ScryptoEnv {
+    fn call_native<N: SerializableInvocation>(
         &mut self,
         invocation: N,
     ) -> Result<N::Output, ClientApiError> {
         let native_fn = N::native_fn();
-        let native_fn = scrypto_encode(&native_fn).unwrap();
         let invocation = scrypto_encode(&invocation).unwrap();
+        let output = self.call_native_raw(native_fn, invocation)?;
+        scrypto_decode(&output).map_err(ClientApiError::DecodeError)
+    }
 
+    fn call_native_raw(
+        &mut self,
+        native_fn: NativeFn,
+        invocation: Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let native_fn = scrypto_encode(&native_fn).unwrap();
         let return_data = copy_buffer(unsafe {
             call_native(
                 native_fn.as_ptr(),
@@ -85,26 +234,11 @@ impl ScryptoEnv {
                 invocation.len(),
             )
         });
-
-        scrypto_decode(&return_data).map_err(ClientApiError::DecodeError)
-    }
-}
-
-impl<N: SerializableInvocation> Invokable<N, ClientApiError> for ScryptoEnv {
-    fn invoke(&mut self, invocation: N) -> Result<N::Output, ClientApiError> {
-        self.call_native(invocation)
+        Ok(return_data)
     }
 }
 
 impl ClientNodeApi<ClientApiError> for ScryptoEnv {
-    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, ClientApiError> {
-        let node = scrypto_encode(&node).unwrap();
-
-        let node_id = copy_buffer(unsafe { create_node(node.as_ptr(), node.len()) });
-
-        scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
-    }
-
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
@@ -137,13 +271,13 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
+    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { read_substate(lock_handle) });
 
         Ok(substate)
     }
 
-    fn sys_write(
+    fn sys_write_substate(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
@@ -154,14 +288,14 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
-        unsafe { unlock_substate(lock_handle) };
+        unsafe { drop_lock(lock_handle) };
 
         Ok(())
     }
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
         let actor = copy_buffer(unsafe { get_actor() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
@@ -174,7 +308,7 @@ macro_rules! scrypto_env_native_fn {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
                 let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                radix_engine_interface::api::Invokable::invoke(&mut env, $arg).unwrap()
+                env.call_native($arg).unwrap()
             }
         )+
     };

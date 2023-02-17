@@ -141,6 +141,7 @@ impl IndexedScryptoValue {
                 Own::Proof(proof_id) => node_ids.insert(RENodeId::Proof(*proof_id)),
                 Own::Vault(vault_id) => node_ids.insert(RENodeId::Vault(*vault_id)),
                 Own::Component(component_id) => node_ids.insert(RENodeId::Component(*component_id)),
+                Own::Account(component_id) => node_ids.insert(RENodeId::Account(*component_id)),
                 Own::KeyValueStore(kv_store_id) => {
                     node_ids.insert(RENodeId::KeyValueStore(*kv_store_id))
                 }
@@ -487,8 +488,8 @@ mod tests {
         let value = IndexedScryptoValue::from_typed(&vec![ManifestBucket(0), ManifestBucket(0)]);
         assert_eq!(
             value.replace_manifest_values(
-                &mut HashMap::from([(ManifestProof(0), 0u32)]),
-                &mut HashMap::from([(ManifestBucket(0), 0u32)]),
+                &mut HashMap::from([(ManifestProof(0), [0u8; 36])]),
+                &mut HashMap::from([(ManifestBucket(0), [0u8; 36])]),
                 Vec::new(),
             ),
             Err(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
@@ -499,7 +500,7 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_owned_buckets() {
-        let value = IndexedScryptoValue::from_typed(&vec![Bucket(0), Bucket(0)]);
+        let value = IndexedScryptoValue::from_typed(&vec![Bucket([0u8; 36]), Bucket([0u8; 36])]);
         assert_eq!(
             value.owned_node_ids(),
             Err(ReadOwnedNodesError::DuplicateOwn)

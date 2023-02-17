@@ -11,7 +11,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account);
-    let auth_local_id = NonFungibleLocalId::Integer(1);
+    let auth_local_id = NonFungibleLocalId::integer(1);
     let auth_global_id = NonFungibleGlobalId::new(auth, auth_local_id);
     let authorization = AccessRules::new().method(
         "get_component_state",
@@ -73,7 +73,7 @@ fn can_make_cross_component_call_with_authorization() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
-    let auth_local_id = NonFungibleLocalId::Integer(1);
+    let auth_local_id = NonFungibleLocalId::integer(1);
     let auth_global_id = NonFungibleGlobalId::new(auth, auth_local_id.clone());
     let authorization = AccessRules::new().method(
         "get_component_state",
@@ -116,7 +116,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_ids(account, &BTreeSet::from([auth_local_id]), auth)
+        .withdraw_non_fungibles_from_account(account, auth, &BTreeSet::from([auth_local_id]))
         .call_method(
             my_component,
             "put_auth",
@@ -150,7 +150,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
-    let auth_local_id = NonFungibleLocalId::Integer(1);
+    let auth_local_id = NonFungibleLocalId::integer(1);
     let auth_global_id = NonFungibleGlobalId::new(auth, auth_local_id);
     let authorization = AccessRules::new().method(
         "get_component_state",
