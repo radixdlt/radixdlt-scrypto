@@ -94,13 +94,15 @@ impl ExecutableInvocation for ScryptoInvocation {
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let component_info = substate_ref.component_info(); // TODO: Remove clone()
-                        let info = (component_info.package_address, component_info.blueprint_name.to_string());
+                        let info = (
+                            component_info.package_address,
+                            component_info.blueprint_name.to_string(),
+                        );
                         api.kernel_drop_lock(handle)?;
                         info
-                    },
+                    }
                     _ => todo!(),
                 };
-
 
                 // Type check
                 if !object_package_address.eq(&self.package_address) {
@@ -128,7 +130,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             node_refs_to_copy.insert(resolved_receiver.receiver);
 
             (
-                Some(resolved_receiver.receiver.into()),
+                Some(resolved_receiver.receiver),
                 ResolvedActor::method(FnIdentifier::Scrypto(scrypto_fn_ident), resolved_receiver),
             )
         } else {
@@ -228,7 +230,7 @@ impl ExecutableInvocation for ScryptoInvocation {
         let executor = ScryptoExecutor {
             package_address: self.package_address,
             export_name,
-            component_id: receiver,
+            receiver: receiver,
             args: args.into(),
         };
 
@@ -251,7 +253,7 @@ impl ExecutableInvocation for ScryptoInvocation {
 pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
-    pub component_id: Option<ComponentId>,
+    pub receiver: Option<RENodeId>,
     pub args: ScryptoValue,
 }
 
@@ -308,7 +310,7 @@ impl Executor for ScryptoExecutor {
                 api.kernel_drop_lock(handle)?;
                 NativeVm::invoke_native_package(
                     native_package_code_id,
-                    self.component_id,
+                    self.receiver,
                     &self.export_name,
                     self.args,
                     api,
@@ -355,7 +357,8 @@ impl Executor for ScryptoExecutor {
                     let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                     let mut input = Vec::new();
-                    if let Some(component_id) = self.component_id {
+                    if let Some(component_id) = self.receiver {
+                        let component_id: ComponentId = component_id.into();
                         input.push(
                             runtime
                                 .allocate_buffer(
@@ -411,7 +414,7 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         export_name: &str,
         input: ScryptoValue,
         api: &mut Y,

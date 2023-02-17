@@ -46,7 +46,7 @@ pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
     pub fn register<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -63,7 +63,7 @@ impl ValidatorBlueprint {
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -109,7 +109,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unregister<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -126,7 +126,7 @@ impl ValidatorBlueprint {
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -163,7 +163,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn stake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -179,7 +179,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -234,7 +234,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unstake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -250,7 +250,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -334,7 +334,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn claim_xrd<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -350,7 +350,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -402,7 +402,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_key<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -418,7 +418,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
@@ -454,7 +454,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -477,7 +477,7 @@ impl ValidatorBlueprint {
         };
 
         api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Validator(receiver),
+            receiver,
             index: 0u32,
             key: AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
             rule,

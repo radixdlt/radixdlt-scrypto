@@ -32,7 +32,7 @@ pub struct AuthZoneNativePackage;
 impl AuthZoneNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -99,7 +99,7 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -110,7 +110,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -131,7 +131,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -142,7 +142,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -169,7 +169,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -180,7 +180,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -216,7 +216,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -228,7 +228,7 @@ impl AuthZoneBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -267,7 +267,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -278,7 +278,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -317,7 +317,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -328,7 +328,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -341,7 +341,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -352,7 +352,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -379,7 +379,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn assert_access_rule<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -390,7 +390,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),

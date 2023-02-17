@@ -40,7 +40,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
             let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-            let object_info = (component_info.package_address, component_info.blueprint_name);
+            let object_info = (
+                component_info.package_address,
+                component_info.blueprint_name,
+            );
             api.kernel_drop_lock(handle)?;
 
             object_info
@@ -48,7 +51,6 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         //NodeModuleId::ComponentRoyalty => (ROYALTY_PACKAGE_ADDRESS, COMPONENT_ROYALTY_BLUEPRINT),
         _ => todo!(),
     };
-
 
     let invocation = ScryptoInvocation {
         package_address,

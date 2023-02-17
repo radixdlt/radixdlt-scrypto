@@ -50,7 +50,7 @@ pub struct AccountNativePackage;
 impl AccountNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -287,7 +287,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -299,7 +299,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -354,7 +354,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -371,7 +371,7 @@ impl AccountNativePackage {
     }
 
     fn lock_contingent_fee<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -388,7 +388,7 @@ impl AccountNativePackage {
     }
 
     fn deposit<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -403,7 +403,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -461,7 +461,7 @@ impl AccountNativePackage {
     }
 
     fn deposit_batch<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -473,7 +473,7 @@ impl AccountNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -546,7 +546,7 @@ impl AccountNativePackage {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -562,7 +562,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -613,7 +613,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -635,7 +635,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_all<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -657,7 +657,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_non_fungibles<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -680,7 +680,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -705,7 +705,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_all<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -730,7 +730,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -755,7 +755,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -777,7 +777,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_amount<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -800,7 +800,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_ids<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

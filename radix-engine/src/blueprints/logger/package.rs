@@ -18,7 +18,7 @@ pub struct LoggerNativePackage;
 impl LoggerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -34,13 +34,13 @@ impl LoggerNativePackage {
                 Self::log(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
 
     pub(crate) fn log<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -51,7 +51,7 @@ impl LoggerNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Logger,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Logger(LoggerOffset::Logger),
             LockFlags::MUTABLE,

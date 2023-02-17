@@ -121,7 +121,7 @@ pub struct AccessControllerNativePackage;
 impl AccessControllerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -208,7 +208,7 @@ impl AccessControllerNativePackage {
                 Self::stop_timed_recovery(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -271,7 +271,7 @@ impl AccessControllerNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -287,17 +287,13 @@ impl AccessControllerNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let proof = transition(
-            RENodeId::AccessController(receiver),
-            api,
-            AccessControllerCreateProofStateMachineInput,
-        )?;
+        let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
 
     fn initial_recovery_as_primary<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -313,7 +309,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
                 proposal: RecoveryProposal {
@@ -327,7 +323,7 @@ impl AccessControllerNativePackage {
     }
 
     fn initial_recovery_as_recovery<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -343,7 +339,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
                 proposal: RecoveryProposal {
@@ -357,7 +353,7 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_primary_role_recovery_proposal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -373,7 +369,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let recovery_proposal = transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: RecoveryProposal {
@@ -385,7 +381,7 @@ impl AccessControllerNativePackage {
 
         update_access_rules(
             api,
-            RENodeId::AccessController(receiver),
+            receiver,
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
@@ -393,7 +389,7 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_recovery_role_recovery_proposal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -409,7 +405,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let recovery_proposal = transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: RecoveryProposal {
@@ -421,7 +417,7 @@ impl AccessControllerNativePackage {
 
         update_access_rules(
             api,
-            RENodeId::AccessController(receiver),
+            receiver,
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
@@ -429,7 +425,7 @@ impl AccessControllerNativePackage {
     }
 
     fn timed_confirm_recovery<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -445,7 +441,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let recovery_proposal = transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerTimedConfirmRecoveryStateMachineInput {
                 proposal_to_confirm: RecoveryProposal {
@@ -458,7 +454,7 @@ impl AccessControllerNativePackage {
         // Update the access rules
         update_access_rules(
             api,
-            RENodeId::AccessController(receiver),
+            receiver,
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
@@ -466,7 +462,7 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_primary_role_recovery_proposal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -482,7 +478,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
         )?;
@@ -491,7 +487,7 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_recovery_role_recovery_proposal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -507,7 +503,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
         )?;
@@ -516,7 +512,7 @@ impl AccessControllerNativePackage {
     }
 
     fn lock_primary_role<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -532,7 +528,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerLockPrimaryRoleStateMachineInput,
         )?;
@@ -541,7 +537,7 @@ impl AccessControllerNativePackage {
     }
 
     fn unlock_primary_role<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -557,7 +553,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerUnlockPrimaryRoleStateMachineInput,
         )?;
@@ -566,7 +562,7 @@ impl AccessControllerNativePackage {
     }
 
     fn stop_timed_recovery<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -582,7 +578,7 @@ impl AccessControllerNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         transition_mut(
-            RENodeId::AccessController(receiver),
+            receiver,
             api,
             AccessControllerStopTimedRecoveryStateMachineInput {
                 proposal: RecoveryProposal {

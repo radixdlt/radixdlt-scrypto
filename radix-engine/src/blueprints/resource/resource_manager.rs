@@ -803,7 +803,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -819,7 +819,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -924,7 +924,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -940,7 +940,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1017,7 +1017,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1033,7 +1033,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1084,7 +1084,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1099,7 +1099,7 @@ impl ResourceManagerBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1162,7 +1162,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_bucket<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1178,7 +1178,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1203,7 +1203,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_vault<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1219,7 +1219,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1244,7 +1244,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn update_vault_auth<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1260,7 +1260,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
@@ -1310,7 +1310,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn set_vault_auth_mutability<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1326,7 +1326,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
@@ -1376,7 +1376,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1392,7 +1392,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1430,7 +1430,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn non_fungible_exists<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1446,7 +1446,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1469,7 +1469,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1485,7 +1485,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1498,7 +1498,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1513,7 +1513,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1524,7 +1524,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1540,7 +1540,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),

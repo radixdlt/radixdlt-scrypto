@@ -187,8 +187,12 @@ impl NativeInvocation {
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::ComponentRoyalty(i) => match i {
-                ComponentRoyaltyInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
-                ComponentRoyaltyInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
+                ComponentRoyaltyInvocation::SetRoyaltyConfig(i) => {
+                    (get_native_fn(i), scrypto_encode(i))
+                }
+                ComponentRoyaltyInvocation::ClaimRoyalty(i) => {
+                    (get_native_fn(i), scrypto_encode(i))
+                }
             },
         };
 

@@ -15,7 +15,7 @@ pub struct ResourceManagerNativePackage;
 impl ResourceManagerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ResourceManagerId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

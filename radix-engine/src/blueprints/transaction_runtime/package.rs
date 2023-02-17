@@ -22,7 +22,7 @@ pub struct TransactionRuntimeNativePackage;
 impl TransactionRuntimeNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -51,7 +51,7 @@ impl TransactionRuntimeNativePackage {
     }
 
     pub(crate) fn get_hash<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -63,7 +63,7 @@ impl TransactionRuntimeNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::TransactionRuntime,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
@@ -76,7 +76,7 @@ impl TransactionRuntimeNativePackage {
     }
 
     pub(crate) fn generate_uuid<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -88,7 +88,7 @@ impl TransactionRuntimeNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::TransactionRuntime,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
