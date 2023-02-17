@@ -1,10 +1,8 @@
-use crate::rust::borrow::Cow;
-use crate::rust::collections::BTreeMap;
-use crate::rust::vec::Vec;
-use crate::TypeHash;
+use crate::rust::prelude::*;
+use crate::*;
 
 /// This is the struct used in the Schema
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct NovelTypeMetadata {
     pub type_hash: TypeHash,
     pub type_metadata: TypeMetadata,
@@ -12,7 +10,7 @@ pub struct NovelTypeMetadata {
 
 /// This enables the type to be represented as eg JSON
 /// Also used to facilitate type reconstruction
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub struct TypeMetadata {
     pub type_name: Cow<'static, str>,
     pub children: Children,
@@ -57,7 +55,7 @@ impl TypeMetadata {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub enum Children {
     #[default]
     None,
@@ -65,7 +63,7 @@ pub enum Children {
     Variants(BTreeMap<u8, TypeMetadata>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub struct FieldMetadata {
     pub field_name: Cow<'static, str>,
 }

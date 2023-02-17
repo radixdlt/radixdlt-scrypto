@@ -3,7 +3,8 @@ use crate::rust::vec::Vec;
 use crate::*;
 
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Sbor)]
+#[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>, E::CustomTypeValidation")]
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
     pub type_metadata: Vec<NovelTypeMetadata>,

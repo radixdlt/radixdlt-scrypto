@@ -17,7 +17,7 @@ pub struct BasicSample {
 }
 
 #[derive(Categorize, Encode, Decode, Describe)]
-#[sbor(generic_categorize_bounds = "S,T")]
+#[sbor(categorize_types = "S, T")]
 pub struct AdvancedSample<T, S> {
     pub a: (),
     pub b: u32,
