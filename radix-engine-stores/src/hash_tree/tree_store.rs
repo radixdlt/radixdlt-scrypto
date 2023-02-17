@@ -9,7 +9,7 @@ use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustom
 use sbor::{Categorize, Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, ValueKind};
 
 /// A physical tree node, to be used in the storage.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TreeNode<P> {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
@@ -20,14 +20,14 @@ pub enum TreeNode<P> {
 }
 
 /// Internal node.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TreeInternalNode {
     /// Metadata of each existing child.
     pub children: Vec<TreeChildEntry>,
 }
 
 /// Child node metadata.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TreeChildEntry {
     /// First of the remaining nibbles in the key.
     pub nibble: Nibble,
@@ -40,7 +40,7 @@ pub struct TreeChildEntry {
 }
 
 /// Physical leaf node (which may represent a ReNode or a Substate).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TreeLeafNode<P> {
     /// All the remaining nibbles in the _hashed_ payload's key.
     pub key_suffix: NibblePath,
@@ -56,7 +56,7 @@ pub struct TreeLeafNode<P> {
 /// just reference the subtree root, but actually contains it inside.
 /// This design decision also brings minor space and runtime benefits, and avoids special-casing
 /// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ReNodeModulePayload {
     /// ReNode ID.
     pub re_node_id: RENodeId,
