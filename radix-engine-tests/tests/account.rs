@@ -3,7 +3,8 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::*;
+use transaction::data::*;
+use transaction::model::Instruction;
 
 fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange

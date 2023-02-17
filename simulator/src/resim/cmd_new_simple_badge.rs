@@ -11,6 +11,8 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
+use transaction_data::manifest_args;
+use transaction_data::model::*;
 
 use crate::resim::*;
 

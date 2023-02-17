@@ -8,8 +8,9 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, Instruction, SystemTransaction};
-use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::data::{manifest_args, ManifestExpression};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::model::{Instruction, SystemTransaction};
 
 #[test]
 fn get_epoch_should_succeed() {
@@ -80,14 +81,14 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -120,14 +121,14 @@ fn next_epoch_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -411,14 +412,14 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -473,14 +474,14 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -542,14 +543,14 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -612,14 +613,14 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -812,14 +813,14 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+    let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: scrypto_encode(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
-    })];
+    }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
             instructions,
@@ -853,8 +854,8 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
     pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
-    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
-    let instructions = vec![Instruction::Basic(Instruction::CallFunction {
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
@@ -866,7 +867,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             1u64,
             1u64
         ),
-    })];
+    }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -894,8 +895,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
     pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
 
-    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit> = BTreeMap::new();
-    let instructions = vec![Instruction::Basic(Instruction::CallFunction {
+    let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
+    let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: "create".to_string(),
@@ -907,7 +908,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             1u64,
             1u64
         ),
-    })];
+    }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

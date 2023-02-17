@@ -1,10 +1,8 @@
+use crate::resim::*;
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use rand::Rng;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
-
-use crate::resim::*;
 
 /// Generate a key pair
 #[derive(Parser, Debug)]

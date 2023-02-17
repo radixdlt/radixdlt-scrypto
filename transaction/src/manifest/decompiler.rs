@@ -26,7 +26,6 @@ use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use transaction_data::manifest_decode;
 use transaction_data::manifest_encode;
-use transaction_data::model::*;
 use transaction_data::ManifestCustomValue;
 use transaction_data::ManifestEncode;
 use transaction_data::ManifestValue;

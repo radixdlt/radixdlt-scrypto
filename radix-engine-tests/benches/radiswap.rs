@@ -6,6 +6,7 @@ use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
+    data::{manifest_args, manifest_decode, ManifestExpression},
     model::{NotarizedTransaction, TransactionHeader},
     validation::{
         NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
@@ -154,7 +155,7 @@ fn do_swap(
     nonce: u32,
 ) -> TransactionReceipt {
     // Decode payload
-    let transaction: NotarizedTransaction = scrypto_decode(&transaction_payload).unwrap();
+    let transaction: NotarizedTransaction = manifest_decode(&transaction_payload).unwrap();
 
     // Validate
     let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(

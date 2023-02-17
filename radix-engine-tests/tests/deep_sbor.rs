@@ -5,6 +5,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {

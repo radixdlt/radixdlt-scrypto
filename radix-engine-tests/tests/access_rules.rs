@@ -9,8 +9,9 @@ use radix_engine_interface::rule;
 use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, *};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers() {

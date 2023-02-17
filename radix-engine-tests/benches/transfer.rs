@@ -11,8 +11,9 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.

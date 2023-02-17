@@ -16,7 +16,12 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Hello", "instantiate_hello", manifest_args!())
+        .call_function(
+            package_address,
+            "Hello",
+            "instantiate_hello",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,

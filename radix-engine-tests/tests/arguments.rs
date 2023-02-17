@@ -1,7 +1,7 @@
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestBucket};
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
@@ -152,7 +152,7 @@ fn none_optional_bucket_argument_should_succeed() {
             package_address,
             "Arguments",
             "option_argument",
-            manifest_args!(Option::<Bucket>::None),
+            manifest_args!(Option::<ManifestBucket>::None),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

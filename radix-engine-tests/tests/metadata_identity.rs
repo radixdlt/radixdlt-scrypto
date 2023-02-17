@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 fn create_identity(
     test_runner: &mut TestRunner,

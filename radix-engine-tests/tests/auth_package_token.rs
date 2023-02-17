@@ -3,6 +3,7 @@ use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn can_call_self_with_package_token() {

@@ -5,7 +5,8 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::{builder::ManifestBuilder, data::ManifestExpression};
 use utils::ContextualDisplay;
 
 fn test_bucket_internal(method_name: &str) {

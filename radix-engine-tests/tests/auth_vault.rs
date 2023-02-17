@@ -2,6 +2,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {

@@ -39,12 +39,12 @@ use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{
-    Executable, Instruction, Instruction, SystemTransaction, TransactionManifest,
-};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
+use transaction_data::manifest_args;
+use transaction_data::model::ManifestExpression;
 
 pub struct Compile;
 
@@ -1018,11 +1018,11 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
-        })];
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1039,11 +1039,11 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
-        })];
+        }];
 
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1068,11 +1068,11 @@ impl TestRunner {
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
-        })];
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1089,11 +1089,11 @@ impl TestRunner {
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
-        })];
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

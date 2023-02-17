@@ -8,6 +8,9 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::data::ManifestBlobRef;
+use transaction::data::ManifestExpression;
 use transaction::model::Instruction;
 use utils::ContextualDisplay;
 
@@ -120,8 +123,8 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .add_instruction(Instruction::PublishPackage {
-            code: ManifestBlobRef(Hash([0; 32])),
-            abi: ManifestBlobRef(Hash([0; 32])),
+            code: ManifestBlobRef([0; 32]),
+            abi: ManifestBlobRef([0; 32]),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new(),

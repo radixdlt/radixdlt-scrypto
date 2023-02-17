@@ -4,6 +4,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 use transaction::model::TransactionManifest;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.

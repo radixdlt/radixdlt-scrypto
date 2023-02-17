@@ -30,6 +30,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use transaction_data::{manifest_args, model::*};
 
+use crate::data::from_address;
 use crate::model::*;
 use crate::validation::*;
 
@@ -515,13 +516,13 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: ManifestAddress,
+        entity_address: Address,
         index: u32,
         key: AccessRuleKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address,
+            entity_address: from_address(entity_address),
             index,
             key,
             rule,
@@ -531,12 +532,12 @@ impl ManifestBuilder {
 
     pub fn set_metadata(
         &mut self,
-        entity_address: ManifestAddress,
+        entity_address: Address,
         key: String,
         value: String,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
-            entity_address,
+            entity_address: from_address(entity_address),
             key,
             value,
         })

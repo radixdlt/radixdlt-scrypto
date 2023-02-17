@@ -19,7 +19,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{IndexedScryptoValue, ReadOwnedNodesError, ScryptoValue};
+use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::borrow::Cow;
 use transaction::data::to_address;
 use transaction::data::transform;
@@ -59,44 +59,10 @@ pub enum TransactionProcessorError {
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
 impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InstructionOutput {
-    /// Returns from a native function/method invocation.
-    /// TODO remove
-    Native(Box<dyn NativeOutput>),
-    /// Returns from a scrypto function/method invocation.
-    Scrypto(IndexedScryptoValue),
+    CallReturn(IndexedScryptoValue),
     None,
-}
-
-impl InstructionOutput {
-    pub fn as_vec(&self) -> Vec<u8> {
-        match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
-            InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
-            InstructionOutput::None => IndexedScryptoValue::unit().into_vec(),
-        }
-    }
-}
-
-impl Clone for InstructionOutput {
-    fn clone(&self) -> Self {
-        match self {
-            InstructionOutput::Scrypto(output) => InstructionOutput::Scrypto(output.clone()),
-            InstructionOutput::Native(output) => {
-                // SBOR Encode the output
-                let encoded_output = scrypto_encode(&**output)
-                    .expect("Impossible Case! Instruction output is not SBOR encodable!");
-
-                // Decode to a ScryptoValue
-                let decoded = scrypto_decode::<ScryptoValue>(&encoded_output)
-                    .expect("Impossible Case! We literally just encoded this above");
-
-                InstructionOutput::Native(Box::new(decoded))
-            }
-            InstructionOutput::None => InstructionOutput::None,
-        }
-    }
 }
 
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
@@ -136,7 +102,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
 
         Instruction::SetMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            update.add_ref(RENodeId::Global(to_address(*entity_address)));
+            update.add_ref(RENodeId::Global(to_address(entity_address.clone())));
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up
@@ -294,7 +260,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => {
                     let bucket = Worktop::sys_take_all(resource_address, api)?;
-                    let bucket = processor.next_static_bucket(bucket)?;
+                    processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::TakeFromWorktopByAmount {
@@ -302,7 +268,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                 } => {
                     let bucket = Worktop::sys_take(resource_address, amount, api)?;
-                    let bucket = processor.next_static_bucket(bucket)?;
+                    processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::TakeFromWorktopByIds {
@@ -310,51 +276,50 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                 } => {
                     let bucket = Worktop::sys_take_non_fungibles(resource_address, ids, api)?;
-                    let bucket = processor.next_static_bucket(bucket)?;
+                    processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = Worktop::sys_put(bucket, api)?;
+                    Worktop::sys_put(bucket, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    let rtn = Worktop::sys_assert_contains(resource_address, api)?;
+                    Worktop::sys_assert_contains(resource_address, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    let rtn = Worktop::sys_assert_contains_amount(resource_address, amount, api)?;
+                    Worktop::sys_assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    let rtn =
-                        Worktop::sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    Worktop::sys_assert_contains_non_fungibles(resource_address, ids, api)?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
                     let proof = ComponentAuthZone::sys_pop(api)?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
                     processor.proof_id_mapping.clear();
-                    let rtn = ComponentAuthZone::sys_clear(api)?;
+                    ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    let rtn = ComponentAuthZone::sys_push(proof, api)?;
+                    ComponentAuthZone::sys_push(proof, api)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
                     let proof = ComponentAuthZone::sys_create_proof(resource_address, api)?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZoneByAmount {
@@ -366,7 +331,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         resource_address,
                         api,
                     )?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZoneByIds {
@@ -375,24 +340,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let proof =
                         ComponentAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.sys_create_proof(api)?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
                     let proof = proof.sys_clone(api)?;
-                    let proof = processor.next_static_proof(proof)?;
+                    processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    let rtn = proof.sys_drop(api)?;
+                    proof.sys_drop(api)?;
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
@@ -400,7 +365,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    let rtn = ComponentAuthZone::sys_clear(api)?;
+                    ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::CallFunction {
@@ -415,13 +380,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
-                    let result =
+                    let rtn =
                         api.call_function(package_address, &blueprint_name, &function_name, args)?;
-                    let result = IndexedScryptoValue::from_vec(result).unwrap();
+
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
-                    InstructionOutput::Scrypto(result)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::CallMethod {
                     component_address,
@@ -434,18 +400,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
-                    let result = api.call_method(
+                    let rtn = api.call_method(
                         ScryptoReceiver::Global(component_address),
                         &method_name,
                         args,
                     )?;
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
-                    )?;
 
-                    InstructionOutput::Scrypto(result_indexed)
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::PublishPackage {
                     code,
@@ -466,7 +431,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         access_rules: access_rules,
                     })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::PublishPackageWithOwner {
                     code,
@@ -485,68 +454,66 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         access_rules: package_access_rules_from_owner_badge(&owner_badge),
                     })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let result = api.call_function(
+                    let rtn = api.call_function(
                         RESOURCE_MANAGER_PACKAGE,
                         RESOURCE_MANAGER_BLUEPRINT,
                         RESOURCE_MANAGER_BURN_BUCKET_IDENT,
                         scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
                     )?;
 
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
+                        &result, api,
                     )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::MintFungible {
                     resource_address,
                     amount,
                 } => {
-                    let result = api.call_method(
+                    let rtn = api.call_method(
                         ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount: amount })
                             .unwrap(),
                     )?;
 
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
+                        &result, api,
                     )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::MintNonFungible {
                     resource_address,
                     entries,
                 } => {
-                    let result = api.call_method(
+                    let rtn = api.call_method(
                         ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
                     )?;
 
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
+                        &result, api,
                     )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::MintUuidNonFungible {
                     resource_address,
                     entries,
                 } => {
-                    let result = api.call_method(
+                    let rtn = api.call_method(
                         ScryptoReceiver::Resource(resource_address),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
@@ -555,28 +522,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         .unwrap(),
                     )?;
 
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
+                        &result, api,
                     )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::RecallResource { vault_id, amount } => {
-                    let result = api.call_method(
+                    let rtn = api.call_method(
                         ScryptoReceiver::Vault(vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount: amount }).unwrap(),
                     )?;
 
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        api,
+                        &result, api,
                     )?;
-
-                    InstructionOutput::Scrypto(result_indexed)
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::SetMetadata {
                     entity_address,
@@ -589,7 +552,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         value: value,
                     })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::SetPackageRoyaltyConfig {
                     package_address,
@@ -599,7 +566,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: package_address,
                         royalty_config: royalty_config,
                     })?;
-                    InstructionOutput::Native(Box::new(rtn))
+
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::SetComponentRoyaltyConfig {
                     component_address,
@@ -610,25 +582,33 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         royalty_config: royalty_config,
                     })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let rtn = api.call_native(PackageClaimRoyaltyInvocation {
                         receiver: package_address,
                     })?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
-
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let rtn = api.call_native(ComponentClaimRoyaltyInvocation {
                         receiver: RENodeId::Global(Address::Component(component_address)),
                     })?;
 
-                    Worktop::sys_put(Bucket(rtn.0), api)?;
-
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::SetMethodAccessRule {
                     entity_address,
@@ -643,11 +623,20 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         rule: AccessRuleEntry::AccessRule(rule),
                     })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::AssertAccessRule { access_rule } => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
-                    InstructionOutput::Native(Box::new(rtn))
+
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+                    InstructionOutput::CallReturn(result)
                 }
                 Instruction::NativeInvocation(invocation) => {
                     let invocation = invocation;
@@ -659,7 +648,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
-                    InstructionOutput::Native(Box::new(result.as_value()))
+                    InstructionOutput::CallReturn(result)
                 }
             };
             outputs.push(result);
@@ -746,23 +735,23 @@ impl<'blob> TransactionProcessor<'blob> {
         Ok(Proof(real_id))
     }
 
-    fn next_static_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
+    fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.bucket_id_mapping.insert(new_id, bucket.0);
+        self.bucket_id_mapping.insert(new_id.clone(), bucket.0);
         Ok(new_id)
     }
 
-    fn next_static_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
+    fn create_manifest_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
         let new_id = self.id_allocator.new_proof_id().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.proof_id_mapping.insert(new_id, proof.0);
+        self.proof_id_mapping.insert(new_id.clone(), proof.0);
         Ok(new_id)
     }
 

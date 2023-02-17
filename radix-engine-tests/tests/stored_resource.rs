@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn stored_resource_is_invokeable() {

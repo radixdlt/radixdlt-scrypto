@@ -4,7 +4,8 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::{builder::ManifestBuilder, data::ManifestExpression};
 
 #[test]
 #[ignore]

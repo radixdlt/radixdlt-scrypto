@@ -5,6 +5,7 @@ use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn missing_memory_should_cause_error() {

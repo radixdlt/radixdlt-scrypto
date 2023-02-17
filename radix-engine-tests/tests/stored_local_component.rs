@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 #[ignore = "FIXME: Node root-ness property is not tracked properly"]

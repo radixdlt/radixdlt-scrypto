@@ -3,7 +3,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::data::manifest_args;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 fn test_dynamic_auth(
     num_keys: usize,
@@ -230,11 +231,11 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_global_id = NonFungibleGlobalId::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleLocalId::bytes(pk).unwrap(),
+        NonFungibleLocalId::bytes(pk.to_vec()).unwrap(),
     );
     let other_non_fungible_global_id = NonFungibleGlobalId::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleLocalId::bytes(other_public_key).unwrap(),
+        NonFungibleLocalId::bytes(other_public_key.to_vec()).unwrap(),
     );
     let players = [non_fungible_global_id, other_non_fungible_global_id.clone()];
     let manifest1 = ManifestBuilder::new()

@@ -17,7 +17,11 @@ mod reentrant_component {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(ScryptoReceiver::Global(address), "mut_func", scrypto_args!())
+                .call_method(
+                    ScryptoReceiver::Global(address),
+                    "mut_func",
+                    scrypto_args!(),
+                )
                 .unwrap();
         }
 
@@ -29,7 +33,11 @@ mod reentrant_component {
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(ScryptoReceiver::Global(address), "mut_func", scrypto_args!())
+                .call_method(
+                    ScryptoReceiver::Global(address),
+                    "mut_func",
+                    scrypto_args!(),
+                )
                 .unwrap();
         }
     }

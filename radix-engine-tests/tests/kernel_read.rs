@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 #[ignore = "disabled to enable client side address lookup. FIXME: should we re-enable this?"]

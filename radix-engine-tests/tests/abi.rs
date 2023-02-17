@@ -7,6 +7,7 @@ use scrypto_unit::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {

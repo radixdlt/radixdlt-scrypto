@@ -21,11 +21,11 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::Basic(Instruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: scrypto_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
-        })];
+        }];
 
         let blobs = vec![];
         let initial_proofs = vec![AuthAddresses::system_role()];

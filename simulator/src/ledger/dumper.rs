@@ -347,8 +347,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     }
 
     if let Some(raw_state) = component_state_dump.raw_state {
-        let value_display_context =
-            ScryptoValueDisplayContext::with_bench32(Some(&bech32_encoder));
+        let value_display_context = ScryptoValueDisplayContext::with_bench32(Some(&bech32_encoder));
         writeln!(
             output,
             "{}: {}",

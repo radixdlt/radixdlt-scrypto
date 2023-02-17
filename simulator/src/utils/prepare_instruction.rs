@@ -6,10 +6,10 @@
 use radix_engine::types::*;
 use radix_engine_interface::abi::{BlueprintAbi, Type};
 use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
-use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
+use transaction_data::*;
 
 use crate::resim::SimulatorNonFungibleGlobalId;
 
@@ -22,10 +22,10 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+            fields.push(::transaction_data::manifest_decode(&arg).unwrap());
         }
-        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+        let input_struct = ::transaction_data::ManifestValue::Tuple { fields };
+        ::transaction_data::manifest_encode(&input_struct).unwrap()
     }};
 }
 
@@ -72,10 +72,10 @@ pub fn add_call_function_instruction_with_abi<'a>(
 
     let mut fields = Vec::new();
     for arg in arguments {
-        fields.push(scrypto_decode(&arg).unwrap());
+        fields.push(manifest_decode(&arg).unwrap());
     }
-    let input_struct = ScryptoValue::Tuple { fields };
-    let bytes = scrypto_encode(&input_struct).unwrap();
+    let input_struct = ManifestValue::Tuple { fields };
+    let bytes = manifest_encode(&input_struct).unwrap();
 
     manifest_builder.add_instruction(Instruction::CallFunction {
         package_address,
@@ -174,13 +174,13 @@ fn parse_args<'a>(
                         let value = arg.parse::<Decimal>().map_err(|_| {
                             BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                         })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::PreciseDecimal => {
                         let value = arg.parse::<PreciseDecimal>().map_err(|_| {
                             BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                         })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::PackageAddress => {
                         let value = bech32_decoder
@@ -188,7 +188,7 @@ fn parse_args<'a>(
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::ComponentAddress => {
                         let value = bech32_decoder
@@ -196,7 +196,7 @@ fn parse_args<'a>(
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::ResourceAddress => {
                         let value = bech32_decoder
@@ -204,19 +204,13 @@ fn parse_args<'a>(
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                        Ok(scrypto_encode(&value).unwrap())
-                    }
-                    Type::Hash => {
-                        let value = arg.parse::<Hash>().map_err(|_| {
-                            BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                        })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::NonFungibleLocalId => {
                         let value = arg.parse::<NonFungibleLocalId>().map_err(|_| {
                             BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                         })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::NonFungibleGlobalId => {
                         // Using the same parsing logic implemented for the
@@ -229,7 +223,7 @@ fn parse_args<'a>(
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                        Ok(scrypto_encode(&value).unwrap())
+                        Ok(manifest_encode(&value).unwrap())
                     }
                     Type::Bucket => {
                         let resource_specifier = parse_resource_specifier(arg, bech32_decoder)
@@ -270,7 +264,7 @@ fn parse_args<'a>(
                                     .unwrap()
                             }
                         };
-                        Ok(scrypto_encode(&bucket_id).unwrap())
+                        Ok(manifest_encode(&bucket_id).unwrap())
                     }
                     Type::Proof => {
                         let resource_specifier = parse_resource_specifier(arg, bech32_decoder)
@@ -309,7 +303,7 @@ fn parse_args<'a>(
                                 }
                             }
                         };
-                        Ok(scrypto_encode(&proof_id).unwrap())
+                        Ok(manifest_encode(&proof_id).unwrap())
                     }
                     _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                 };
@@ -325,13 +319,13 @@ fn parse_args<'a>(
 
 fn parse_basic_ty<T>(i: usize, t: &Type, arg: &str) -> Result<Vec<u8>, BuildArgsError>
 where
-    T: FromStr + ScryptoEncode,
+    T: FromStr + ManifestEncode,
     T::Err: fmt::Debug,
 {
     let value = arg
         .parse::<T>()
         .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
-    Ok(scrypto_encode(&value).unwrap())
+    Ok(manifest_encode(&value).unwrap())
 }
 
 /// Attempts to parse a string as a [`ResourceSpecifier`] object.
@@ -727,25 +721,6 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_hash_succeeds() {
-        // Arrange
-        let arg = "c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
-        let arg_type = Type::Hash;
-
-        // Act
-        let parsed_arg: Hash = parse_arg(arg, arg_type).expect("Failed to parse arg");
-
-        // Assert
-        assert_eq!(
-            parsed_arg,
-            Hash([
-                196, 31, 169, 239, 42, 179, 31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73,
-                178, 64, 175, 124, 185, 57, 234, 210, 144, 88, 253, 255, 44
-            ])
-        )
-    }
-
-    #[test]
     pub fn parsing_of_string_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "<HelloWorld>";
@@ -926,7 +901,7 @@ mod test {
         )
     }
 
-    pub fn parse_arg<S: AsRef<str>, T: ScryptoDecode>(
+    pub fn parse_arg<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         arg_type: Type,
     ) -> Result<T, ParseArgsError> {
@@ -943,7 +918,7 @@ mod test {
             None,
         )
         .map_err(ParseArgsError::BuildArgsError)?;
-        scrypto_decode(&encoded_arg[0]).map_err(ParseArgsError::DecodeError)
+        manifest_decode(&encoded_arg[0]).map_err(ParseArgsError::DecodeError)
     }
 
     #[derive(Debug, Clone)]

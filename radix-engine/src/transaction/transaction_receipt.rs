@@ -10,9 +10,7 @@ use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::data::{
-    IndexedScryptoValue, ScryptoDecode, ScryptoValueDisplayContext,
-};
+use radix_engine_interface::data::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
@@ -258,15 +256,10 @@ impl TransactionReceipt {
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         match &self.expect_commit_success()[nth] {
-            InstructionOutput::NativeReturn(native) => {
-                // TODO: Use downcast
-                IndexedScryptoValue::from_typed(&native.as_ref())
-                    .as_typed()
-                    .expect("Wrong native instruction output type!")
+            InstructionOutput::CallReturn(value) => {
+                value.as_typed().expect("Output can't be converted")
             }
-            InstructionOutput::Scrypto(value) => value
-                .as_typed()
-                .expect("Wrong scrypto instruction output type!"),
+            InstructionOutput::None => panic!("No call return from the instruction"),
         }
     }
 
@@ -377,9 +370,10 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        IndexedScryptoValue::from_slice(&output.as_vec())
-                            .expect("Failed to parse return data")
-                            .display(decompilation_context)
+                        match output {
+                            InstructionOutput::CallReturn(x) => x.to_string(decompilation_context),
+                            InstructionOutput::None => "None".to_string(),
+                        }
                     )?;
                 }
             }
