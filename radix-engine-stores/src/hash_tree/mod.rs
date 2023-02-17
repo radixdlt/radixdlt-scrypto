@@ -5,9 +5,7 @@ use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
-use tree_store::{
-    Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore,
-};
+use tree_store::{ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
 
 pub mod hash_tree_facade;
@@ -193,7 +191,7 @@ struct LeafChange<P> {
     new_payload: Option<(Hash, P)>,
 }
 
-fn put_changes<S: TreeStore<P>, P: Payload>(
+fn put_changes<S: TreeStore<P>, P: Clone>(
     store: &mut S,
     current_version: Option<Version>,
     next_version: Version,

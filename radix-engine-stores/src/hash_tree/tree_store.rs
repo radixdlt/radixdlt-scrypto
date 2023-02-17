@@ -45,6 +45,8 @@ pub struct TreeLeafNode<P> {
     /// All the remaining nibbles in the _hashed_ payload's key.
     pub key_suffix: NibblePath,
     /// Payload; contents depend on the layer.
+    /// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
+    /// The subtrees carry a `SubstateOffset` payload.
     pub payload: P,
     /// An externally-provided hash of the payload.
     pub value_hash: Hash,
@@ -66,33 +68,14 @@ pub struct ReNodeModulePayload {
     pub substates_root: TreeNode<SubstateOffset>,
 }
 
-/// A payload carried by a physical leaf.
-/// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
-/// The sub-trees carry  a `SubstateOffset` payload.
-pub trait Payload:
-    Clone
-    + PartialEq
-    + Eq
-    + sbor::rust::hash::Hash
-    + sbor::rust::fmt::Debug
-    + ScryptoCategorize
-    + ScryptoEncode
-    + ScryptoDecode
-{
-}
-
-impl Payload for ReNodeModulePayload {}
-
-impl Payload for SubstateOffset {}
-
 /// The "read" part of a physical tree node storage SPI.
-pub trait ReadableTreeStore<P: Payload> {
+pub trait ReadableTreeStore<P> {
     /// Gets node by key, if it exists.
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
-pub trait WriteableTreeStore<P: Payload> {
+pub trait WriteableTreeStore<P> {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>);
 
@@ -102,8 +85,8 @@ pub trait WriteableTreeStore<P: Payload> {
 }
 
 /// A complete tree node storage SPI.
-pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
-impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
+pub trait TreeStore<P>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
+impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq)]
@@ -173,7 +156,7 @@ impl SerializedInMemoryTreeStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
+impl<P: ScryptoDecode> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.memory
             .get(&encode_key(key))
@@ -181,7 +164,7 @@ impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
     }
 }
 
-impl<P: Payload> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
+impl<P: ScryptoEncode> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
         self.memory
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
