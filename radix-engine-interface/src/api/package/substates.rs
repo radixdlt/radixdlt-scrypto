@@ -11,6 +11,9 @@ pub const EPOCH_MANAGER_PACKAGE_CODE_ID: u8 = 2u8;
 pub const CLOCK_PACKAGE_CODE_ID: u8 = 3u8;
 pub const ACCOUNT_PACKAGE_CODE_ID: u8 = 4u8;
 pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
+pub const LOGGER_CODE_ID: u8 = 6u8;
+pub const TRANSACTION_RUNTIME_CODE_ID: u8 = 7u8;
+pub const AUTH_ZONE_CODE_ID: u8 = 8u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

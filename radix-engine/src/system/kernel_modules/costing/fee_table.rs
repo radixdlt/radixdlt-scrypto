@@ -2,10 +2,13 @@ use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::auth_zone::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_runtime::*;
 
 pub enum CostingEntry {
     /* invoke */
@@ -68,6 +71,17 @@ impl FeeTable {
             identifier.package_address,
             identifier.blueprint_name.as_str(),
         ) {
+            (LOGGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => match identifier.ident.as_str() {
+                LOGGER_LOG_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (TRANSACTION_RUNTIME_PACKAGE, TRANSACTION_RUNTIME_BLUEPRINT) => {
+                match identifier.ident.as_str() {
+                    TRANSACTION_RUNTIME_GET_HASH_IDENT => self.fixed_low,
+                    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT => self.fixed_low,
+                    _ => self.fixed_low,
+                }
+            }
             (RESOURCE_MANAGER_PACKAGE, RESOURCE_MANAGER_BLUEPRINT) => {
                 match identifier.ident.as_str() {
                     RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => self.fixed_high,
@@ -113,6 +127,34 @@ impl FeeTable {
                 VAULT_CREATE_PROOF_IDENT => self.fixed_low,
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_low,
                 VAULT_CREATE_PROOF_BY_IDS_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match identifier.ident.as_str() {
+                BUCKET_PUT_IDENT => self.fixed_low,
+                BUCKET_TAKE_IDENT => self.fixed_low,
+                BUCKET_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
+                BUCKET_GET_AMOUNT_IDENT => self.fixed_low,
+                BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
+                BUCKET_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
+                BUCKET_CREATE_PROOF_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match identifier.ident.as_str() {
+                PROOF_CLONE_IDENT => self.fixed_low,
+                PROOF_GET_AMOUNT_IDENT => self.fixed_low,
+                PROOF_GET_RESOURCE_ADDRESS_IDENT => self.fixed_low,
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => self.fixed_low,
+                _ => self.fixed_low,
+            },
+            (RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT) => match identifier.ident.as_str() {
+                WORKTOP_PUT_IDENT => self.fixed_low,
+                WORKTOP_TAKE_IDENT => self.fixed_low,
+                WORKTOP_TAKE_NON_FUNGIBLES_IDENT => self.fixed_low,
+                WORKTOP_TAKE_ALL_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => self.fixed_low,
+                WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => self.fixed_low,
+                WORKTOP_DRAIN_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => match identifier.ident.as_str() {
@@ -185,6 +227,17 @@ impl FeeTable {
                 _ => self.fixed_low,
             },
 
+            (AUTH_ZONE_PACKAGE, AUTH_ZONE_BLUEPRINT) => match identifier.ident.as_str() {
+                AUTH_ZONE_PUSH_IDENT => self.fixed_low,
+                AUTH_ZONE_POP_IDENT => self.fixed_low,
+                AUTH_ZONE_CREATE_PROOF_IDENT => self.fixed_high,
+                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => self.fixed_high,
+                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => self.fixed_high,
+                AUTH_ZONE_CLEAR_IDENT => self.fixed_high,
+                AUTH_ZONE_DRAIN_IDENT => self.fixed_high,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => self.fixed_high,
+                _ => self.fixed_low,
+            },
             _ => 0u32,
         }
     }
@@ -192,46 +245,6 @@ impl FeeTable {
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
-            NativeFn::AuthZoneStack(auth_zone_ident) => {
-                match auth_zone_ident {
-                    AuthZoneStackFn::Pop => self.fixed_low,
-                    AuthZoneStackFn::Push => self.fixed_low,
-                    AuthZoneStackFn::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneStackFn::CreateProofByAmount => self.fixed_high,
-                    AuthZoneStackFn::CreateProofByIds => self.fixed_high,
-                    AuthZoneStackFn::Clear => self.fixed_high,
-                    AuthZoneStackFn::Drain => self.fixed_high,
-                    AuthZoneStackFn::AssertAccessRule => self.fixed_high,
-                }
-            }
-            NativeFn::Bucket(bucket_ident) => match bucket_ident {
-                BucketFn::Take => self.fixed_medium,
-                BucketFn::TakeNonFungibles => self.fixed_medium,
-                BucketFn::GetNonFungibleLocalIds => self.fixed_medium,
-                BucketFn::Put => self.fixed_medium,
-                BucketFn::GetAmount => self.fixed_low,
-                BucketFn::GetResourceAddress => self.fixed_low,
-                BucketFn::CreateProof => self.fixed_low,
-            },
-            NativeFn::Proof(proof_ident) => match proof_ident {
-                ProofFn::GetAmount => self.fixed_low,
-                ProofFn::GetNonFungibleLocalIds => self.fixed_low,
-                ProofFn::GetResourceAddress => self.fixed_low,
-                ProofFn::Clone => self.fixed_low,
-            },
-            NativeFn::Worktop(worktop_ident) => match worktop_ident {
-                WorktopFn::Put => self.fixed_medium,
-                WorktopFn::TakeAmount => self.fixed_medium,
-                WorktopFn::TakeAll => self.fixed_medium,
-                WorktopFn::TakeNonFungibles => self.fixed_medium,
-                WorktopFn::AssertContains => self.fixed_low,
-                WorktopFn::AssertContainsAmount => self.fixed_low,
-                WorktopFn::AssertContainsNonFungibles => self.fixed_low,
-                WorktopFn::Drain => self.fixed_low,
-            },
-            NativeFn::Logger(logger_method) => match logger_method {
-                LoggerFn::Log => self.fixed_low,
-            },
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
@@ -244,21 +257,15 @@ impl FeeTable {
                 MetadataFn::Set => self.fixed_low,
                 MetadataFn::Get => self.fixed_low,
             },
-            NativeFn::Component(method_ident) => match method_ident {
-                ComponentFn::Globalize => self.fixed_high,
-                ComponentFn::GlobalizeWithOwner => self.fixed_high,
-                ComponentFn::SetRoyaltyConfig => self.fixed_medium,
-                ComponentFn::ClaimRoyalty => self.fixed_medium,
+            NativeFn::ComponentRoyalty(method_ident) => match method_ident {
+                ComponentRoyaltyFn::SetRoyaltyConfig => self.fixed_medium,
+                ComponentRoyaltyFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
                 PackageFn::PublishNative => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
-            },
-            NativeFn::TransactionRuntime(ident) => match ident {
-                TransactionRuntimeFn::GetHash => self.fixed_low,
-                TransactionRuntimeFn::GenerateUuid => self.fixed_low,
             },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
@@ -275,10 +282,10 @@ impl FeeTable {
             CostingEntry::CreateNode { size } => self.fixed_medium + (100 * size) as u32,
             CostingEntry::DropNode { size } => self.fixed_medium + (100 * size) as u32,
 
-            CostingEntry::LockSubstate => self.fixed_high,
-            CostingEntry::ReadSubstate { size } => self.fixed_medium + 100 * size,
-            CostingEntry::WriteSubstate { size } => self.fixed_medium + 1000 * size,
-            CostingEntry::DropLock => self.fixed_high,
+            CostingEntry::LockSubstate => self.fixed_low,
+            CostingEntry::ReadSubstate { size } => self.fixed_low + 100 * size,
+            CostingEntry::WriteSubstate { size } => self.fixed_low + 1000 * size,
+            CostingEntry::DropLock => self.fixed_low,
         }
     }
 }

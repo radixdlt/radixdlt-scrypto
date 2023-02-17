@@ -66,18 +66,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         15000 /* CreateNode */
-        + 510000 /* DropLock */
+        + 72000 /* DropLock */
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
-        + 740000 /* LockSubstate */
-        + 265000 /* ReadSubstate */
-        + 12500 /* RunNative */
+        + 109000 /* LockSubstate */
+        + 84500 /* ReadSubstate */
+        + 5000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 92500, /* WriteSubstate */
+        + 18500, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -199,17 +199,17 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         25000 /* CreateNode */
-        + 1510000 /* DropLock */
+        + 208000 /* DropLock */
         + 17500 /* DropNode */
         + 19000 /* Invoke */
-        + 2230000 /* LockSubstate */
-        + 832500 /* ReadSubstate */
-        + 26500 /* RunNative */
-        + 1566605 /* RunWasm */
+        + 318000 /* LockSubstate */
+        + 252000 /* ReadSubstate */
+        + 5000 /* RunNative */
+        + 1613665 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 240000 /* WriteSubstate */
+        + 48000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );

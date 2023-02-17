@@ -39,7 +39,7 @@ impl IdentityNativePackage {
                 Self::create(input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

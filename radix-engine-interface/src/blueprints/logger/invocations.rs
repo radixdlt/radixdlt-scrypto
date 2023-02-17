@@ -1,8 +1,18 @@
 use crate::api::types::*;
 use crate::*;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
+use scrypto_abi::BlueprintAbi;
+
+pub struct LoggerAbi;
+
+impl LoggerAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
 
 /// Represents the level of a log message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, LegacyDescribe)]
@@ -26,30 +36,12 @@ impl fmt::Display for Level {
     }
 }
 
+pub const LOGGER_BLUEPRINT: &str = "Logger";
+
+pub const LOGGER_LOG_IDENT: &str = "log";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct LoggerLogInvocation {
+pub struct LoggerLogInput {
     pub level: Level,
     pub message: String,
-}
-
-impl Invocation for LoggerLogInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Logger(LoggerFn::Log))
-    }
-}
-
-impl SerializableInvocation for LoggerLogInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Logger(LoggerFn::Log)
-    }
-}
-
-impl Into<CallTableInvocation> for LoggerLogInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Logger(LoggerInvocation::Log(self)).into()
-    }
 }

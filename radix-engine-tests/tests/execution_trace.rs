@@ -218,7 +218,11 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_PUT_IDENT.to_string(),
+            }),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -241,7 +245,11 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
+            }),
             trace.origin
         );
 
@@ -260,7 +268,11 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
+            }),
             trace.origin
         );
 
@@ -301,7 +313,11 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_PUT_IDENT.to_string(),
+            }),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -321,7 +337,11 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_DRAIN_IDENT.to_string(),
+            }),
             take_trace.origin
         );
 

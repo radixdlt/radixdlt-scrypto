@@ -240,8 +240,8 @@ mod tests {
     #[test]
     fn test_custom_types_group2() {
         let values = (
-            Own::Bucket(1),
-            Own::Proof(2),
+            Own::Bucket([1u8; 36]),
+            Own::Proof([2u8; 36]),
             Own::Vault([3u8; 36]),
             Own::Component([4u8; 36]),
             Own::KeyValueStore([5u8; 36]),
@@ -250,11 +250,14 @@ mod tests {
         assert_eq!(
             bytes,
             vec![
-                92, 33, 5, 144, 0, 1, 0, 0, 0, 144, 1, 2, 0, 0, 0, 144, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 144, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                92, 33, 5, 144, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 144, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 144,
+                2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 144, 4, 5, 5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                5, 5, 5
             ]
         );
         assert_eq!(
@@ -262,10 +265,10 @@ mod tests {
             ScryptoValue::Tuple {
                 fields: vec![
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Bucket(1)),
+                        value: ScryptoCustomValue::Own(Own::Bucket([1u8; 36])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Proof(2)),
+                        value: ScryptoCustomValue::Own(Own::Proof([2u8; 36])),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Own(Own::Vault([3u8; 36])),

@@ -2,13 +2,13 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::component::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
-};
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInvocation, AccessRulesGetLengthInvocation,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
+};
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
@@ -63,12 +63,14 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
+            AccessRuleKey::Native(NativeFn::ComponentRoyalty(
+                ComponentRoyaltyFn::SetRoyaltyConfig,
+            )),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
+            AccessRuleKey::Native(NativeFn::ComponentRoyalty(ComponentRoyaltyFn::ClaimRoyalty)),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );

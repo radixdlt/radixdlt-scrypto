@@ -199,7 +199,7 @@ impl CallFrame {
             let substate_ref =
                 self.get_substate(heap, track, location, node_id, module_id, &offset)?;
 
-            let (new_global_references, mut new_children) =
+            let (_new_global_references, mut new_children) =
                 substate_ref.references_and_owned_nodes();
 
             for old_child in &substate_lock.substate_owned_nodes {
@@ -212,6 +212,8 @@ impl CallFrame {
                 }
             }
 
+            // TODO: Josh thinks this should be okay to remove but should double check
+            /*
             for global_address in new_global_references {
                 let node_id = RENodeId::Global(global_address);
                 if !self.node_refs.contains_key(&node_id) {
@@ -220,6 +222,7 @@ impl CallFrame {
                     ));
                 }
             }
+             */
 
             for child_id in &new_children {
                 SubstateProperties::verify_can_own(&offset, *child_id)?;

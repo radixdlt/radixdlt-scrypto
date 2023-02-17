@@ -12,13 +12,9 @@ pub enum PackageIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
-    Component,
+    Royalty,
     Package,
     Metadata,
-    Resource,
-    KeyValueStore,
-    Logger,
-    TransactionRuntime,
     TransactionProcessor,
     Root,
 }
@@ -87,31 +83,20 @@ impl ScryptoFnIdentifier {
 )]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
-    Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
+    ComponentRoyalty(ComponentRoyaltyFn),
     Package(PackageFn),
-    AuthZoneStack(AuthZoneStackFn),
-    Bucket(BucketFn),
-    Proof(ProofFn),
-    Worktop(WorktopFn),
-    Logger(LoggerFn),
-    TransactionRuntime(TransactionRuntimeFn),
-    TransactionProcessor(TransactionProcessorFn),
     Metadata(MetadataFn),
+    TransactionProcessor(TransactionProcessorFn),
     Root,
 }
 
 impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
-            NativeFn::AccessRulesChain(..) | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
-            NativeFn::Component(..) => NativePackage::Component,
+            NativeFn::AccessRulesChain(..) => NativePackage::Auth,
+            NativeFn::ComponentRoyalty(..) => NativePackage::Royalty,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::Bucket(..) | NativeFn::Proof(..) | NativeFn::Worktop(..) => {
-                NativePackage::Resource
-            }
-            NativeFn::Logger(..) => NativePackage::Logger,
-            NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
         }
@@ -192,11 +177,9 @@ pub enum MetadataFn {
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum ComponentFn {
+pub enum ComponentRoyaltyFn {
     SetRoyaltyConfig,
     ClaimRoyalty,
-    Globalize,
-    GlobalizeWithOwner,
 }
 
 #[derive(
@@ -224,205 +207,6 @@ pub enum PackageFn {
     PublishNative,
     SetRoyaltyConfig,
     ClaimRoyalty,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ResolveError {
-    DecodeError(DecodeError),
-    NotAMethod,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum AuthZoneStackFn {
-    Pop,
-    Push,
-    CreateProof,
-    CreateProofByAmount,
-    CreateProofByIds,
-    Clear,
-    Drain,
-    AssertAccessRule,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum KeyValueStoreFn {
-    Create,
-    Insert,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum BucketFn {
-    Take,
-    TakeNonFungibles,
-    Put,
-    GetNonFungibleLocalIds,
-    GetAmount,
-    GetResourceAddress,
-    CreateProof,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ProofFn {
-    Clone,
-    GetAmount,
-    GetNonFungibleLocalIds,
-    GetResourceAddress,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum WorktopFn {
-    TakeAll,
-    TakeAmount,
-    TakeNonFungibles,
-    Put,
-    AssertContains,
-    AssertContainsAmount,
-    AssertContainsNonFungibles,
-    Drain,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum LoggerFn {
-    Log,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum TransactionRuntimeFn {
-    GetHash,
-    GenerateUuid,
 }
 
 #[derive(

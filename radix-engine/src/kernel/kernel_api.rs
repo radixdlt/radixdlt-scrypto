@@ -6,16 +6,16 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
-use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
+};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_runtime::*;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
@@ -136,46 +136,13 @@ pub trait KernelInvokeApi<E>:
     + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
     + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
     + Invokable<AccessRulesGetLengthInvocation, E>
-    + Invokable<AuthZonePopInvocation, E>
-    + Invokable<AuthZonePushInvocation, E>
-    + Invokable<AuthZoneCreateProofInvocation, E>
-    + Invokable<AuthZoneCreateProofByAmountInvocation, E>
-    + Invokable<AuthZoneCreateProofByIdsInvocation, E>
-    + Invokable<AuthZoneClearInvocation, E>
-    + Invokable<AuthZoneDrainInvocation, E>
-    + Invokable<AuthZoneAssertAccessRuleInvocation, E>
     + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<ComponentGlobalizeInvocation, E>
-    + Invokable<ComponentGlobalizeWithOwnerInvocation, E>
     + Invokable<ComponentSetRoyaltyConfigInvocation, E>
     + Invokable<ComponentClaimRoyaltyInvocation, E>
     + Invokable<PackageSetRoyaltyConfigInvocation, E>
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
     + Invokable<PackagePublishNativeInvocation, E>
-    + Invokable<BucketTakeInvocation, E>
-    + Invokable<BucketPutInvocation, E>
-    + Invokable<BucketTakeNonFungiblesInvocation, E>
-    + Invokable<BucketGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<BucketGetAmountInvocation, E>
-    + Invokable<BucketGetResourceAddressInvocation, E>
-    + Invokable<BucketCreateProofInvocation, E>
-    + Invokable<BucketCreateProofInvocation, E>
-    + Invokable<ProofCloneInvocation, E>
-    + Invokable<ProofGetAmountInvocation, E>
-    + Invokable<ProofGetNonFungibleLocalIdsInvocation, E>
-    + Invokable<ProofGetResourceAddressInvocation, E>
-    + Invokable<WorktopPutInvocation, E>
-    + Invokable<WorktopTakeAmountInvocation, E>
-    + Invokable<WorktopTakeAllInvocation, E>
-    + Invokable<WorktopTakeNonFungiblesInvocation, E>
-    + Invokable<WorktopAssertContainsInvocation, E>
-    + Invokable<WorktopAssertContainsAmountInvocation, E>
-    + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
-    + Invokable<WorktopDrainInvocation, E>
-    + Invokable<TransactionRuntimeGetHashInvocation, E>
-    + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
-    + Invokable<LoggerLogInvocation, E>
 {
 }
 
