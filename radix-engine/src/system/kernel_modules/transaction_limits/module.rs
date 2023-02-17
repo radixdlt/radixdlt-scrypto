@@ -24,13 +24,11 @@ pub enum TransactionLimitsError {
     MaxSubstateReadsCountExceeded,
 }
 
-/// Representatino of data which needs to be limited for each call frame.
+/// Representation of data which needs to be limited for each call frame.
 #[derive(Default)]
-struct CallFrameInfo {
+struct CallFrameLimitInfo {
     /// Consumed WASM memory.
     wasm_memory_usage: usize,
-    /// Substate store read count.
-    substate_store_read: usize,
 }
 
 pub struct TransactionLimitsConfig {
@@ -48,7 +46,9 @@ pub struct TransactionLimitsModule {
     /// Definitions of the limits levels.
     limits_config: TransactionLimitsConfig,
     /// Internal stack of data for each call frame.
-    call_frames_stack: Vec<CallFrameInfo>,
+    call_frames_stack: Vec<CallFrameLimitInfo>,
+    /// Substate store read count.
+    substate_store_read: usize,
 }
 
 impl TransactionLimitsModule {
@@ -56,6 +56,7 @@ impl TransactionLimitsModule {
         TransactionLimitsModule {
             limits_config,
             call_frames_stack: Vec::with_capacity(8),
+            substate_store_read: 0,
         }
     }
 
@@ -100,14 +101,7 @@ impl TransactionLimitsModule {
 
     /// Checks if substate reads count is in the limit.
     fn validate_substates(&self) -> Result<(), RuntimeError> {
-        // sum all call stack values
-        let sum_reads: usize = self
-            .call_frames_stack
-            .iter()
-            .map(|item| item.substate_store_read)
-            .sum();
-
-        if sum_reads > self.limits_config.max_substate_reads {
+        if self.substate_store_read > self.limits_config.max_substate_reads {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateReadsCountExceeded,
@@ -129,7 +123,7 @@ impl KernelModule for TransactionLimitsModule {
         api.kernel_get_module_state()
             .transaction_limits
             .call_frames_stack
-            .push(CallFrameInfo::default());
+            .push(CallFrameLimitInfo::default());
         Ok(())
     }
 
@@ -147,21 +141,12 @@ impl KernelModule for TransactionLimitsModule {
         _lock_handle: LockHandle,
         _size: usize,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 
-        // update current frame substate read count
-        if let Some(val) = tlimit.call_frames_stack.get_mut(depth) {
-            val.substate_store_read += 1;
-        } else {
-            // Kernel can call this event before calling before_push_frame()
-            // in that case we are pushing new itme on internal stack.
-            tlimit.call_frames_stack.push(CallFrameInfo {
-                wasm_memory_usage: 0,
-                substate_store_read: 1,
-            })
-        }
+        // Increase read coutner.
+        tlimit.substate_store_read += 1;
 
+        // Validate
         tlimit.validate_substates()
     }
 
@@ -182,9 +167,8 @@ impl KernelModule for TransactionLimitsModule {
             // When kernel pops the call frame there are some nested calls which
             // are not aligned with before_push_frame() which requires pushing
             // new value on a stack instead of updating it.
-            tlimit.call_frames_stack.push(CallFrameInfo {
+            tlimit.call_frames_stack.push(CallFrameLimitInfo {
                 wasm_memory_usage: consumed_memory,
-                substate_store_read: 0,
             })
         }
 
