@@ -12,6 +12,7 @@ use radix_engine_interface::api::types::{
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::vec::Vec;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
