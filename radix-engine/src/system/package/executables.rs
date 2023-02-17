@@ -226,59 +226,6 @@ impl Executor for PackagePublishInvocation {
     }
 }
 
-impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
-    type Exec = PackageSetRoyaltyConfigExecutable;
-
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
-        self,
-        api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver =
-            deref_and_update(receiver, NodeModuleId::SELF, &mut call_frame_update, api)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::Package(PackageFn::SetRoyaltyConfig),
-            resolved_receiver,
-        );
-        let executor = PackageSetRoyaltyConfigExecutable {
-            receiver: resolved_receiver.receiver.0,
-            royalty_config: self.royalty_config,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for PackageSetRoyaltyConfigExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi,
-    {
-        // TODO: auth check
-        let node_id = self.receiver;
-        let handle = api.kernel_lock_substate(
-            node_id,
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-            LockFlags::MUTABLE,
-        )?;
-
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        substate.package_royalty_config().royalty_config = self.royalty_config;
-
-        api.kernel_drop_lock(handle)?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 

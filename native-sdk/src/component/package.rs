@@ -1,9 +1,7 @@
-use radix_engine_interface::api::package::PackageSetRoyaltyConfigInvocation;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::royalty::{PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
+use radix_engine_interface::data::{scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -18,12 +16,17 @@ impl BorrowedPackage {
         api: &mut Y,
     ) -> Result<&Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(PackageSetRoyaltyConfigInvocation {
-            receiver: self.0,
-            royalty_config,
-        })?;
+        api.call_module_method(
+            ScryptoReceiver::Package(self.0),
+            NodeModuleId::PackageRoyalty,
+            PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&PackageSetRoyaltyConfigInput {
+
+                royalty_config,
+            }).unwrap()
+        )?;
 
         Ok(self)
     }

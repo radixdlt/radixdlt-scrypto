@@ -70,7 +70,6 @@ pub enum AccessRulesChainInvocation {
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     PublishNative(PackagePublishNativeInvocation),
-    SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
@@ -81,11 +80,6 @@ impl NativeInvocation {
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
                 PackageInvocation::PublishNative(..) => {}
-                PackageInvocation::SetRoyaltyConfig(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Package(
-                        invocation.receiver,
-                    )));
-                }
                 PackageInvocation::ClaimRoyalty(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Package(
                         invocation.receiver,
@@ -146,7 +140,6 @@ impl NativeInvocation {
             NativeInvocation::Package(i) => match i {
                 PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::PublishNative(i) => (get_native_fn(i), scrypto_encode(i)),
-                PackageInvocation::SetRoyaltyConfig(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::ClaimRoyalty(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };

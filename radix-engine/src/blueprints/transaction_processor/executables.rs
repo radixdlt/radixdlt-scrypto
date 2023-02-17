@@ -11,10 +11,7 @@ use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -678,11 +675,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     package_address,
                     royalty_config,
                 }) => {
-                    let rtn = api.call_native(PackageSetRoyaltyConfigInvocation {
-                        receiver: package_address.clone(),
-                        royalty_config: royalty_config.clone(),
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result = api.call_module_method(
+                        ScryptoReceiver::Package(*package_address),
+                        NodeModuleId::PackageRoyalty,
+                        PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                        scrypto_encode(&PackageSetRoyaltyConfigInput {
+                            royalty_config: royalty_config.clone(),
+                        })
+                            .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::SetComponentRoyaltyConfig {
                     component_address,

@@ -1,7 +1,7 @@
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::{errors::RuntimeError, types::*};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT};
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
@@ -60,6 +60,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
         NodeModuleId::ComponentRoyalty => {
             // TODO: Check if type has royalty
             (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
+        }
+        NodeModuleId::PackageRoyalty => {
+            // TODO: Check if type has royalty
+            (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
         }
         _ => todo!(),
     };

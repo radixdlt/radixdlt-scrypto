@@ -149,7 +149,6 @@ pub enum AccessRulesChainFn {
 pub enum PackageFn {
     Publish,
     PublishNative,
-    SetRoyaltyConfig,
     ClaimRoyalty,
 }
 

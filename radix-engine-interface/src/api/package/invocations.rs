@@ -71,34 +71,6 @@ impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PackageSetRoyaltyConfigInvocation {
-    pub receiver: PackageAddress,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
-}
-
-impl Invocation for PackageSetRoyaltyConfigInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig))
-    }
-}
-
-impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::SetRoyaltyConfig)
-    }
-}
-
-impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::SetRoyaltyConfig(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,

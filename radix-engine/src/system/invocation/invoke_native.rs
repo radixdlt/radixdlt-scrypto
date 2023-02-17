@@ -21,10 +21,6 @@ where
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            PackageInvocation::SetRoyaltyConfig(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
             PackageInvocation::ClaimRoyalty(invocation) => {
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))

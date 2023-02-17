@@ -21,7 +21,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
@@ -111,6 +111,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                     NodeModuleId::Metadata => (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string()),
                     NodeModuleId::ComponentRoyalty => {
                         (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
+                    }
+                    NodeModuleId::PackageRoyalty => {
+                        (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
                     }
                     _ => todo!(),
                 };
