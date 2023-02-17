@@ -41,9 +41,7 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScryptoCustomTypeValidation {
-    None,
-}
+pub enum ScryptoCustomTypeValidation {}
 
 impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 
@@ -216,9 +214,14 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_kind: &SchemaCustomTypeKind<Self>,
         _: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError> {
-        // Even though they all map to the same thing, we keep the explicit match statement so that
-        // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
+        // NOTE:
+        // Right now SchemaCustomTypeValidation is an empty enum, so it'd be reasonable to panic,
+        // but soon this will contain custom validations (eg for Address), so the below code
+        // is in preparation for when we add these in.
+
         match type_kind {
+            // Even though they all map to the same thing, we keep the explicit match statement so that
+            // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
             ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -237,8 +240,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId
             | ScryptoCustomTypeKind::KeyValueStore { .. } => {
-                // All other types currently should return early by having a `None` validation at the layer above,
-                // so if they get here then that's an error
+                // All these custom type kinds only support `SchemaTypeValidation::None`.
+                // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
+                // - which isn't valid.
                 return Err(SchemaValidationError::TypeValidationMismatch);
             }
         }
