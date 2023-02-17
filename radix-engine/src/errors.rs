@@ -17,7 +17,6 @@ use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
 use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
-use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
 use crate::types::*;
@@ -135,9 +134,9 @@ pub enum KernelError {
     // SBOR decoding
     SborDecodeError(DecodeError),
     SborEncodeError(EncodeError),
-    ReadOwnedNodesError(ReadOwnedNodesError), // semantic error
 
     // RENode
+    ContainsDuplicatedOwns,
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     TrackError(TrackError),

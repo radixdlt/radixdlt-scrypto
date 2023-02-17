@@ -74,7 +74,7 @@ where
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.kernel_get_substate_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
+            .map(|substate_ref| substate_ref.to_scrypto_value().into())
     }
 
     fn sys_write_substate(

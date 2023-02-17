@@ -1,43 +1,45 @@
+use core::convert::Infallible;
+
 use crate::api::types::*;
 use crate::data::model::*;
 use crate::data::*;
-use radix_engine_derive::*;
-use sbor::path::{SborPath, SborPathBuf};
+use sbor::path::SborPathBuf;
 use sbor::rust::collections::HashSet;
-use sbor::rust::convert::Infallible;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use utils::ContextualDisplay;
 
-/// Represents an error when reading the owned node ids from a value.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ReadOwnedNodesError {
-    DuplicateOwn,
-}
-
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
-    raw: Vec<u8>,
+    bytes: Vec<u8>,
     value: ScryptoValue,
-
-    references: Vec<(Address, SborPath)>,
-    owned_nodes: Vec<(Own, SborPath)>,
-}
-
-impl Into<ScryptoValue> for IndexedScryptoValue {
-    fn into(self) -> ScryptoValue {
-        self.value
-    }
+    global_references: HashSet<RENodeId>,
+    owned_nodes: Vec<RENodeId>,
 }
 
 impl IndexedScryptoValue {
+    fn new(bytes: Vec<u8>, value: ScryptoValue) -> Self {
+        let mut visitor = ScryptoValueVisitor::new();
+        traverse_any(&mut SborPathBuf::new(), &value, &mut visitor).expect("Infallible");
+
+        Self {
+            bytes,
+            value,
+            global_references: visitor.global_references,
+            owned_nodes: visitor.owned_nodes,
+        }
+    }
+
     pub fn unit() -> Self {
         Self::from_typed(&())
     }
 
+    /// Converts a rust value into `IndexedScryptoValue`, assuming it follows RE semantics.
     pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
-        let bytes = scrypto_encode(value).expect("Failed to encode rust value");
-        let value = scrypto_decode(&bytes).expect("Failed to decode rust value");
+        let bytes = scrypto_encode(value).expect("Failed to encode typed value");
+        let value =
+            scrypto_decode(&bytes).expect("Failed to decode Scrypto SBOR bytes into ScryptoValue");
+
         Self::new(bytes, value)
     }
 
@@ -52,75 +54,49 @@ impl IndexedScryptoValue {
     }
 
     pub fn from_value(value: ScryptoValue) -> Self {
-        let bytes = scrypto_encode(&value).expect("Failed to decode scrypto value");
+        let bytes = scrypto_encode(&value).expect("Failed to encode ScryptoValue into bytes");
         Self::new(bytes, value)
     }
 
-    fn new(raw: Vec<u8>, value: ScryptoValue) -> Self {
-        let mut visitor = ScryptoValueVisitor::new();
-        traverse_any(&mut SborPathBuf::new(), &value, &mut visitor).expect("Infallible");
-
-        Self {
-            raw: raw,
-            value: value,
-            references: visitor.references,
-            owned_nodes: visitor.owned_nodes,
-        }
-    }
-
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
-        scrypto_decode(&self.raw)
+        scrypto_decode(&self.bytes)
     }
 
     pub fn as_slice(&self) -> &[u8] {
-        self.raw.as_slice()
+        self.bytes.as_slice()
     }
 
     pub fn as_value(&self) -> &ScryptoValue {
         &self.value
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.raw.clone()
+    pub fn global_references(&self) -> &HashSet<RENodeId> {
+        &self.global_references
     }
 
-    pub fn into_vec(self) -> Vec<u8> {
-        self.raw
+    pub fn owned_node_ids(&self) -> &Vec<RENodeId> {
+        &self.owned_nodes
     }
+}
 
-    pub fn owned_node_ids(&self) -> Result<HashSet<RENodeId>, ReadOwnedNodesError> {
-        let mut node_ids = HashSet::new();
-        for (owned_node, _) in &self.owned_nodes {
-            let newly_inserted = match owned_node {
-                Own::Bucket(bucket_id) => node_ids.insert(RENodeId::Bucket(*bucket_id)),
-                Own::Proof(proof_id) => node_ids.insert(RENodeId::Proof(*proof_id)),
-                Own::Vault(vault_id) => node_ids.insert(RENodeId::Vault(*vault_id)),
-                Own::Component(component_id) => node_ids.insert(RENodeId::Component(*component_id)),
-                Own::Account(component_id) => node_ids.insert(RENodeId::Account(*component_id)),
-                Own::KeyValueStore(kv_store_id) => {
-                    node_ids.insert(RENodeId::KeyValueStore(*kv_store_id))
-                }
-            };
-            if !newly_inserted {
-                return Err(ReadOwnedNodesError::DuplicateOwn);
-            }
-        }
-        Ok(node_ids)
+impl Into<Vec<u8>> for IndexedScryptoValue {
+    fn into(self) -> Vec<u8> {
+        self.bytes
     }
-
-    pub fn global_references(&self) -> HashSet<Address> {
-        let mut references = HashSet::new();
-        for (reference, _) in &self.references {
-            references.insert(reference.clone());
-        }
-
-        references
+}
+impl Into<ScryptoValue> for IndexedScryptoValue {
+    fn into(self) -> ScryptoValue {
+        self.value
     }
 }
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(f, &self.value, &ScryptoValueDisplayContext::no_context())
+        format_scrypto_value(
+            f,
+            self.as_value(),
+            &ScryptoValueDisplayContext::no_context(),
+        )
     }
 }
 
@@ -132,20 +108,19 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         f: &mut F,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.value, context)
+        format_scrypto_value(f, self.as_value(), context)
     }
 }
 
-/// A visitor the indexes scrypto custom values.
 pub struct ScryptoValueVisitor {
-    pub references: Vec<(Address, SborPath)>,
-    pub owned_nodes: Vec<(Own, SborPath)>,
+    pub global_references: HashSet<RENodeId>,
+    pub owned_nodes: Vec<RENodeId>,
 }
 
 impl ScryptoValueVisitor {
     pub fn new() -> Self {
         Self {
-            references: Vec::new(),
+            global_references: HashSet::new(),
             owned_nodes: Vec::new(),
         }
     }
@@ -156,15 +131,29 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
 
     fn visit(
         &mut self,
-        path: &mut SborPathBuf,
+        _path: &mut SborPathBuf,
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
             ScryptoCustomValue::Address(value) => {
-                self.references.push((value.clone(), path.clone().into()));
+                self.global_references
+                    .insert(RENodeId::Global(value.clone()));
             }
             ScryptoCustomValue::Own(value) => {
-                self.owned_nodes.push((value.clone(), path.clone().into()));
+                match value {
+                    Own::Bucket(bucket_id) => self.owned_nodes.push(RENodeId::Bucket(*bucket_id)),
+                    Own::Proof(proof_id) => self.owned_nodes.push(RENodeId::Proof(*proof_id)),
+                    Own::Vault(vault_id) => self.owned_nodes.push(RENodeId::Vault(*vault_id)),
+                    Own::Component(component_id) => {
+                        self.owned_nodes.push(RENodeId::Component(*component_id))
+                    }
+                    Own::Account(component_id) => {
+                        self.owned_nodes.push(RENodeId::Account(*component_id))
+                    }
+                    Own::KeyValueStore(kv_store_id) => {
+                        self.owned_nodes.push(RENodeId::KeyValueStore(*kv_store_id))
+                    }
+                };
             }
 
             ScryptoCustomValue::Decimal(_)
@@ -174,21 +163,5 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::rust::vec;
-    use super::*;
-
-    #[test]
-    fn should_reject_duplicate_owned_buckets() {
-        let value =
-            IndexedScryptoValue::from_typed(&vec![Own::Bucket([0u8; 36]), Own::Bucket([0u8; 36])]);
-        assert_eq!(
-            value.owned_node_ids(),
-            Err(ReadOwnedNodesError::DuplicateOwn)
-        );
     }
 }

@@ -37,18 +37,11 @@ impl ExecutableInvocation for ScryptoInvocation {
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut node_refs_to_copy = HashSet::new();
         let args = IndexedScryptoValue::from_slice(&self.args)
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let nodes_to_move = args
-            .owned_node_ids()
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
-            .into_iter()
-            .collect();
-        for global_address in args.global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
-        }
+        let nodes_to_move = args.owned_node_ids().clone();
+        let mut node_refs_to_copy = args.global_references().clone();
 
         let scrypto_fn_ident = ScryptoFnIdentifier::new(
             self.package_address,
@@ -371,16 +364,8 @@ impl Executor for ScryptoExecutor {
         };
 
         let update = CallFrameUpdate {
-            node_refs_to_copy: output
-                .global_references()
-                .into_iter()
-                .map(|a| RENodeId::Global(a))
-                .collect(),
-            nodes_to_move: output
-                .owned_node_ids()
-                .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
-                .into_iter()
-                .collect(),
+            node_refs_to_copy: output.global_references().clone(),
+            nodes_to_move: output.owned_node_ids().clone(),
         };
 
         Ok((output.into(), update))

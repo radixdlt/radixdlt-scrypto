@@ -17,28 +17,28 @@ impl KeyValueStoreEntrySubstate {
         matches!(self, Self::None)
     }
 
-    pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
-        let mut owned_node_ids = HashSet::new();
+    pub fn owned_node_ids(&self) -> Vec<RENodeId> {
+        let mut owned_node_ids = Vec::new();
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let k = IndexedScryptoValue::from_value(k.clone());
-                owned_node_ids.extend(k.owned_node_ids().unwrap());
+                owned_node_ids.extend(k.owned_node_ids());
                 let v = IndexedScryptoValue::from_value(v.clone());
-                owned_node_ids.extend(v.owned_node_ids().unwrap());
+                owned_node_ids.extend(v.owned_node_ids());
             }
             KeyValueStoreEntrySubstate::None => {}
         }
         owned_node_ids
     }
 
-    pub fn global_references(&self) -> HashSet<Address> {
+    pub fn global_references(&self) -> HashSet<RENodeId> {
         let mut global_references = HashSet::new();
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let k = IndexedScryptoValue::from_value(k.clone());
-                global_references.extend(k.global_references());
+                global_references.extend(k.global_references().clone());
                 let v = IndexedScryptoValue::from_value(v.clone());
-                global_references.extend(v.global_references());
+                global_references.extend(v.global_references().clone());
             }
             KeyValueStoreEntrySubstate::None => {}
         }

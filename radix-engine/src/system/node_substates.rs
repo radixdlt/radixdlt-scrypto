@@ -1151,37 +1151,35 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn references_and_owned_nodes(&self) -> (HashSet<Address>, HashSet<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
-                let mut owned_nodes = HashSet::new();
+                let mut owned_nodes = Vec::new();
                 match global {
                     GlobalSubstate::Resource(resource_manager_id) => {
-                        owned_nodes.insert(RENodeId::ResourceManager(*resource_manager_id))
+                        owned_nodes.push(RENodeId::ResourceManager(*resource_manager_id))
                     }
                     GlobalSubstate::Component(component_id) => {
-                        owned_nodes.insert(RENodeId::Component(*component_id))
+                        owned_nodes.push(RENodeId::Component(*component_id))
                     }
                     GlobalSubstate::Identity(identity_id) => {
-                        owned_nodes.insert(RENodeId::Identity(*identity_id))
+                        owned_nodes.push(RENodeId::Identity(*identity_id))
                     }
                     GlobalSubstate::EpochManager(epoch_manager_id) => {
-                        owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
+                        owned_nodes.push(RENodeId::EpochManager(*epoch_manager_id))
                     }
-                    GlobalSubstate::Clock(clock_id) => {
-                        owned_nodes.insert(RENodeId::Clock(*clock_id))
-                    }
+                    GlobalSubstate::Clock(clock_id) => owned_nodes.push(RENodeId::Clock(*clock_id)),
                     GlobalSubstate::Package(package_id) => {
-                        owned_nodes.insert(RENodeId::Package(*package_id))
+                        owned_nodes.push(RENodeId::Package(*package_id))
                     }
                     GlobalSubstate::Validator(validator_id) => {
-                        owned_nodes.insert(RENodeId::Validator(*validator_id))
+                        owned_nodes.push(RENodeId::Validator(*validator_id))
                     }
                     GlobalSubstate::Account(account_id) => {
-                        owned_nodes.insert(RENodeId::Account(*account_id))
+                        owned_nodes.push(RENodeId::Account(*account_id))
                     }
                     GlobalSubstate::AccessController(access_controller_id) => {
-                        owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
+                        owned_nodes.push(RENodeId::AccessController(*access_controller_id))
                     }
                 };
 
@@ -1197,78 +1195,84 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
-                references.insert(Address::Resource(vault.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    vault.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::Proof(proof) => {
                 let mut references = HashSet::new();
-                references.insert(Address::Resource(proof.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    proof.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::Bucket(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(Address::Resource(bucket.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    bucket.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(Address::Component(*component_ref));
+                    references.insert(RENodeId::Global(Address::Component(*component_ref)));
                 }
                 for resource_ref in &substate.dependent_resources {
-                    references.insert(Address::Resource(*resource_ref));
+                    references.insert(RENodeId::Global(Address::Resource(*resource_ref)));
                 }
-                (references, HashSet::new())
+                (references, Vec::new())
             }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(Address::Package(substate.package_address));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Package(substate.package_address)));
+                (references, Vec::new())
             }
             SubstateRef::ResourceManager(substate) => {
-                let mut owned_nodes = HashSet::new();
+                let mut owned_nodes = Vec::new();
                 if let Some(nf_store_id) = substate.nf_store_id {
-                    owned_nodes.insert(RENodeId::NonFungibleStore(nf_store_id));
+                    owned_nodes.push(RENodeId::NonFungibleStore(nf_store_id));
                 }
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
-                let mut owned_nodes = HashSet::new();
-                references.insert(Address::Component(substate.manager));
-                references.insert(Address::Component(substate.address));
-                references.insert(Address::Resource(substate.unstake_nft));
-                references.insert(Address::Resource(substate.liquidity_token));
-                owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
-                owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
+                let mut owned_nodes = Vec::new();
+                references.insert(RENodeId::Global(Address::Component(substate.manager)));
+                references.insert(RENodeId::Global(Address::Component(substate.address)));
+                references.insert(RENodeId::Global(Address::Resource(substate.unstake_nft)));
+                references.insert(RENodeId::Global(Address::Resource(
+                    substate.liquidity_token,
+                )));
+                owned_nodes.push(RENodeId::Vault(substate.stake_xrd_vault_id));
+                owned_nodes.push(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
             SubstateRef::AccessRulesChain(substate) => {
                 let indexed = IndexedScryptoValue::from_typed(&substate);
-                (indexed.global_references(), HashSet::new())
+                (indexed.global_references().clone(), Vec::new())
             }
             SubstateRef::AccessController(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.controlled_asset));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.controlled_asset));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (
-                    scrypto_value.global_references(),
-                    scrypto_value
-                        .owned_node_ids()
-                        .expect("No duplicates expected"),
+                    scrypto_value.global_references().clone(),
+                    scrypto_value.owned_node_ids().clone(),
                 )
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1281,23 +1285,21 @@ impl<'a> SubstateRef<'a> {
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
-                        scrypto_value.global_references(),
-                        scrypto_value
-                            .owned_node_ids()
-                            .expect("No duplicates expected"),
+                        scrypto_value.global_references().clone(),
+                        scrypto_value.owned_node_ids().clone(),
                     )
                 } else {
-                    (HashSet::new(), HashSet::new())
+                    (HashSet::new(), Vec::new())
                 }
             }
             SubstateRef::Account(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::KeyValueStore(
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::KeyValueStore(
                     substate.vaults.key_value_store_id(),
                 ));
                 (HashSet::new(), owned_nodes)
             }
-            _ => (HashSet::new(), HashSet::new()),
+            _ => (HashSet::new(), Vec::new()),
         }
     }
 }

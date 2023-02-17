@@ -803,10 +803,7 @@ impl<'blob> TransactionProcessor<'blob> {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for owned_node in &value
-            .owned_node_ids()
-            .expect("Duplication checked by engine")
-        {
+        for owned_node in value.owned_node_ids() {
             match owned_node {
                 RENodeId::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
