@@ -20,7 +20,6 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::data::model::Address;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -125,7 +124,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
@@ -143,7 +142,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
@@ -161,7 +160,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
@@ -184,7 +183,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::AssertWorktopContains { resource_address } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\");",
                 resource_address.display(context.bech32_encoder)
             )?;
         }
@@ -194,7 +193,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder)
             )?;
@@ -205,7 +204,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))
@@ -246,7 +245,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE\n    Address(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
@@ -263,7 +262,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
@@ -281,7 +280,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
                 .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
@@ -394,7 +393,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 _ => {
                     write!(
                         f,
-                        "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
+                        "CALL_FUNCTION\n    Address(\"{}\")\n    \"{}\"\n    \"{}\"",
                         package_address.display(context.bech32_encoder),
                         blueprint_name,
                         function_name,
@@ -402,7 +401,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
             }
 
-            format_args(f, context, args)?;
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
         Instruction::CallMethod {
@@ -416,14 +415,14 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
                 _ => {
                     f.write_str(&format!(
-                        "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
+                        "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
                         component_address.display(context.bech32_encoder),
                         method_name
                     ))?;
                 }
             }
 
-            format_args(f, context, args)?;
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
         Instruction::PublishPackage {
@@ -475,7 +474,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             value,
         } => {
             f.write_str("SET_METADATA")?;
-            format_address(f, context, entity_address)?;
+            format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, value)?;
             f.write_str(";")?;
@@ -515,7 +514,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             rule,
         } => {
             f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_address(f, context, entity_address)?;
+            format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, index)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, rule)?;
@@ -573,40 +572,7 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     Ok(())
 }
 
-pub fn format_address<F: fmt::Write>(
-    f: &mut F,
-    context: &mut DecompilationContext,
-    address: &ManifestAddress,
-) -> Result<(), DecompileError> {
-    f.write_char(' ')?;
-    match to_address(address.clone()) {
-        Address::Component(address) => {
-            write!(
-                f,
-                "ComponentAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-        Address::Package(address) => {
-            write!(
-                f,
-                "PackageAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-        Address::Resource(address) => {
-            write!(
-                f,
-                "ResourceAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn format_args<F: fmt::Write>(
+pub fn format_encoded_args<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
     args: &Vec<u8>,
@@ -615,6 +581,7 @@ pub fn format_args<F: fmt::Write>(
         manifest_decode(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let Value::Tuple { fields } = value {
         for field in fields {
+            f.write_str("\n    ")?;
             format_manifest_value(f, &field, &context.for_value_display())?;
         }
     } else {

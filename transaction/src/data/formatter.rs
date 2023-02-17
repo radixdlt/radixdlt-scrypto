@@ -291,23 +291,21 @@ pub fn format_custom_value<F: fmt::Write>(
     context: &ManifestValueDisplayContext,
 ) -> fmt::Result {
     match value {
-        ManifestCustomValue::Address(value) => match to_address(value.clone()) {
-            Address::Package(a) => {
-                f.write_str("PackageAddress(\"")?;
-                a.format(f, context.bech32_encoder).unwrap();
-                f.write_str("\")")?;
+        ManifestCustomValue::Address(value) => {
+            f.write_str("Address(\"")?;
+            match to_address(value.clone()) {
+                Address::Package(a) => {
+                    a.format(f, context.bech32_encoder).unwrap();
+                }
+                Address::Component(a) => {
+                    a.format(f, context.bech32_encoder).unwrap();
+                }
+                Address::Resource(a) => {
+                    a.format(f, context.bech32_encoder).unwrap();
+                }
             }
-            Address::Component(a) => {
-                f.write_str("ComponentAddress(\"")?;
-                a.format(f, context.bech32_encoder).unwrap();
-                f.write_str("\")")?;
-            }
-            Address::Resource(a) => {
-                f.write_str("ResourceAddress(\"")?;
-                a.format(f, context.bech32_encoder).unwrap();
-                f.write_str("\")")?;
-            }
-        },
+            f.write_str("\")")?;
+        }
         ManifestCustomValue::Bucket(value) => {
             if let Some(name) = context.get_bucket_name(&value) {
                 write!(f, "Bucket(\"{}\")", name)?;
