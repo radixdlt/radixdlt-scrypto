@@ -1,4 +1,4 @@
-use super::utils::{to_address, to_decimal, to_non_fungible_local_id, to_precise_decimal};
+use crate::data::{to_address, to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use radix_engine_interface::{
     address::Bech32Encoder,
     blueprints::resource::{NonFungibleGlobalId, ResourceAddress},

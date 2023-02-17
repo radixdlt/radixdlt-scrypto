@@ -198,7 +198,7 @@ impl NotarizedTransactionValidator {
         manifest: &TransactionManifest,
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
-        let mut id_validator = ManifestIdValidator::new();
+        let mut id_validator = ManifestValidator::new();
         for inst in &manifest.instructions {
             match inst {
                 Instruction::TakeFromWorktop { .. } => {
@@ -384,7 +384,7 @@ impl NotarizedTransactionValidator {
 
     pub fn validate_call_args(
         args: &[u8],
-        id_validator: &mut ManifestIdValidator,
+        id_validator: &mut ManifestValidator,
     ) -> Result<(), CallDataValidationError> {
         let value: ManifestValue =
             manifest_decode(args).map_err(CallDataValidationError::DecodeError)?;

@@ -1,3 +1,4 @@
+use crate::data::*;
 use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
@@ -39,11 +40,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use transaction_data::model::*;
 use transaction_data::*;
-
-use super::utils::from_address;
-use super::utils::from_decimal;
-use super::utils::from_non_fungible_local_id;
-use super::utils::from_precise_decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -161,7 +157,7 @@ pub fn generate_manifest(
     bech32_decoder: &Bech32Decoder,
     blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
-    let mut id_validator = ManifestIdValidator::new();
+    let mut id_validator = ManifestValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
 
@@ -183,7 +179,7 @@ pub fn generate_manifest(
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
-    id_validator: &mut ManifestIdValidator,
+    id_validator: &mut ManifestValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
@@ -1398,7 +1394,7 @@ mod tests {
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_validator = ManifestIdValidator::new();
+            let mut id_validator = ManifestValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(

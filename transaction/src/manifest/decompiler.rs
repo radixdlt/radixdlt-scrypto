@@ -1,3 +1,4 @@
+use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
@@ -30,11 +31,6 @@ use transaction_data::ManifestCustomValue;
 use transaction_data::ManifestEncode;
 use transaction_data::ManifestValue;
 use utils::ContextualDisplay;
-
-use super::decompiler_value::format_manifest_value;
-use super::decompiler_value::ManifestValueDisplayContext;
-use super::utils::from_non_fungible_local_id;
-use super::utils::to_address;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {

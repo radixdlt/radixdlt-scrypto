@@ -1,7 +1,9 @@
+use crate::data::transform;
+use crate::data::TransformHandler;
 use crate::errors::*;
 use crate::validation::*;
+use radix_engine_interface::data::model::Own;
 use sbor::rust::collections::*;
-use sbor::SborPath;
 use transaction_data::model::ManifestBucket;
 use transaction_data::model::ManifestProof;
 use transaction_data::ManifestValue;
@@ -16,13 +18,13 @@ pub enum ProofKind {
     AuthZoneProof,
 }
 
-pub struct ManifestIdValidator {
+pub struct ManifestValidator {
     id_allocator: ManifestIdAllocator,
     bucket_ids: HashMap<ManifestBucket, usize>,
     proof_ids: HashMap<ManifestProof, ProofKind>,
 }
 
-impl ManifestIdValidator {
+impl ManifestValidator {
     pub fn new() -> Self {
         Self {
             id_allocator: ManifestIdAllocator::new(),
@@ -129,12 +131,34 @@ impl ManifestIdValidator {
         &mut self,
         args: &ManifestValue,
     ) -> Result<(), ManifestIdValidationError> {
-        // for (bucket, _) in buckets {
-        //     self.drop_bucket(bucket)?;
-        // }
-        // for (proof, _) in proofs {
-        //     self.drop_proof(proof)?;
-        // }
-        Ok(())
+        transform(args.clone(), self).map(|_| ())
+    }
+}
+
+impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
+    fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, ManifestIdValidationError> {
+        self.drop_bucket(&b)?;
+        Ok(Own::Bucket([0u8; 36]))
+    }
+
+    fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, ManifestIdValidationError> {
+        self.drop_proof(&p)?;
+        Ok(Own::Proof([0u8; 36]))
+    }
+
+    // TODO: validate expression and blob as well
+
+    fn replace_expression(
+        &mut self,
+        _e: transaction_data::model::ManifestExpression,
+    ) -> Result<Vec<Own>, ManifestIdValidationError> {
+        Ok(Vec::new())
+    }
+
+    fn replace_blob(
+        &mut self,
+        _b: transaction_data::model::ManifestBlobRef,
+    ) -> Result<Vec<u8>, ManifestIdValidationError> {
+        Ok(Vec::new())
     }
 }
