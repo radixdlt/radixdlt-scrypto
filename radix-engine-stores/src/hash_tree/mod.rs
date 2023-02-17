@@ -9,6 +9,7 @@ use tree_store::{
     Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore,
 };
 use types::{NibblePath, NodeKey, Version};
+
 pub mod hash_tree_facade;
 pub mod tree_store;
 
@@ -58,7 +59,7 @@ pub type SubstateHashChange = IdChange<SubstateId, Hash>;
 /// # Panics
 /// Panics if a root node for `current_version` does not exist. The caller should use `None` to
 /// denote an empty, initial state of the tree (i.e. inserting at version 1).
-pub fn put_at_next_version<S: TreeStore>(
+pub fn put_at_next_version<S: TreeStore<ReNodeModulePayload> + TreeStore<SubstateOffset>>(
     store: &mut S,
     current_version: Option<Version>,
     changes: Vec<SubstateHashChange>,
@@ -122,14 +123,14 @@ struct TreeRoot<P> {
     node: TreeNode<P>,
 }
 
-fn put_substate_changes<S: TreeStore>(
+fn put_substate_changes<S: TreeStore<SubstateOffset> + TreeStore<ReNodeModulePayload>>(
     store: &mut S,
     current_version: Option<Version>,
     re_node_module: &ReNodeModule,
     changes: Vec<IdChange<SubstateOffset, Hash>>,
 ) -> Option<TreeRoot<SubstateOffset>> {
-    let leaf_entry = get_re_node_module_leaf_entry(store, current_version, re_node_module);
-    let (subtree_last_update_state_version, subtree_root) = break_tuple(leaf_entry);
+    let (subtree_last_update_state_version, subtree_root) =
+        get_re_node_module_leaf_entry(store, current_version, re_node_module);
     let mut subtree_store = NestedTreeStore::new(store, re_node_module, subtree_root);
     let substate_root_hash = put_changes(
         &mut subtree_store,
@@ -140,13 +141,7 @@ fn put_substate_changes<S: TreeStore>(
             .map(|change| to_substate_change(change))
             .collect(),
     );
-    let substate_root_node =
-        subtree_store
-            .extract_new_root()
-            .map_payload(|payload| match payload {
-                Payload::ReNodeModule(_) => panic!("unexpected payload in substate layer"),
-                Payload::Substate(substate_offset) => substate_offset,
-            });
+    let substate_root_node = subtree_store.extract_new_root();
     if matches!(substate_root_node, TreeNode::Null) {
         None
     } else {
@@ -157,7 +152,7 @@ fn put_substate_changes<S: TreeStore>(
     }
 }
 
-fn put_re_node_changes<S: TreeStore>(
+fn put_re_node_changes<S: TreeStore<ReNodeModulePayload>>(
     store: &mut S,
     current_version: Option<Version>,
     changes: Vec<IdChange<ReNodeModule, TreeRoot<SubstateOffset>>>,
@@ -173,37 +168,36 @@ fn put_re_node_changes<S: TreeStore>(
     )
 }
 
-fn get_re_node_module_leaf_entry<S: ReadableTreeStore>(
+fn get_re_node_module_leaf_entry<S: ReadableTreeStore<ReNodeModulePayload>>(
     store: &S,
     current_version: Option<Version>,
     re_node_module: &ReNodeModule,
-) -> Option<(Version, TreeNode<SubstateOffset>)> {
-    current_version
-        .and_then(|version| {
-            JellyfishMerkleTree::new(store)
-                .get_with_proof(hash(scrypto_encode(re_node_module).unwrap()), version)
-                .unwrap()
-                .0
-        })
-        .map(|(_, (payload, version))| {
-            let substates_root = match payload {
-                Payload::ReNodeModule(payload) => payload.substates_root,
-                Payload::Substate(_) => panic!("unexpected payload in RE node module layer"),
-            };
-            (version, substates_root)
-        })
+) -> (Option<Version>, Option<TreeNode<SubstateOffset>>) {
+    let Some(current_version) = current_version else {
+        return (None, None);
+    };
+    let key = hash(scrypto_encode(re_node_module).unwrap());
+    let (node_option, _proof) = JellyfishMerkleTree::new(store)
+        .get_with_proof(key, current_version)
+        .unwrap();
+
+    let Some((_, (payload, version))) = node_option else {
+        return (None, None);
+    };
+
+    (Some(version), Some(payload.substates_root))
 }
 
-struct LeafChange {
+struct LeafChange<P> {
     key_hash: Hash,
-    new_payload: Option<(Hash, Payload)>,
+    new_payload: Option<(Hash, P)>,
 }
 
-fn put_changes<S: TreeStore>(
+fn put_changes<S: TreeStore<P>, P: Payload>(
     store: &mut S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<LeafChange>,
+    changes: Vec<LeafChange<P>>,
 ) -> Hash {
     let (root_hash, update_result) = JellyfishMerkleTree::new(store)
         .batch_put_value_set(
@@ -226,44 +220,37 @@ fn put_changes<S: TreeStore>(
     root_hash
 }
 
-fn to_re_node_change(change: IdChange<ReNodeModule, TreeRoot<SubstateOffset>>) -> LeafChange {
+fn to_re_node_change(
+    change: IdChange<ReNodeModule, TreeRoot<SubstateOffset>>,
+) -> LeafChange<ReNodeModulePayload> {
     let re_node_module = change.id;
     LeafChange {
         key_hash: hash(scrypto_encode(&re_node_module).unwrap()),
         new_payload: change.changed.map(|root| {
             (
                 root.hash,
-                Payload::ReNodeModule(ReNodeModulePayload {
+                ReNodeModulePayload {
                     re_node_id: re_node_module.re_node_id,
                     node_mode_id: re_node_module.node_module_id,
                     substates_root: root.node,
-                }),
+                },
             )
         }),
     }
 }
 
-fn to_substate_change(change: IdChange<SubstateOffset, Hash>) -> LeafChange {
+fn to_substate_change(change: IdChange<SubstateOffset, Hash>) -> LeafChange<SubstateOffset> {
     LeafChange {
         key_hash: hash(scrypto_encode(&change.id).unwrap()),
-        new_payload: change
-            .changed
-            .map(|value_hash| (value_hash, Payload::Substate(change.id))),
-    }
-}
-
-fn break_tuple<A, B>(tuple: Option<(A, B)>) -> (Option<A>, Option<B>) {
-    match tuple {
-        Some((a, b)) => (Some(a), Some(b)),
-        None => (None, None),
+        new_payload: change.changed.map(|value_hash| (value_hash, change.id)),
     }
 }
 
 struct NestedTreeStore<'s, S> {
     underlying: &'s mut S,
     parent_path: NibblePath,
-    current_root: Option<TreeNode<Payload>>,
-    new_root: Option<TreeNode<Payload>>,
+    current_root: Option<TreeNode<SubstateOffset>>,
+    new_root: Option<TreeNode<SubstateOffset>>,
 }
 
 impl<'s, S> NestedTreeStore<'s, S> {
@@ -277,14 +264,12 @@ impl<'s, S> NestedTreeStore<'s, S> {
             parent_path: NibblePath::new_even(
                 hash(scrypto_encode(re_node_module).unwrap()).to_vec(),
             ),
-            current_root: root.map(|tree_node| {
-                tree_node.map_payload(|substate_offset| Payload::Substate(substate_offset))
-            }),
+            current_root: root,
             new_root: None,
         }
     }
 
-    pub fn extract_new_root(&mut self) -> TreeNode<Payload> {
+    pub fn extract_new_root(&mut self) -> TreeNode<SubstateOffset> {
         self.new_root
             .take()
             .expect("no new root stored into the nested tree")
@@ -302,8 +287,10 @@ impl<'s, S> NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for NestedTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Payload>> {
+impl<'s, S: ReadableTreeStore<SubstateOffset>> ReadableTreeStore<SubstateOffset>
+    for NestedTreeStore<'s, S>
+{
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
         if key.nibble_path().is_empty() {
             self.current_root.clone()
         } else {
@@ -312,8 +299,10 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: WriteableTreeStore> WriteableTreeStore for NestedTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Payload>) {
+impl<'s, S: WriteableTreeStore<SubstateOffset>> WriteableTreeStore<SubstateOffset>
+    for NestedTreeStore<'s, S>
+{
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
         if key.nibble_path().is_empty() {
             self.new_root = Some(node);
         } else {

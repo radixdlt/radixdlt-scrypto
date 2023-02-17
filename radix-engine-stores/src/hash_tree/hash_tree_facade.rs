@@ -114,8 +114,8 @@ impl<P: Clone> LeafNode<P> {
     }
 }
 
-impl<R: ReadableTreeStore> TreeReader<Payload> for R {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<Payload>>, StorageError> {
+impl<R: ReadableTreeStore<P>, P: Payload> TreeReader<P> for R {
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<P>>, StorageError> {
         Ok(self
             .get_node(node_key)
             .map(|tree_node| Node::from(node_key, &tree_node)))

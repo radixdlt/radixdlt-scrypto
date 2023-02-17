@@ -1,4 +1,4 @@
-use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
@@ -66,25 +66,35 @@ pub struct ReNodeModulePayload {
     pub substates_root: TreeNode<SubstateOffset>,
 }
 
-/// "Polymorphic" payload carried by a physical leaf.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
-pub enum Payload {
-    /// Payload specific to the ReNode+Module layer.
-    ReNodeModule(ReNodeModulePayload),
-    /// Payload specific to the Substate layer.
-    Substate(SubstateOffset),
+/// A payload carried by a physical leaf.
+/// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
+/// The sub-trees carry  a `SubstateOffset` payload.
+pub trait Payload:
+    Clone
+    + PartialEq
+    + Eq
+    + sbor::rust::hash::Hash
+    + sbor::rust::fmt::Debug
+    + ScryptoCategorize
+    + ScryptoEncode
+    + ScryptoDecode
+{
 }
 
+impl Payload for ReNodeModulePayload {}
+
+impl Payload for SubstateOffset {}
+
 /// The "read" part of a physical tree node storage SPI.
-pub trait ReadableTreeStore {
+pub trait ReadableTreeStore<P: Payload> {
     /// Gets node by key, if it exists.
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Payload>>;
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
-pub trait WriteableTreeStore {
+pub trait WriteableTreeStore<P: Payload> {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Payload>);
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>);
 
     /// Marks the given node for a (potential) future removal by an arbitrary
     /// external pruning process.
@@ -92,13 +102,14 @@ pub trait WriteableTreeStore {
 }
 
 /// A complete tree node storage SPI.
-pub trait TreeStore: ReadableTreeStore + WriteableTreeStore {}
-impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
+pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
+impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemoryTreeStore {
-    pub memory: HashMap<NodeKey, TreeNode<Payload>>,
+    pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateOffset>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -106,21 +117,38 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            memory: HashMap::new(),
+            root_tree_nodes: HashMap::new(),
+            sub_tree_nodes: HashMap::new(),
             stale_key_buffer: Vec::new(),
         }
     }
 }
 
-impl ReadableTreeStore for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Payload>> {
-        self.memory.get(key).cloned()
+impl ReadableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+        self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Payload>) {
-        self.memory.insert(key, node);
+impl WriteableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
+        self.sub_tree_nodes.insert(key, node);
+    }
+
+    fn record_stale_node(&mut self, key: NodeKey) {
+        self.stale_key_buffer.push(key);
+    }
+}
+
+impl ReadableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+        self.root_tree_nodes.get(key).cloned()
+    }
+}
+
+impl WriteableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+        self.root_tree_nodes.insert(key, node);
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
@@ -145,16 +173,16 @@ impl SerializedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore for SerializedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Payload>> {
+impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.memory
             .get(&encode_key(key))
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 }
 
-impl WriteableTreeStore for SerializedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Payload>) {
+impl<P: Payload> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
         self.memory
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
