@@ -77,6 +77,15 @@ impl IndexedScryptoValue {
     pub fn owned_node_ids(&self) -> &Vec<RENodeId> {
         &self.owned_nodes
     }
+
+    pub fn unpack(self) -> (Vec<u8>, ScryptoValue, Vec<RENodeId>, HashSet<RENodeId>) {
+        (
+            self.bytes,
+            self.value,
+            self.owned_nodes,
+            self.global_references,
+        )
+    }
 }
 
 impl Into<Vec<u8>> for IndexedScryptoValue {

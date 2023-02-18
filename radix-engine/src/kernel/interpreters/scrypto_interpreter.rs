@@ -37,11 +37,10 @@ impl ExecutableInvocation for ScryptoInvocation {
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let args = IndexedScryptoValue::from_slice(&self.args)
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let nodes_to_move = args.owned_node_ids().clone();
-        let mut node_refs_to_copy = args.global_references().clone();
+        let (_, value, nodes_to_move, mut node_refs_to_copy) =
+            IndexedScryptoValue::from_slice(&self.args)
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
+                .unpack();
 
         let scrypto_fn_ident = ScryptoFnIdentifier::new(
             self.package_address,
@@ -181,7 +180,7 @@ impl ExecutableInvocation for ScryptoInvocation {
                     ));
                 }
 
-                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
+                if !match_schema_with_value(&fn_abi.input, &value) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoInvocation(
                             self.package_address,
@@ -203,7 +202,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             package_address: self.package_address,
             export_name,
             component_id: receiver,
-            args: args.into(),
+            args: value,
         };
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -363,12 +362,13 @@ impl Executor for ScryptoExecutor {
             }
         };
 
+        let (_, value, nodes_to_move, refs_to_copy) = output.unpack();
         let update = CallFrameUpdate {
-            node_refs_to_copy: output.global_references().clone(),
-            nodes_to_move: output.owned_node_ids().clone(),
+            node_refs_to_copy: refs_to_copy,
+            nodes_to_move,
         };
 
-        Ok((output.into(), update))
+        Ok((value, update))
     }
 }
 

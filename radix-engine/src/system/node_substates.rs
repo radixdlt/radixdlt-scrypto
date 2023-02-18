@@ -1250,8 +1250,8 @@ impl<'a> SubstateRef<'a> {
                 (references, owned_nodes)
             }
             SubstateRef::AccessRulesChain(substate) => {
-                let indexed = IndexedScryptoValue::from_typed(&substate);
-                (indexed.global_references().clone(), Vec::new())
+                let (_, _, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
             }
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
@@ -1264,11 +1264,10 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (
-                    scrypto_value.global_references().clone(),
-                    scrypto_value.owned_node_ids().clone(),
-                )
+                let (_, _, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
+                    .unwrap()
+                    .unpack();
+                (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
@@ -1284,10 +1283,8 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (
-                        scrypto_value.global_references().clone(),
-                        scrypto_value.owned_node_ids().clone(),
-                    )
+                    let (_, _, owns, refs) = scrypto_value.unpack();
+                    (refs, owns)
                 } else {
                     (HashSet::new(), Vec::new())
                 }

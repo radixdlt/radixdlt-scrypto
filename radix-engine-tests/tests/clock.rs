@@ -19,7 +19,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.raw()),
+        args: manifest_args!(CLOCK.to_array_without_entity_id()),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -48,7 +48,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.raw()),
+        args: manifest_args!(CLOCK.to_array_without_entity_id()),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
