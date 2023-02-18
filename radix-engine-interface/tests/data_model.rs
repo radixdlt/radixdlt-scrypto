@@ -17,23 +17,23 @@ fn test_encode_deep_scrypto_values() {
     // This test tests that the ScryptoValue Encode implementation correctly increments the depth
 
     // Test deep scrypto value vecs
-    let valid_value = build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH);
+    let valid_value = build_value_of_vec_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH);
     assert!(scrypto_encode(&valid_value).is_ok());
 
-    let invalid_value = build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1);
+    let invalid_value = build_value_of_vec_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH + 1);
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test deep scrypto value tuples
-    let valid_value = build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH);
+    let valid_value = build_value_of_tuple_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH);
     assert!(scrypto_encode(&valid_value).is_ok());
 
-    let invalid_value = build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1);
+    let invalid_value = build_value_of_tuple_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH + 1);
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 }
 
@@ -42,25 +42,28 @@ fn test_decode_deep_scrypto_values() {
     // This test tests that the ScryptoValue Decode implementation correctly increments the depth
 
     // Test deep scrypto value vecs
-    let valid_payload = encode_ignore_depth(&build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH));
+    let valid_payload =
+        encode_ignore_depth(&build_value_of_vec_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH));
     assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
 
     let invalid_payload =
-        encode_ignore_depth(&build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1));
+        encode_ignore_depth(&build_value_of_vec_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH + 1));
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test deep scrypto value tuples
-    let valid_payload = encode_ignore_depth(&build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH));
+    let valid_payload =
+        encode_ignore_depth(&build_value_of_tuple_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH));
     assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
 
-    let invalid_payload =
-        encode_ignore_depth(&build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1));
+    let invalid_payload = encode_ignore_depth(&build_value_of_tuple_of_depth(
+        SCRYPTO_SBOR_V1_MAX_DEPTH + 1,
+    ));
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 }
 
@@ -79,54 +82,54 @@ fn test_encode_deep_typed_codecs() {
     let invalid_value = vec![wrap_in_64_collections(Option::<String>::None)];
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     let invalid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
     assert_eq!(
         scrypto_encode(&invalid_value_as_scrypto_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test deep nested types
-    let valid_value = build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH);
+    let valid_value = build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH);
     assert!(scrypto_encode(&valid_value).is_ok());
     let valid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&valid_value));
     assert!(scrypto_encode(&valid_value_as_scrypto_value).is_ok());
 
-    let invalid_value = vec![build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH)];
+    let invalid_value = vec![build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH)];
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     let invalid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
     assert_eq!(
         scrypto_encode(&invalid_value_as_scrypto_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test hashmaps
     let valid_value = wrap_in_hashmap(wrap_in_hashmap(build_nested_struct_of_depth(
-        MAX_SCRYPTO_SBOR_DEPTH - 2,
+        SCRYPTO_SBOR_V1_MAX_DEPTH - 2,
     )));
     assert!(scrypto_encode(&valid_value).is_ok());
     let valid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&valid_value));
     assert!(scrypto_encode(&valid_value_as_scrypto_value).is_ok());
     let invalid_value = wrap_in_hashmap(wrap_in_hashmap(wrap_in_hashmap(
-        build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2),
+        build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH - 2),
     )));
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     let invalid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
     assert_eq!(
         scrypto_encode(&invalid_value_as_scrypto_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test hashsets + tuples
@@ -141,13 +144,13 @@ fn test_encode_deep_typed_codecs() {
     )))];
     assert_eq!(
         scrypto_encode(&invalid_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     let invalid_value_as_scrypto_value =
         decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
     assert_eq!(
         scrypto_encode(&invalid_value_as_scrypto_value),
-        Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(EncodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 }
 
@@ -165,45 +168,47 @@ fn test_decode_deep_typed_codecs() {
         encode_ignore_depth(&vec![wrap_in_64_collections(Option::<String>::None)]); // 65 deep
     assert_eq!(
         scrypto_decode::<Vec<SixtyFourDeepCollection<String>>>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test deep nested types
-    let valid_payload = encode_ignore_depth(&build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH));
+    let valid_payload =
+        encode_ignore_depth(&build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH));
     assert!(scrypto_decode::<NestedType>(&valid_payload).is_ok());
     assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
 
-    let invalid_payload =
-        encode_ignore_depth(&vec![build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH)]); // 65 deep
+    let invalid_payload = encode_ignore_depth(&vec![build_nested_struct_of_depth(
+        SCRYPTO_SBOR_V1_MAX_DEPTH,
+    )]); // 65 deep
     assert!(matches!(
         scrypto_decode::<Vec<NestedType>>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     ));
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test hashmaps
     let valid_payload = encode_ignore_depth(&wrap_in_hashmap(wrap_in_hashmap(
-        build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2),
+        build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH - 2),
     )));
     assert!(scrypto_decode::<HashMap<u8, HashMap<u8, NestedType>>>(&valid_payload).is_ok());
     assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
     let invalid_payload = encode_ignore_depth(&wrap_in_hashmap(wrap_in_hashmap(wrap_in_hashmap(
-        build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2),
+        build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH - 2),
     ))));
     assert!(matches!(
         scrypto_decode::<HashMap<u8, HashMap<u8, HashMap<u8, NestedType>>>>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     ));
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 
     // Test hashsets + tuples
@@ -218,11 +223,11 @@ fn test_decode_deep_typed_codecs() {
     )))]);
     assert_eq!(
         scrypto_decode::<Vec<SixtyOneDeepVec<(HashSet<String>,)>>>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
-        Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
+        Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
     );
 }
 

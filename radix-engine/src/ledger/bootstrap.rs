@@ -57,7 +57,7 @@ pub fn create_genesis(
     // Resource Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
-        let package_address = RESOURCE_MANAGER_PACKAGE.raw();
+        let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -82,7 +82,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
-        let resource_address = RADIX_TOKEN.raw();
+        let resource_address = RADIX_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
@@ -107,7 +107,7 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.raw();
+        let resource_address = PACKAGE_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
@@ -126,7 +126,7 @@ pub fn create_genesis(
     // Identity Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
-        let package_address = IDENTITY_PACKAGE.raw();
+        let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -143,7 +143,7 @@ pub fn create_genesis(
     // EpochManager Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
-        let package_address = EPOCH_MANAGER_PACKAGE.raw();
+        let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -160,7 +160,7 @@ pub fn create_genesis(
     // Clock Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
-        let package_address = CLOCK_PACKAGE.raw();
+        let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -177,7 +177,7 @@ pub fn create_genesis(
     // Account Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
-        let package_address = ACCOUNT_PACKAGE.raw();
+        let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -196,7 +196,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(
             ACCESS_CONTROLLER_PACKAGE,
         )));
-        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
+        let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -213,7 +213,7 @@ pub fn create_genesis(
     // Logger Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
-        let package_address = LOGGER_PACKAGE.raw();
+        let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -232,7 +232,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(
             TRANSACTION_RUNTIME_PACKAGE,
         )));
-        let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
+        let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -249,7 +249,7 @@ pub fn create_genesis(
     // AuthZone Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
-        let package_address = AUTH_ZONE_PACKAGE.raw();
+        let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {
                 package_address: Some(package_address), // TODO: Clean this up
@@ -268,7 +268,7 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ECDSA_SECP256K1_TOKEN.raw();
+        let resource_address = ECDSA_SECP256K1_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
@@ -290,7 +290,7 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = EDDSA_ED25519_TOKEN.raw();
+        let resource_address = EDDSA_ED25519_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
@@ -312,7 +312,7 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = SYSTEM_TOKEN.raw();
+        let resource_address = SYSTEM_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(SYSTEM_TOKEN)));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
@@ -331,7 +331,7 @@ pub fn create_genesis(
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let package_address = FAUCET_PACKAGE.raw();
+        let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
         instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
             PackageInvocation::Publish(PackagePublishInvocation {
@@ -346,7 +346,7 @@ pub fn create_genesis(
     }
 
     {
-        let component_address = CLOCK.raw();
+        let component_address = CLOCK.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
         instructions.push(Instruction::CallFunction {
             package_address: CLOCK_PACKAGE,
@@ -378,8 +378,8 @@ pub fn create_genesis(
             );
         }
 
-        let component_address = EPOCH_MANAGER.raw();
-        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.raw();
+        let component_address = EPOCH_MANAGER.to_array_without_entity_id();
+        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
         pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
         instructions.push(Instruction::CallFunction {

@@ -2,7 +2,7 @@ use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
+use radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
@@ -109,11 +109,12 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_commit_success();
 
     // Act 2 - Depth just under the limit
-    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(MAX_SCRYPTO_SBOR_DEPTH);
+    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(SCRYPTO_SBOR_V1_MAX_DEPTH);
     receipt.expect_commit_success();
 
     // Act 2 - Depth just over the limit
-    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(MAX_SCRYPTO_SBOR_DEPTH + 1);
+    let receipt =
+        publish_wasm_with_deep_sbor_response_and_execute_it(SCRYPTO_SBOR_V1_MAX_DEPTH + 1);
     receipt.expect_specific_failure(|f| {
         matches!(
             f,

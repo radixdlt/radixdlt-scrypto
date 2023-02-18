@@ -36,15 +36,14 @@ pub use value_formatter::*;
 #[cfg(feature = "serde")]
 pub use value_serializer::*;
 
-pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 64;
-
-pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
-pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
-
 // 0x5c for [5c]rypto - (91 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
+pub const SCRYPTO_SBOR_V1_MAX_DEPTH: u8 = 64;
+
+pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind, SCRYPTO_SBOR_V1_MAX_DEPTH>;
+pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind, SCRYPTO_SBOR_V1_MAX_DEPTH>;
+pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
+pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 
 // The following trait "aliases" are to be used in parameters.
 //

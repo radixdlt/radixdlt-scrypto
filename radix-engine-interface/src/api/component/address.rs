@@ -1,9 +1,8 @@
 use crate::abi::*;
-use crate::address::*;
+use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::crypto::{hash, PublicKey};
-use crate::data::model::Address;
 use crate::data::ScryptoCustomValueKind;
-use crate::data::*;
+use crate::well_known_scrypto_custom_type;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -66,7 +65,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
-    pub fn raw(&self) -> [u8; 26] {
+    pub fn to_array_without_entity_id(&self) -> [u8; 26] {
         match self {
             Self::Normal(v)
             | Self::Account(v)
@@ -146,84 +145,15 @@ impl ComponentAddress {
 // binary
 //========
 
-impl Categorize<ScryptoCustomValueKind> for ComponentAddress {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Address)
-    }
-}
+well_known_scrypto_custom_type!(
+    ComponentAddress,
+    ScryptoCustomValueKind::Address,
+    Type::ComponentAddress,
+    27,
+    COMPONENT_ADDRESS_ID
+);
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ComponentAddress {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Address::Component(self.clone()).encode_body(encoder)
-    }
-}
-
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for ComponentAddress {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
-        match a {
-            Address::Component(x) => Ok(x),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
-    }
-}
-
-impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for ComponentAddress {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::COMPONENT_ADDRESS_ID);
-}
-
-impl scrypto_abi::LegacyDescribe for ComponentAddress {
-    fn describe() -> scrypto_abi::Type {
-        Type::ComponentAddress
-    }
-}
-
-//===================
-// binary (manifest)
-//===================
-
-impl Categorize<ManifestCustomValueKind> for ComponentAddress {
-    #[inline]
-    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
-        ValueKind::Custom(ManifestCustomValueKind::Address)
-    }
-}
-
-impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for ComponentAddress {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Address::Component(self.clone()).encode_body(encoder)
-    }
-}
-
-impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for ComponentAddress {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ManifestCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        let a = Address::decode_body_with_value_kind(decoder, value_kind)?;
-        match a {
-            Address::Component(x) => Ok(x),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
-    }
-}
+manifest_type!(ComponentAddress, ManifestCustomValueKind::Address, 27);
 
 //======
 // text
