@@ -98,8 +98,8 @@ impl Clone for InstructionOutput {
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::TransactionProcessor(TransactionProcessorFn::Run))
+    fn identifier(&self) -> InvocationIdentifier {
+        InvocationIdentifier::Transaction
     }
 }
 

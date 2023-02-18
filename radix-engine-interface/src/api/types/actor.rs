@@ -18,6 +18,13 @@ pub enum NativePackage {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum InvocationIdentifier {
+    Transaction,
+    Function(PackageAddress, String, String),
+    Method(GlobalAddress, NodeModuleId, String),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),

@@ -37,7 +37,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _fn_identifier: &FnIdentifier,
+        _identifier: &InvocationIdentifier,
         _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())

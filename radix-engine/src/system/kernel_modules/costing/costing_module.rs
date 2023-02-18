@@ -10,10 +10,7 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::types::{
-    FnIdentifier, GlobalAddress, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset,
-    SubstateOffset, VaultId, VaultOffset,
-};
+use radix_engine_interface::api::types::{FnIdentifier, GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, NodeModuleId, RoyaltyOffset, SubstateOffset, VaultId, VaultOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
@@ -84,7 +81,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 impl KernelModule for CostingModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _fn_identifier: &FnIdentifier,
+        _identifier: &InvocationIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();

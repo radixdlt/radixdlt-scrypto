@@ -4,5 +4,5 @@ use sbor::rust::fmt::Debug;
 pub trait Invocation: Debug {
     type Output: Debug;
 
-    fn fn_identifier(&self) -> FnIdentifier;
+    fn identifier(&self) -> InvocationIdentifier;
 }

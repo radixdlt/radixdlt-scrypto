@@ -1192,7 +1192,7 @@ where
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
-            &invocation.fn_identifier(),
+            &invocation.identifier(),
             0, // TODO: Pass the right size
         )?;
 
