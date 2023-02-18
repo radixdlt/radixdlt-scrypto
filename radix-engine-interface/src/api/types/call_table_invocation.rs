@@ -1,4 +1,3 @@
-use crate::api::node_modules::auth::*;
 use crate::api::package::PackageAddress;
 use crate::api::package::*;
 use crate::api::types::*;
@@ -46,7 +45,6 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativeInvocation {
-    AccessRulesChain(AccessRulesChainInvocation),
     Package(PackageInvocation),
 }
 
@@ -57,11 +55,6 @@ impl Into<CallTableInvocation> for NativeInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum AccessRulesChainInvocation {
-    GetLength(AccessRulesGetLengthInvocation),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     PublishNative(PackagePublishNativeInvocation),
@@ -69,16 +62,11 @@ pub enum PackageInvocation {
 
 impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
-        let mut refs = HashSet::new();
+        let refs = HashSet::new();
         match self {
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
                 PackageInvocation::PublishNative(..) => {}
-            },
-            NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
-                AccessRulesChainInvocation::GetLength(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
             },
         }
 
@@ -93,9 +81,6 @@ fn get_native_fn<T: SerializableInvocation>(_: &T) -> NativeFn {
 impl NativeInvocation {
     pub fn flatten(&self) -> (NativeFn, Vec<u8>) {
         let (native_fn, encoding) = match self {
-            NativeInvocation::AccessRulesChain(i) => match i {
-                AccessRulesChainInvocation::GetLength(i) => (get_native_fn(i), scrypto_encode(i)),
-            },
             NativeInvocation::Package(i) => match i {
                 PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),
                 PackageInvocation::PublishNative(i) => (get_native_fn(i), scrypto_encode(i)),

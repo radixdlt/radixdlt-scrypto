@@ -253,6 +253,7 @@ impl FeeTable {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => self.fixed_low,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => self.fixed_low,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => self.fixed_low,
+                ACCESS_RULES_GET_LENGTH_IDENT => self.fixed_low,
                 _ => self.fixed_low,
             },
             _ => 0u32,
@@ -262,9 +263,6 @@ impl FeeTable {
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
-            NativeFn::AccessRulesChain(component_ident) => match component_ident {
-                AccessRulesChainFn::GetLength => self.fixed_low,
-            },
             NativeFn::Package(method_ident) => match method_ident {
                 PackageFn::Publish => self.fixed_high,
                 PackageFn::PublishNative => self.fixed_high,

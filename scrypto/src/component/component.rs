@@ -2,10 +2,7 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesAddAccessCheckInput, AccessRulesGetLengthInvocation,
-    ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
-};
+use radix_engine_interface::api::node_modules::auth::{AccessRulesAddAccessCheckInput, AccessRulesGetLengthInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT, ACCESS_RULES_GET_LENGTH_IDENT};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
@@ -13,8 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::types::ComponentId;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
@@ -160,12 +156,16 @@ impl Component for OwnedComponent {
     }
 
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-        let mut env = ScryptoEnv;
-        let length = env
-            .call_native(AccessRulesGetLengthInvocation {
-                receiver: RENodeId::Component(self.0),
-            })
+        let rtn = ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Component(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_GET_LENGTH_IDENT,
+                scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),
+            )
             .unwrap();
+
+        let length: u32 = scrypto_decode(&rtn).unwrap();
         (0..length)
             .into_iter()
             .map(|id| ComponentAccessRules::new(self.0, id))
@@ -248,12 +248,15 @@ impl Component for GlobalComponentRef {
     }
 
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-        let mut env = ScryptoEnv;
-        let length = env
-            .call_native(AccessRulesGetLengthInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-            })
+        let rtn = ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Global(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_GET_LENGTH_IDENT,
+                scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),
+            )
             .unwrap();
+        let length: u32 = scrypto_decode(&rtn).unwrap();
         (0..length)
             .into_iter()
             .map(|id| ComponentAccessRules::new(self.0, id))

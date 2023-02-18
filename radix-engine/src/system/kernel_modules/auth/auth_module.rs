@@ -424,8 +424,7 @@ impl KernelModule for AuthModule {
 
         if !matches!(
             actor.identifier,
-            FnIdentifier::Native(NativeFn::AccessRulesChain(..))
-                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address: ACCESS_RULES_PACKAGE,
                     ..
                 })
@@ -467,8 +466,7 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             api.kernel_get_current_actor().identifier,
-            FnIdentifier::Native(NativeFn::AccessRulesChain(..))
-                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address: ACCESS_RULES_PACKAGE,
                     ..
                 })

@@ -80,7 +80,6 @@ impl ScryptoFnIdentifier {
     LegacyDescribe,
 )]
 pub enum NativeFn {
-    AccessRulesChain(AccessRulesChainFn),
     Package(PackageFn),
     TransactionProcessor(TransactionProcessorFn),
     Root,
@@ -89,36 +88,11 @@ pub enum NativeFn {
 impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
-            NativeFn::AccessRulesChain(..) => NativePackage::Auth,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
         }
     }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum AccessRulesChainFn {
-    GetLength,
 }
 
 #[derive(

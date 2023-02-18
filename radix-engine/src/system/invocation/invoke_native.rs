@@ -1,7 +1,7 @@
 use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::{blueprints::transaction_processor::NativeOutput, types::*};
 use radix_engine_interface::api::types::{
-    AccessRulesChainInvocation, NativeInvocation, PackageInvocation,
+    NativeInvocation, PackageInvocation,
 };
 
 pub fn invoke_native_fn<Y, E>(
@@ -22,13 +22,5 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::AccessRulesChain(access_rules_invocation) => {
-            match access_rules_invocation {
-                AccessRulesChainInvocation::GetLength(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            }
-        }
     }
 }
