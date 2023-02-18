@@ -360,7 +360,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             }
         }
 
-        let decompilation_context = ScryptoValueDisplayContext::with_bench32(bech32_encoder);
+        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
 
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
@@ -371,7 +371,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) => x.to_string(decompilation_context),
+                            InstructionOutput::CallReturn(x) => x.to_string(context),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;

@@ -28,7 +28,7 @@ impl<'a> ManifestValueDisplayContext<'a> {
         }
     }
 
-    pub fn with_bench32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+    pub fn with_optional_bench32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
             bucket_names: None,
@@ -61,13 +61,13 @@ impl<'a> ManifestValueDisplayContext<'a> {
 
 impl<'a> Into<ManifestValueDisplayContext<'a>> for &'a Bech32Encoder {
     fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_bench32(Some(self))
+        ManifestValueDisplayContext::with_optional_bench32(Some(self))
     }
 }
 
 impl<'a> Into<ManifestValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
     fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_bench32(self)
+        ManifestValueDisplayContext::with_optional_bench32(self)
     }
 }
 

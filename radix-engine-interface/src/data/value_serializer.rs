@@ -916,7 +916,7 @@ mod tests {
             ]
         });
 
-        let context = ScryptoValueDisplayContext::with_bench32(Some(&encoder));
+        let context = ScryptoValueDisplayContext::with_optional_bench32(Some(&encoder));
 
         assert_simple_json_matches(&value, context, expected_simple);
         assert_invertible_json_matches(&value, context, expected_invertible);

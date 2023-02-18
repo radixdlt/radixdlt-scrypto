@@ -345,7 +345,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     }
 
     if let Some(raw_state) = component_state_dump.raw_state {
-        let value_display_context = ScryptoValueDisplayContext::with_bench32(Some(&bech32_encoder));
+        let value_display_context =
+            ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
         writeln!(
             output,
             "{}: {}",
@@ -397,7 +398,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         let substate = substate.clone().to_runtime();
         if let KeyValueStoreEntrySubstate::Some(key, value) = &substate.kv_store_entry() {
             let value_display_context =
-                ScryptoValueDisplayContext::with_bench32(Some(&bech32_encoder));
+                ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -511,7 +512,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     let mutable_data =
                         IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
-                        ScryptoValueDisplayContext::with_bench32(Some(&bech32_encoder));
+                        ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",

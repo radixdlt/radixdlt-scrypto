@@ -849,7 +849,6 @@ dependencies = [
  "sbor",
  "strum",
  "transaction",
- "transaction-data",
  "utils",
  "wasm-instrument",
  "wasmi",
@@ -1092,7 +1091,6 @@ dependencies = [
  "serde",
  "serde_json",
  "transaction",
- "transaction-data",
  "utils",
  "wabt",
 ]
